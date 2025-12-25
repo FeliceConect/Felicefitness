@@ -7,7 +7,8 @@ import type {
   AnalysisStatus,
   NutritionTotals
 } from '@/types/analysis'
-import { recalculateTotals, calculateOverallConfidence } from '@/lib/openai'
+// Importar diretamente do arquivo para evitar carregar o cliente OpenAI no browser
+import { recalculateTotals, calculateOverallConfidence } from '@/lib/openai/parse-response'
 
 interface UseMealAnalysisReturn {
   // Estado
