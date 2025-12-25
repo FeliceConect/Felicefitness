@@ -46,6 +46,22 @@ export function useMealAnalysis(): UseMealAnalysisReturn {
     setResult(null)
 
     try {
+      // Validar arquivo
+      if (!file) {
+        throw new Error('Nenhum arquivo selecionado')
+      }
+
+      // Validar tamanho (max 4MB)
+      if (file.size > 4 * 1024 * 1024) {
+        throw new Error('Imagem muito grande. Máximo 4MB.')
+      }
+
+      // Validar tipo
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+      if (!validTypes.includes(file.type)) {
+        throw new Error('Formato inválido. Use JPEG, PNG, WebP ou GIF.')
+      }
+
       // Criar preview
       const previewUrl = URL.createObjectURL(file)
       setImagePreview(previewUrl)
@@ -56,12 +72,32 @@ export function useMealAnalysis(): UseMealAnalysisReturn {
       const formData = new FormData()
       formData.append('image', file)
 
+      console.log('[MealAnalysis] Enviando imagem para análise...', {
+        size: file.size,
+        type: file.type,
+        name: file.name
+      })
+
       const response = await fetch('/api/analyze-meal', {
         method: 'POST',
         body: formData
       })
 
+      console.log('[MealAnalysis] Resposta recebida:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[MealAnalysis] Erro na resposta:', errorText)
+        throw new Error(`Erro ${response.status}: ${response.statusText}`)
+      }
+
       const data: MealAnalysisResult = await response.json()
+
+      console.log('[MealAnalysis] Dados recebidos:', {
+        success: data.success,
+        itemsCount: data.items?.length,
+        error: data.error
+      })
 
       if (!data.success) {
         throw new Error(data.error || 'Falha na análise')
@@ -71,6 +107,7 @@ export function useMealAnalysis(): UseMealAnalysisReturn {
       setStatus('success')
 
     } catch (err) {
+      console.error('[MealAnalysis] Erro:', err)
       const errorMessage = err instanceof Error ? err.message : 'Erro na análise'
       setError(errorMessage)
       setStatus('error')

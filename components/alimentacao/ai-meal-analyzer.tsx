@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Camera,
@@ -53,15 +53,20 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
 
     setStep('analyzing')
     await analyzeImage(file)
-
-    // Verificar resultado
-    const analysisResult = getUpdatedResult()
-    if (analysisResult?.success) {
-      setStep('result')
-    } else {
-      setStep('capture')
-    }
+    // O resultado será verificado via useEffect quando 'result' mudar
   }
+
+  // Monitorar quando a análise termina para mudar de step
+  useEffect(() => {
+    if (step === 'analyzing' && !isAnalyzing) {
+      // A análise terminou
+      if (result?.success) {
+        setStep('result')
+      } else if (error) {
+        setStep('capture')
+      }
+    }
+  }, [step, isAnalyzing, result, error])
 
   // Selecionar da galeria
   const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {

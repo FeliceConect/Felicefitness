@@ -118,14 +118,9 @@
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
   }
 
-  /* Padding inferior que considera safe area + bottom nav */
+  /* Padding inferior que considera safe area + bottom nav (64px nav + safe area) */
   .content-safe-bottom {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Classe para padding bottom de safe area */
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
   }
 }
 

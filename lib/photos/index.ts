@@ -5,4 +5,3 @@
 
 export * from './types'
 export * from './processing'
-export * from './mock-data'

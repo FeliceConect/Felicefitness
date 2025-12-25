@@ -8,14 +8,14 @@ import { format } from 'date-fns'
 import { PhotoTypeSelector, PhotoCapture } from '@/components/fotos'
 import { usePhotos } from '@/hooks/use-photos'
 import { resizeImage, compressImage, blobToFile } from '@/lib/photos/processing'
-import { type PhotoType, type ProgressPhoto, PHOTO_TYPE_LABELS } from '@/lib/photos/types'
+import { type PhotoType, PHOTO_TYPE_LABELS } from '@/lib/photos/types'
 import { cn } from '@/lib/utils'
 
 type Step = 'type' | 'capture' | 'preview'
 
 export default function NovaFotoPage() {
   const router = useRouter()
-  const { addPhoto } = usePhotos()
+  const { uploadAndSavePhoto } = usePhotos()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [step, setStep] = useState<Step>('type')
@@ -70,31 +70,24 @@ export default function NovaFotoPage() {
     setIsSaving(true)
 
     try {
-      // Criar objeto da foto
-      const newPhoto: ProgressPhoto = {
-        id: `photo-${Date.now()}`,
-        user_id: 'user-001',
+      // Upload e salvar no Supabase
+      const savedPhoto = await uploadAndSavePhoto(capturedBlob, {
         data,
         tipo: photoType,
-        url: previewUrl || '',
         peso: peso ? parseFloat(peso) : undefined,
         percentual_gordura: percentualGordura ? parseFloat(percentualGordura) : undefined,
         notas: notas || undefined,
-        favorita: isFavorite,
-        created_at: new Date().toISOString()
-      }
+        favorita: isFavorite
+      })
 
-      // TODO: Upload para Supabase Storage
-      // const url = await uploadPhoto(capturedBlob, { userId, type: photoType, date: data })
-      // newPhoto.url = url
-
-      const success = await addPhoto(newPhoto)
-
-      if (success) {
+      if (savedPhoto) {
         router.push('/fotos')
+      } else {
+        alert('Erro ao salvar foto. Tente novamente.')
       }
     } catch (error) {
       console.error('Erro ao salvar foto:', error)
+      alert('Erro ao salvar foto. Tente novamente.')
     } finally {
       setIsSaving(false)
     }
