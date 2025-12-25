@@ -37,22 +37,40 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
     const checkSubscription = async () => {
       try {
         // Verificar permissão
-        const perm = Notification.permission
-        setPermission(perm)
+        if ('Notification' in window) {
+          const perm = Notification.permission
+          setPermission(perm)
 
-        if (perm === 'denied') {
-          setStatus('denied')
-          return
+          if (perm === 'denied') {
+            setStatus('denied')
+            return
+          }
         }
 
-        // Verificar se já existe subscription
-        const registration = await navigator.serviceWorker.ready
-        const sub = await registration.pushManager.getSubscription()
+        // Verificar se service worker está registrado com timeout
+        const timeoutPromise = new Promise<null>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout')), 5000)
+        })
 
-        if (sub) {
-          setSubscription(sub)
-          setStatus('subscribed')
-        } else {
+        const swReady = navigator.serviceWorker.ready
+
+        try {
+          const registration = await Promise.race([swReady, timeoutPromise]) as ServiceWorkerRegistration
+
+          if (registration && registration.pushManager) {
+            const sub = await registration.pushManager.getSubscription()
+
+            if (sub) {
+              setSubscription(sub)
+              setStatus('subscribed')
+            } else {
+              setStatus('unsubscribed')
+            }
+          } else {
+            setStatus('unsubscribed')
+          }
+        } catch (timeoutErr) {
+          console.warn('Service worker não está pronto:', timeoutErr)
           setStatus('unsubscribed')
         }
       } catch (err) {
