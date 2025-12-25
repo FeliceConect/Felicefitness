@@ -24,9 +24,9 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-background">
       <Header userName={userName} userAvatar={userAvatar} />
-      <div className="pt-16">
+      <main className="content-safe-top content-safe-bottom">
         {children}
-      </div>
+      </main>
       <BottomNav />
     </div>
   )
