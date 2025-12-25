@@ -78,6 +78,40 @@ export function NotificationToggle({
     lg: 'w-6 h-6'
   }
 
+  // Debug info (remover em produção após resolver)
+  const debugInfo = {
+    isIOS,
+    isPWA,
+    isSupported,
+    status,
+    permission,
+    hasServiceWorker: typeof navigator !== 'undefined' && 'serviceWorker' in navigator,
+    hasPushManager: typeof window !== 'undefined' && 'PushManager' in window,
+    hasNotification: typeof window !== 'undefined' && 'Notification' in window
+  }
+
+  // iOS em PWA mas não suportado - mostrar debug
+  if (isIOS && isPWA && !isSupported) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 text-amber-400">
+          <AlertCircle className={iconSizes[size]} />
+          {showLabel && <span className="text-sm font-medium">Verificando suporte...</span>}
+        </div>
+        {showLabel && (
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 space-y-2">
+            <p className="text-slate-300 text-xs font-mono">
+              Debug: SW={debugInfo.hasServiceWorker ? '✓' : '✗'} Push={debugInfo.hasPushManager ? '✓' : '✗'} Notif={debugInfo.hasNotification ? '✓' : '✗'}
+            </p>
+            <p className="text-slate-400 text-xs">
+              Se vir ✗ em algum, tente: fechar e reabrir o app, ou limpar cache do Safari.
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   // iOS mas não está em modo PWA - mostrar instruções
   if (isIOS && !isPWA && !isSupported) {
     return (
@@ -111,7 +145,9 @@ export function NotificationToggle({
         {showLabel && (
           <div>
             <span className="text-sm block">Notificações não suportadas</span>
-            <span className="text-xs text-slate-600">Use o Safari ou Chrome para ativar</span>
+            <span className="text-xs text-slate-600">
+              {isIOS ? 'Abra pelo app na Tela de Início' : 'Use o Safari ou Chrome para ativar'}
+            </span>
           </div>
         )}
       </div>
