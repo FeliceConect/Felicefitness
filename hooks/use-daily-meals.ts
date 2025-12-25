@@ -1,0 +1,252 @@
+"use client"
+
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { format } from 'date-fns'
+import { createClient } from '@/lib/supabase/client'
+import type {
+  Meal,
+  PlannedMeal,
+  NutritionTotals,
+  NutritionGoals,
+  NutritionProgress,
+  MealType
+} from '@/lib/nutrition/types'
+import { leonardoGoals, leonardoMealPlan } from '@/lib/nutrition/types'
+import { calculateNutritionProgress } from '@/lib/nutrition/calculations'
+
+interface UseDailyMealsReturn {
+  meals: Meal[]
+  plannedMeals: PlannedMeal[]
+  totals: NutritionTotals
+  goals: NutritionGoals
+  progress: NutritionProgress
+  nextMeal: PlannedMeal | null
+  loading: boolean
+  error: Error | null
+  addMeal: (meal: Omit<Meal, 'id' | 'created_at'>) => Promise<void>
+  updateMeal: (id: string, data: Partial<Meal>) => Promise<void>
+  deleteMeal: (id: string) => Promise<void>
+  refresh: () => Promise<void>
+}
+
+export function useDailyMeals(date?: Date): UseDailyMealsReturn {
+  const targetDate = date || new Date()
+  const dateStr = format(targetDate, 'yyyy-MM-dd')
+
+  const [meals, setMeals] = useState<Meal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  const supabase = createClient()
+
+  // Carregar refeições do dia do banco de dados
+  const loadMeals = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        // Se não está logado, mostrar array vazio
+        setMeals([])
+        return
+      }
+
+      // Buscar refeições reais do banco
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: mealsData, error: mealsError } = await (supabase as any)
+        .from('fitness_meals')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('data', dateStr)
+        .order('horario', { ascending: true })
+
+      if (mealsError) {
+        console.error('Error loading meals:', mealsError)
+        setMeals([])
+        return
+      }
+
+      // Converter dados do banco para o formato Meal
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const convertedMeals: Meal[] = (mealsData || []).map((m: any) => ({
+        id: m.id,
+        user_id: m.user_id,
+        tipo: m.tipo_refeicao as MealType,
+        data: m.data,
+        horario_planejado: m.horario || undefined,
+        horario_real: m.horario || undefined,
+        status: 'concluido' as const,
+        itens: [], // Por enquanto sem itens detalhados
+        calorias_total: m.calorias_total || 0,
+        proteinas_total: m.proteinas_total || 0,
+        carboidratos_total: m.carboidratos_total || 0,
+        gorduras_total: m.gorduras_total || 0,
+        notas: m.notas || undefined,
+        created_at: m.created_at
+      }))
+
+      setMeals(convertedMeals)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Erro ao carregar refeições'))
+      setMeals([])
+    } finally {
+      setLoading(false)
+    }
+  }, [dateStr, supabase])
+
+  useEffect(() => {
+    loadMeals()
+  }, [loadMeals])
+
+  // Calcular totais
+  const totals = useMemo((): NutritionTotals => {
+    return meals.reduce(
+      (acc, meal) => ({
+        calorias: acc.calorias + (meal.calorias_total || 0),
+        proteinas: acc.proteinas + (meal.proteinas_total || 0),
+        carboidratos: acc.carboidratos + (meal.carboidratos_total || 0),
+        gorduras: acc.gorduras + (meal.gorduras_total || 0)
+      }),
+      { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
+    )
+  }, [meals])
+
+  // Metas do usuário (por enquanto hardcoded para Leonardo)
+  const goals = leonardoGoals
+
+  // Calcular progresso
+  const progress = useMemo(() => {
+    return calculateNutritionProgress(totals, goals)
+  }, [totals, goals])
+
+  // Plano de refeições
+  const plannedMeals = leonardoMealPlan
+
+  // Identificar próxima refeição
+  const nextMeal = useMemo(() => {
+    const now = new Date()
+    const currentTimeStr = format(now, 'HH:mm')
+
+    // Encontrar refeições que ainda não foram concluídas
+    const completedTypes = new Set(
+      meals.filter(m => m.status === 'concluido').map(m => m.tipo)
+    )
+
+    // Encontrar a próxima refeição planejada não concluída
+    for (const planned of plannedMeals) {
+      if (!completedTypes.has(planned.tipo)) {
+        // Se ainda não passou do horário ou passou há pouco tempo
+        if (planned.horario >= currentTimeStr || isWithinWindow(planned.horario, currentTimeStr)) {
+          return planned
+        }
+      }
+    }
+
+    return null
+  }, [meals, plannedMeals])
+
+  // Verificar se está dentro de uma janela de tempo razoável (1h)
+  function isWithinWindow(plannedTime: string, currentTime: string): boolean {
+    const [plannedHour, plannedMin] = plannedTime.split(':').map(Number)
+    const [currentHour, currentMin] = currentTime.split(':').map(Number)
+
+    const plannedMinutes = plannedHour * 60 + plannedMin
+    const currentMinutes = currentHour * 60 + currentMin
+
+    // Se passou menos de 60 minutos, ainda considera como "próxima"
+    return currentMinutes - plannedMinutes < 60 && currentMinutes >= plannedMinutes
+  }
+
+  // Adicionar refeição
+  const addMeal = useCallback(async (meal: Omit<Meal, 'id' | 'created_at'>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+
+      // Preparar dados para o banco
+      const mealData = {
+        user_id: user.id,
+        data: meal.data,
+        tipo_refeicao: meal.tipo,
+        horario: meal.horario_real || meal.horario_planejado,
+        calorias_total: meal.calorias_total,
+        proteinas_total: meal.proteinas_total,
+        carboidratos_total: meal.carboidratos_total,
+        gorduras_total: meal.gorduras_total,
+        notas: meal.notas || null
+      }
+
+      // Inserir no banco
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('fitness_meals')
+        .insert(mealData)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error saving meal:', error)
+        throw error
+      }
+
+      // Converter para formato Meal e adicionar ao estado
+      const newMeal: Meal = {
+        id: data.id,
+        user_id: data.user_id,
+        tipo: data.tipo_refeicao as MealType,
+        data: data.data,
+        horario_planejado: data.horario || undefined,
+        horario_real: data.horario || undefined,
+        status: 'concluido' as const,
+        itens: meal.itens || [],
+        calorias_total: data.calorias_total || 0,
+        proteinas_total: data.proteinas_total || 0,
+        carboidratos_total: data.carboidratos_total || 0,
+        gorduras_total: data.gorduras_total || 0,
+        notas: data.notas || undefined,
+        created_at: data.created_at
+      }
+
+      setMeals(prev => [...prev, newMeal])
+    } catch (err) {
+      console.error('Error adding meal:', err)
+      throw err
+    }
+  }, [supabase])
+
+  // Atualizar refeição
+  const updateMeal = useCallback(async (id: string, data: Partial<Meal>) => {
+    setMeals(prev =>
+      prev.map(meal => (meal.id === id ? { ...meal, ...data } : meal))
+    )
+  }, [])
+
+  // Deletar refeição
+  const deleteMeal = useCallback(async (id: string) => {
+    setMeals(prev => prev.filter(meal => meal.id !== id))
+  }, [])
+
+  // Refresh
+  const refresh = useCallback(async () => {
+    await loadMeals()
+  }, [loadMeals])
+
+  return {
+    meals,
+    plannedMeals,
+    totals,
+    goals,
+    progress,
+    nextMeal,
+    loading,
+    error,
+    addMeal,
+    updateMeal,
+    deleteMeal,
+    refresh
+  }
+}

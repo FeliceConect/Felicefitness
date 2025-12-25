@@ -1,0 +1,105 @@
+{
+  "name": "FeliceFit",
+  "short_name": "FeliceFit",
+  "description": "Seu app de fitness e saude premium",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0F",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrar Agua",
+      "short_name": "Agua",
+      "description": "Adicionar agua rapidamente",
+      "url": "/agua?action=add&amount=250",
+      "icons": [{ "src": "/icons/shortcut-water.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Iniciar Treino",
+      "short_name": "Treinar",
+      "description": "Comecar treino de hoje",
+      "url": "/treino?action=start",
+      "icons": [{ "src": "/icons/shortcut-workout.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Registrar Refeicao",
+      "short_name": "Refeicao",
+      "description": "Adicionar refeicao",
+      "url": "/alimentacao/refeicao/nova",
+      "icons": [{ "src": "/icons/shortcut-meal.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Revolade",
+      "short_name": "Revolade",
+      "description": "Marcar Revolade como tomado",
+      "url": "/suplementos?action=revolade",
+      "icons": [{ "src": "/icons/shortcut-medicine.png", "sizes": "96x96", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["fitness", "health", "lifestyle"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

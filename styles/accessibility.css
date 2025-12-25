@@ -1,0 +1,225 @@
+/* ============================================
+   FeliceFit Accessibility Styles
+   ============================================ */
+
+/* Focus visible */
+.focus-visible:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Focus ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Remove focus ring for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip link (screen reader only, visible on focus) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Not screen reader only (for focus) */
+.not-sr-only {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Touch targets - minimum 44x44px */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0% 100%;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Color blind friendly - using patterns and icons */
+.status-success {
+  /* Green + checkmark icon */
+  color: hsl(var(--success));
+}
+
+.status-error {
+  /* Red + X icon */
+  color: hsl(var(--error));
+}
+
+.status-warning {
+  /* Yellow/Orange + warning icon */
+  color: hsl(var(--warning));
+}
+
+/* Increased text spacing for readability */
+.readable-text {
+  letter-spacing: 0.12em;
+  word-spacing: 0.16em;
+  line-height: 1.5;
+}
+
+/* Safe area padding for iOS */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.px-safe {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ============================================
+   Semantic color usage
+   ============================================ */
+
+/* Interactive elements */
+[role="button"],
+button,
+a {
+  cursor: pointer;
+}
+
+[disabled],
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Error states */
+[aria-invalid="true"] {
+  border-color: hsl(var(--error));
+}
+
+/* Required fields */
+[aria-required="true"]::after {
+  content: " *";
+  color: hsl(var(--error));
+}
+
+/* Loading states */
+[aria-busy="true"] {
+  cursor: wait;
+}
+
+/* ============================================
+   Keyboard navigation indicators
+   ============================================ */
+
+/* Show focus indicator for keyboard users */
+.js-focus-visible :focus:not(.focus-visible) {
+  outline: none;
+}
+
+.js-focus-visible .focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* ============================================
+   User Preferences Classes
+   ============================================ */
+
+/* Reduced motion preference */
+body.reduced-motion *,
+body.reduced-motion *::before,
+body.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* High contrast mode (user preference) */
+body.high-contrast {
+  --border: 0 0% 80%;
+}
+
+body.high-contrast button,
+body.high-contrast a,
+body.high-contrast input,
+body.high-contrast select,
+body.high-contrast textarea {
+  border-width: 2px;
+}
+
+body.high-contrast .text-slate-400,
+body.high-contrast .text-slate-500,
+body.high-contrast .text-muted-foreground {
+  color: hsl(0 0% 70%) !important;
+}
+
+/* Large text preference */
+body.large-text {
+  font-size: 18px;
+}
+
+body.large-text h1 {
+  font-size: 2rem;
+}
+
+body.large-text h2 {
+  font-size: 1.75rem;
+}
+
+body.large-text h3 {
+  font-size: 1.5rem;
+}
+
+body.large-text p,
+body.large-text span,
+body.large-text div {
+  line-height: 1.6;
+}
