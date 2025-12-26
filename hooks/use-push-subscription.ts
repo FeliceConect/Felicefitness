@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 type SubscriptionStatus = 'loading' | 'subscribed' | 'unsubscribed' | 'unsupported' | 'denied'
 
@@ -22,43 +22,65 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
   const [permission, setPermission] = useState<NotificationPermission | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [subscription, setSubscription] = useState<PushSubscription | null>(null)
+  const checkedRef = useRef(false)
 
   const isSupported = typeof window !== 'undefined' &&
     'serviceWorker' in navigator &&
-    'PushManager' in window
+    'PushManager' in window &&
+    'Notification' in window
 
   // Verificar estado inicial
   useEffect(() => {
+    if (checkedRef.current) return
+    checkedRef.current = true
+
     if (!isSupported) {
+      console.log('Push: Não suportado - SW:', 'serviceWorker' in navigator, 'Push:', typeof window !== 'undefined' && 'PushManager' in window, 'Notif:', typeof window !== 'undefined' && 'Notification' in window)
       setStatus('unsupported')
       return
     }
 
     const checkSubscription = async () => {
       try {
-        // Verificar permissão
-        if ('Notification' in window) {
-          const perm = Notification.permission
-          setPermission(perm)
+        // Verificar permissão atual
+        const perm = Notification.permission
+        console.log('Push: Permissão atual =', perm)
+        setPermission(perm)
 
-          if (perm === 'denied') {
-            setStatus('denied')
-            return
-          }
+        if (perm === 'denied') {
+          setStatus('denied')
+          return
         }
 
-        // Verificar se service worker está registrado com timeout
-        const timeoutPromise = new Promise<null>((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout')), 5000)
-        })
-
-        const swReady = navigator.serviceWorker.ready
+        // Registrar service worker se não estiver registrado
+        let registration: ServiceWorkerRegistration | null = null
 
         try {
-          const registration = await Promise.race([swReady, timeoutPromise]) as ServiceWorkerRegistration
+          // Primeiro, tentar obter registration existente
+          const registrations = await navigator.serviceWorker.getRegistrations()
+          console.log('Push: Registrations encontradas:', registrations.length)
 
-          if (registration && registration.pushManager) {
+          if (registrations.length > 0) {
+            registration = registrations[0]
+          } else {
+            // Registrar novo service worker
+            console.log('Push: Registrando novo service worker...')
+            registration = await navigator.serviceWorker.register('/sw.js')
+            console.log('Push: Service worker registrado:', registration.scope)
+          }
+
+          // Aguardar service worker ficar pronto (com timeout)
+          const timeoutPromise = new Promise<null>((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout aguardando SW')), 10000)
+          })
+
+          await Promise.race([navigator.serviceWorker.ready, timeoutPromise])
+          console.log('Push: Service worker pronto')
+
+          // Verificar subscription existente
+          if (registration.pushManager) {
             const sub = await registration.pushManager.getSubscription()
+            console.log('Push: Subscription existente?', !!sub)
 
             if (sub) {
               setSubscription(sub)
@@ -67,14 +89,15 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
               setStatus('unsubscribed')
             }
           } else {
+            console.log('Push: pushManager não disponível')
             setStatus('unsubscribed')
           }
-        } catch (timeoutErr) {
-          console.warn('Service worker não está pronto:', timeoutErr)
+        } catch (swError) {
+          console.error('Push: Erro com service worker:', swError)
           setStatus('unsubscribed')
         }
       } catch (err) {
-        console.error('Erro ao verificar subscription:', err)
+        console.error('Push: Erro ao verificar subscription:', err)
         setStatus('unsubscribed')
       }
     }
@@ -90,25 +113,48 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
     }
 
     setError(null)
+    console.log('Push: Iniciando subscribe...')
 
     try {
       // Solicitar permissão
-      const permission = await Notification.requestPermission()
-      setPermission(permission)
+      console.log('Push: Solicitando permissão...')
+      const perm = await Notification.requestPermission()
+      console.log('Push: Permissão recebida =', perm)
+      setPermission(perm)
 
-      if (permission !== 'granted') {
+      if (perm !== 'granted') {
         setStatus('denied')
-        setError('Permissão para notificações negada')
+        setError('Permissão para notificações negada. Vá em Ajustes → FeliceFit → Notificações para ativar.')
         return false
       }
 
       // Obter service worker registration
-      const registration = await navigator.serviceWorker.ready
+      console.log('Push: Aguardando service worker...')
+      let registration: ServiceWorkerRegistration
+
+      try {
+        // Tentar obter registration com timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout aguardando service worker')), 10000)
+        })
+
+        registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          timeoutPromise
+        ])
+        console.log('Push: Service worker obtido:', registration.scope)
+      } catch (swError) {
+        console.error('Push: Erro ao obter service worker:', swError)
+        setError('Service worker não está disponível. Tente recarregar o app.')
+        return false
+      }
 
       // Obter chave pública VAPID
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      console.log('Push: VAPID key presente?', !!vapidKey)
+
       if (!vapidKey) {
-        setError('Chave VAPID não configurada')
+        setError('Chave VAPID não configurada no servidor')
         return false
       }
 
@@ -116,32 +162,60 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
       const applicationServerKey = urlBase64ToUint8Array(vapidKey)
 
       // Criar subscription
-      const sub = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: applicationServerKey as BufferSource
-      })
+      console.log('Push: Criando subscription...')
+      let sub: PushSubscription
+
+      try {
+        sub = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: applicationServerKey as BufferSource
+        })
+        console.log('Push: Subscription criada:', sub.endpoint.substring(0, 50) + '...')
+      } catch (subError) {
+        console.error('Push: Erro ao criar subscription:', subError)
+        const errorMessage = subError instanceof Error ? subError.message : 'Erro desconhecido'
+
+        if (errorMessage.includes('permission')) {
+          setError('Permissão negada pelo sistema. Verifique as configurações do iOS.')
+        } else {
+          setError(`Erro ao criar subscription: ${errorMessage}`)
+        }
+        return false
+      }
 
       // Enviar subscription para o servidor
-      const response = await fetch('/api/notifications/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subscription: sub.toJSON(),
-          userAgent: navigator.userAgent
+      console.log('Push: Enviando para servidor...')
+      try {
+        const response = await fetch('/api/notifications/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription: sub.toJSON(),
+            userAgent: navigator.userAgent
+          })
         })
-      })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Erro ao salvar subscription')
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({ error: 'Erro no servidor' }))
+          throw new Error(data.error || `Erro ${response.status}`)
+        }
+
+        console.log('Push: Subscription salva no servidor!')
+      } catch (serverError) {
+        console.error('Push: Erro ao salvar no servidor:', serverError)
+        // Mesmo com erro no servidor, a subscription local foi criada
+        // Podemos tentar novamente depois
+        setError('Subscription criada, mas erro ao salvar. Tente novamente.')
+        return false
       }
 
       setSubscription(sub)
       setStatus('subscribed')
+      console.log('Push: Subscribe concluído com sucesso!')
       return true
 
     } catch (err) {
-      console.error('Erro ao inscrever:', err)
+      console.error('Push: Erro geral ao inscrever:', err)
       setError(err instanceof Error ? err.message : 'Erro ao ativar notificações')
       return false
     }

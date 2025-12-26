@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
@@ -34,8 +34,54 @@ export function DashboardContent() {
     proteinConsumed,
     proteinGoal,
     workoutStats,
-    loading
+    loading,
+    refresh
   } = useDashboardData()
+
+  // Refresh automático quando o app volta ao foco (importante para iOS PWA)
+  useEffect(() => {
+    let lastRefresh = Date.now()
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now()
+        // Só fazer refresh se passou mais de 5 minutos desde o último
+        // ou se mudou o dia
+        const lastDate = new Date(lastRefresh).toDateString()
+        const currentDate = new Date().toDateString()
+        const timeSinceLastRefresh = now - lastRefresh
+
+        if (lastDate !== currentDate || timeSinceLastRefresh > 5 * 60 * 1000) {
+          console.log('Dashboard: Refreshing data after visibility change')
+          refresh()
+          lastRefresh = now
+        }
+      }
+    }
+
+    const handleFocus = () => {
+      const now = Date.now()
+      const lastDate = new Date(lastRefresh).toDateString()
+      const currentDate = new Date().toDateString()
+      const timeSinceLastRefresh = now - lastRefresh
+
+      if (lastDate !== currentDate || timeSinceLastRefresh > 5 * 60 * 1000) {
+        console.log('Dashboard: Refreshing data after focus')
+        refresh()
+        lastRefresh = now
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pageshow', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pageshow', handleFocus)
+    }
+  }, [refresh])
 
   // Gamification
   const gamification = useGamification()

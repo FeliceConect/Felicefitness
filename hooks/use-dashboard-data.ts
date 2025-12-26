@@ -202,10 +202,15 @@ export function useDashboardData(): DashboardData {
         })
       } else {
         // Não há treino real para hoje - buscar template para o dia da semana
-        const dayOfWeek = new Date().getDay()
+        // getDay() retorna 0=domingo, 1=segunda, etc.
+        // Usando timezone de São Paulo para garantir dia correto
+        const nowSP = new Date(today + 'T12:00:00-03:00')
+        const dayOfWeek = nowSP.getDay()
+
+        console.log('Dashboard: Buscando template para dia_semana =', dayOfWeek, '(0=Dom, 1=Seg, ..., 6=Sab)')
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: templateData } = await (supabase as any)
+        const { data: templateData, error: templateError } = await (supabase as any)
           .from('fitness_workout_templates')
           .select(`
             id, nome, tipo, duracao_estimada_min,
@@ -216,7 +221,12 @@ export function useDashboardData(): DashboardData {
           .eq('dia_semana', dayOfWeek)
           .maybeSingle()
 
+        if (templateError) {
+          console.log('Dashboard: Erro ao buscar template:', templateError.message)
+        }
+
         if (templateData) {
+          console.log('Dashboard: Template encontrado:', templateData.nome)
           setTodayWorkout({
             id: `template-${today}-${templateData.id}`,
             nome: templateData.nome,
@@ -226,6 +236,7 @@ export function useDashboardData(): DashboardData {
             status: 'pendente'
           })
         } else {
+          console.log('Dashboard: Nenhum template encontrado para dia_semana =', dayOfWeek, '- Dia de descanso')
           setTodayWorkout(null) // Dia de descanso
         }
       }
