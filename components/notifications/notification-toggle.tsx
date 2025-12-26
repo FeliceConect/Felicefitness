@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, BellOff, Loader2, AlertCircle, CheckCircle, Share, Smartphone } from 'lucide-react'
+import { Bell, BellOff, Loader2, AlertCircle, CheckCircle, Share, Smartphone, RefreshCw } from 'lucide-react'
 import { usePushSubscription } from '@/hooks/use-push-subscription'
 import { cn } from '@/lib/utils'
 
@@ -16,12 +16,21 @@ interface NotificationToggleProps {
 function useIOSDetection() {
   const [isIOS, setIsIOS] = useState(false)
   const [isPWA, setIsPWA] = useState(false)
+  const [iosVersion, setIosVersion] = useState<number | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent
       const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
       setIsIOS(iOS)
+
+      // Detectar versão do iOS
+      if (iOS) {
+        const match = ua.match(/OS (\d+)_/)
+        if (match) {
+          setIosVersion(parseInt(match[1], 10))
+        }
+      }
 
       // Verificar se está em modo standalone (PWA)
       const standalone = window.matchMedia('(display-mode: standalone)').matches ||
@@ -30,7 +39,7 @@ function useIOSDetection() {
     }
   }, [])
 
-  return { isIOS, isPWA }
+  return { isIOS, isPWA, iosVersion }
 }
 
 export function NotificationToggle({
@@ -48,19 +57,28 @@ export function NotificationToggle({
     error
   } = usePushSubscription()
 
-  const { isIOS, isPWA } = useIOSDetection()
+  const { isIOS, isPWA, iosVersion } = useIOSDetection()
   const [isLoading, setIsLoading] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const handleToggle = async () => {
     setIsLoading(true)
+    setLocalError(null)
     try {
       if (isSubscribed) {
         const success = await unsubscribe()
         if (success) onStatusChange?.(false)
       } else {
         const success = await subscribe()
-        if (success) onStatusChange?.(true)
+        if (success) {
+          onStatusChange?.(true)
+        } else {
+          setLocalError('Não foi possível ativar. Tente novamente.')
+        }
       }
+    } catch (err) {
+      console.error('Erro ao toggle notificações:', err)
+      setLocalError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
       setIsLoading(false)
     }
@@ -78,20 +96,17 @@ export function NotificationToggle({
     lg: 'w-6 h-6'
   }
 
-  // Debug info (remover em produção após resolver)
-  const debugInfo = {
-    isIOS,
-    isPWA,
-    isSupported,
-    status,
-    permission,
-    hasServiceWorker: typeof navigator !== 'undefined' && 'serviceWorker' in navigator,
-    hasPushManager: typeof window !== 'undefined' && 'PushManager' in window,
-    hasNotification: typeof window !== 'undefined' && 'Notification' in window
-  }
+  // Verificar suporte de forma mais robusta
+  const hasServiceWorker = typeof navigator !== 'undefined' && 'serviceWorker' in navigator
+  const hasPushManager = typeof window !== 'undefined' && 'PushManager' in window
+  const hasNotification = typeof window !== 'undefined' && 'Notification' in window
+  const canAttemptSubscription = hasServiceWorker && hasPushManager && hasNotification
+
+  // iOS com versão < 16.4 não suporta push
+  const iosUnsupported = isIOS && iosVersion !== null && iosVersion < 16
 
   // iOS em PWA mas não suportado - mostrar debug
-  if (isIOS && isPWA && !isSupported) {
+  if (isIOS && isPWA && !isSupported && !canAttemptSubscription) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-3 text-amber-400">
@@ -101,10 +116,12 @@ export function NotificationToggle({
         {showLabel && (
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 space-y-2">
             <p className="text-slate-300 text-xs font-mono">
-              Debug: SW={debugInfo.hasServiceWorker ? '✓' : '✗'} Push={debugInfo.hasPushManager ? '✓' : '✗'} Notif={debugInfo.hasNotification ? '✓' : '✗'}
+              SW={hasServiceWorker ? '✓' : '✗'} Push={hasPushManager ? '✓' : '✗'} Notif={hasNotification ? '✓' : '✗'} iOS={iosVersion || '?'}
             </p>
             <p className="text-slate-400 text-xs">
-              Se vir ✗ em algum, tente: fechar e reabrir o app, ou limpar cache do Safari.
+              {iosUnsupported
+                ? 'iOS 16.4+ é necessário para notificações push em PWA.'
+                : 'Tente: fechar completamente e reabrir o app.'}
             </p>
           </div>
         )}
@@ -113,7 +130,7 @@ export function NotificationToggle({
   }
 
   // iOS mas não está em modo PWA - mostrar instruções
-  if (isIOS && !isPWA && !isSupported) {
+  if (isIOS && !isPWA) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-3 text-amber-400">
@@ -138,7 +155,7 @@ export function NotificationToggle({
   }
 
   // Não suportado (outros navegadores)
-  if (!isSupported) {
+  if (!isSupported && !canAttemptSubscription) {
     return (
       <div className="flex items-center gap-3 text-slate-500">
         <BellOff className={iconSizes[size]} />
@@ -162,7 +179,11 @@ export function NotificationToggle({
         {showLabel && (
           <div>
             <span className="text-sm block">Permissão negada</span>
-            <span className="text-xs text-slate-500">Ative nas configurações do navegador</span>
+            <span className="text-xs text-slate-500">
+              {isIOS
+                ? 'Vá em Ajustes → FeliceFit → Notificações'
+                : 'Ative nas configurações do navegador'}
+            </span>
           </div>
         )}
       </div>
@@ -179,45 +200,68 @@ export function NotificationToggle({
     )
   }
 
-  return (
-    <div className="flex items-center gap-3">
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleToggle}
-        disabled={isLoading}
-        className={cn(
-          'rounded-xl transition-all',
-          sizeClasses[size],
-          isSubscribed
-            ? 'bg-violet-500 text-white'
-            : 'bg-[#1E1E2E] text-slate-400 hover:text-white border border-[#2E2E3E]',
-          isLoading && 'opacity-50 cursor-not-allowed'
-        )}
-      >
-        {isLoading ? (
-          <Loader2 className={cn(iconSizes[size], 'animate-spin')} />
-        ) : isSubscribed ? (
-          <Bell className={iconSizes[size]} />
-        ) : (
-          <BellOff className={iconSizes[size]} />
-        )}
-      </motion.button>
+  const displayError = localError || error
 
-      {showLabel && (
-        <div className="flex-1">
-          <p className="text-white text-sm font-medium">
-            {isSubscribed ? 'Notificações ativas' : 'Notificações desativadas'}
-          </p>
-          {error && (
-            <p className="text-red-400 text-xs">{error}</p>
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleToggle}
+          disabled={isLoading}
+          className={cn(
+            'rounded-xl transition-all',
+            sizeClasses[size],
+            isSubscribed
+              ? 'bg-violet-500 text-white'
+              : 'bg-[#1E1E2E] text-slate-400 hover:text-white border border-[#2E2E3E]',
+            isLoading && 'opacity-50 cursor-not-allowed'
           )}
-          {isSubscribed && !error && (
-            <p className="text-slate-500 text-xs flex items-center gap-1">
-              <CheckCircle className="w-3 h-3 text-emerald-400" />
-              Você receberá lembretes
+        >
+          {isLoading ? (
+            <Loader2 className={cn(iconSizes[size], 'animate-spin')} />
+          ) : isSubscribed ? (
+            <Bell className={iconSizes[size]} />
+          ) : (
+            <BellOff className={iconSizes[size]} />
+          )}
+        </motion.button>
+
+        {showLabel && (
+          <div className="flex-1">
+            <p className="text-white text-sm font-medium">
+              {isSubscribed ? 'Notificações ativas' : 'Notificações desativadas'}
             </p>
-          )}
+            {isSubscribed && !displayError && (
+              <p className="text-slate-500 text-xs flex items-center gap-1">
+                <CheckCircle className="w-3 h-3 text-emerald-400" />
+                Você receberá lembretes
+              </p>
+            )}
+            {!isSubscribed && !displayError && (
+              <p className="text-slate-500 text-xs">
+                Toque para ativar lembretes
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {displayError && showLabel && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+          <p className="text-red-400 text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            {displayError}
+          </p>
+          <button
+            onClick={handleToggle}
+            disabled={isLoading}
+            className="mt-2 text-xs text-red-300 hover:text-red-200 flex items-center gap-1"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Tentar novamente
+          </button>
         </div>
       )}
     </div>
