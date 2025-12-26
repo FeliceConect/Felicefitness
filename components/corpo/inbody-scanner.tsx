@@ -60,7 +60,8 @@ type AnalysisStep = 'capture' | 'analyzing' | 'result' | 'error'
 export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerProps) {
   const [step, setStep] = useState<AnalysisStep>('capture')
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_imageFile, setImageFile] = useState<File | null>(null)
   const [analysisResult, setAnalysisResult] = useState<InBodyData | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

@@ -44,7 +44,8 @@ export default function AnalisarRefeicaoPage() {
   const [user, setUser] = useState<User | null>(null)
 
   const [step, setStep] = useState<Step>('analyze')
-  const [analysisResult, setAnalysisResult] = useState<MealAnalysisResult | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_analysisResult, setAnalysisResult] = useState<MealAnalysisResult | null>(null)
   const [selectedMealType, setSelectedMealType] = useState<MealType>('almoco')
   const [mealDate, setMealDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealTime, setMealTime] = useState(format(new Date(), 'HH:mm'))
