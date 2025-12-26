@@ -96,15 +96,87 @@ export function useBodyComposition(): UseBodyCompositionReturn {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      // Criar objeto de medição completo
+      if (!user) {
+        console.error('Usuário não autenticado')
+        return false
+      }
+
+      // Dados para inserir no Supabase
+      const dbData = {
+        user_id: user.id,
+        data: input.data,
+        peso: input.peso,
+        altura_cm: input.altura,
+        // Composição corporal
+        agua_corporal_l: input.agua_total || null,
+        proteina_kg: input.proteina || null,
+        minerais_kg: input.minerais || null,
+        massa_gordura_kg: input.gordura_corporal || null,
+        // Análise músculo-gordura
+        massa_muscular_esqueletica_kg: input.massa_muscular_esqueletica || null,
+        massa_livre_gordura_kg: input.massa_magra || null,
+        // Índices
+        imc: input.imc || (input.peso / ((input.altura / 100) ** 2)),
+        percentual_gordura: input.percentual_gordura || null,
+        taxa_metabolica_basal: input.taxa_metabolica_basal || null,
+        gordura_visceral: input.nivel_gordura_visceral || null,
+        pontuacao_inbody: input.pontuacao_inbody || null,
+        // Controle
+        peso_ideal: input.peso_ideal || null,
+        controle_peso: input.controle_peso || null,
+        controle_gordura: input.controle_gordura || null,
+        controle_muscular: input.controle_muscular || null,
+        // Segmental - massa magra
+        massa_magra_braco_direito: input.massa_magra_braco_direito || null,
+        massa_magra_braco_esquerdo: input.massa_magra_braco_esquerdo || null,
+        massa_magra_tronco: input.massa_magra_tronco || null,
+        massa_magra_perna_direita: input.massa_magra_perna_direita || null,
+        massa_magra_perna_esquerda: input.massa_magra_perna_esquerda || null,
+        // Segmental - gordura
+        gordura_braco_direito: input.gordura_braco_direito || null,
+        gordura_braco_esquerdo: input.gordura_braco_esquerdo || null,
+        gordura_tronco: input.gordura_tronco || null,
+        gordura_perna_direita: input.gordura_perna_direita || null,
+        gordura_perna_esquerda: input.gordura_perna_esquerda || null,
+        // Medidas circunferenciais
+        circ_torax: input.circ_torax || null,
+        circ_abdome: input.circ_abdome || null,
+        circ_braco_d: input.circ_braco_d || null,
+        circ_braco_e: input.circ_braco_e || null,
+        circ_antebraco_d: input.circ_antebraco_d || null,
+        circ_antebraco_e: input.circ_antebraco_e || null,
+        circ_coxa_d: input.circ_coxa_d || null,
+        circ_coxa_e: input.circ_coxa_e || null,
+        circ_panturrilha_d: input.circ_panturrilha_d || null,
+        circ_panturrilha_e: input.circ_panturrilha_e || null,
+        // Metadados
+        fonte: input.fonte,
+        notas: input.notas || null,
+        foto_url: input.foto_url || null,
+      }
+
+      // Salvar no Supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .insert(dbData)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Erro ao salvar no Supabase:', error)
+        throw error
+      }
+
+      // Criar objeto de medição para o state local
       const newMeasurement: BodyCompositionMeasurement = {
-        id: `med-${Date.now()}`,
-        user_id: user?.id || 'mock-user',
+        id: data?.id || `med-${Date.now()}`,
+        user_id: user.id,
         data: input.data,
         horario: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         peso: input.peso,
         altura: input.altura,
-        idade: 44, // TODO: Calcular idade real
+        idade: 44,
 
         composicao: {
           agua_total: input.agua_total || 0,
@@ -133,23 +205,20 @@ export function useBodyComposition(): UseBodyCompositionReturn {
           idade: 44
         },
 
-        segmental: input.segmental ? {
-          braco_esquerdo: input.segmental.braco_esquerdo || { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          braco_direito: input.segmental.braco_direito || { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          tronco: input.segmental.tronco || { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          perna_esquerda: input.segmental.perna_esquerda || { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          perna_direita: input.segmental.perna_direita || { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' }
-        } : {
-          braco_esquerdo: { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          braco_direito: { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          tronco: { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          perna_esquerda: { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' },
-          perna_direita: { massa_magra: 0, percentual_gordura: 0, avaliacao: 'normal' }
+        segmental: {
+          braco_esquerdo: { massa_magra: input.massa_magra_braco_esquerdo || 0, percentual_gordura: 0, avaliacao: 'normal' },
+          braco_direito: { massa_magra: input.massa_magra_braco_direito || 0, percentual_gordura: 0, avaliacao: 'normal' },
+          tronco: { massa_magra: input.massa_magra_tronco || 0, percentual_gordura: 0, avaliacao: 'normal' },
+          perna_esquerda: { massa_magra: input.massa_magra_perna_esquerda || 0, percentual_gordura: 0, avaliacao: 'normal' },
+          perna_direita: { massa_magra: input.massa_magra_perna_direita || 0, percentual_gordura: 0, avaliacao: 'normal' }
         },
 
         score: {
-          pontuacao: 0, // TODO: Calcular
-          categoria: 'normal'
+          pontuacao: input.pontuacao_inbody || 0,
+          categoria: input.pontuacao_inbody && input.pontuacao_inbody >= 90 ? 'excelente' :
+                     input.pontuacao_inbody && input.pontuacao_inbody >= 80 ? 'bom' :
+                     input.pontuacao_inbody && input.pontuacao_inbody >= 70 ? 'normal' :
+                     input.pontuacao_inbody && input.pontuacao_inbody >= 60 ? 'abaixo_media' : 'fraco'
         },
 
         fonte: input.fonte,
@@ -157,12 +226,8 @@ export function useBodyComposition(): UseBodyCompositionReturn {
         created_at: new Date().toISOString()
       }
 
-      // Optimistic update
+      // Update local state
       setMeasurements(prev => [newMeasurement, ...prev])
-
-      // TODO: Salvar no Supabase
-      // const { error } = await supabase.from('fitness_body_measurements').insert(newMeasurement)
-      // if (error) throw error
 
       return true
     } catch (err) {

@@ -208,11 +208,43 @@ export interface NewMeasurementInput {
   massa_magra?: number
   massa_muscular?: number
 
+  // Pontuação e controle
+  pontuacao_inbody?: number
+  peso_ideal?: number
+  controle_peso?: number
+  controle_gordura?: number
+  controle_muscular?: number
+
   // Segmental (opcional)
   segmental?: Partial<SegmentalAnalysis>
 
-  fonte: 'inbody' | 'manual' | 'balanca_smart'
+  // Segmental direto (novo formato)
+  massa_magra_braco_direito?: number
+  massa_magra_braco_esquerdo?: number
+  massa_magra_tronco?: number
+  massa_magra_perna_direita?: number
+  massa_magra_perna_esquerda?: number
+  gordura_braco_direito?: number
+  gordura_braco_esquerdo?: number
+  gordura_tronco?: number
+  gordura_perna_direita?: number
+  gordura_perna_esquerda?: number
+
+  // Medidas circunferenciais (cm) - manual
+  circ_torax?: number
+  circ_abdome?: number
+  circ_braco_d?: number
+  circ_braco_e?: number
+  circ_antebraco_d?: number
+  circ_antebraco_e?: number
+  circ_coxa_d?: number
+  circ_coxa_e?: number
+  circ_panturrilha_d?: number
+  circ_panturrilha_e?: number
+
+  fonte: 'inbody' | 'manual'
   notas?: string
+  foto_url?: string
 }
 
 // Tipo para badge/chip de status

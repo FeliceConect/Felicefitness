@@ -11,8 +11,13 @@ export interface UserProfile {
   foto_url?: string
 
   // Dados físicos
-  altura?: number // cm
+  altura_cm?: number // cm (database column name)
   peso_atual?: number // kg
+
+  // Objetivo principal
+  objetivo?: string
+  objetivo_titulo?: string
+  objetivo_data?: string // YYYY-MM-DD
 
   // Condição médica
   condicao_medica?: string

@@ -219,6 +219,35 @@ export interface EvolutionData {
     goal: number | null
   }
 
+  // Dados completos de bioimpedância
+  bioimpedance?: {
+    // IMC
+    imc: { date: string; value: number }[]
+    // Gordura visceral
+    visceralFat: { date: string; value: number }[]
+    // Pontuação InBody
+    inbodyScore: { date: string; value: number }[]
+    // Taxa metabólica basal
+    bmr: { date: string; value: number }[]
+    // Água corporal
+    bodyWater: { date: string; value: number }[]
+    // Massa livre de gordura
+    leanMass: { date: string; value: number }[]
+    // Última medição completa
+    latestMeasurement: {
+      date: string
+      peso: number | null
+      percentual_gordura: number | null
+      massa_muscular_esqueletica_kg: number | null
+      massa_livre_gordura_kg: number | null
+      gordura_visceral: number | null
+      pontuacao_inbody: number | null
+      imc: number | null
+      taxa_metabolica_basal: number | null
+      agua_corporal_l: number | null
+    } | null
+  }
+
   strength: {
     exercises: {
       name: string

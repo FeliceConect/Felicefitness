@@ -73,19 +73,25 @@ export function SummarySection({ summary, className }: SummarySectionProps) {
             label: 'Peso',
             value: summary.body.weightChange !== null
               ? `${summary.body.weightChange > 0 ? '+' : ''}${summary.body.weightChange.toFixed(1)}kg`
-              : '-'
+              : summary.body.endWeight !== null
+                ? `${summary.body.endWeight.toFixed(1)}kg`
+                : '-'
           },
           {
             label: 'Gordura',
             value: summary.body.fatChange !== null
               ? `${summary.body.fatChange > 0 ? '+' : ''}${summary.body.fatChange.toFixed(1)}%`
-              : '-'
+              : summary.body.endFat !== null
+                ? `${summary.body.endFat.toFixed(1)}%`
+                : '-'
           },
           {
             label: 'Músculo',
             value: summary.body.muscleChange !== null
               ? `${summary.body.muscleChange > 0 ? '+' : ''}${summary.body.muscleChange.toFixed(1)}kg`
-              : '-'
+              : summary.body.endMuscle !== null
+                ? `${summary.body.endMuscle.toFixed(1)}kg`
+                : '-'
           },
           { label: '', value: '' }
         ]}

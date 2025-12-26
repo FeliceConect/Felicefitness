@@ -18,7 +18,12 @@ import {
   Dumbbell,
   Target,
   Flame,
-  Trophy
+  Trophy,
+  Activity,
+  Droplets,
+  Zap,
+  Heart,
+  Award
 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -202,8 +207,9 @@ export default function EvolucaoPage() {
 
           {/* Detailed Tabs */}
           <Tabs defaultValue="body" className="space-y-4">
-            <TabsList>
+            <TabsList className="flex-wrap h-auto gap-1">
               <TabsTrigger value="body">Composição Corporal</TabsTrigger>
+              <TabsTrigger value="bioimpedance">Bioimpedância</TabsTrigger>
               <TabsTrigger value="strength">Força</TabsTrigger>
               <TabsTrigger value="consistency">Consistência</TabsTrigger>
             </TabsList>
@@ -287,6 +293,275 @@ export default function EvolucaoPage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* Bioimpedance Tab */}
+            <TabsContent value="bioimpedance" className="space-y-4">
+              {/* Latest Measurement Summary */}
+              {data.bioimpedance?.latestMeasurement && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Award className="h-4 w-4 text-violet-500" />
+                      Última Medição InBody
+                    </CardTitle>
+                    <CardDescription>
+                      {format(new Date(data.bioimpedance.latestMeasurement.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {data.bioimpedance.latestMeasurement.pontuacao_inbody && (
+                        <div className="p-4 bg-violet-500/10 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-violet-500">
+                            {data.bioimpedance.latestMeasurement.pontuacao_inbody}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Pontuação InBody</p>
+                        </div>
+                      )}
+                      {data.bioimpedance.latestMeasurement.peso && (
+                        <div className="p-4 bg-blue-500/10 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-blue-500">
+                            {data.bioimpedance.latestMeasurement.peso}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Peso (kg)</p>
+                        </div>
+                      )}
+                      {data.bioimpedance.latestMeasurement.percentual_gordura && (
+                        <div className="p-4 bg-orange-500/10 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-orange-500">
+                            {data.bioimpedance.latestMeasurement.percentual_gordura}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">Gordura Corporal</p>
+                        </div>
+                      )}
+                      {data.bioimpedance.latestMeasurement.massa_muscular_esqueletica_kg && (
+                        <div className="p-4 bg-green-500/10 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-green-500">
+                            {data.bioimpedance.latestMeasurement.massa_muscular_esqueletica_kg}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Músculo (kg)</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+                      {data.bioimpedance.latestMeasurement.imc && (
+                        <div className="p-3 bg-muted/50 rounded-lg text-center">
+                          <p className="text-xl font-bold">{data.bioimpedance.latestMeasurement.imc.toFixed(1)}</p>
+                          <p className="text-xs text-muted-foreground">IMC</p>
+                        </div>
+                      )}
+                      {data.bioimpedance.latestMeasurement.gordura_visceral && (
+                        <div className="p-3 bg-muted/50 rounded-lg text-center">
+                          <p className="text-xl font-bold">{data.bioimpedance.latestMeasurement.gordura_visceral}</p>
+                          <p className="text-xs text-muted-foreground">Gordura Visceral</p>
+                        </div>
+                      )}
+                      {data.bioimpedance.latestMeasurement.taxa_metabolica_basal && (
+                        <div className="p-3 bg-muted/50 rounded-lg text-center">
+                          <p className="text-xl font-bold">{data.bioimpedance.latestMeasurement.taxa_metabolica_basal}</p>
+                          <p className="text-xs text-muted-foreground">TMB (kcal)</p>
+                        </div>
+                      )}
+                      {data.bioimpedance.latestMeasurement.agua_corporal_l && (
+                        <div className="p-3 bg-muted/50 rounded-lg text-center">
+                          <p className="text-xl font-bold">{data.bioimpedance.latestMeasurement.agua_corporal_l}L</p>
+                          <p className="text-xs text-muted-foreground">Água Corporal</p>
+                        </div>
+                      )}
+                      {data.bioimpedance.latestMeasurement.massa_livre_gordura_kg && (
+                        <div className="p-3 bg-muted/50 rounded-lg text-center">
+                          <p className="text-xl font-bold">{data.bioimpedance.latestMeasurement.massa_livre_gordura_kg}kg</p>
+                          <p className="text-xs text-muted-foreground">Massa Magra</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Charts Grid */}
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* InBody Score Evolution */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Award className="h-4 w-4 text-violet-500" />
+                      Pontuação InBody
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {data.bioimpedance?.inbodyScore && data.bioimpedance.inbodyScore.length > 0 ? (
+                      <LineChart
+                        data={data.bioimpedance.inbodyScore}
+                        color="#8b5cf6"
+                        height={180}
+                        showGrid
+                        dateFormatter={(d) => format(new Date(d), 'dd/MM')}
+                        valueFormatter={(v) => `${v}pts`}
+                      />
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground">
+                        Sem dados de pontuação InBody
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* IMC Evolution */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-cyan-500" />
+                      IMC
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {data.bioimpedance?.imc && data.bioimpedance.imc.length > 0 ? (
+                      <LineChart
+                        data={data.bioimpedance.imc}
+                        color="#06b6d4"
+                        height={180}
+                        showGrid
+                        goalValue={25}
+                        goalLabel="Limite sobrepeso"
+                        dateFormatter={(d) => format(new Date(d), 'dd/MM')}
+                        valueFormatter={(v) => v.toFixed(1)}
+                      />
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground">
+                        Sem dados de IMC
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Visceral Fat Evolution */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-red-500" />
+                      Gordura Visceral
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {data.bioimpedance?.visceralFat && data.bioimpedance.visceralFat.length > 0 ? (
+                      <LineChart
+                        data={data.bioimpedance.visceralFat}
+                        color="#ef4444"
+                        height={180}
+                        showGrid
+                        goalValue={10}
+                        goalLabel="Limite saudável"
+                        dateFormatter={(d) => format(new Date(d), 'dd/MM')}
+                        valueFormatter={(v) => `${v}`}
+                      />
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground">
+                        Sem dados de gordura visceral
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* BMR Evolution */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-amber-500" />
+                      Taxa Metabólica Basal
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {data.bioimpedance?.bmr && data.bioimpedance.bmr.length > 0 ? (
+                      <LineChart
+                        data={data.bioimpedance.bmr}
+                        color="#f59e0b"
+                        height={180}
+                        showGrid
+                        dateFormatter={(d) => format(new Date(d), 'dd/MM')}
+                        valueFormatter={(v) => `${v}kcal`}
+                      />
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground">
+                        Sem dados de taxa metabólica
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Body Water Evolution */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Droplets className="h-4 w-4 text-blue-500" />
+                      Água Corporal
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {data.bioimpedance?.bodyWater && data.bioimpedance.bodyWater.length > 0 ? (
+                      <LineChart
+                        data={data.bioimpedance.bodyWater}
+                        color="#3b82f6"
+                        height={180}
+                        showGrid
+                        dateFormatter={(d) => format(new Date(d), 'dd/MM')}
+                        valueFormatter={(v) => `${v}L`}
+                      />
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground">
+                        Sem dados de água corporal
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Lean Mass Evolution */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Dumbbell className="h-4 w-4 text-green-500" />
+                      Massa Livre de Gordura
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {data.bioimpedance?.leanMass && data.bioimpedance.leanMass.length > 0 ? (
+                      <LineChart
+                        data={data.bioimpedance.leanMass}
+                        color="#22c55e"
+                        height={180}
+                        showGrid
+                        dateFormatter={(d) => format(new Date(d), 'dd/MM')}
+                        valueFormatter={(v) => `${v}kg`}
+                      />
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground">
+                        Sem dados de massa magra
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* No data state */}
+              {(!data.bioimpedance?.latestMeasurement &&
+                (!data.bioimpedance?.inbodyScore || data.bioimpedance.inbodyScore.length === 0)) && (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center text-muted-foreground">
+                      <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhuma medição de bioimpedância registrada</p>
+                      <p className="text-sm">Adicione medições InBody para ver a evolução completa</p>
+                      <Link href="/corpo/nova-medicao">
+                        <Button className="mt-4" variant="outline">
+                          <Scale className="h-4 w-4 mr-2" />
+                          Nova Medição
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Strength Tab */}

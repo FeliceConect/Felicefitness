@@ -1,20 +1,38 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Check, Clock } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Check, Clock, Plus, Camera, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { format } from 'date-fns'
 import { AIMealAnalyzer } from '@/components/alimentacao/ai-meal-analyzer'
-import type { MealAnalysisResult } from '@/types/analysis'
+import type { MealAnalysisResult, AnalyzedFoodItem } from '@/types/analysis'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
+import type { Meal, MealInsert, MealItemInsert } from '@/types/database'
+import type { MealType } from '@/lib/nutrition/types'
 
-// Tipos de refeição
-const MEAL_TYPES = [
-  { id: 'cafe_da_manha', label: 'Café da manhã', icon: '🌅' },
+// Interface para um prato/foto analisado
+interface AnalyzedPlate {
+  id: string
+  description: string
+  items: AnalyzedFoodItem[]
+  totals: {
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
+  }
+}
+
+// Tipos de refeição - usar os mesmos tipos do sistema
+const MEAL_TYPES: Array<{ id: MealType; label: string; icon: string }> = [
+  { id: 'cafe_manha', label: 'Café da manhã', icon: '☕' },
   { id: 'lanche_manha', label: 'Lanche manhã', icon: '🍎' },
   { id: 'almoco', label: 'Almoço', icon: '🍽️' },
-  { id: 'lanche_tarde', label: 'Lanche tarde', icon: '🍪' },
+  { id: 'lanche_tarde', label: 'Lanche tarde', icon: '🥪' },
+  { id: 'pre_treino', label: 'Pré-Treino', icon: '💪' },
   { id: 'jantar', label: 'Jantar', icon: '🌙' },
   { id: 'ceia', label: 'Ceia', icon: '🌜' }
 ]
@@ -23,28 +41,102 @@ type Step = 'analyze' | 'confirm'
 
 export default function AnalisarRefeicaoPage() {
   const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
 
   const [step, setStep] = useState<Step>('analyze')
   const [analysisResult, setAnalysisResult] = useState<MealAnalysisResult | null>(null)
-  const [selectedMealType, setSelectedMealType] = useState('almoco')
+  const [selectedMealType, setSelectedMealType] = useState<MealType>('almoco')
   const [mealDate, setMealDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealTime, setMealTime] = useState(format(new Date(), 'HH:mm'))
   const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Estado para múltiplos pratos
+  const [plates, setPlates] = useState<AnalyzedPlate[]>([])
+  const [expandedPlates, setExpandedPlates] = useState<Set<string>>(new Set())
+
+  // Fetch user on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    fetchUser()
+  }, [])
 
   // Quando análise é concluída
   const handleAnalysisComplete = (result: MealAnalysisResult) => {
+    // Criar um novo prato com os resultados da análise
+    const newPlate: AnalyzedPlate = {
+      id: `plate-${Date.now()}`,
+      description: result.meal_description || `Prato ${plates.length + 1}`,
+      items: result.items,
+      totals: result.totals
+    }
+
+    // Adicionar à lista de pratos
+    setPlates(prev => [...prev, newPlate])
     setAnalysisResult(result)
     setStep('confirm')
 
-    // Tentar identificar tipo de refeição pelo horário
-    const hour = new Date().getHours()
-    if (hour >= 5 && hour < 10) setSelectedMealType('cafe_da_manha')
-    else if (hour >= 10 && hour < 12) setSelectedMealType('lanche_manha')
-    else if (hour >= 12 && hour < 14) setSelectedMealType('almoco')
-    else if (hour >= 14 && hour < 18) setSelectedMealType('lanche_tarde')
-    else if (hour >= 18 && hour < 21) setSelectedMealType('jantar')
-    else setSelectedMealType('ceia')
+    // Expandir o novo prato
+    setExpandedPlates(prev => new Set([...Array.from(prev), newPlate.id]))
+
+    // Tentar identificar tipo de refeição pelo horário (só na primeira análise)
+    if (plates.length === 0) {
+      const hour = new Date().getHours()
+      if (hour >= 5 && hour < 10) setSelectedMealType('cafe_manha')
+      else if (hour >= 10 && hour < 12) setSelectedMealType('lanche_manha')
+      else if (hour >= 12 && hour < 15) setSelectedMealType('almoco')
+      else if (hour >= 15 && hour < 18) setSelectedMealType('lanche_tarde')
+      else if (hour >= 18 && hour < 21) setSelectedMealType('jantar')
+      else setSelectedMealType('ceia')
+    }
   }
+
+  // Adicionar outro prato (voltar para análise)
+  const handleAddAnotherPlate = () => {
+    setAnalysisResult(null)
+    setStep('analyze')
+  }
+
+  // Remover um prato
+  const handleRemovePlate = (plateId: string) => {
+    setPlates(prev => prev.filter(p => p.id !== plateId))
+    setExpandedPlates(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(plateId)
+      return newSet
+    })
+  }
+
+  // Toggle expandir/colapsar prato
+  const togglePlateExpand = (plateId: string) => {
+    setExpandedPlates(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(plateId)) {
+        newSet.delete(plateId)
+      } else {
+        newSet.add(plateId)
+      }
+      return newSet
+    })
+  }
+
+  // Calcular totais combinados de todos os pratos
+  const combinedTotals = plates.reduce(
+    (acc, plate) => ({
+      calories: acc.calories + plate.totals.calories,
+      protein: acc.protein + plate.totals.protein,
+      carbs: acc.carbs + plate.totals.carbs,
+      fat: acc.fat + plate.totals.fat
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  )
+
+  // Todos os itens combinados
+  const allItems = plates.flatMap(plate => plate.items)
 
   // Cancelar análise
   const handleCancel = () => {
@@ -58,19 +150,74 @@ export default function AnalisarRefeicaoPage() {
 
   // Salvar refeição
   const handleSave = async () => {
-    if (!analysisResult) return
+    if (plates.length === 0 || !user) return
 
     setIsSaving(true)
+    setSaveError(null)
 
     try {
-      // TODO: Integrar com Supabase para salvar a refeição
-      // Por enquanto, apenas simula o salvamento
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const supabase = createClient()
+
+      // Descrição combinada de todos os pratos
+      const combinedDescription = plates.length > 1
+        ? `Refeição com ${plates.length} pratos: ${plates.map(p => p.description).join(', ')}`
+        : plates[0].description || 'Refeição analisada por IA'
+
+      // 1. Criar a refeição principal com totais combinados
+      const mealData: MealInsert = {
+        user_id: user.id,
+        data: mealDate,
+        horario: mealTime,
+        tipo_refeicao: selectedMealType,
+        analise_ia: combinedDescription,
+        calorias_total: combinedTotals.calories,
+        proteinas_total: combinedTotals.protein,
+        carboidratos_total: combinedTotals.carbs,
+        gorduras_total: combinedTotals.fat,
+        status: 'concluido'
+      }
+
+      const { data, error: mealError } = await supabase
+        .from('fitness_meals')
+        .insert(mealData as never)
+        .select()
+        .single()
+
+      const meal = data as Meal | null
+
+      if (mealError) {
+        console.error('Erro ao criar refeição:', mealError)
+        throw new Error('Erro ao salvar refeição: ' + mealError.message)
+      }
+
+      // 2. Criar os itens de todos os pratos
+      if (meal && allItems.length > 0) {
+        const mealItems: MealItemInsert[] = allItems.map(item => ({
+          meal_id: meal.id,
+          nome_alimento: item.name,
+          quantidade: item.portion_grams,
+          unidade: 'g',
+          calorias: item.calories,
+          proteinas: item.protein,
+          carboidratos: item.carbs,
+          gorduras: item.fat
+        }))
+
+        const { error: itemsError } = await supabase
+          .from('fitness_meal_items')
+          .insert(mealItems as never)
+
+        if (itemsError) {
+          console.error('Erro ao criar itens da refeição:', itemsError)
+          // Não falhar completamente se os itens não salvarem
+        }
+      }
 
       // Redirecionar para a página de alimentação
       router.push('/alimentacao')
     } catch (error) {
       console.error('Erro ao salvar refeição:', error)
+      setSaveError(error instanceof Error ? error.message : 'Erro ao salvar refeição')
     } finally {
       setIsSaving(false)
     }
@@ -88,7 +235,7 @@ export default function AnalisarRefeicaoPage() {
 
   // Renderizar etapa de confirmação
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-32">
+    <div className="min-h-screen bg-[#0A0A0F] pb-48">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
@@ -105,63 +252,178 @@ export default function AnalisarRefeicaoPage() {
         </p>
       </div>
 
-      {/* Resumo da análise */}
-      {analysisResult && (
+      {/* Totais combinados (quando há pratos) */}
+      {plates.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="px-4 mb-6"
         >
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm mb-3">
-              {analysisResult.meal_description || 'Refeição analisada'}
-            </p>
+          <div className="bg-gradient-to-br from-violet-500/20 to-cyan-500/20 border border-violet-500/30 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white font-medium">
+                Total da Refeição
+              </p>
+              <span className="text-xs text-slate-400 bg-[#0A0A0F] px-2 py-1 rounded-lg">
+                {plates.length} {plates.length === 1 ? 'prato' : 'pratos'}
+              </span>
+            </div>
 
-            {/* Macros */}
+            {/* Macros combinados */}
             <div className="grid grid-cols-4 gap-2">
-              <div className="bg-[#0A0A0F] rounded-xl p-3 text-center">
+              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
                 <p className="text-xl font-bold text-white">
-                  {analysisResult.totals.calories}
+                  {combinedTotals.calories}
                 </p>
                 <p className="text-xs text-slate-500">kcal</p>
               </div>
-              <div className="bg-[#0A0A0F] rounded-xl p-3 text-center">
+              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
                 <p className="text-xl font-bold text-cyan-400">
-                  {analysisResult.totals.protein.toFixed(0)}g
+                  {combinedTotals.protein.toFixed(0)}g
                 </p>
                 <p className="text-xs text-slate-500">prot</p>
               </div>
-              <div className="bg-[#0A0A0F] rounded-xl p-3 text-center">
+              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
                 <p className="text-xl font-bold text-amber-400">
-                  {analysisResult.totals.carbs.toFixed(0)}g
+                  {combinedTotals.carbs.toFixed(0)}g
                 </p>
                 <p className="text-xs text-slate-500">carb</p>
               </div>
-              <div className="bg-[#0A0A0F] rounded-xl p-3 text-center">
+              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
                 <p className="text-xl font-bold text-rose-400">
-                  {analysisResult.totals.fat.toFixed(0)}g
+                  {combinedTotals.fat.toFixed(0)}g
                 </p>
                 <p className="text-xs text-slate-500">gord</p>
               </div>
             </div>
-
-            {/* Itens */}
-            <div className="mt-4 pt-4 border-t border-[#2E2E3E]">
-              <p className="text-sm text-slate-400 mb-2">
-                {analysisResult.items.length} alimentos identificados
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {analysisResult.items.map((item) => (
-                  <span
-                    key={item.id}
-                    className="px-2 py-1 bg-[#1E1E2E] rounded-lg text-xs text-slate-300"
-                  >
-                    {item.name}
-                  </span>
-                ))}
-              </div>
-            </div>
           </div>
+        </motion.div>
+      )}
+
+      {/* Lista de pratos */}
+      {plates.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="px-4 mb-6"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-sm text-slate-400">Pratos analisados</label>
+            <button
+              onClick={handleAddAnotherPlate}
+              className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar prato
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <AnimatePresence>
+              {plates.map((plate, index) => (
+                <motion.div
+                  key={plate.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl overflow-hidden"
+                >
+                  {/* Header do prato */}
+                  <div
+                    className="p-4 flex items-center justify-between cursor-pointer"
+                    onClick={() => togglePlateExpand(plate.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                        <span className="text-violet-400 font-bold text-sm">{index + 1}</span>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm">{plate.description}</p>
+                        <p className="text-xs text-slate-500">
+                          {plate.totals.calories} kcal · {plate.items.length} itens
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemovePlate(plate.id)
+                        }}
+                        className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      {expandedPlates.has(plate.id) ? (
+                        <ChevronUp className="w-5 h-5 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-slate-500" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Detalhes expandidos */}
+                  <AnimatePresence>
+                    {expandedPlates.has(plate.id) && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4 pt-0 border-t border-[#2E2E3E]">
+                          {/* Macros do prato */}
+                          <div className="grid grid-cols-4 gap-2 mt-3 mb-3">
+                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
+                              <p className="text-sm font-bold text-white">{plate.totals.calories}</p>
+                              <p className="text-[10px] text-slate-500">kcal</p>
+                            </div>
+                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
+                              <p className="text-sm font-bold text-cyan-400">{plate.totals.protein.toFixed(0)}g</p>
+                              <p className="text-[10px] text-slate-500">prot</p>
+                            </div>
+                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
+                              <p className="text-sm font-bold text-amber-400">{plate.totals.carbs.toFixed(0)}g</p>
+                              <p className="text-[10px] text-slate-500">carb</p>
+                            </div>
+                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
+                              <p className="text-sm font-bold text-rose-400">{plate.totals.fat.toFixed(0)}g</p>
+                              <p className="text-[10px] text-slate-500">gord</p>
+                            </div>
+                          </div>
+
+                          {/* Itens do prato */}
+                          <div className="flex flex-wrap gap-1">
+                            {plate.items.map((item) => (
+                              <span
+                                key={item.id}
+                                className="px-2 py-1 bg-[#1E1E2E] rounded-lg text-xs text-slate-300"
+                              >
+                                {item.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Botão grande para adicionar outro prato */}
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={handleAddAnotherPlate}
+            className="w-full mt-3 p-4 border-2 border-dashed border-[#2E2E3E] rounded-xl flex items-center justify-center gap-2 text-slate-400 hover:border-violet-500/50 hover:text-violet-400 transition-colors"
+          >
+            <Camera className="w-5 h-5" />
+            <span>Fotografar outro prato</span>
+          </motion.button>
         </motion.div>
       )}
 
@@ -222,18 +484,31 @@ export default function AnalisarRefeicaoPage() {
         </div>
       </motion.div>
 
+      {/* Erro de salvamento */}
+      {saveError && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 mb-4"
+        >
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+            <p className="text-red-400 text-sm">{saveError}</p>
+          </div>
+        </motion.div>
+      )}
+
       {/* Botão fixo de salvar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/95 to-transparent z-50">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || plates.length === 0}
           className={cn(
-            'w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2',
-            isSaving
+            'w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg',
+            isSaving || plates.length === 0
               ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white'
+              : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-violet-500/20'
           )}
         >
           {isSaving ? (
@@ -244,7 +519,7 @@ export default function AnalisarRefeicaoPage() {
           ) : (
             <>
               <Check className="w-5 h-5" />
-              Salvar Refeição
+              Salvar Refeição {plates.length > 1 && `(${plates.length} pratos)`}
             </>
           )}
         </motion.button>

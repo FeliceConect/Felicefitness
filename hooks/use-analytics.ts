@@ -97,9 +97,19 @@ export function useAnalytics(): UseAnalyticsReturn {
         console.error('Error fetching water logs:', waterError)
       }
 
-      // Body measurements - fetched from profile instead (table doesn't exist yet)
-      // For now we use the profile's current weight data
-      const bodyMeasurements: SupabaseRow[] = []
+      // Body measurements - fetch from fitness_body_compositions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: bodyMeasurements, error: bodyError } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select('id, data, peso, percentual_gordura, massa_muscular_esqueletica_kg, massa_livre_gordura_kg, gordura_visceral, pontuacao_inbody, imc')
+        .eq('user_id', user.id)
+        .gte('data', startStr)
+        .lte('data', endStr)
+        .order('data', { ascending: true })
+
+      if (bodyError) {
+        console.error('Error fetching body measurements:', bodyError)
+      }
 
       // Fetch user profile for goals
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -245,10 +255,10 @@ export function useAnalytics(): UseAnalyticsReturn {
           fatChange: firstMeasurement?.percentual_gordura && lastMeasurement?.percentual_gordura
             ? Math.round((lastMeasurement.percentual_gordura - firstMeasurement.percentual_gordura) * 10) / 10
             : null,
-          startMuscle: firstMeasurement?.massa_muscular || null,
-          endMuscle: lastMeasurement?.massa_muscular || null,
-          muscleChange: firstMeasurement?.massa_muscular && lastMeasurement?.massa_muscular
-            ? Math.round((lastMeasurement.massa_muscular - firstMeasurement.massa_muscular) * 10) / 10
+          startMuscle: firstMeasurement?.massa_muscular_esqueletica_kg || null,
+          endMuscle: lastMeasurement?.massa_muscular_esqueletica_kg || null,
+          muscleChange: firstMeasurement?.massa_muscular_esqueletica_kg && lastMeasurement?.massa_muscular_esqueletica_kg
+            ? Math.round((lastMeasurement.massa_muscular_esqueletica_kg - firstMeasurement.massa_muscular_esqueletica_kg) * 10) / 10
             : null
         },
         score: {

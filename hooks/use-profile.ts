@@ -103,13 +103,38 @@ export function useProfile(): UseProfileReturn {
     if (!profile) return
 
     try {
+      // Build update payload with only valid database columns
+      // Database columns: id, nome, email, data_nascimento, sexo, altura_cm, peso_atual,
+      // objetivo, nivel_atividade, meta_*, hora_acordar, hora_dormir, usa_medicamento_jejum,
+      // medicamento_*, streak_atual, maior_streak, pontos_totais, foto_url, config_*
+      const updatePayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString()
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyData = data as any
+
+      // Map valid fields to database columns
+      if (anyData.nome !== undefined) updatePayload.nome = anyData.nome
+      if (anyData.data_nascimento !== undefined) updatePayload.data_nascimento = anyData.data_nascimento
+      if (anyData.sexo !== undefined) updatePayload.sexo = anyData.sexo
+      if (anyData.foto_url !== undefined) updatePayload.foto_url = anyData.foto_url
+      if (anyData.objetivo !== undefined) updatePayload.objetivo = anyData.objetivo
+      if (anyData.altura_cm !== undefined) updatePayload.altura_cm = anyData.altura_cm
+      if (anyData.peso_atual !== undefined) updatePayload.peso_atual = anyData.peso_atual
+      if (anyData.meta_peso !== undefined) updatePayload.meta_peso = anyData.meta_peso
+      if (anyData.streak_atual !== undefined) updatePayload.streak_atual = anyData.streak_atual
+      if (anyData.maior_streak !== undefined) updatePayload.maior_streak = anyData.maior_streak
+      if (anyData.pontos_totais !== undefined) updatePayload.pontos_totais = anyData.pontos_totais
+      if (anyData.hora_acordar !== undefined) updatePayload.hora_acordar = anyData.hora_acordar
+      if (anyData.hora_dormir !== undefined) updatePayload.hora_dormir = anyData.hora_dormir
+
+      console.log('Updating profile with:', updatePayload)
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('fitness_profiles')
-        .update({
-          ...data,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', profile.id)
 
       if (error) throw error

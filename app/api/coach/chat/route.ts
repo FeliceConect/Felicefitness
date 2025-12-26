@@ -10,59 +10,82 @@ async function buildServerContext(supabase: ReturnType<typeof createServerClient
   const today = new Date().toISOString().split('T')[0]
 
   try {
-    // Fetch basic profile data
+    // Fetch basic profile data (includes gamification: streak_atual, maior_streak, pontos_totais)
     const { data: profile } = await supabase
       .from('fitness_profiles')
       .select('*')
       .eq('id', userId)
       .single()
 
-    // Fetch today's water
+    // Fetch today's water from correct table
     const { data: waterLogs } = await supabase
-      .from('agua_logs')
+      .from('fitness_water_logs')
       .select('quantidade_ml')
       .eq('user_id', userId)
       .eq('data', today)
 
     const waterTotal = (waterLogs || []).reduce((sum: number, w: { quantidade_ml?: number }) => sum + (w.quantidade_ml || 0), 0)
 
-    // Fetch gamification
-    const { data: gamification } = await supabase
-      .from('gamificacao')
-      .select('*')
+    // Fetch today's meals for nutrition data
+    const { data: meals } = await supabase
+      .from('fitness_meals')
+      .select('calorias_total, proteinas_total, carboidratos_total, gorduras_total')
       .eq('user_id', userId)
-      .single()
+      .eq('data', today)
+      .eq('status', 'concluido')
+
+    const nutrition = (meals || []).reduce(
+      (acc: { calorias: number; proteina: number; carbs: number; gordura: number }, m: { calorias_total?: number; proteinas_total?: number; carboidratos_total?: number; gorduras_total?: number }) => ({
+        calorias: acc.calorias + (m.calorias_total || 0),
+        proteina: acc.proteina + (m.proteinas_total || 0),
+        carbs: acc.carbs + (m.carboidratos_total || 0),
+        gordura: acc.gordura + (m.gorduras_total || 0),
+      }),
+      { calorias: 0, proteina: 0, carbs: 0, gordura: 0 }
+    )
 
     // Calculate days to ski trip
     const skiDate = new Date('2026-03-12')
     const diasParaObjetivo = Math.ceil((skiDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 
+    // Calculate age from birth date
+    let idade = 30
+    if (profile?.data_nascimento) {
+      const birth = new Date(profile.data_nascimento)
+      const now = new Date()
+      idade = now.getFullYear() - birth.getFullYear()
+      const monthDiff = now.getMonth() - birth.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+        idade--
+      }
+    }
+
     return {
       user: {
         nome: profile?.nome || 'Usuário',
-        idade: 30,
-        altura: profile?.altura || 175,
-        pesoAtual: profile?.peso || 75,
-        pesoMeta: profile?.peso_meta || 75,
-        condicaoMedica: 'PTI',
-        objetivoPrincipal: 'ski_suica',
+        idade,
+        altura: profile?.altura_cm || 175,
+        pesoAtual: profile?.peso_atual || 75,
+        pesoMeta: profile?.meta_peso || 75,
+        condicaoMedica: profile?.medicamento_nome ? 'PTI' : '',
+        objetivoPrincipal: profile?.objetivo || 'ski_suica',
       },
       metas: {
-        calorias: profile?.meta_calorias || 2500,
-        proteina: profile?.meta_proteina || 170,
-        carboidratos: profile?.meta_carboidratos || 280,
-        gordura: profile?.meta_gordura || 85,
-        agua: profile?.meta_agua || 3000,
-        treinosSemana: profile?.meta_treinos_semana || 6,
-        sono: profile?.meta_sono || 7,
+        calorias: profile?.meta_calorias_diarias || 2500,
+        proteina: profile?.meta_proteina_g || 170,
+        carboidratos: profile?.meta_carboidrato_g || 280,
+        gordura: profile?.meta_gordura_g || 85,
+        agua: profile?.meta_agua_ml || 3000,
+        treinosSemana: 6,
+        sono: 7,
       },
       hoje: {
         data: today,
         treino: null,
-        calorias: 0,
-        proteina: 0,
-        carboidratos: 0,
-        gordura: 0,
+        calorias: nutrition.calorias,
+        proteina: nutrition.proteina,
+        carboidratos: nutrition.carbs,
+        gordura: nutrition.gordura,
         agua: waterTotal,
         sono: null,
         recuperacao: null,
@@ -78,15 +101,15 @@ async function buildServerContext(supabase: ReturnType<typeof createServerClient
       },
       corpo: {
         ultimaMedicao: 'N/A',
-        peso: profile?.peso || 0,
+        peso: profile?.peso_atual || 0,
         musculo: 0,
         gordura: 0,
         score: 0,
       },
       gamificacao: {
-        nivel: gamification?.nivel || 1,
-        xp: gamification?.xp || 0,
-        streak: gamification?.streak || 0,
+        nivel: Math.floor((profile?.pontos_totais || 0) / 1000) + 1,
+        xp: profile?.pontos_totais || 0,
+        streak: profile?.streak_atual || 0,
         conquistasRecentes: [],
       },
       prs: [],
@@ -187,7 +210,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { message, conversationId } = await request.json()
+    const { message } = await request.json()
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Mensagem inválida' }, { status: 400 })
@@ -196,41 +219,22 @@ export async function POST(request: NextRequest) {
     // Build user context
     const context = await buildServerContext(supabase, user.id)
 
-    // Fetch conversation history if exists
-    let conversationHistory: { role: string; content: string }[] = []
-    if (conversationId) {
-      const { data: history } = await supabase
-        .from('coach_messages')
-        .select('role, content')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-        .limit(10)
+    // Fetch recent conversation history for context (last 5 exchanges)
+    const { data: recentHistory } = await supabase
+      .from('fitness_coach_conversations')
+      .select('mensagem_usuario, resposta_coach')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5)
 
-      conversationHistory = (history || []).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }))
-    }
-
-    // Create or get conversation
-    let currentConversationId = conversationId
-    if (!currentConversationId) {
-      const { data: newConversation } = await supabase
-        .from('coach_conversations')
-        .insert({ user_id: user.id } as never)
-        .select()
-        .single()
-
-      currentConversationId = (newConversation as { id: string } | null)?.id
-    }
-
-    // Save user message
-    if (currentConversationId) {
-      await supabase.from('coach_messages').insert({
-        conversation_id: currentConversationId,
-        role: 'user',
-        content: message,
-      } as never)
+    // Build conversation history from recent exchanges (reverse to get chronological order)
+    const conversationHistory: { role: string; content: string }[] = []
+    if (recentHistory) {
+      const reversedHistory = [...recentHistory].reverse()
+      for (const exchange of reversedHistory) {
+        conversationHistory.push({ role: 'user', content: exchange.mensagem_usuario })
+        conversationHistory.push({ role: 'assistant', content: exchange.resposta_coach })
+      }
     }
 
     // Build messages for API
@@ -279,26 +283,23 @@ export async function POST(request: NextRequest) {
     const actions = extractActions(assistantMessage)
     const cleanedMessage = removeActionTags(assistantMessage)
 
-    // Save assistant message
-    if (currentConversationId) {
-      await supabase.from('coach_messages').insert({
-        conversation_id: currentConversationId,
-        role: 'assistant',
-        content: cleanedMessage,
-        actions: actions.length > 0 ? actions : null,
+    // Save conversation to fitness_coach_conversations
+    try {
+      await supabase.from('fitness_coach_conversations').insert({
+        user_id: user.id,
+        mensagem_usuario: message,
+        resposta_coach: cleanedMessage,
+        contexto: { actions: actions.length > 0 ? actions : null }
       } as never)
-
-      // Update conversation timestamp
-      await supabase
-        .from('coach_conversations')
-        .update({ updated_at: new Date().toISOString() } as never)
-        .eq('id', currentConversationId)
+    } catch (saveError) {
+      console.error('Erro ao salvar conversa:', saveError)
+      // Continue even if save fails
     }
 
     return NextResponse.json({
       message: cleanedMessage,
       actions,
-      conversationId: currentConversationId,
+      conversationId: null, // Not using separate conversation IDs anymore
     })
   } catch (error) {
     console.error('Erro no chat:', error)

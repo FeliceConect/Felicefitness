@@ -77,7 +77,7 @@ export async function buildUserContext(userId: string): Promise<UserContext> {
 
     // Fetch today's workout
     const { data: todayWorkout } = await supabase
-      .from('treino_logs')
+      .from('fitness_workouts')
       .select('*')
       .eq('user_id', userId)
       .eq('data', todayStr)
@@ -85,21 +85,21 @@ export async function buildUserContext(userId: string): Promise<UserContext> {
 
     // Fetch today's meals
     const { data: todayMeals } = await supabase
-      .from('refeicoes')
-      .select('*, itens:refeicao_itens(*)')
+      .from('fitness_meals')
+      .select('*, itens:fitness_meal_items(*)')
       .eq('user_id', userId)
       .eq('data', todayStr) as { data: any[] }
 
     // Fetch today's water
     const { data: todayWater } = await supabase
-      .from('agua_logs')
+      .from('fitness_water_logs')
       .select('quantidade_ml')
       .eq('user_id', userId)
       .eq('data', todayStr) as { data: { quantidade_ml?: number }[] }
 
     // Fetch last sleep
     const { data: lastSleep } = await supabase
-      .from('sono_logs')
+      .from('fitness_sleep_logs')
       .select('*')
       .eq('user_id', userId)
       .order('data', { ascending: false })
@@ -108,7 +108,7 @@ export async function buildUserContext(userId: string): Promise<UserContext> {
 
     // Fetch today's recovery check-in
     const { data: todayRecovery } = await supabase
-      .from('recuperacao_checkins')
+      .from('fitness_wellness_checkins')
       .select('*')
       .eq('user_id', userId)
       .eq('data', todayStr)
@@ -116,15 +116,15 @@ export async function buildUserContext(userId: string): Promise<UserContext> {
 
     // Fetch today's supplements
     const { data: todaySupplements } = await supabase
-      .from('suplemento_logs')
-      .select('*, suplemento:suplementos(nome)')
+      .from('fitness_supplements_logs')
+      .select('*, suplemento:fitness_supplements(nome)')
       .eq('user_id', userId)
-      .eq('date', todayStr)
-      .eq('taken', true) as { data: { suplemento?: { nome?: string } }[] }
+      .eq('data', todayStr)
+      .eq('tomado', true) as { data: { suplemento?: { nome?: string } }[] }
 
     // Fetch week workouts count
     const { data: weekWorkouts } = await supabase
-      .from('treino_logs')
+      .from('fitness_workouts')
       .select('id')
       .eq('user_id', userId)
       .gte('data', weekStartStr)
@@ -132,23 +132,19 @@ export async function buildUserContext(userId: string): Promise<UserContext> {
 
     // Fetch last body composition
     const { data: lastBody } = await supabase
-      .from('corpo_medicoes')
+      .from('fitness_body_compositions')
       .select('*')
       .eq('user_id', userId)
       .order('data', { ascending: false })
       .limit(1)
       .single() as { data: any }
 
-    // Fetch gamification data
-    const { data: gamification } = await supabase
-      .from('gamificacao')
-      .select('*')
-      .eq('user_id', userId)
-      .single() as { data: any }
+    // Gamification data comes from profile (streak_atual, maior_streak, xp_total, nivel)
+    // No separate gamificacao table - data is stored in fitness_profiles
 
     // Fetch recent PRs
     const { data: recentPRs } = await supabase
-      .from('personal_records')
+      .from('fitness_personal_records')
       .select('*')
       .eq('user_id', userId)
       .order('data', { ascending: false })
@@ -237,9 +233,9 @@ export async function buildUserContext(userId: string): Promise<UserContext> {
         score: lastBody?.inbody_score || 0,
       },
       gamificacao: {
-        nivel: gamification?.nivel || 1,
-        xp: gamification?.xp || 0,
-        streak: gamification?.streak || 0,
+        nivel: profile?.nivel || 1,
+        xp: profile?.xp_total || 0,
+        streak: profile?.streak_atual || 0,
         conquistasRecentes: [],
       },
       prs: (recentPRs || []).map((pr) => ({

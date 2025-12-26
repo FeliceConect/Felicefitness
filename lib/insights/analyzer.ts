@@ -28,7 +28,7 @@ export async function fetchAllUserData(userId: string): Promise<UserAnalysisData
   ] = await Promise.all([
     // Treinos
     supabase
-      .from('treino_logs')
+      .from('fitness_workouts')
       .select('*')
       .eq('user_id', userId)
       .gte('data', thirtyDaysAgoStr)
@@ -36,7 +36,7 @@ export async function fetchAllUserData(userId: string): Promise<UserAnalysisData
 
     // Refeições
     supabase
-      .from('refeicoes')
+      .from('fitness_meals')
       .select('*')
       .eq('user_id', userId)
       .gte('data', thirtyDaysAgoStr)
@@ -52,7 +52,7 @@ export async function fetchAllUserData(userId: string): Promise<UserAnalysisData
 
     // Sono
     supabase
-      .from('sono_registros')
+      .from('fitness_sleep_logs')
       .select('*')
       .eq('user_id', userId)
       .gte('data', thirtyDaysAgoStr)
@@ -68,7 +68,7 @@ export async function fetchAllUserData(userId: string): Promise<UserAnalysisData
 
     // Água
     supabase
-      .from('agua_registros')
+      .from('fitness_water_logs')
       .select('*')
       .eq('user_id', userId)
       .gte('data', thirtyDaysAgoStr)

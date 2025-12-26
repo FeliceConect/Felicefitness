@@ -16,21 +16,19 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProfile } from '@/hooks/use-profile'
-import { validateEmail, validatePhone } from '@/lib/settings/validators'
 import { toast } from 'sonner'
 
 export default function EditarPerfilPage() {
   const router = useRouter()
   const { profile, loading, updateProfile } = useProfile()
 
+  // Database columns: nome, email, data_nascimento, sexo, altura_cm, peso_atual
   const [formData, setFormData] = useState({
     nome: '',
-    sobrenome: '',
     email: '',
-    telefone: '',
     data_nascimento: '',
-    genero: 'masculino' as 'masculino' | 'feminino' | 'outro',
-    altura: 0
+    sexo: '' as 'masculino' | 'feminino' | '' | null,
+    altura_cm: 0
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -38,14 +36,14 @@ export default function EditarPerfilPage() {
 
   useEffect(() => {
     if (profile) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const profileData = profile as any
       setFormData({
-        nome: profile.nome || '',
-        sobrenome: profile.sobrenome || '',
-        email: profile.email || '',
-        telefone: profile.telefone || '',
-        data_nascimento: profile.data_nascimento || '',
-        genero: profile.genero || 'masculino',
-        altura: profile.altura || 0
+        nome: profileData.nome || '',
+        email: profileData.email || '',
+        data_nascimento: profileData.data_nascimento || '',
+        sexo: profileData.sexo || '',
+        altura_cm: profileData.altura_cm || 0
       })
     }
   }, [profile])
@@ -65,16 +63,8 @@ export default function EditarPerfilPage() {
       newErrors.nome = 'Nome é obrigatório'
     }
 
-    if (formData.email && !validateEmail(formData.email)) {
-      newErrors.email = 'Email inválido'
-    }
-
-    if (formData.telefone && !validatePhone(formData.telefone)) {
-      newErrors.telefone = 'Telefone inválido'
-    }
-
-    if (formData.altura && (formData.altura < 100 || formData.altura > 250)) {
-      newErrors.altura = 'Altura deve estar entre 100 e 250 cm'
+    if (formData.altura_cm && (formData.altura_cm < 100 || formData.altura_cm > 250)) {
+      newErrors.altura_cm = 'Altura deve estar entre 100 e 250 cm'
     }
 
     setErrors(newErrors)
@@ -88,12 +78,10 @@ export default function EditarPerfilPage() {
     try {
       await updateProfile({
         nome: formData.nome,
-        sobrenome: formData.sobrenome,
-        telefone: formData.telefone,
-        data_nascimento: formData.data_nascimento,
-        genero: formData.genero,
-        altura: formData.altura
-      })
+        data_nascimento: formData.data_nascimento || null,
+        sexo: formData.sexo || null,
+        altura_cm: formData.altura_cm || null
+      } as Record<string, unknown>)
       toast.success('Perfil atualizado com sucesso!')
       router.back()
     } catch {
@@ -154,27 +142,17 @@ export default function EditarPerfilPage() {
             <CardTitle className="text-base">Dados Pessoais</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nome</Label>
-                <Input
-                  value={formData.nome}
-                  onChange={(e) => handleChange('nome', e.target.value)}
-                  placeholder="Seu nome"
-                  className={errors.nome ? 'border-destructive' : ''}
-                />
-                {errors.nome && (
-                  <p className="text-xs text-destructive">{errors.nome}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Sobrenome</Label>
-                <Input
-                  value={formData.sobrenome}
-                  onChange={(e) => handleChange('sobrenome', e.target.value)}
-                  placeholder="Seu sobrenome"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                value={formData.nome}
+                onChange={(e) => handleChange('nome', e.target.value)}
+                placeholder="Seu nome"
+                className={errors.nome ? 'border-destructive' : ''}
+              />
+              {errors.nome && (
+                <p className="text-xs text-destructive">{errors.nome}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -182,28 +160,12 @@ export default function EditarPerfilPage() {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="seu@email.com"
                 disabled
                 className="bg-muted"
               />
               <p className="text-xs text-muted-foreground">
                 Para alterar o email, vá em Configurações &gt; Conta
               </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Telefone</Label>
-              <Input
-                type="tel"
-                value={formData.telefone}
-                onChange={(e) => handleChange('telefone', e.target.value)}
-                placeholder="+55 11 99999-9999"
-                className={errors.telefone ? 'border-destructive' : ''}
-              />
-              {errors.telefone && (
-                <p className="text-xs text-destructive">{errors.telefone}</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -216,18 +178,17 @@ export default function EditarPerfilPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Gênero</Label>
+              <Label>Sexo</Label>
               <Select
-                value={formData.genero}
-                onValueChange={(value) => handleChange('genero', value)}
+                value={formData.sexo || ''}
+                onValueChange={(value) => handleChange('sexo', value)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="masculino">Masculino</SelectItem>
                   <SelectItem value="feminino">Feminino</SelectItem>
-                  <SelectItem value="outro">Outro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -245,15 +206,15 @@ export default function EditarPerfilPage() {
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
-                  value={formData.altura || ''}
-                  onChange={(e) => handleChange('altura', Number(e.target.value))}
+                  value={formData.altura_cm || ''}
+                  onChange={(e) => handleChange('altura_cm', Number(e.target.value))}
                   placeholder="181"
-                  className={errors.altura ? 'border-destructive' : ''}
+                  className={errors.altura_cm ? 'border-destructive' : ''}
                 />
                 <span className="text-muted-foreground">cm</span>
               </div>
-              {errors.altura && (
-                <p className="text-xs text-destructive">{errors.altura}</p>
+              {errors.altura_cm && (
+                <p className="text-xs text-destructive">{errors.altura_cm}</p>
               )}
             </div>
 

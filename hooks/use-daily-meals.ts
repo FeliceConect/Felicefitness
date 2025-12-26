@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
 import type {
   Meal,
+  MealItem,
   PlannedMeal,
   NutritionTotals,
   NutritionGoals,
@@ -52,11 +53,11 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         return
       }
 
-      // Buscar refeições reais do banco
+      // Buscar refeições reais do banco com os itens
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: mealsData, error: mealsError } = await (supabase as any)
         .from('fitness_meals')
-        .select('*')
+        .select('*, itens:fitness_meal_items(*)')
         .eq('user_id', user.id)
         .eq('data', dateStr)
         .order('horario', { ascending: true })
@@ -69,22 +70,48 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
 
       // Converter dados do banco para o formato Meal
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const convertedMeals: Meal[] = (mealsData || []).map((m: any) => ({
-        id: m.id,
-        user_id: m.user_id,
-        tipo: m.tipo_refeicao as MealType,
-        data: m.data,
-        horario_planejado: m.horario || undefined,
-        horario_real: m.horario || undefined,
-        status: 'concluido' as const,
-        itens: [], // Por enquanto sem itens detalhados
-        calorias_total: m.calorias_total || 0,
-        proteinas_total: m.proteinas_total || 0,
-        carboidratos_total: m.carboidratos_total || 0,
-        gorduras_total: m.gorduras_total || 0,
-        notas: m.notas || undefined,
-        created_at: m.created_at
-      }))
+      const convertedMeals: Meal[] = (mealsData || []).map((m: any) => {
+        // Converter itens do banco para o formato MealItem
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const convertedItems: MealItem[] = (m.itens || []).map((item: any) => ({
+          id: item.id,
+          food_id: item.food_id || item.id,
+          food: {
+            id: item.food_id || item.id,
+            nome: item.nome_alimento,
+            categoria: 'outros' as const,
+            porcao_padrao: item.quantidade || 100,
+            unidade: (item.unidade || 'g') as 'g' | 'ml' | 'unidade',
+            calorias: item.calorias || 0,
+            proteinas: item.proteinas || 0,
+            carboidratos: item.carboidratos || 0,
+            gorduras: item.gorduras || 0
+          },
+          quantidade: item.quantidade || 100,
+          calorias: item.calorias || 0,
+          proteinas: item.proteinas || 0,
+          carboidratos: item.carboidratos || 0,
+          gorduras: item.gorduras || 0
+        }))
+
+        return {
+          id: m.id,
+          user_id: m.user_id,
+          tipo: m.tipo_refeicao as MealType,
+          data: m.data,
+          horario_planejado: m.horario || undefined,
+          horario_real: m.horario || undefined,
+          status: 'concluido' as const,
+          itens: convertedItems,
+          calorias_total: m.calorias_total || 0,
+          proteinas_total: m.proteinas_total || 0,
+          carboidratos_total: m.carboidratos_total || 0,
+          gorduras_total: m.gorduras_total || 0,
+          foto_url: m.foto_url || undefined,
+          notas: m.analise_ia || m.notas || undefined,
+          created_at: m.created_at
+        }
+      })
 
       setMeals(convertedMeals)
     } catch (err) {
@@ -220,15 +247,82 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
 
   // Atualizar refeição
   const updateMeal = useCallback(async (id: string, data: Partial<Meal>) => {
-    setMeals(prev =>
-      prev.map(meal => (meal.id === id ? { ...meal, ...data } : meal))
-    )
-  }, [])
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+
+      // Preparar dados para atualização no banco
+      const updateData: Record<string, unknown> = {}
+      if (data.calorias_total !== undefined) updateData.calorias_total = data.calorias_total
+      if (data.proteinas_total !== undefined) updateData.proteinas_total = data.proteinas_total
+      if (data.carboidratos_total !== undefined) updateData.carboidratos_total = data.carboidratos_total
+      if (data.gorduras_total !== undefined) updateData.gorduras_total = data.gorduras_total
+      if (data.notas !== undefined) updateData.notas = data.notas
+      if (data.status !== undefined) updateData.status = data.status
+      if (data.horario_real !== undefined) updateData.horario = data.horario_real
+
+      // Atualizar no banco
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('fitness_meals')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error updating meal:', error)
+        throw error
+      }
+
+      // Atualizar estado local
+      setMeals(prev =>
+        prev.map(meal => (meal.id === id ? { ...meal, ...data } : meal))
+      )
+    } catch (err) {
+      console.error('Error updating meal:', err)
+      throw err
+    }
+  }, [supabase])
 
   // Deletar refeição
   const deleteMeal = useCallback(async (id: string) => {
-    setMeals(prev => prev.filter(meal => meal.id !== id))
-  }, [])
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+
+      // Deletar itens da refeição primeiro
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('fitness_meal_items')
+        .delete()
+        .eq('meal_id', id)
+
+      // Deletar a refeição
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('fitness_meals')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error deleting meal:', error)
+        throw error
+      }
+
+      // Atualizar estado local
+      setMeals(prev => prev.filter(meal => meal.id !== id))
+    } catch (err) {
+      console.error('Error deleting meal:', err)
+      throw err
+    }
+  }, [supabase])
 
   // Refresh
   const refresh = useCallback(async () => {

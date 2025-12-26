@@ -98,17 +98,67 @@ export function useEvolution(): UseEvolutionReturn {
         .eq('id', user.id)
         .single()
 
+      // Fetch body composition measurements
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: bodyCompositions } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select(`
+          id, data, peso, altura_cm,
+          percentual_gordura, massa_muscular_esqueletica_kg, massa_livre_gordura_kg,
+          gordura_visceral, pontuacao_inbody, imc, massa_gordura_kg,
+          agua_corporal_l, proteina_kg, minerais_kg,
+          taxa_metabolica_basal
+        `)
+        .eq('user_id', user.id)
+        .order('data', { ascending: true })
+
       // Type cast all data
       const workoutsData = (workouts || []) as SupabaseRow[]
       const prsData = (prs || []) as SupabaseRow[]
       const mealsData = (meals || []) as SupabaseRow[]
       const waterData = (waterLogs || []) as SupabaseRow[]
+      const bodyData = (bodyCompositions || []) as SupabaseRow[]
 
-      // We don't have body measurements table, so use empty data for weight/muscle/fat
-      // These would need a fitness_body_measurements table to track over time
-      const weightData: Array<{ date: string; value: number }> = []
-      const muscleData: Array<{ date: string; value: number }> = []
-      const fatData: Array<{ date: string; value: number }> = []
+      // Process body composition data
+      const weightData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.peso)
+        .map(b => ({ date: b.data, value: Number(b.peso) }))
+
+      const muscleData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.massa_muscular_esqueletica_kg)
+        .map(b => ({ date: b.data, value: Number(b.massa_muscular_esqueletica_kg) }))
+
+      const fatData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.percentual_gordura)
+        .map(b => ({ date: b.data, value: Number(b.percentual_gordura) }))
+
+      // Additional bioimpedance data
+      const imcData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.imc)
+        .map(b => ({ date: b.data, value: Number(b.imc) }))
+
+      const visceralFatData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.gordura_visceral)
+        .map(b => ({ date: b.data, value: Number(b.gordura_visceral) }))
+
+      const inbodyScoreData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.pontuacao_inbody)
+        .map(b => ({ date: b.data, value: Number(b.pontuacao_inbody) }))
+
+      const bmrData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.taxa_metabolica_basal)
+        .map(b => ({ date: b.data, value: Number(b.taxa_metabolica_basal) }))
+
+      const bodyWaterData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.agua_corporal_l)
+        .map(b => ({ date: b.data, value: Number(b.agua_corporal_l) }))
+
+      const leanMassData: Array<{ date: string; value: number }> = bodyData
+        .filter(b => b.massa_livre_gordura_kg)
+        .map(b => ({ date: b.data, value: Number(b.massa_livre_gordura_kg) }))
+
+      // Get latest measurement
+      const latestBody = bodyData.length > 0 ? bodyData[bodyData.length - 1] : null
 
       // Process strength data - group PRs by exercise
       const exercisePRs = new Map<string, { name: string; prs: Array<{ date: string; value: number }> }>()
@@ -222,24 +272,84 @@ export function useEvolution(): UseEvolutionReturn {
 
       const weightGoal = profile?.meta_peso || null
 
+      // Calculate weight trends and projections
+      const firstWeight = weightData.length > 0 ? weightData[0].value : null
+      const lastWeight = weightData.length > 0 ? weightData[weightData.length - 1].value : null
+      const weightTrend = firstWeight && lastWeight ? calculateTrend(lastWeight, firstWeight) : null
+
+      // Calculate weight goal projection
+      let projectedGoalDate: string | null = null
+      if (weightGoal && firstWeight && lastWeight && weightData.length >= 2) {
+        const firstDate = new Date(weightData[0].date)
+        const lastDate = new Date(weightData[weightData.length - 1].date)
+        const daysDiff = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
+        const weightDiff = lastWeight - firstWeight
+        if (daysDiff > 0 && weightDiff !== 0) {
+          const dailyChange = weightDiff / daysDiff
+          const remainingWeight = weightGoal - lastWeight
+          if ((dailyChange < 0 && remainingWeight < 0) || (dailyChange > 0 && remainingWeight > 0)) {
+            const daysToGoal = Math.ceil(Math.abs(remainingWeight / dailyChange))
+            const goalDate = new Date(lastDate)
+            goalDate.setDate(goalDate.getDate() + daysToGoal)
+            projectedGoalDate = format(goalDate, 'dd/MM/yyyy')
+          }
+        }
+      }
+
+      // Calculate muscle trends
+      const firstMuscle = muscleData.length > 0 ? muscleData[0].value : null
+      const lastMuscle = muscleData.length > 0 ? muscleData[muscleData.length - 1].value : null
+      const muscleTrend = firstMuscle && lastMuscle ? calculateTrend(lastMuscle, firstMuscle) : null
+      const totalMuscleGain = firstMuscle && lastMuscle
+        ? Math.round((lastMuscle - firstMuscle) * 10) / 10
+        : 0
+
+      // Calculate fat trends
+      const firstFat = fatData.length > 0 ? fatData[0].value : null
+      const lastFat = fatData.length > 0 ? fatData[fatData.length - 1].value : null
+      const fatTrend = firstFat && lastFat ? calculateTrend(lastFat, firstFat) : null
+      const totalFatLoss = firstFat && lastFat
+        ? Math.round((firstFat - lastFat) * 10) / 10
+        : 0
+
       return {
         period,
         weight: {
           data: weightData,
-          trend: null,
+          trend: weightTrend,
           goal: weightGoal,
-          projectedGoalDate: null
+          projectedGoalDate
         },
         muscle: {
           data: muscleData,
-          trend: null,
-          totalGain: 0
+          trend: muscleTrend,
+          totalGain: totalMuscleGain
         },
         fat: {
           data: fatData,
-          trend: null,
-          totalLoss: 0,
-          goal: null
+          trend: fatTrend,
+          totalLoss: totalFatLoss,
+          goal: 15 // Meta padrão de 15% gordura
+        },
+        bioimpedance: {
+          imc: imcData,
+          visceralFat: visceralFatData,
+          inbodyScore: inbodyScoreData,
+          bmr: bmrData,
+          bodyWater: bodyWaterData,
+          leanMass: leanMassData,
+          latestMeasurement: latestBody ? {
+            date: latestBody.data,
+            peso: latestBody.peso ? Number(latestBody.peso) : null,
+            percentual_gordura: latestBody.percentual_gordura ? Number(latestBody.percentual_gordura) : null,
+            massa_muscular_esqueletica_kg: latestBody.massa_muscular_esqueletica_kg ? Number(latestBody.massa_muscular_esqueletica_kg) : null,
+            massa_livre_gordura_kg: latestBody.massa_livre_gordura_kg ? Number(latestBody.massa_livre_gordura_kg) : null,
+            gordura_visceral: latestBody.gordura_visceral ? Number(latestBody.gordura_visceral) : null,
+            pontuacao_inbody: latestBody.pontuacao_inbody ? Number(latestBody.pontuacao_inbody) : null,
+            imc: latestBody.imc ? Number(latestBody.imc) : null,
+            taxa_metabolica_basal: latestBody.taxa_metabolica_basal ? Number(latestBody.taxa_metabolica_basal) : null,
+            agua_corporal_l: latestBody.agua_corporal_l ? Number(latestBody.agua_corporal_l) : null,
+          } : null
         },
         strength: {
           exercises: strengthExercises
