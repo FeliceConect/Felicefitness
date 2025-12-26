@@ -108,13 +108,42 @@ export function DashboardContent() {
     sonoRegistrado: false // Por enquanto false
   }
 
-  // Meta de esqui
-  const metaEsqui = {
-    titulo: 'Esqui na Suíça',
-    data: new Date('2026-03-12'),
-    icone: '🎿',
-    dataInicio: new Date('2024-12-01')
+  // Lista de objetivos (deve corresponder aos da página de perfil)
+  const OBJECTIVES: Record<string, { title: string; icon: string; defaultDate: string }> = {
+    'ski_suica': { title: 'Preparação para Esqui', icon: '🎿', defaultDate: '2026-03-12' },
+    'maratona': { title: 'Maratona', icon: '🏃', defaultDate: '' },
+    'hipertrofia': { title: 'Ganho de Massa', icon: '💪', defaultDate: '' },
+    'emagrecimento': { title: 'Emagrecimento', icon: '⚖️', defaultDate: '' },
+    'saude': { title: 'Saúde e Bem-estar', icon: '❤️', defaultDate: '' },
+    'competicao': { title: 'Competição', icon: '🏆', defaultDate: '' },
+    'viagem': { title: 'Viagem/Evento', icon: '✈️', defaultDate: '' },
+    'outro': { title: 'Outro', icon: '🎯', defaultDate: '' },
   }
+
+  // Parse objetivo do perfil
+  const parseObjective = () => {
+    const obj = (profile as Record<string, unknown>)?.objetivo as string || 'ski_suica'
+    if (obj.includes('|')) {
+      const [id, titulo, data] = obj.split('|')
+      const found = OBJECTIVES[id] || OBJECTIVES['ski_suica']
+      return {
+        titulo: titulo || found.title,
+        data: data ? new Date(data) : new Date('2026-03-12'),
+        icone: found.icon,
+        dataInicio: new Date('2025-01-01')
+      }
+    }
+    // Old format - just ID
+    const found = OBJECTIVES[obj] || OBJECTIVES['ski_suica']
+    return {
+      titulo: found.title,
+      data: found.defaultDate ? new Date(found.defaultDate) : new Date('2026-03-12'),
+      icone: found.icon,
+      dataInicio: new Date('2025-01-01')
+    }
+  }
+
+  const metaEsqui = parseObjective()
 
   // Stats from database
   const stats = {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trophy, Ruler, Target, Camera, X, Check } from 'lucide-react'
+import { ArrowLeft, Edit, Trophy, Ruler, Target, Camera, X, Check, ImageIcon, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -280,19 +280,35 @@ export default function PerfilPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="px-4 grid grid-cols-2 gap-3">
-          <Link href="/corpo/nova-medicao">
-            <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
-              <Ruler className="h-5 w-5" />
-              <span>Nova Medição</span>
-            </Button>
-          </Link>
-          <Link href="/fotos/nova">
-            <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
-              <Camera className="h-5 w-5" />
-              <span>Foto Progresso</span>
-            </Button>
-          </Link>
+        <div className="px-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/corpo/nova-medicao">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                <Ruler className="h-5 w-5" />
+                <span>Nova Medição</span>
+              </Button>
+            </Link>
+            <Link href="/fotos/nova">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                <Camera className="h-5 w-5" />
+                <span>Foto Progresso</span>
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/fotos">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                <ImageIcon className="h-5 w-5" />
+                <span>Ver Fotos</span>
+              </Button>
+            </Link>
+            <Link href="/relatorios/evolucao">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                <History className="h-5 w-5" />
+                <span>Evolução</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -391,7 +407,7 @@ export default function PerfilPage() {
               </div>
 
               {/* Actions - Fixed at bottom */}
-              <div className="flex gap-3 p-6 pt-4 border-t border-border bg-background flex-shrink-0">
+              <div className="flex gap-3 p-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-border bg-background flex-shrink-0">
                 <Button
                   variant="outline"
                   className="flex-1"

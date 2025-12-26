@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronRight, Calendar, Dumbbell, TrendingUp, Loader2, Play, X } from 'lucide-react'
+import { ChevronRight, Calendar, Dumbbell, TrendingUp, Loader2, Play, X, Settings2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { WeekCalendar } from '@/components/treino/week-calendar'
@@ -77,13 +77,23 @@ export default function TreinoPage() {
       <div className="px-4 pt-12 pb-6">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold text-white">Treinos</h1>
-          <Link
-            href="/treino/historico"
-            className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
-          >
-            Histórico
-            <ChevronRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/treino/templates"
+              className="flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300"
+              title="Gerenciar treinos"
+            >
+              <Settings2 className="w-4 h-4" />
+              Templates
+            </Link>
+            <Link
+              href="/treino/historico"
+              className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+            >
+              Histórico
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
         <p className="text-slate-400 text-sm">
           {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}

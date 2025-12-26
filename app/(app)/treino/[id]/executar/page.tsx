@@ -11,6 +11,7 @@ import { PRCelebration } from '@/components/treino/pr-celebration'
 import { useWorkoutExecution } from '@/hooks/use-workout-execution'
 import { useRestTimer } from '@/hooks/use-rest-timer'
 import { useWorkouts } from '@/hooks/use-workouts'
+import { useSettings } from '@/hooks/use-settings'
 import { getExerciseLastWeight } from '@/lib/workout/mock-data'
 import { cn } from '@/lib/utils'
 
@@ -38,6 +39,10 @@ export default function WorkoutExecutionPage() {
   const { getWorkoutById, loading } = useWorkouts()
   const workout = getWorkoutById(workoutId)
 
+  // Get user settings for rest timer
+  const { settings } = useSettings()
+  const defaultRestTime = settings?.workout?.descanso_padrao || 60
+
   const {
     state,
     startWorkout,
@@ -53,7 +58,10 @@ export default function WorkoutExecutionPage() {
     completedSetsCount
   } = useWorkoutExecution()
 
-  const restTimer = useRestTimer()
+  const restTimer = useRestTimer({
+    soundEnabled: settings?.workout?.som_timer ?? true,
+    vibrationEnabled: settings?.workout?.vibracao_timer ?? true
+  })
 
   // Start workout on mount (only after loading is complete)
   useEffect(() => {
@@ -90,7 +98,7 @@ export default function WorkoutExecutionPage() {
 
       // Start rest timer if not last set of last exercise
       if (!(isLastSet && isLastExercise) && currentExercise) {
-        const restTime = currentSet?.descanso || 45
+        const restTime = currentSet?.descanso || defaultRestTime
         restTimer.start(restTime)
       }
     }, 100)

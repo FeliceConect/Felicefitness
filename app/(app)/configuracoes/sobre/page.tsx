@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Heart, ExternalLink, Bug, MessageSquare, Star, Globe, Coffee } from 'lucide-react'
+import { ArrowLeft, Heart, ExternalLink, Bug, MessageSquare, Star, Globe } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function SobrePage() {
@@ -67,7 +67,7 @@ export default function SobrePage() {
               <div className="flex-1">
                 <p className="font-semibold">Leonardo Felice</p>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  Com <Heart className="h-3 w-3 text-red-500 inline" /> e muito <Coffee className="h-3 w-3 inline" />
+                  Feito com <Heart className="h-3 w-3 text-red-500 inline" />
                 </p>
               </div>
             </div>
@@ -173,7 +173,7 @@ export default function SobrePage() {
         {/* Footer */}
         <div className="text-center space-y-2 pt-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 FeliceFit. Todos os direitos reservados.
+            © 2026 FeliceFit. Todos os direitos reservados.
           </p>
           <p className="text-xs text-muted-foreground">
             Feito com ❤️ no Brasil

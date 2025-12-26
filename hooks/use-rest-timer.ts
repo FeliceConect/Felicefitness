@@ -3,6 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { playSound } from '@/lib/immersive/sounds'
 
+interface UseRestTimerOptions {
+  soundEnabled?: boolean
+  vibrationEnabled?: boolean
+  onComplete?: () => void
+}
+
 interface UseRestTimerReturn {
   timeRemaining: number
   isRunning: boolean
@@ -20,7 +26,17 @@ interface UseRestTimerReturn {
  * Timer de descanso que funciona mesmo quando a tela do iOS é desligada.
  * Usa timestamps reais ao invés de depender apenas de setInterval.
  */
-export function useRestTimer(onComplete?: () => void): UseRestTimerReturn {
+export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseRestTimerReturn {
+  // Support both old signature (onComplete callback) and new signature (options object)
+  const resolvedOptions: UseRestTimerOptions = typeof options === 'function'
+    ? { onComplete: options }
+    : options || {}
+
+  const {
+    soundEnabled = true,
+    vibrationEnabled = true,
+    onComplete
+  } = resolvedOptions
   const [timeRemaining, setTimeRemaining] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
@@ -58,27 +74,32 @@ export function useRestTimer(onComplete?: () => void): UseRestTimerReturn {
         intervalRef.current = null
       }
 
-      // Tocar som e vibrar ao completar
-      try {
-        playSound('timerComplete', 0.8)
-      } catch (e) {
-        // Ignore audio errors
+      // Tocar som ao completar (se habilitado)
+      if (soundEnabled) {
+        try {
+          playSound('timerComplete', 0.8)
+        } catch (e) {
+          // Ignore audio errors
+        }
       }
 
-      if (navigator.vibrate) {
+      // Vibrar ao completar (se habilitado)
+      if (vibrationEnabled && navigator.vibrate) {
         navigator.vibrate([200, 100, 200, 100, 300])
       }
 
       onCompleteRef.current?.()
     } else if (remaining <= 3 && remaining > 0) {
-      // Countdown beeps nos últimos 3 segundos
-      try {
-        playSound('countdown', 0.6)
-      } catch (e) {
-        // Ignore audio errors
+      // Countdown beeps nos últimos 3 segundos (se som habilitado)
+      if (soundEnabled) {
+        try {
+          playSound('countdown', 0.6)
+        } catch (e) {
+          // Ignore audio errors
+        }
       }
     }
-  }, [calculateRemaining])
+  }, [calculateRemaining, soundEnabled, vibrationEnabled])
 
   // Verificar timer quando app volta ao foco (crucial para iOS)
   useEffect(() => {
@@ -142,28 +163,33 @@ export function useRestTimer(onComplete?: () => void): UseRestTimerReturn {
         setIsRunning(false)
         endTimeRef.current = null
 
-        // Tocar som e vibrar ao completar
-        try {
-          playSound('timerComplete', 0.8)
-        } catch (e) {
-          // Ignore audio errors
+        // Tocar som ao completar (se habilitado)
+        if (soundEnabled) {
+          try {
+            playSound('timerComplete', 0.8)
+          } catch (e) {
+            // Ignore audio errors
+          }
         }
 
-        if (navigator.vibrate) {
+        // Vibrar ao completar (se habilitado)
+        if (vibrationEnabled && navigator.vibrate) {
           navigator.vibrate([200, 100, 200, 100, 300])
         }
 
         onCompleteRef.current?.()
       } else if (remaining <= 3 && remaining > 0) {
-        // Countdown beeps nos últimos 3 segundos
-        try {
-          playSound('countdown', 0.6)
-        } catch (e) {
-          // Ignore audio errors
+        // Countdown beeps nos últimos 3 segundos (se som habilitado)
+        if (soundEnabled) {
+          try {
+            playSound('countdown', 0.6)
+          } catch (e) {
+            // Ignore audio errors
+          }
         }
       }
     }, 1000)
-  }, [calculateRemaining])
+  }, [calculateRemaining, soundEnabled, vibrationEnabled])
 
   const pause = useCallback(() => {
     if (intervalRef.current) {
@@ -196,27 +222,34 @@ export function useRestTimer(onComplete?: () => void): UseRestTimerReturn {
           setIsRunning(false)
           endTimeRef.current = null
 
-          try {
-            playSound('timerComplete', 0.8)
-          } catch (e) {
-            // Ignore audio errors
+          // Tocar som ao completar (se habilitado)
+          if (soundEnabled) {
+            try {
+              playSound('timerComplete', 0.8)
+            } catch (e) {
+              // Ignore audio errors
+            }
           }
 
-          if (navigator.vibrate) {
+          // Vibrar ao completar (se habilitado)
+          if (vibrationEnabled && navigator.vibrate) {
             navigator.vibrate([200, 100, 200, 100, 300])
           }
 
           onCompleteRef.current?.()
         } else if (remaining <= 3 && remaining > 0) {
-          try {
-            playSound('countdown', 0.6)
-          } catch (e) {
-            // Ignore audio errors
+          // Countdown beeps nos últimos 3 segundos (se som habilitado)
+          if (soundEnabled) {
+            try {
+              playSound('countdown', 0.6)
+            } catch (e) {
+              // Ignore audio errors
+            }
           }
         }
       }, 1000)
     }
-  }, [timeRemaining, isRunning, calculateRemaining])
+  }, [timeRemaining, isRunning, calculateRemaining, soundEnabled, vibrationEnabled])
 
   const skip = useCallback(() => {
     if (intervalRef.current) {
