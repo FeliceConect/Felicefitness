@@ -26,15 +26,45 @@ export function useSleepCorrelations(): UseSleepCorrelationsReturn {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
 
       const { data: sleepData, error: sleepError } = await supabase
-        .from('sleep_logs')
+        .from('fitness_sleep_logs')
         .select('*')
         .eq('user_id', user.id)
-        .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
-        .order('date', { ascending: false })
+        .gte('data', ninetyDaysAgo.toISOString().split('T')[0])
+        .order('data', { ascending: false })
 
       if (sleepError) throw sleepError
 
-      const sleepLogs = (sleepData as SupabaseRow[]) || []
+      // Transformar dados do banco para o formato do hook
+      const rawLogs = (sleepData as SupabaseRow[]) || []
+      const sleepLogs = rawLogs.map(log => {
+        // Extrair apenas o horario do timestamp (ex: "2024-12-25T22:00:00" -> "22:00")
+        const extractTime = (timestamp: string | null): string => {
+          if (!timestamp) return '00:00'
+          try {
+            const date = new Date(timestamp)
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+          } catch {
+            return timestamp.includes('T') ? timestamp.split('T')[1]?.substring(0, 5) || '00:00' : timestamp
+          }
+        }
+
+        return {
+          id: log.id,
+          user_id: log.user_id,
+          date: log.data,
+          bedtime: extractTime(log.hora_dormir),
+          wake_time: extractTime(log.hora_acordar),
+          duration: log.duracao_minutos,
+          quality: log.qualidade,
+          times_woken: log.vezes_acordou || 0,
+          wake_feeling: log.sensacao_acordar || 3,
+          positive_factors: log.fatores_positivos || [],
+          negative_factors: log.fatores_negativos || [],
+          notes: log.notas,
+          created_at: log.created_at,
+          updated_at: log.updated_at,
+        }
+      })
 
       if (sleepLogs.length < 7) {
         setTips(['Continue registrando seu sono para receber análises personalizadas'])

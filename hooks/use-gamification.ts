@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { getTodayISO } from '@/lib/utils/date'
 import type {
   Level,
   Achievement,
@@ -29,6 +31,17 @@ import {
   generateWeeklyChallenges
 } from '@/lib/gamification'
 
+// XP values for different activities
+const XP_VALUES = {
+  workout_completed: 100,
+  water_goal_met: 25,
+  meal_logged: 15,
+  sleep_logged: 20,
+  perfect_day: 50,
+  pr_achieved: 75,
+  streak_bonus_per_day: 5
+}
+
 // Estado inicial
 const INITIAL_STATE = {
   totalXP: 0,
@@ -48,7 +61,7 @@ const INITIAL_STATE = {
 }
 
 /**
- * Hook principal de gamificação
+ * Hook principal de gamificação - agora com dados reais do Supabase
  */
 export function useGamification(): UseGamificationReturn {
   // Estados
@@ -66,67 +79,218 @@ export function useGamification(): UseGamificationReturn {
   const [newLevel, setNewLevel] = useState<Level | null>(null)
   const [showAchievement, setShowAchievement] = useState<Achievement | null>(null)
 
+  // Calcular XP baseado em atividades reais do banco
+  const calculateXPFromDatabase = useCallback(async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        console.log('Gamification: No user found')
+        return { xp: 0, stats: null, streakData: getInitialStreakData() }
+      }
+
+      const today = getTodayISO()
+
+      // Buscar dados do perfil (streak)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('fitness_profiles')
+        .select('streak_atual, maior_streak, pontos_totais')
+        .eq('id', user.id)
+        .single()
+
+      // Buscar treinos concluídos
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: workoutsCompleted } = await (supabase as any)
+        .from('fitness_workouts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'concluido')
+
+      // Buscar PRs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: prsAchieved } = await (supabase as any)
+        .from('fitness_exercise_sets')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_pr', true)
+
+      // Buscar dias com meta de água atingida (água >= 2500ml)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: waterDays } = await (supabase as any)
+        .from('fitness_water_logs')
+        .select('data, quantidade_ml')
+        .eq('user_id', user.id)
+
+      // Agrupar por dia e contar dias que atingiram a meta
+      const waterByDay: { [key: string]: number } = {}
+      if (waterDays) {
+        for (const log of waterDays) {
+          waterByDay[log.data] = (waterByDay[log.data] || 0) + (log.quantidade_ml || 0)
+        }
+      }
+      const waterGoalsMet = Object.values(waterByDay).filter(ml => ml >= 2500).length
+
+      // Buscar refeições registradas
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: mealsLogged } = await (supabase as any)
+        .from('fitness_meals')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+
+      // Buscar registros de sono
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: sleepLogs } = await (supabase as any)
+        .from('fitness_sleep_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+
+      // Calcular XP total
+      const calculatedXP =
+        (workoutsCompleted || 0) * XP_VALUES.workout_completed +
+        (waterGoalsMet || 0) * XP_VALUES.water_goal_met +
+        (mealsLogged || 0) * XP_VALUES.meal_logged +
+        (sleepLogs || 0) * XP_VALUES.sleep_logged +
+        (prsAchieved || 0) * XP_VALUES.pr_achieved +
+        ((profile?.streak_atual || 0) * XP_VALUES.streak_bonus_per_day)
+
+      console.log('Gamification XP calculation:', {
+        workoutsCompleted,
+        waterGoalsMet,
+        mealsLogged,
+        sleepLogs,
+        prsAchieved,
+        streak: profile?.streak_atual,
+        totalXP: calculatedXP
+      })
+
+      // Calcular score de hoje
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: todayWorkout } = await (supabase as any)
+        .from('fitness_workouts')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('data', today)
+        .eq('status', 'concluido')
+        .maybeSingle()
+
+      const todayWater = waterByDay[today] || 0
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: todayMealsCount } = await (supabase as any)
+        .from('fitness_meals')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('data', today)
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: todaySleep } = await (supabase as any)
+        .from('fitness_sleep_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('data', today)
+        .maybeSingle()
+
+      // Score do dia (0-100)
+      const workoutScore = todayWorkout ? 30 : 0
+      const waterScore = Math.min(30, Math.round((todayWater / 3000) * 30))
+      const mealsScore = Math.min(25, (todayMealsCount || 0) * 5) // 5 pontos por refeição, max 25
+      const sleepScore = todaySleep ? 15 : 0
+
+      const dailyScore: DailyScoreBreakdown = {
+        total: workoutScore + waterScore + mealsScore + sleepScore,
+        workout: workoutScore,
+        nutrition: mealsScore,
+        hydration: waterScore,
+        extras: sleepScore // sleep + outros extras
+      }
+
+      // Streak data
+      const streakData: StreakData = {
+        currentStreak: profile?.streak_atual || 0,
+        bestStreak: profile?.maior_streak || 0,
+        lastActivityDate: today,
+        streakHistory: []
+      }
+
+      return {
+        xp: calculatedXP,
+        stats: {
+          workoutsCompleted: workoutsCompleted || 0,
+          prsAchieved: prsAchieved || 0,
+          waterGoalsMet: waterGoalsMet || 0,
+          mealsLogged: mealsLogged || 0,
+          sleepLogs: sleepLogs || 0
+        },
+        streakData,
+        dailyScore
+      }
+    } catch (error) {
+      console.error('Erro ao calcular XP:', error)
+      return { xp: 0, stats: null, streakData: getInitialStreakData(), dailyScore: null }
+    }
+  }, [])
+
   // Carregar dados iniciais
   useEffect(() => {
     loadGamificationData()
   }, [])
 
-  // Carregar dados do servidor/localStorage
+  // Carregar dados do banco de dados
   const loadGamificationData = useCallback(async () => {
     setLoading(true)
     try {
-      // Por enquanto usando localStorage, depois migrar para Supabase
-      const savedData = localStorage.getItem('felicefit_gamification')
+      const { xp, stats, streakData, dailyScore } = await calculateXPFromDatabase()
 
+      setTotalXP(xp)
+      setCurrentLevel(getLevelFromXP(xp))
+      setXpToNextLevel(getXPToNextLevel(xp))
+      setLevelProgress(getLevelProgress(xp))
+      setStreak(streakData)
+
+      if (dailyScore) {
+        setTodayScore(dailyScore)
+      }
+
+      // Carregar desafios do localStorage (por enquanto)
+      const savedData = localStorage.getItem('felicefit_gamification')
       if (savedData) {
         const data = JSON.parse(savedData)
-        setTotalXP(data.totalXP || 0)
-        setStreak(data.streak || getInitialStreakData())
         setUnlockedAchievements(data.unlockedAchievements || [])
         setActiveChallenges(data.activeChallenges || [])
-        setTodayScore(data.todayScore || null)
-        setWeeklyAverage(data.weeklyAverage || 0)
-
-        // Recalcular level info
-        const xp = data.totalXP || 0
-        setCurrentLevel(getLevelFromXP(xp))
-        setXpToNextLevel(getXPToNextLevel(xp))
-        setLevelProgress(getLevelProgress(xp))
       } else {
         // Inicializar com desafios
         const dailyChallenges = generateDailyChallenges()
         const weeklyChallenges = generateWeeklyChallenges()
         setActiveChallenges([...dailyChallenges, ...weeklyChallenges])
       }
+
+      console.log('Gamification loaded:', { xp, level: getLevelFromXP(xp).level, progress: getLevelProgress(xp) })
     } catch (error) {
       console.error('Erro ao carregar dados de gamificação:', error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [calculateXPFromDatabase])
 
-  // Salvar dados
+  // Salvar dados de conquistas no localStorage
   const saveGamificationData = useCallback(() => {
     const data = {
-      totalXP,
-      streak,
       unlockedAchievements,
       activeChallenges,
-      todayScore,
-      weeklyAverage,
       lastUpdated: new Date().toISOString()
     }
     localStorage.setItem('felicefit_gamification', JSON.stringify(data))
-  }, [totalXP, streak, unlockedAchievements, activeChallenges, todayScore, weeklyAverage])
+  }, [unlockedAchievements, activeChallenges])
 
-  // Auto-save quando dados mudam
+  // Auto-save quando dados de conquistas mudam
   useEffect(() => {
     if (!loading) {
       saveGamificationData()
     }
-  }, [totalXP, streak, unlockedAchievements, activeChallenges, todayScore, weeklyAverage, loading, saveGamificationData])
+  }, [unlockedAchievements, activeChallenges, loading, saveGamificationData])
 
-  // Adicionar XP
+  // Adicionar XP (para ações manuais, o cálculo principal vem do banco)
   const addXP = useCallback(async (amount: number, reason: string, type?: XPEventType) => {
     const previousXP = totalXP
     const newTotalXP = previousXP + amount
@@ -145,34 +309,12 @@ export function useGamification(): UseGamificationReturn {
     setXpToNextLevel(getXPToNextLevel(newTotalXP))
     setLevelProgress(getLevelProgress(newTotalXP))
 
-    // Atualizar streak se for atividade do dia
-    if (type && type !== 'level_up' && type !== 'achievement_unlocked') {
-      const today = getTodayString()
-
-      // Verificar comeback
-      if (isComeback(streak.lastActivityDate)) {
-        // Adicionar XP de comeback
-        const comebackXP = 50
-        setTotalXP(prev => prev + comebackXP)
-      }
-
-      const updatedStreak = updateStreakData(streak, today, [type])
-      setStreak(updatedStreak)
-
-      // Adicionar bônus de streak
-      const streakBonus = calculateStreakBonus(updatedStreak.currentStreak)
-      if (streakBonus > 0) {
-        setTotalXP(prev => prev + streakBonus)
-      }
-    }
-
     console.log(`+${amount} XP: ${reason}`)
-  }, [totalXP, streak])
+  }, [totalXP])
 
   // Verificar conquistas
   const checkAchievements = useCallback(async (): Promise<Achievement[]> => {
     // Montar stats baseado nos dados atuais
-    // Por enquanto usando dados mockados, depois integrar com dados reais
     const stats: UserStats = {
       workoutsCompleted: 0,
       totalSets: 0,

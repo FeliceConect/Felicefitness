@@ -37,16 +37,46 @@ export function useSleep(days: number = 30): UseSleepReturn {
       startDate.setDate(startDate.getDate() - days)
 
       const { data, error: fetchError } = await supabase
-        .from('sleep_logs')
+        .from('fitness_sleep_logs')
         .select('*')
         .eq('user_id', user.id)
-        .gte('date', startDate.toISOString().split('T')[0])
-        .order('date', { ascending: false })
+        .gte('data', startDate.toISOString().split('T')[0])
+        .order('data', { ascending: false })
 
       if (fetchError) throw fetchError
 
-      const logs = (data as SupabaseRow[]) || []
-      setSleepLogs(logs as SleepLog[])
+      // Transformar dados do banco para o formato do hook
+      const rawLogs = (data as SupabaseRow[]) || []
+      const logs: SleepLog[] = rawLogs.map(log => {
+        // Extrair apenas o horario do timestamp (ex: "2024-12-25T22:00:00" -> "22:00")
+        const extractTime = (timestamp: string | null): string => {
+          if (!timestamp) return '00:00'
+          try {
+            const date = new Date(timestamp)
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+          } catch {
+            return timestamp.includes('T') ? timestamp.split('T')[1]?.substring(0, 5) || '00:00' : timestamp
+          }
+        }
+
+        return {
+          id: log.id,
+          user_id: log.user_id,
+          date: log.data,
+          bedtime: extractTime(log.hora_dormir),
+          wake_time: extractTime(log.hora_acordar),
+          duration: log.duracao_minutos,
+          quality: log.qualidade,
+          times_woken: log.vezes_acordou || 0,
+          wake_feeling: log.sensacao_acordar || 3,
+          positive_factors: log.fatores_positivos || [],
+          negative_factors: log.fatores_negativos || [],
+          notes: log.notas,
+          created_at: log.created_at,
+          updated_at: log.updated_at,
+        }
+      })
+      setSleepLogs(logs)
 
       // Calculate stats
       if (logs.length > 0) {
@@ -141,21 +171,29 @@ export function useSleep(days: number = 30): UseSleepReturn {
 
       const duration = calculateSleepDuration(data.bedtime, data.wake_time)
 
+      // Converter horarios para timestamp completo
+      // data.date = "2024-12-25", data.bedtime = "22:00"
+      // hora_dormir pode ser no dia anterior se for tarde da noite
+      const bedtimeHour = parseInt(data.bedtime.split(':')[0])
+      const bedtimeDate = bedtimeHour >= 18 ? data.date : data.date // mesmo dia se >= 18h
+      const horaDormir = `${bedtimeDate}T${data.bedtime}:00`
+      const horaAcordar = `${data.date}T${data.wake_time}:00`
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: insertError } = await (supabase as any)
-        .from('sleep_logs')
+        .from('fitness_sleep_logs')
         .insert({
           user_id: user.id,
-          date: data.date,
-          bedtime: data.bedtime,
-          wake_time: data.wake_time,
-          duration,
-          quality: data.quality,
-          times_woken: data.times_woken,
-          wake_feeling: data.wake_feeling,
-          positive_factors: data.positive_factors,
-          negative_factors: data.negative_factors,
-          notes: data.notes || null,
+          data: data.date,
+          hora_dormir: horaDormir,
+          hora_acordar: horaAcordar,
+          duracao_minutos: duration,
+          qualidade: data.quality,
+          vezes_acordou: data.times_woken || 0,
+          sensacao_acordar: data.wake_feeling || 3,
+          fatores_positivos: data.positive_factors || [],
+          fatores_negativos: data.negative_factors || [],
+          notas: data.notes || null,
         })
 
       if (insertError) throw insertError
@@ -175,14 +213,34 @@ export function useSleep(days: number = 30): UseSleepReturn {
         duration = calculateSleepDuration(data.bedtime, data.wake_time)
       }
 
+      // Preparar objeto de update apenas com campos definidos
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updateData: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      }
+
+      if (data.date) {
+        updateData.data = data.date
+        // Converter horarios para timestamp se fornecidos
+        if (data.bedtime) {
+          updateData.hora_dormir = `${data.date}T${data.bedtime}:00`
+        }
+        if (data.wake_time) {
+          updateData.hora_acordar = `${data.date}T${data.wake_time}:00`
+        }
+      }
+      if (duration !== undefined) updateData.duracao_minutos = duration
+      if (data.quality !== undefined) updateData.qualidade = data.quality
+      if (data.times_woken !== undefined) updateData.vezes_acordou = data.times_woken
+      if (data.wake_feeling !== undefined) updateData.sensacao_acordar = data.wake_feeling
+      if (data.positive_factors !== undefined) updateData.fatores_positivos = data.positive_factors
+      if (data.negative_factors !== undefined) updateData.fatores_negativos = data.negative_factors
+      if (data.notes !== undefined) updateData.notas = data.notes
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updateError } = await (supabase as any)
-        .from('sleep_logs')
-        .update({
-          ...data,
-          duration,
-          updated_at: new Date().toISOString(),
-        })
+        .from('fitness_sleep_logs')
+        .update(updateData)
         .eq('id', id)
 
       if (updateError) throw updateError
@@ -197,7 +255,7 @@ export function useSleep(days: number = 30): UseSleepReturn {
   const deleteSleep = useCallback(async (id: string) => {
     try {
       const { error: deleteError } = await supabase
-        .from('sleep_logs')
+        .from('fitness_sleep_logs')
         .delete()
         .eq('id', id)
 

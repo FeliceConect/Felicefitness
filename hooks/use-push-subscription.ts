@@ -53,7 +53,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
         }
 
         // Registrar service worker se não estiver registrado
-        let registration: ServiceWorkerRegistration | null = null
+        let registration: ServiceWorkerRegistration | undefined
 
         try {
           // Primeiro, tentar obter registration existente
@@ -63,10 +63,26 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
           if (registrations.length > 0) {
             registration = registrations[0]
           } else {
-            // Registrar novo service worker
-            console.log('Push: Registrando novo service worker...')
-            registration = await navigator.serviceWorker.register('/sw.js')
-            console.log('Push: Service worker registrado:', registration.scope)
+            // Registrar service worker
+            // Em desenvolvimento usa sw-dev.js, em produção o next-pwa gera sw.js
+            // Mas podemos usar sw-dev.js como fallback se sw.js falhar
+            const swPaths = process.env.NODE_ENV === 'development'
+              ? ['/sw-dev.js']
+              : ['/sw.js', '/sw-dev.js']
+
+            for (const swPath of swPaths) {
+              try {
+                console.log('Push: Tentando registrar:', swPath)
+                registration = await navigator.serviceWorker.register(swPath)
+                console.log('Push: Service worker registrado:', registration.scope)
+                break
+              } catch (regError) {
+                console.warn('Push: Falha ao registrar', swPath, regError)
+                if (swPath === swPaths[swPaths.length - 1]) {
+                  throw regError
+                }
+              }
+            }
           }
 
           // Aguardar service worker ficar pronto (com timeout)
@@ -78,7 +94,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
           console.log('Push: Service worker pronto')
 
           // Verificar subscription existente
-          if (registration.pushManager) {
+          if (registration && registration.pushManager) {
             const sub = await registration.pushManager.getSubscription()
             console.log('Push: Subscription existente?', !!sub)
 
@@ -133,6 +149,30 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
       let registration: ServiceWorkerRegistration
 
       try {
+        // Verificar se já existe registration
+        const registrations = await navigator.serviceWorker.getRegistrations()
+
+        if (registrations.length === 0) {
+          // Registrar SW se não existir
+          const swPaths = process.env.NODE_ENV === 'development'
+            ? ['/sw-dev.js']
+            : ['/sw.js', '/sw-dev.js']
+
+          for (const swPath of swPaths) {
+            try {
+              console.log('Push: Tentando registrar:', swPath)
+              await navigator.serviceWorker.register(swPath)
+              console.log('Push: Service worker registrado')
+              break
+            } catch (regError) {
+              console.warn('Push: Falha ao registrar', swPath)
+              if (swPath === swPaths[swPaths.length - 1]) {
+                throw regError
+              }
+            }
+          }
+        }
+
         // Tentar obter registration com timeout
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error('Timeout aguardando service worker')), 10000)

@@ -17,8 +17,9 @@ export async function POST(request: NextRequest) {
   try {
     // Verificar configuração da OpenAI
     if (!validateOpenAIConfig()) {
+      console.error('OpenAI validation failed - OPENAI_API_KEY may be missing or invalid')
       return NextResponse.json(
-        { success: false, error: 'Serviço de IA não configurado' },
+        { success: false, error: 'Erro de configuração do serviço de IA. Verifique OPENAI_API_KEY.' },
         { status: 500 }
       )
     }

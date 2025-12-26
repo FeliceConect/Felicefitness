@@ -7,5 +7,16 @@ export const openai = new OpenAI({
 
 // Verificar se a API key está configurada
 export function validateOpenAIConfig(): boolean {
-  return !!process.env.OPENAI_API_KEY
+  const key = process.env.OPENAI_API_KEY
+  const isValid = !!key && key.length > 20 && key.startsWith('sk-')
+
+  if (!isValid) {
+    console.error('OpenAI Config Error:', {
+      hasKey: !!key,
+      keyLength: key?.length,
+      startsWithSk: key?.startsWith('sk-')
+    })
+  }
+
+  return isValid
 }

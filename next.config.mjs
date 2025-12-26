@@ -7,11 +7,17 @@ const nextConfig = {
 
 const pwaConfig = withPWA({
   dest: 'public',
-  register: true,
+  register: false, // Registramos manualmente no hook
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
   // Import push notification handlers
   importScripts: ['/push-sw.js'],
+  // Fallback para offline
+  fallbacks: {
+    document: '/offline',
+  },
+  // Não cachear o app-build-manifest para evitar erros
+  buildExcludes: [/app-build-manifest\.json$/],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,

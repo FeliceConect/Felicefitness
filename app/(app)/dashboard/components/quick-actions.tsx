@@ -41,9 +41,19 @@ export function QuickActions({
       onClick: onAddMeal
     },
     {
+      icon: '😴',
+      label: 'Sono',
+      href: '/sono'
+    },
+    {
+      icon: '💊',
+      label: 'Suplem.',
+      href: '/suplementos'
+    },
+    {
       icon: '📸',
       label: 'Foto',
-      href: '/progresso/foto',
+      href: '/fotos/nova',
       onClick: onTakePhoto
     },
     {
@@ -68,7 +78,7 @@ export function QuickActions({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.6 }}
-      className="grid grid-cols-4 gap-3"
+      className="grid grid-cols-3 gap-3"
     >
       {actions.map((action, index) => (
         <motion.button
