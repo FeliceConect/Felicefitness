@@ -97,18 +97,30 @@ export function useAnalytics(): UseAnalyticsReturn {
         console.error('Error fetching water logs:', waterError)
       }
 
-      // Body measurements - fetch from fitness_body_compositions
+      // Body measurements - fetch latest measurement (not limited by period)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: bodyMeasurements, error: bodyError } = await (supabase as any)
+      const { data: latestBodyMeasurement, error: latestBodyError } = await (supabase as any)
         .from('fitness_body_compositions')
         .select('id, data, peso, percentual_gordura, massa_muscular_esqueletica_kg, massa_livre_gordura_kg, gordura_visceral, pontuacao_inbody, imc')
         .eq('user_id', user.id)
-        .gte('data', startStr)
-        .lte('data', endStr)
-        .order('data', { ascending: true })
+        .order('data', { ascending: false })
+        .limit(1)
 
-      if (bodyError) {
-        console.error('Error fetching body measurements:', bodyError)
+      if (latestBodyError) {
+        console.error('Error fetching latest body measurement:', latestBodyError)
+      }
+
+      // Also fetch oldest measurement for comparison
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: oldestBodyMeasurement, error: oldestBodyError } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select('id, data, peso, percentual_gordura, massa_muscular_esqueletica_kg')
+        .eq('user_id', user.id)
+        .order('data', { ascending: true })
+        .limit(1)
+
+      if (oldestBodyError) {
+        console.error('Error fetching oldest body measurement:', oldestBodyError)
       }
 
       // Fetch user profile for goals
@@ -172,10 +184,9 @@ export function useAnalytics(): UseAnalyticsReturn {
       const avgWaterDaily = totalWaterMl / waterDays / 1000 // Convert to liters
       const daysOnWaterTarget = Array.from(waterByDay.values()).filter(v => v >= waterTarget).length
 
-      // Body measurements
-      const bodyData = (bodyMeasurements || []) as SupabaseRow[]
-      const firstMeasurement = bodyData[0]
-      const lastMeasurement = bodyData[bodyData.length - 1]
+      // Body measurements - use latest and oldest (not filtered by period)
+      const latestBody = (latestBodyMeasurement || [])[0] as SupabaseRow | undefined
+      const oldestBody = (oldestBodyMeasurement || [])[0] as SupabaseRow | undefined
 
       // Calculate daily scores based on completion
       const dailyScores: Array<{ date: string; score: number }> = []
@@ -245,20 +256,20 @@ export function useAnalytics(): UseAnalyticsReturn {
           targetRate: waterDays > 0 ? Math.round((daysOnWaterTarget / waterDays) * 100) : 0
         },
         body: {
-          startWeight: firstMeasurement?.peso || null,
-          endWeight: lastMeasurement?.peso || null,
-          weightChange: firstMeasurement?.peso && lastMeasurement?.peso
-            ? Math.round((lastMeasurement.peso - firstMeasurement.peso) * 10) / 10
+          startWeight: oldestBody?.peso || null,
+          endWeight: latestBody?.peso || null,
+          weightChange: oldestBody?.peso && latestBody?.peso
+            ? Math.round((latestBody.peso - oldestBody.peso) * 10) / 10
             : null,
-          startFat: firstMeasurement?.percentual_gordura || null,
-          endFat: lastMeasurement?.percentual_gordura || null,
-          fatChange: firstMeasurement?.percentual_gordura && lastMeasurement?.percentual_gordura
-            ? Math.round((lastMeasurement.percentual_gordura - firstMeasurement.percentual_gordura) * 10) / 10
+          startFat: oldestBody?.percentual_gordura || null,
+          endFat: latestBody?.percentual_gordura || null,
+          fatChange: oldestBody?.percentual_gordura && latestBody?.percentual_gordura
+            ? Math.round((latestBody.percentual_gordura - oldestBody.percentual_gordura) * 10) / 10
             : null,
-          startMuscle: firstMeasurement?.massa_muscular_esqueletica_kg || null,
-          endMuscle: lastMeasurement?.massa_muscular_esqueletica_kg || null,
-          muscleChange: firstMeasurement?.massa_muscular_esqueletica_kg && lastMeasurement?.massa_muscular_esqueletica_kg
-            ? Math.round((lastMeasurement.massa_muscular_esqueletica_kg - firstMeasurement.massa_muscular_esqueletica_kg) * 10) / 10
+          startMuscle: oldestBody?.massa_muscular_esqueletica_kg || null,
+          endMuscle: latestBody?.massa_muscular_esqueletica_kg || null,
+          muscleChange: oldestBody?.massa_muscular_esqueletica_kg && latestBody?.massa_muscular_esqueletica_kg
+            ? Math.round((latestBody.massa_muscular_esqueletica_kg - oldestBody.massa_muscular_esqueletica_kg) * 10) / 10
             : null
         },
         score: {
