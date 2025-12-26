@@ -327,7 +327,7 @@ export default function PerfilPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center"
+            className="fixed inset-0 bg-black/80 z-[60] flex items-end justify-center"
             onClick={() => setShowObjectiveEditor(false)}
           >
             <motion.div
@@ -336,7 +336,7 @@ export default function PerfilPage() {
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-background rounded-t-3xl max-h-[85vh] flex flex-col"
+              className="w-full max-w-lg bg-background rounded-t-3xl max-h-[90vh] flex flex-col"
             >
               {/* Handle */}
               <div className="w-12 h-1 bg-muted rounded-full mx-auto mt-3 mb-4 flex-shrink-0" />
@@ -407,7 +407,7 @@ export default function PerfilPage() {
               </div>
 
               {/* Actions - Fixed at bottom */}
-              <div className="flex gap-3 p-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-border bg-background flex-shrink-0">
+              <div className="flex gap-3 p-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom)+80px)] border-t border-border bg-background flex-shrink-0">
                 <Button
                   variant="outline"
                   className="flex-1"
