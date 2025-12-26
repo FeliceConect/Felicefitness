@@ -1,14 +1,17 @@
 "use client"
 
-import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useMemo, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronRight, Calendar, Dumbbell, TrendingUp, Loader2 } from 'lucide-react'
+import { ChevronRight, Calendar, Dumbbell, TrendingUp, Loader2, Play, X } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { WeekCalendar } from '@/components/treino/week-calendar'
 import { TodayWorkoutCard } from '@/components/treino/today-workout-card'
 import { useWorkouts } from '@/hooks/use-workouts'
+import { useWorkoutExecution } from '@/hooks/use-workout-execution'
+import { Button } from '@/components/ui/button'
 import type { DayWorkout } from '@/lib/workout/types'
 
 const typeIcons: Record<string, string> = {
@@ -19,10 +22,26 @@ const typeIcons: Record<string, string> = {
 }
 
 export default function TreinoPage() {
+  const router = useRouter()
   const { weekDays, todayWorkout, upcomingWorkouts, recentWorkouts, loading } = useWorkouts()
+  const { state, getSavedWorkoutId, clearSavedWorkout } = useWorkoutExecution()
   const [selectedDay, setSelectedDay] = useState<DayWorkout | null>(
     weekDays.find(d => format(d.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) || null
   )
+  const [showResumeModal, setShowResumeModal] = useState(false)
+  const [savedWorkoutId, setSavedWorkoutId] = useState<string | null>(null)
+
+  // Verificar se há treino em andamento
+  useEffect(() => {
+    const checkSavedWorkout = () => {
+      const id = getSavedWorkoutId()
+      if (id) {
+        setSavedWorkoutId(id)
+        setShowResumeModal(true)
+      }
+    }
+    checkSavedWorkout()
+  }, [getSavedWorkoutId])
 
   // Calcular estatísticas da semana
   const weekStats = useMemo(() => {
@@ -193,6 +212,68 @@ export default function TreinoPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de treino em andamento */}
+      <AnimatePresence>
+        {showResumeModal && savedWorkoutId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#14141F] rounded-2xl p-6 max-w-sm w-full border border-violet-500/30"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
+                  <Play className="w-8 h-8 text-violet-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Treino em Andamento</h3>
+                <p className="text-slate-400 text-sm">
+                  Você tem um treino que não foi finalizado. Deseja continuar de onde parou?
+                </p>
+                {state.workout && (
+                  <div className="mt-3 bg-slate-800/50 rounded-lg p-3">
+                    <p className="text-white font-medium">{state.workout.nome}</p>
+                    <p className="text-sm text-slate-400">
+                      {state.completedSets.length} séries concluídas • {Math.floor(state.elapsedTime / 60)}min
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <Button
+                  variant="gradient"
+                  className="w-full"
+                  onClick={() => {
+                    setShowResumeModal(false)
+                    router.push(`/treino/${savedWorkoutId}/executar`)
+                  }}
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Continuar Treino
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    clearSavedWorkout()
+                    setShowResumeModal(false)
+                    setSavedWorkoutId(null)
+                  }}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Descartar e Começar Novo
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

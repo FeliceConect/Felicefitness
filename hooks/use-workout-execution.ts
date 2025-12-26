@@ -16,12 +16,15 @@ interface WorkoutExecutionState {
   elapsedTime: number
   status: ExecutionStatus
   newPRs: PersonalRecord[]
+  // Timestamps para persistência robusta
+  startedAt?: number
+  restEndTime?: number | null
 }
 
 interface UseWorkoutExecutionReturn {
   state: WorkoutExecutionState
   // Ações
-  startWorkout: (workout: Workout) => void
+  startWorkout: (workout: Workout, forceNew?: boolean) => void
   completeSet: (data: { reps: number; weight: number }) => void
   skipSet: () => void
   skipExercise: () => void
@@ -29,6 +32,9 @@ interface UseWorkoutExecutionReturn {
   skipRest: () => void
   addRestTime: (seconds: number) => void
   finishWorkout: () => WorkoutSummary | null
+  clearSavedWorkout: () => void
+  hasSavedWorkout: () => boolean
+  getSavedWorkoutId: () => string | null
   // Computed
   currentExercise: WorkoutExercise | null
   currentSet: ExerciseSet | null
@@ -51,18 +57,27 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     restTimeRemaining: 0,
     elapsedTime: 0,
     status: 'not_started',
-    newPRs: []
+    newPRs: [],
+    startedAt: undefined,
+    restEndTime: null
   })
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const elapsedRef = useRef<NodeJS.Timeout | null>(null)
+  const hasRestoredRef = useRef(false)
 
-  // Timer de elapsed time
+  // Timer de elapsed time - usa timestamp para ser preciso mesmo após suspensão
   useEffect(() => {
     if (state.status === 'in_progress' || state.status === 'resting') {
-      elapsedRef.current = setInterval(() => {
-        setState(prev => ({ ...prev, elapsedTime: prev.elapsedTime + 1 }))
-      }, 1000)
+      const updateElapsed = () => {
+        if (state.startedAt) {
+          const elapsed = Math.floor((Date.now() - state.startedAt) / 1000)
+          setState(prev => ({ ...prev, elapsedTime: elapsed }))
+        }
+      }
+
+      updateElapsed() // Atualizar imediatamente
+      elapsedRef.current = setInterval(updateElapsed, 1000)
     }
 
     return () => {
@@ -70,23 +85,38 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
         clearInterval(elapsedRef.current)
       }
     }
-  }, [state.status])
+  }, [state.status, state.startedAt])
 
-  // Timer de descanso
+  // Timer de descanso - usa timestamp para funcionar quando iOS suspende
   useEffect(() => {
-    if (state.isResting && state.restTimeRemaining > 0) {
-      timerRef.current = setInterval(() => {
-        setState(prev => {
-          if (prev.restTimeRemaining <= 1) {
-            // Vibrar ao terminar
-            if (navigator.vibrate) {
-              navigator.vibrate([200, 100, 200])
-            }
-            return { ...prev, restTimeRemaining: 0, isResting: false, status: 'in_progress' }
+    if (state.isResting && state.restEndTime) {
+      const checkRest = () => {
+        const now = Date.now()
+        const remaining = Math.max(0, Math.ceil((state.restEndTime! - now) / 1000))
+
+        if (remaining <= 0) {
+          // Vibrar ao terminar
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200])
           }
-          return { ...prev, restTimeRemaining: prev.restTimeRemaining - 1 }
-        })
-      }, 1000)
+          setState(prev => ({
+            ...prev,
+            restTimeRemaining: 0,
+            isResting: false,
+            status: 'in_progress',
+            restEndTime: null
+          }))
+          if (timerRef.current) {
+            clearInterval(timerRef.current)
+            timerRef.current = null
+          }
+        } else {
+          setState(prev => ({ ...prev, restTimeRemaining: remaining }))
+        }
+      }
+
+      checkRest() // Verificar imediatamente
+      timerRef.current = setInterval(checkRest, 1000)
 
       return () => {
         if (timerRef.current) {
@@ -94,15 +124,80 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
         }
       }
     }
-  }, [state.isResting, state.restTimeRemaining])
+  }, [state.isResting, state.restEndTime])
+
+  // Verificar timer quando app volta ao foco (crucial para iOS)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Recalcular elapsed time
+        if (state.startedAt && (state.status === 'in_progress' || state.status === 'resting')) {
+          const elapsed = Math.floor((Date.now() - state.startedAt) / 1000)
+          setState(prev => ({ ...prev, elapsedTime: elapsed }))
+        }
+
+        // Verificar rest timer
+        if (state.restEndTime && state.isResting) {
+          const now = Date.now()
+          const remaining = Math.max(0, Math.ceil((state.restEndTime - now) / 1000))
+
+          if (remaining <= 0) {
+            if (navigator.vibrate) {
+              navigator.vibrate([200, 100, 200])
+            }
+            setState(prev => ({
+              ...prev,
+              restTimeRemaining: 0,
+              isResting: false,
+              status: 'in_progress',
+              restEndTime: null
+            }))
+          } else {
+            setState(prev => ({ ...prev, restTimeRemaining: remaining }))
+          }
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleVisibilityChange)
+    window.addEventListener('pageshow', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleVisibilityChange)
+      window.removeEventListener('pageshow', handleVisibilityChange)
+    }
+  }, [state.startedAt, state.restEndTime, state.isResting, state.status])
 
   // Tentar restaurar estado do localStorage
   useEffect(() => {
+    if (hasRestoredRef.current) return
+    hasRestoredRef.current = true
+
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        if (parsed.status !== 'completed') {
+        if (parsed.status !== 'completed' && parsed.status !== 'not_started' && parsed.workout) {
+          // Recalcular elapsed time baseado no timestamp
+          if (parsed.startedAt) {
+            parsed.elapsedTime = Math.floor((Date.now() - parsed.startedAt) / 1000)
+          }
+
+          // Verificar se o rest timer expirou enquanto estava fora
+          if (parsed.restEndTime && parsed.isResting) {
+            const remaining = Math.max(0, Math.ceil((parsed.restEndTime - Date.now()) / 1000))
+            if (remaining <= 0) {
+              parsed.isResting = false
+              parsed.restTimeRemaining = 0
+              parsed.status = 'in_progress'
+              parsed.restEndTime = null
+            } else {
+              parsed.restTimeRemaining = remaining
+            }
+          }
+
           setState(parsed)
         }
       } catch {
@@ -113,7 +208,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
 
   // Salvar estado no localStorage
   useEffect(() => {
-    if (state.status !== 'not_started') {
+    if (state.status !== 'not_started' && state.workout) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     }
   }, [state])
@@ -134,7 +229,59 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
 
   const progress = totalSets > 0 ? (completedSetsCount / totalSets) * 100 : 0
 
-  const startWorkout = useCallback((workout: Workout) => {
+  // Funções auxiliares para verificar treino salvo
+  const hasSavedWorkout = useCallback((): boolean => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        return parsed.status !== 'completed' && parsed.status !== 'not_started' && parsed.workout
+      }
+    } catch {
+      // ignore
+    }
+    return false
+  }, [])
+
+  const getSavedWorkoutId = useCallback((): string | null => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.status !== 'completed' && parsed.status !== 'not_started' && parsed.workout) {
+          return parsed.workout.id
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null
+  }, [])
+
+  const clearSavedWorkout = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY)
+    setState({
+      workout: null,
+      currentExerciseIndex: 0,
+      currentSetIndex: 0,
+      completedSets: [],
+      isResting: false,
+      restTimeRemaining: 0,
+      elapsedTime: 0,
+      status: 'not_started',
+      newPRs: [],
+      startedAt: undefined,
+      restEndTime: null
+    })
+  }, [])
+
+  const startWorkout = useCallback((workout: Workout, forceNew = false) => {
+    // Se não forçar novo e já temos um treino salvo do mesmo workout, não sobrescrever
+    if (!forceNew && state.status !== 'not_started' && state.workout?.id === workout.id) {
+      return // Já está em andamento
+    }
+
+    const now = Date.now()
     setState({
       workout,
       currentExerciseIndex: 0,
@@ -144,9 +291,11 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
       restTimeRemaining: 0,
       elapsedTime: 0,
       status: 'in_progress',
-      newPRs: []
+      newPRs: [],
+      startedAt: now,
+      restEndTime: null
     })
-  }, [])
+  }, [state.status, state.workout?.id])
 
   const checkForPR = useCallback((exerciseId: string, exerciseName: string, weight: number, reps: number): PersonalRecord | null => {
     const currentPR = getExercisePR(exerciseId)
@@ -274,11 +423,13 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
   }, [])
 
   const startRest = useCallback((seconds: number) => {
+    const now = Date.now()
     setState(prev => ({
       ...prev,
       isResting: true,
       restTimeRemaining: seconds,
-      status: 'resting'
+      status: 'resting',
+      restEndTime: now + (seconds * 1000)
     }))
   }, [])
 
@@ -287,14 +438,16 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
       ...prev,
       isResting: false,
       restTimeRemaining: 0,
-      status: 'in_progress'
+      status: 'in_progress',
+      restEndTime: null
     }))
   }, [])
 
   const addRestTime = useCallback((seconds: number) => {
     setState(prev => ({
       ...prev,
-      restTimeRemaining: prev.restTimeRemaining + seconds
+      restTimeRemaining: prev.restTimeRemaining + seconds,
+      restEndTime: prev.restEndTime ? prev.restEndTime + (seconds * 1000) : null
     }))
   }, [])
 
@@ -329,6 +482,9 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     skipRest,
     addRestTime,
     finishWorkout,
+    clearSavedWorkout,
+    hasSavedWorkout,
+    getSavedWorkoutId,
     currentExercise,
     currentSet,
     progress,
