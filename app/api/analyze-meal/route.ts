@@ -110,12 +110,14 @@ export async function POST(request: NextRequest) {
     const analysisResult = convertToMealAnalysisResult(parsedResponse)
 
     // Log para debug (remover em produção)
+    console.log('=== ANÁLISE API ===')
     console.log('Análise concluída:', {
       success: analysisResult.success,
       itemsCount: analysisResult.items.length,
       totals: analysisResult.totals,
       tokensUsed: response.usage?.total_tokens
     })
+    console.log('Items da análise:', analysisResult.items)
 
     // TODO: Salvar análise no histórico quando a tabela fitness_meal_analyses existir
     // Por enquanto, apenas logar os tokens usados

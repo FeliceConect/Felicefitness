@@ -10,7 +10,7 @@ import type { MealAnalysisResult, AnalyzedFoodItem } from '@/types/analysis'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
-import type { Meal, MealInsert, MealItemInsert } from '@/types/database'
+import type { Meal, MealInsert } from '@/types/database'
 import type { MealType } from '@/lib/nutrition/types'
 
 // Interface para um prato/foto analisado
@@ -68,6 +68,11 @@ export default function AnalisarRefeicaoPage() {
 
   // Quando análise é concluída
   const handleAnalysisComplete = (result: MealAnalysisResult) => {
+    console.log('=== ANÁLISE CONCLUÍDA ===')
+    console.log('result:', result)
+    console.log('result.items:', result.items)
+    console.log('result.items.length:', result.items?.length)
+
     // Criar um novo prato com os resultados da análise
     const newPlate: AnalyzedPlate = {
       id: `plate-${Date.now()}`,
@@ -76,8 +81,14 @@ export default function AnalisarRefeicaoPage() {
       totals: result.totals
     }
 
+    console.log('newPlate criado:', newPlate)
+
     // Adicionar à lista de pratos
-    setPlates(prev => [...prev, newPlate])
+    setPlates(prev => {
+      const updated = [...prev, newPlate]
+      console.log('Plates atualizados:', updated)
+      return updated
+    })
     setAnalysisResult(result)
     setStep('confirm')
 
@@ -151,7 +162,23 @@ export default function AnalisarRefeicaoPage() {
 
   // Salvar refeição
   const handleSave = async () => {
-    if (plates.length === 0 || !user) return
+    console.log('=== INICIANDO SALVAMENTO ===')
+    console.log('plates:', plates)
+    console.log('plates.length:', plates.length)
+    console.log('allItems calculado:', allItems)
+    console.log('allItems.length:', allItems.length)
+
+    // Debug cada plate
+    plates.forEach((plate, i) => {
+      console.log(`Plate ${i}:`, plate)
+      console.log(`Plate ${i} items:`, plate.items)
+      console.log(`Plate ${i} items length:`, plate.items?.length)
+    })
+
+    if (plates.length === 0 || !user) {
+      console.log('Saindo: plates.length === 0 ou !user', { platesLength: plates.length, user: !!user })
+      return
+    }
 
     setIsSaving(true)
     setSaveError(null)
@@ -193,25 +220,42 @@ export default function AnalisarRefeicaoPage() {
 
       // 2. Criar os itens de todos os pratos
       if (meal && allItems.length > 0) {
-        const mealItems: MealItemInsert[] = allItems.map(item => ({
-          meal_id: meal.id,
-          nome_alimento: item.name,
-          quantidade: item.portion_grams,
-          unidade: 'g',
-          calorias: item.calories,
-          proteinas: item.protein,
-          carboidratos: item.carbs,
-          gorduras: item.fat
-        }))
+        console.log('=== SALVANDO ITENS ===')
+        console.log('meal.id:', meal.id)
+        console.log('allItems:', allItems)
 
-        const { error: itemsError } = await supabase
-          .from('fitness_meal_items')
-          .insert(mealItems as never)
+        // Criar array de itens para inserir - um por um para debug
+        for (const item of allItems) {
+          const itemToInsert = {
+            meal_id: meal.id,
+            nome_alimento: item.name || 'Alimento',
+            quantidade: Math.round(item.portion_grams || 100),
+            unidade: 'g',
+            calorias: Math.round(item.calories || 0),
+            proteinas: Math.round(item.protein || 0),
+            carboidratos: Math.round(item.carbs || 0),
+            gorduras: Math.round(item.fat || 0)
+          }
 
-        if (itemsError) {
-          console.error('Erro ao criar itens da refeição:', itemsError)
-          // Não falhar completamente se os itens não salvarem
+          console.log('Inserindo item:', itemToInsert)
+
+          const { data: insertedItem, error: itemError } = await supabase
+            .from('fitness_meal_items')
+            .insert(itemToInsert as never)
+            .select()
+            .single()
+
+          if (itemError) {
+            console.error('Erro ao inserir item:', item.name, itemError)
+            throw new Error(`Erro ao salvar item "${item.name}": ${itemError.message}`)
+          }
+
+          console.log('Item salvo:', insertedItem)
         }
+
+        console.log('=== TODOS OS ITENS SALVOS ===')
+      } else {
+        console.log('Nenhum item para salvar:', { meal: !!meal, itemsCount: allItems.length })
       }
 
       // Redirecionar para a página de alimentação

@@ -194,6 +194,10 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         throw new Error('Usuário não autenticado')
       }
 
+      console.log('=== addMeal: SALVANDO REFEIÇÃO ===')
+      console.log('meal.itens:', meal.itens)
+      console.log('meal.itens.length:', meal.itens?.length)
+
       // Preparar dados para o banco
       const mealData = {
         user_id: user.id,
@@ -207,7 +211,7 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         notas: meal.notas || null
       }
 
-      // Inserir no banco
+      // Inserir refeição no banco
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('fitness_meals')
@@ -218,6 +222,46 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
       if (error) {
         console.error('Error saving meal:', error)
         throw error
+      }
+
+      console.log('Refeição salva com ID:', data.id)
+
+      // SALVAR OS ITENS DA REFEIÇÃO
+      if (meal.itens && meal.itens.length > 0) {
+        console.log('=== addMeal: SALVANDO ITENS ===')
+        for (const item of meal.itens) {
+          // Verificar se food_id é um UUID válido (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+          const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
+
+          const itemToInsert = {
+            meal_id: data.id,
+            food_id: isValidUUID ? item.food_id : null, // Só envia se for UUID válido
+            nome_alimento: item.food?.nome || 'Alimento',
+            quantidade: Math.round(item.quantidade || 100),
+            unidade: item.food?.unidade || 'g',
+            calorias: Math.round(item.calorias || 0),
+            proteinas: Math.round(item.proteinas || 0),
+            carboidratos: Math.round(item.carboidratos || 0),
+            gorduras: Math.round(item.gorduras || 0)
+          }
+
+          console.log('Inserindo item:', itemToInsert)
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: itemError } = await (supabase as any)
+            .from('fitness_meal_items')
+            .insert(itemToInsert)
+
+          if (itemError) {
+            console.error('Erro ao salvar item:', item.food?.nome, itemError)
+            // Continuar mesmo com erro para salvar outros itens
+          } else {
+            console.log('Item salvo:', item.food?.nome)
+          }
+        }
+        console.log('=== addMeal: ITENS SALVOS ===')
+      } else {
+        console.log('Nenhum item para salvar')
       }
 
       // Converter para formato Meal e adicionar ao estado
@@ -239,6 +283,7 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
       }
 
       setMeals(prev => [...prev, newMeal])
+      console.log('=== addMeal: CONCLUÍDO ===')
     } catch (err) {
       console.error('Error adding meal:', err)
       throw err

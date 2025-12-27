@@ -25,34 +25,77 @@ export default function MealDetailPage() {
   const [meal, setMeal] = useState<Meal | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Tipo para itens do banco
+  interface DbMealItem {
+    id: string
+    food_id?: string | null
+    nome_alimento: string
+    quantidade?: number | null
+    unidade?: string | null
+    calorias?: number | null
+    proteinas?: number | null
+    carboidratos?: number | null
+    gorduras?: number | null
+  }
+
   // Carregar refeição específica pelo ID
   const loadMeal = useCallback(async () => {
     setLoading(true)
+    console.log('=== CARREGANDO REFEIÇÃO ===')
+    console.log('ID:', id)
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
+        console.log('Usuário não autenticado')
         setMeal(null)
         return
       }
+      console.log('User ID:', user.id)
 
-      // Buscar refeição específica com seus itens
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: mealData, error } = await (supabase as any)
+      // Buscar refeição específica
+      const { data: mealData, error } = await supabase
         .from('fitness_meals')
-        .select('*, itens:fitness_meal_items(*)')
+        .select('*')
         .eq('id', id)
         .eq('user_id', user.id)
-        .single()
+        .single() as { data: {
+          id: string
+          user_id: string | null
+          data: string
+          tipo_refeicao: string
+          horario: string | null
+          calorias_total: number | null
+          proteinas_total: number | null
+          carboidratos_total: number | null
+          gorduras_total: number | null
+          foto_url: string | null
+          analise_ia: string | null
+          notas: string | null
+          created_at: string
+        } | null, error: Error | null }
 
       if (error || !mealData) {
-        console.error('Error loading meal:', error)
+        console.error('Erro ao carregar refeição:', error)
         setMeal(null)
         return
       }
+      console.log('Refeição carregada:', mealData)
+
+      // Buscar itens separadamente - sem filtro de user_id (RLS cuida disso)
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('fitness_meal_items')
+        .select('*')
+        .eq('meal_id', id) as { data: DbMealItem[] | null, error: Error | null }
+
+      console.log('=== ITENS DA REFEIÇÃO ===')
+      console.log('Query: meal_id =', id)
+      console.log('Resultado:', itemsData)
+      console.log('Erro:', itemsError)
+      console.log('Quantidade:', itemsData?.length || 0)
 
       // Converter itens
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const convertedItems: MealItem[] = (mealData.itens || []).map((item: any) => ({
+      const convertedItems: MealItem[] = (itemsData || []).map((item: DbMealItem) => ({
         id: item.id,
         food_id: item.food_id || item.id,
         food: {
@@ -73,9 +116,11 @@ export default function MealDetailPage() {
         gorduras: item.gorduras || 0
       }))
 
+      console.log('Itens convertidos:', convertedItems)
+
       setMeal({
         id: mealData.id,
-        user_id: mealData.user_id,
+        user_id: mealData.user_id || '',
         tipo: mealData.tipo_refeicao as MealType,
         data: mealData.data,
         horario_planejado: mealData.horario || undefined,
@@ -90,8 +135,10 @@ export default function MealDetailPage() {
         notas: mealData.analise_ia || mealData.notas || undefined,
         created_at: mealData.created_at
       })
+
+      console.log('=== REFEIÇÃO CARREGADA COM SUCESSO ===')
     } catch (err) {
-      console.error('Error:', err)
+      console.error('Erro geral:', err)
       setMeal(null)
     } finally {
       setLoading(false)
@@ -170,47 +217,62 @@ export default function MealDetailPage() {
 
   const handleSaveEdit = async () => {
     setSaving(true)
+    console.log('=== SALVANDO EDIÇÃO ===')
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuário não autenticado')
 
       // 1. Deletar itens antigos
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      console.log('Deletando itens antigos do meal_id:', meal.id)
+      const { error: deleteError } = await supabase
         .from('fitness_meal_items')
         .delete()
         .eq('meal_id', meal.id)
 
-      // 2. Inserir novos itens
-      if (editedItems.length > 0) {
-        const itemsToInsert = editedItems.map(item => ({
-          meal_id: meal.id,
-          food_id: item.food_id,
-          nome_alimento: item.food.nome,
-          quantidade: item.quantidade,
-          unidade: item.food.unidade || 'g',
-          calorias: item.calorias,
-          proteinas: item.proteinas,
-          carboidratos: item.carboidratos,
-          gorduras: item.gorduras
-        }))
+      if (deleteError) {
+        console.error('Erro ao deletar itens:', deleteError)
+      }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
-          .from('fitness_meal_items')
-          .insert(itemsToInsert)
+      // 2. Inserir novos itens um por um
+      if (editedItems.length > 0) {
+        console.log('Inserindo', editedItems.length, 'novos itens')
+        for (const item of editedItems) {
+          // Verificar se food_id é um UUID válido
+          const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
+
+          const itemToInsert = {
+            meal_id: meal.id,
+            food_id: isValidUUID ? item.food_id : null, // Só envia se for UUID válido
+            nome_alimento: item.food.nome,
+            quantidade: Math.round(item.quantidade),
+            unidade: item.food.unidade || 'g',
+            calorias: Math.round(item.calorias),
+            proteinas: Math.round(item.proteinas),
+            carboidratos: Math.round(item.carboidratos),
+            gorduras: Math.round(item.gorduras)
+          }
+          console.log('Inserindo item:', itemToInsert)
+
+          const { error: insertError } = await supabase
+            .from('fitness_meal_items')
+            .insert(itemToInsert as never)
+
+          if (insertError) {
+            console.error('Erro ao inserir item:', insertError)
+          }
+        }
       }
 
       // 3. Atualizar totais na refeição
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      console.log('Atualizando totais da refeição')
+      await supabase
         .from('fitness_meals')
         .update({
           calorias_total: editedTotals.calorias,
           proteinas_total: editedTotals.proteinas,
           carboidratos_total: editedTotals.carboidratos,
           gorduras_total: editedTotals.gorduras
-        })
+        } as never)
         .eq('id', meal.id)
 
       // 4. Atualizar estado local
@@ -223,11 +285,12 @@ export default function MealDetailPage() {
         gorduras_total: editedTotals.gorduras
       })
 
+      console.log('=== EDIÇÃO SALVA COM SUCESSO ===')
       setIsEditing(false)
       setEditedItems([])
       setShowAddFood(false)
     } catch (error) {
-      console.error('Error saving meal:', error)
+      console.error('Erro ao salvar edição:', error)
     } finally {
       setSaving(false)
     }
@@ -270,16 +333,14 @@ export default function MealDetailPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuário não autenticado')
 
-      // Deletar itens da refeição primeiro
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      // Deletar itens da refeição primeiro (CASCADE cuida disso, mas vamos ser explícitos)
+      await supabase
         .from('fitness_meal_items')
         .delete()
         .eq('meal_id', meal.id)
 
       // Deletar a refeição
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      await supabase
         .from('fitness_meals')
         .delete()
         .eq('id', meal.id)
@@ -287,7 +348,7 @@ export default function MealDetailPage() {
 
       router.push('/alimentacao')
     } catch (error) {
-      console.error('Error deleting meal:', error)
+      console.error('Erro ao deletar refeição:', error)
       setDeleting(false)
     }
   }
