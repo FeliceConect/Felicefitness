@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Trophy, Flame, Target, Star } from 'lucide-react'
+import { ArrowLeft, Trophy, Flame, Target, Star, Medal } from 'lucide-react'
 import Link from 'next/link'
 import { useGamification } from '@/hooks/use-gamification'
 import {
@@ -92,11 +92,20 @@ export default function ConquistasPage() {
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
-        <div className="flex items-center gap-4 p-4">
-          <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-6 h-6" />
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <h1 className="text-xl font-bold">Conquistas</h1>
+          </div>
+          <Link
+            href="/ranking"
+            className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-lg text-sm font-medium hover:from-yellow-400 hover:to-amber-400 transition-all"
+          >
+            <Medal className="w-4 h-4" />
+            Ranking
           </Link>
-          <h1 className="text-xl font-bold">Conquistas</h1>
         </div>
 
         {/* Tabs */}
