@@ -15,7 +15,8 @@ import {
   TrendingDown,
   Calendar,
   Clock,
-  Activity
+  Activity,
+  MessageSquare
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -203,6 +204,27 @@ export default function ClientDetailPage() {
           <h1 className="text-2xl font-bold text-white">{client.nome || 'Cliente'}</h1>
           <p className="text-slate-400">{client.email}</p>
         </div>
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/chat/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clientId: client.id })
+              })
+              const data = await response.json()
+              if (data.success) {
+                router.push('/portal/messages')
+              }
+            } catch (error) {
+              console.error('Erro ao iniciar conversa:', error)
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors"
+        >
+          <MessageSquare className="w-5 h-5" />
+          <span className="hidden sm:inline">Mensagem</span>
+        </button>
       </div>
 
       {/* Profile Card */}
