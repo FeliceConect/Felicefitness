@@ -14,7 +14,10 @@ import {
   Plus,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle,
+  UserX
 } from 'lucide-react'
 import { roleLabels, UserRole } from '@/lib/admin/types'
 
@@ -25,6 +28,8 @@ interface User {
   role: UserRole | null
   created_at: string
   avatar_url?: string
+  is_active?: boolean
+  deactivated_at?: string
   professionals?: Array<{ type: string; name: string }>
 }
 
@@ -60,6 +65,11 @@ export default function UsersPage() {
     password: '',
     role: 'client' as UserRole
   })
+
+  // Estados para ações de usuário
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteAction, setDeleteAction] = useState<'deactivate' | 'hard_delete'>('deactivate')
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -165,6 +175,71 @@ export default function UsersPage() {
       alert('Erro ao atualizar role')
     } finally {
       setUpdatingRole(false)
+    }
+  }
+
+  const handleToggleActive = async (user: User) => {
+    const action = user.is_active === false ? 'activate' : 'deactivate'
+    const actionLabel = action === 'activate' ? 'ativar' : 'inativar'
+
+    if (!confirm(`Tem certeza que deseja ${actionLabel} o usuário ${user.nome || user.email}?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users?userId=${user.id}&action=${action}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Atualizar lista localmente
+        setUsers(prev => prev.map(u =>
+          u.id === user.id ? { ...u, is_active: action === 'activate' } : u
+        ))
+        alert(data.message)
+      } else {
+        alert(data.error || `Erro ao ${actionLabel} usuário`)
+      }
+    } catch (error) {
+      console.error(`Erro ao ${actionLabel} usuário:`, error)
+      alert(`Erro ao ${actionLabel} usuário`)
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/admin/users?userId=${selectedUser.id}&action=${deleteAction}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        if (deleteAction === 'hard_delete') {
+          // Remover da lista
+          setUsers(prev => prev.filter(u => u.id !== selectedUser.id))
+        } else {
+          // Atualizar status
+          setUsers(prev => prev.map(u =>
+            u.id === selectedUser.id ? { ...u, is_active: false } : u
+          ))
+        }
+        setShowDeleteModal(false)
+        setSelectedUser(null)
+        alert(data.message)
+      } else {
+        alert(data.error || 'Erro ao processar ação')
+      }
+    } catch (error) {
+      console.error('Erro ao processar ação:', error)
+      alert('Erro ao processar ação')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -294,10 +369,12 @@ export default function UsersPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-700">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-slate-700/30">
+                    <tr key={user.id} className={`hover:bg-slate-700/30 ${user.is_active === false ? 'opacity-60' : ''}`}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            user.is_active === false ? 'bg-red-500/20' : 'bg-violet-500/20'
+                          }`}>
                             {user.avatar_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -305,6 +382,8 @@ export default function UsersPage() {
                                 alt={user.nome}
                                 className="w-10 h-10 rounded-full object-cover"
                               />
+                            ) : user.is_active === false ? (
+                              <UserX className="w-5 h-5 text-red-400" />
                             ) : (
                               <span className="text-violet-400 font-medium">
                                 {user.nome?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
@@ -312,7 +391,14 @@ export default function UsersPage() {
                             )}
                           </div>
                           <div>
-                            <p className="text-white font-medium">{user.nome || 'Sem nome'}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-medium">{user.nome || 'Sem nome'}</p>
+                              {user.is_active === false && (
+                                <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-xs rounded">
+                                  Inativo
+                                </span>
+                              )}
+                            </div>
                             <p className="text-sm text-slate-400">{user.email}</p>
                           </div>
                         </div>
@@ -449,7 +535,7 @@ export default function UsersPage() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md">
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Alterar Papel</h3>
+              <h3 className="text-lg font-semibold text-white">Gerenciar Usuário</h3>
               <button
                 onClick={() => {
                   setShowRoleModal(false)
@@ -462,20 +548,29 @@ export default function UsersPage() {
             </div>
             <div className="p-4">
               <div className="flex items-center gap-3 mb-4 p-3 bg-slate-700/50 rounded-lg">
-                <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                  <span className="text-violet-400 font-medium">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  selectedUser.is_active === false ? 'bg-red-500/20' : 'bg-violet-500/20'
+                }`}>
+                  <span className={`font-medium ${
+                    selectedUser.is_active === false ? 'text-red-400' : 'text-violet-400'
+                  }`}>
                     {selectedUser.nome?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-white font-medium">{selectedUser.nome || 'Sem nome'}</p>
                   <p className="text-sm text-slate-400">{selectedUser.email}</p>
                 </div>
+                {selectedUser.is_active === false && (
+                  <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">
+                    Inativo
+                  </span>
+                )}
               </div>
 
-              <p className="text-sm text-slate-400 mb-3">Selecione o novo papel:</p>
+              <p className="text-sm text-slate-400 mb-3">Alterar papel:</p>
 
-              <div className="space-y-2">
+              <div className="space-y-2 mb-6">
                 {[
                   { value: 'client', label: 'Cliente', icon: Activity, desc: 'Usuário padrão do app' },
                   { value: 'trainer', label: 'Personal Trainer', icon: Activity, desc: 'Acesso aos clientes atribuídos' },
@@ -507,6 +602,119 @@ export default function UsersPage() {
                     )}
                   </button>
                 ))}
+              </div>
+
+              {/* Ações de Inativar/Excluir */}
+              <div className="border-t border-slate-700 pt-4 space-y-2">
+                <p className="text-sm text-slate-400 mb-3">Ações:</p>
+
+                {/* Botão Inativar/Ativar */}
+                <button
+                  onClick={() => {
+                    handleToggleActive(selectedUser)
+                    setShowRoleModal(false)
+                    setSelectedUser(null)
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                    selectedUser.is_active === false
+                      ? 'border-green-500/50 bg-green-500/10 hover:bg-green-500/20'
+                      : 'border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20'
+                  }`}
+                >
+                  <Activity className={`w-5 h-5 ${
+                    selectedUser.is_active === false ? 'text-green-400' : 'text-yellow-400'
+                  }`} />
+                  <div className="text-left flex-1">
+                    <p className={`font-medium ${
+                      selectedUser.is_active === false ? 'text-green-400' : 'text-yellow-400'
+                    }`}>
+                      {selectedUser.is_active === false ? 'Reativar Usuário' : 'Inativar Usuário'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {selectedUser.is_active === false
+                        ? 'O usuário poderá fazer login novamente'
+                        : 'O usuário não poderá fazer login, mas os dados são mantidos'
+                      }
+                    </p>
+                  </div>
+                </button>
+
+                {/* Botão Excluir Permanentemente */}
+                <button
+                  onClick={() => {
+                    setShowRoleModal(false)
+                    setDeleteAction('hard_delete')
+                    setShowDeleteModal(true)
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                  <div className="text-left flex-1">
+                    <p className="font-medium text-red-400">Excluir Permanentemente</p>
+                    <p className="text-xs text-slate-500">Remove o usuário e todos os seus dados. Esta ação é irreversível!</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl border border-red-500/30 w-full max-w-md">
+            <div className="flex items-center gap-3 p-4 border-b border-slate-700 bg-red-500/10">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+              <h3 className="text-lg font-semibold text-white">Confirmar Exclusão</h3>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4 p-3 bg-slate-700/50 rounded-lg">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <span className="text-red-400 font-medium">
+                    {selectedUser.nome?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-white font-medium">{selectedUser.nome || 'Sem nome'}</p>
+                  <p className="text-sm text-slate-400">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
+                <p className="text-red-400 text-sm">
+                  <strong>Atenção:</strong> Esta ação é irreversível! O usuário e todos os seus dados (treinos, refeições, metas, etc.) serão permanentemente excluídos.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setSelectedUser(null)
+                  }}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Excluindo...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

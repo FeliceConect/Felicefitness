@@ -374,3 +374,157 @@ export async function PATCH(request: NextRequest) {
     )
   }
 }
+
+// DELETE - Deletar ou inativar um usuário
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
+
+    // Verificar se é admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile } = await (supabase as any)
+      .from('fitness_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Acesso negado' },
+        { status: 403 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+    const action = searchParams.get('action') || 'deactivate' // 'deactivate', 'activate', 'hard_delete'
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'userId é obrigatório' },
+        { status: 400 }
+      )
+    }
+
+    // Não permitir ações em si mesmo
+    if (userId === user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Você não pode modificar sua própria conta' },
+        { status: 400 }
+      )
+    }
+
+    // Usar admin client
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Verificar se o usuário a ser modificado existe e seu role
+    const { data: targetUser } = await supabaseAdmin
+      .from('fitness_profiles')
+      .select('role, nome, email, is_active')
+      .eq('id', userId)
+      .single()
+
+    if (!targetUser) {
+      return NextResponse.json(
+        { success: false, error: 'Usuário não encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Apenas super_admin pode modificar outros admins
+    if (['super_admin', 'admin'].includes(targetUser.role) && profile.role !== 'super_admin') {
+      return NextResponse.json(
+        { success: false, error: 'Apenas super_admin pode modificar administradores' },
+        { status: 403 }
+      )
+    }
+
+    if (action === 'hard_delete') {
+      // Hard delete - remove permanentemente
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+      if (deleteError) {
+        console.error('Erro ao deletar usuário:', deleteError)
+        return NextResponse.json(
+          { success: false, error: 'Erro ao deletar usuário' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Usuário ${targetUser.nome || targetUser.email} excluído permanentemente`
+      })
+
+    } else if (action === 'activate') {
+      // Reativar usuário
+      const { error: updateError } = await supabaseAdmin
+        .from('fitness_profiles')
+        .update({
+          is_active: true,
+          deactivated_at: null
+        })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('Erro ao ativar usuário:', updateError)
+        return NextResponse.json(
+          { success: false, error: 'Erro ao ativar usuário' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Usuário ${targetUser.nome || targetUser.email} reativado com sucesso`
+      })
+
+    } else {
+      // Soft delete - inativar usuário (padrão)
+      const { error: updateError } = await supabaseAdmin
+        .from('fitness_profiles')
+        .update({
+          is_active: false,
+          deactivated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('Erro ao inativar usuário:', updateError)
+        return NextResponse.json(
+          { success: false, error: 'Erro ao inativar usuário' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Usuário ${targetUser.nome || targetUser.email} inativado com sucesso`
+      })
+    }
+
+  } catch (error) {
+    console.error('Erro ao processar requisição:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
