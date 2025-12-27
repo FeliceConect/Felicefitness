@@ -399,6 +399,14 @@ export default function MealDetailPage() {
           )}
         </div>
 
+        {items.length === 0 && !isEditing && meal.calorias_total > 0 && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-3">
+            <p className="text-amber-400 text-sm">
+              Esta refeição foi salva sem detalhes dos alimentos. Clique em editar para adicionar os alimentos.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2">
           {items.map((item, index) => {
             const categoryInfo = foodCategoryLabels[item.food.categoria]
@@ -479,7 +487,7 @@ export default function MealDetailPage() {
 
       {/* Edit mode actions */}
       {isEditing && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-12">
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-12 z-50">
           <div className="flex gap-3">
             <Button
               variant="outline"
