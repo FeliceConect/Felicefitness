@@ -51,7 +51,7 @@ export function PortionSelector({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="w-full bg-[#14141F] rounded-t-3xl p-6 max-h-[90vh] overflow-y-auto"
+        className="w-full bg-[#14141F] rounded-t-3xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom)+80px)] max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-6">

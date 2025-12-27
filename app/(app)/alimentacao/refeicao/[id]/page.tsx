@@ -362,11 +362,15 @@ function MealDetailContent({ id }: { id: string }) {
   )
 }
 
-export default function MealDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function MealDetailPageInner({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  return <MealDetailContent id={id} />
+}
+
+export default function MealDetailPage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center"><div className="text-slate-400">Carregando...</div></div>}>
-      <MealDetailContent id={id} />
+      <MealDetailPageInner params={params} />
     </Suspense>
   )
 }
