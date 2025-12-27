@@ -300,6 +300,9 @@ export default function OnboardingPage() {
 
   return (
     <div className="fixed inset-0 bg-slate-900 flex flex-col z-[100]">
+      {/* Safe area top spacer for iOS notch */}
+      <div className="pt-safe bg-slate-900" />
+
       {/* Progress bar */}
       <div className="h-1 bg-slate-800">
         <motion.div
