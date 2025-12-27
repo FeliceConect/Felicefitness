@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import {
   UserCog,
   Plus,
@@ -9,7 +10,9 @@ import {
   Trash2,
   Users,
   X,
-  Search
+  Search,
+  Upload,
+  Camera
 } from 'lucide-react'
 
 interface Professional {
@@ -20,6 +23,8 @@ interface Professional {
   specialty: string | null
   bio: string | null
   max_clients: number
+  display_name: string | null
+  avatar_url: string | null
   is_active: boolean
   created_at: string
   clientCount: number
@@ -48,6 +53,9 @@ export default function ProfessionalsPage() {
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [searchUser, setSearchUser] = useState('')
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const supabase = createClient()
 
   // Form state
   const [formData, setFormData] = useState({
@@ -56,7 +64,9 @@ export default function ProfessionalsPage() {
     registration: '',
     specialty: '',
     bio: '',
-    maxClients: 30
+    maxClients: 30,
+    displayName: '',
+    avatarUrl: ''
   })
 
   const fetchProfessionals = useCallback(async () => {
@@ -85,8 +95,8 @@ export default function ProfessionalsPage() {
   const fetchAvailableUsers = async () => {
     setLoadingUsers(true)
     try {
-      // Buscar usuários que não são profissionais ainda
-      const response = await fetch('/api/admin/users?role=client&limit=100')
+      // Buscar usuários que não são profissionais ainda (exclui quem já está cadastrado como profissional)
+      const response = await fetch('/api/admin/users?role=not_admin&excludeProfessionals=true&limit=100')
       const data = await response.json()
 
       if (data.success) {
@@ -143,7 +153,9 @@ export default function ProfessionalsPage() {
           registration: formData.registration,
           specialty: formData.specialty,
           bio: formData.bio,
-          maxClients: formData.maxClients
+          maxClients: formData.maxClients,
+          displayName: formData.displayName,
+          avatarUrl: formData.avatarUrl
         })
       })
 
@@ -166,7 +178,8 @@ export default function ProfessionalsPage() {
   }
 
   const handleDeleteProfessional = async (professional: Professional) => {
-    if (!confirm(`Tem certeza que deseja remover ${professional.fitness_profiles.nome} como profissional? Os clientes atribuídos serão desvinculados.`)) {
+    const displayName = professional.display_name || professional.fitness_profiles?.nome || 'este profissional'
+    if (!confirm(`Tem certeza que deseja remover ${displayName} como profissional? Os clientes atribuídos serão desvinculados.`)) {
       return
     }
 
@@ -218,7 +231,9 @@ export default function ProfessionalsPage() {
       registration: '',
       specialty: '',
       bio: '',
-      maxClients: 30
+      maxClients: 30,
+      displayName: '',
+      avatarUrl: ''
     })
     setSearchUser('')
   }
@@ -237,7 +252,9 @@ export default function ProfessionalsPage() {
       registration: professional.registration || '',
       specialty: professional.specialty || '',
       bio: professional.bio || '',
-      maxClients: professional.max_clients
+      maxClients: professional.max_clients,
+      displayName: professional.display_name || '',
+      avatarUrl: professional.avatar_url || ''
     })
     setShowEditModal(true)
   }
@@ -255,6 +272,60 @@ export default function ProfessionalsPage() {
     return type === 'nutritionist'
       ? 'bg-green-500/20 text-green-400 border-green-500/30'
       : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+  }
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem válida')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 5MB')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      // Use a unique identifier for the professional photo
+      const professionalId = selectedProfessional?.id || formData.userId || `new_${Date.now()}`
+      const fileName = `professionals/${professionalId}/avatar.${fileExt}`
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName)
+
+      // Add timestamp to bust cache
+      const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`
+
+      // Update form data
+      setFormData(prev => ({ ...prev, avatarUrl: urlWithTimestamp }))
+    } catch (error) {
+      console.error('Erro ao fazer upload da foto:', error)
+      alert('Erro ao fazer upload da foto')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handlePhotoUpload(file)
+    }
   }
 
   return (
@@ -319,25 +390,25 @@ export default function ProfessionalsPage() {
                         ? 'bg-green-500/20'
                         : 'bg-blue-500/20'
                     }`}>
-                      {professional.fitness_profiles?.avatar_url ? (
+                      {(professional.avatar_url || professional.fitness_profiles?.avatar_url) ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={professional.fitness_profiles.avatar_url}
-                          alt={professional.fitness_profiles.nome}
+                          src={professional.avatar_url || professional.fitness_profiles?.avatar_url}
+                          alt={professional.display_name || professional.fitness_profiles?.nome}
                           className="w-12 h-12 rounded-full object-cover"
                         />
                       ) : (
                         <span className={`text-lg font-medium ${
                           professional.type === 'nutritionist' ? 'text-green-400' : 'text-blue-400'
                         }`}>
-                          {professional.fitness_profiles?.nome?.charAt(0).toUpperCase() || '?'}
+                          {(professional.display_name || professional.fitness_profiles?.nome || '?').charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="text-white font-medium">
-                          {professional.fitness_profiles?.nome || 'Sem nome'}
+                          {professional.display_name || professional.fitness_profiles?.nome || 'Sem nome'}
                         </p>
                         {!professional.is_active && (
                           <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400">
@@ -478,7 +549,15 @@ export default function ProfessionalsPage() {
                     filteredUsers.map(user => (
                       <button
                         key={user.id}
-                        onClick={() => setFormData(prev => ({ ...prev, userId: user.id }))}
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            userId: user.id,
+                            // Se o usuário já tem role de profissional, pré-selecionar o tipo
+                            type: user.role === 'nutritionist' ? 'nutritionist' :
+                                  user.role === 'trainer' ? 'trainer' : prev.type
+                          }))
+                        }}
                         className={`w-full flex items-center gap-3 p-3 hover:bg-slate-700 transition-colors ${
                           formData.userId === user.id ? 'bg-violet-500/10' : ''
                         }`}
@@ -487,7 +566,15 @@ export default function ProfessionalsPage() {
                           {user.nome?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
                         </div>
                         <div className="text-left flex-1">
-                          <p className="text-white text-sm">{user.nome || 'Sem nome'}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-white text-sm">{user.nome || 'Sem nome'}</p>
+                            {user.role === 'nutritionist' && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">Nutricionista</span>
+                            )}
+                            {user.role === 'trainer' && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Personal</span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400">{user.email}</p>
                         </div>
                         {formData.userId === user.id && (
@@ -498,6 +585,86 @@ export default function ProfessionalsPage() {
                       </button>
                     ))
                   )}
+                </div>
+              </div>
+
+              {/* Nome de Exibição */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">
+                  Nome de Exibição <span className="text-violet-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                  placeholder="Nome que aparece para os clientes"
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <p className="text-xs text-slate-500 mt-1">Este é o nome que os clientes verão</p>
+              </div>
+
+              {/* Foto do Profissional */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">
+                  Foto do Profissional (opcional)
+                </label>
+                <div className="flex items-center gap-4">
+                  <div
+                    className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-slate-600 bg-slate-700 flex items-center justify-center cursor-pointer hover:border-violet-500 transition-colors group"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {formData.avatarUrl ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={formData.avatarUrl}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center text-slate-400 group-hover:text-violet-400 transition-colors">
+                        {uploading ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-violet-500"></div>
+                        ) : (
+                          <>
+                            <Upload className="w-6 h-6" />
+                            <span className="text-[10px] mt-1">Enviar</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-300 hover:bg-slate-600 hover:text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {uploading ? 'Enviando...' : 'Escolher foto'}
+                    </button>
+                    {formData.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, avatarUrl: '' }))}
+                        className="mt-2 text-xs text-red-400 hover:text-red-300"
+                      >
+                        Remover foto
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
                 </div>
               </div>
 
@@ -583,15 +750,99 @@ export default function ProfessionalsPage() {
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   selectedProfessional.type === 'nutritionist' ? 'bg-green-500/20' : 'bg-blue-500/20'
                 }`}>
-                  <span className={`font-medium ${
-                    selectedProfessional.type === 'nutritionist' ? 'text-green-400' : 'text-blue-400'
-                  }`}>
-                    {selectedProfessional.fitness_profiles?.nome?.charAt(0).toUpperCase()}
-                  </span>
+                  {formData.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={formData.avatarUrl}
+                      alt={formData.displayName || 'Profissional'}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className={`font-medium ${
+                      selectedProfessional.type === 'nutritionist' ? 'text-green-400' : 'text-blue-400'
+                    }`}>
+                      {(formData.displayName || selectedProfessional.fitness_profiles?.nome || '?').charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div>
-                  <p className="text-white font-medium">{selectedProfessional.fitness_profiles?.nome}</p>
+                  <p className="text-white font-medium">{formData.displayName || selectedProfessional.fitness_profiles?.nome}</p>
                   <p className="text-sm text-slate-400">{getTypeLabel(selectedProfessional.type)}</p>
+                </div>
+              </div>
+
+              {/* Nome de Exibição */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Nome de Exibição</label>
+                <input
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                  placeholder="Nome que aparece para os clientes"
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              {/* Foto do Profissional */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Foto do Profissional</label>
+                <div className="flex items-center gap-4">
+                  <div
+                    className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-slate-600 bg-slate-700 flex items-center justify-center cursor-pointer hover:border-violet-500 transition-colors group"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {formData.avatarUrl ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={formData.avatarUrl}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center text-slate-400 group-hover:text-violet-400 transition-colors">
+                        {uploading ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-violet-500"></div>
+                        ) : (
+                          <>
+                            <Upload className="w-6 h-6" />
+                            <span className="text-[10px] mt-1">Enviar</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-300 hover:bg-slate-600 hover:text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {uploading ? 'Enviando...' : 'Escolher foto'}
+                    </button>
+                    {formData.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, avatarUrl: '' }))}
+                        className="mt-2 text-xs text-red-400 hover:text-red-300"
+                      >
+                        Remover foto
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
                 </div>
               </div>
 

@@ -47,13 +47,10 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    // Buscar profissionais com dados do perfil
+    // Buscar profissionais
     let query = supabaseAdmin
       .from('fitness_professionals')
-      .select(`
-        *,
-        fitness_profiles:user_id(nome, email, avatar_url)
-      `)
+      .select('*')
 
     // Filtrar por tipo
     if (type) {
@@ -76,8 +73,29 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Buscar perfis dos profissionais separadamente
+    const userIds = professionals?.map(p => p.user_id) || []
+    const profilesMap: Record<string, { nome: string; email: string; avatar_url?: string }> = {}
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email, avatar_url')
+        .in('id', userIds)
+
+      profiles?.forEach(p => {
+        profilesMap[p.id] = { nome: p.nome, email: p.email, avatar_url: p.avatar_url }
+      })
+    }
+
+    // Adicionar dados do perfil aos profissionais
+    const professionalsWithProfiles = professionals?.map(p => ({
+      ...p,
+      fitness_profiles: profilesMap[p.user_id] || { nome: 'Sem nome', email: '' }
+    }))
+
     // Buscar contagem de clientes para cada profissional
-    const professionalIds = professionals?.map(p => p.id) || []
+    const professionalIds = professionalsWithProfiles?.map(p => p.id) || []
 
     const { data: clientCounts } = await supabaseAdmin
       .from('fitness_client_assignments')
@@ -92,7 +110,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Adicionar contagem aos profissionais
-    const professionalsWithCounts = professionals?.map(p => ({
+    const professionalsWithCounts = professionalsWithProfiles?.map(p => ({
       ...p,
       clientCount: countByProfessional[p.id] || 0
     }))
@@ -140,7 +158,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, type, registration, specialty, bio, maxClients } = body
+    const { userId, type, registration, specialty, bio, maxClients, displayName, avatarUrl } = body
 
     if (!userId || !type) {
       return NextResponse.json(
@@ -184,6 +202,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar profissional
+    console.log('Criando profissional com dados:', {
+      user_id: userId,
+      type,
+      registration: registration || null,
+      specialty: specialty || null,
+      bio: bio || null,
+      max_clients: maxClients || 30,
+      display_name: displayName || null,
+      avatar_url: avatarUrl || null,
+      is_active: true
+    })
+
     const { data: newProfessional, error: insertError } = await supabaseAdmin
       .from('fitness_professionals')
       .insert({
@@ -193,6 +223,8 @@ export async function POST(request: NextRequest) {
         specialty: specialty || null,
         bio: bio || null,
         max_clients: maxClients || 30,
+        display_name: displayName || null,
+        avatar_url: avatarUrl || null,
         is_active: true
       })
       .select()
@@ -201,7 +233,7 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       console.error('Erro ao criar profissional:', insertError)
       return NextResponse.json(
-        { success: false, error: 'Erro ao criar profissional' },
+        { success: false, error: `Erro ao criar profissional: ${insertError.message}` },
         { status: 500 }
       )
     }
@@ -220,9 +252,10 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erro ao processar requisição:', error)
+    console.error('Erro ao processar requisição POST /api/admin/professionals:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
+      { success: false, error: `Erro interno do servidor: ${errorMessage}` },
       { status: 500 }
     )
   }
@@ -257,7 +290,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { professionalId, registration, specialty, bio, maxClients, isActive } = body
+    const { professionalId, registration, specialty, bio, maxClients, isActive, displayName, avatarUrl } = body
 
     if (!professionalId) {
       return NextResponse.json(
@@ -285,6 +318,8 @@ export async function PATCH(request: NextRequest) {
     if (bio !== undefined) updateData.bio = bio
     if (maxClients !== undefined) updateData.max_clients = maxClients
     if (isActive !== undefined) updateData.is_active = isActive
+    if (displayName !== undefined) updateData.display_name = displayName
+    if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl
 
     const { error: updateError } = await supabaseAdmin
       .from('fitness_professionals')

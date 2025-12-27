@@ -31,6 +31,8 @@ interface Assignment {
 interface Professional {
   id: string
   type: 'nutritionist' | 'trainer'
+  display_name: string | null
+  avatar_url: string | null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fitness_profiles: any
 }
@@ -263,7 +265,7 @@ export default function AssignmentsPage() {
             <option value="">Todos os profissionais</option>
             {professionals.map(prof => (
               <option key={prof.id} value={prof.id}>
-                {prof.fitness_profiles?.nome || 'Sem nome'} ({getTypeLabel(prof.type)})
+                {prof.display_name || prof.fitness_profiles?.nome || 'Sem nome'} ({getTypeLabel(prof.type)})
               </option>
             ))}
           </select>
@@ -306,50 +308,72 @@ export default function AssignmentsPage() {
                   {/* Assignment Info */}
                   <div className="flex items-center gap-4 flex-1">
                     {/* Client */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                        <span className="text-violet-400 font-medium">
-                          {assignment.client?.nome?.charAt(0).toUpperCase() || '?'}
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-white font-medium truncate">
-                          {assignment.client?.nome || 'Cliente'}
-                        </p>
-                        <p className="text-xs text-slate-400 truncate">
-                          {assignment.client?.email}
-                        </p>
-                      </div>
-                    </div>
+                    {(() => {
+                      const clientName = assignment.client?.nome || 'Cliente'
+                      const clientAvatar = assignment.client?.avatar_url
+                      return (
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {clientAvatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={clientAvatar} alt={clientName} className="w-10 h-10 object-cover" />
+                            ) : (
+                              <span className="text-violet-400 font-medium">
+                                {clientName.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white font-medium truncate">
+                              {clientName}
+                            </p>
+                            <p className="text-xs text-slate-400 truncate">
+                              {assignment.client?.email}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })()}
 
                     {/* Arrow */}
                     <ArrowRight className="w-5 h-5 text-slate-500 flex-shrink-0" />
 
                     {/* Professional */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        assignment.professional?.type === 'nutritionist'
-                          ? 'bg-green-500/20'
-                          : 'bg-blue-500/20'
-                      }`}>
-                        <span className={`font-medium ${
-                          assignment.professional?.type === 'nutritionist'
-                            ? 'text-green-400'
-                            : 'text-blue-400'
-                        }`}>
-                          {assignment.professional?.fitness_profiles?.nome?.charAt(0).toUpperCase() || '?'}
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-white font-medium truncate">
-                          {assignment.professional?.fitness_profiles?.nome || 'Profissional'}
-                        </p>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${getTypeBadgeColor(assignment.professional?.type)}`}>
-                          {assignment.professional?.type === 'nutritionist' ? '🥗' : '💪'}
-                          {getTypeLabel(assignment.professional?.type)}
-                        </span>
-                      </div>
-                    </div>
+                    {(() => {
+                      const profName = assignment.professional?.display_name || assignment.professional?.fitness_profiles?.nome || 'Profissional'
+                      const profAvatar = assignment.professional?.avatar_url || assignment.professional?.fitness_profiles?.avatar_url
+                      return (
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                            assignment.professional?.type === 'nutritionist'
+                              ? 'bg-green-500/20'
+                              : 'bg-blue-500/20'
+                          }`}>
+                            {profAvatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={profAvatar} alt={profName} className="w-10 h-10 object-cover" />
+                            ) : (
+                              <span className={`font-medium ${
+                                assignment.professional?.type === 'nutritionist'
+                                  ? 'text-green-400'
+                                  : 'text-blue-400'
+                              }`}>
+                                {profName.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white font-medium truncate">
+                              {profName}
+                            </p>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${getTypeBadgeColor(assignment.professional?.type)}`}>
+                              {assignment.professional?.type === 'nutritionist' ? '🥗' : '💪'}
+                              {getTypeLabel(assignment.professional?.type)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Meta & Actions */}
@@ -469,40 +493,52 @@ export default function AssignmentsPage() {
                       Nenhum profissional ativo
                     </div>
                   ) : (
-                    professionals.map(prof => (
-                      <button
-                        key={prof.id}
-                        onClick={() => setSelectedProfessional(prof.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                          selectedProfessional === prof.id
-                            ? 'border-violet-500 bg-violet-500/10'
-                            : 'border-slate-600 hover:border-slate-500'
-                        }`}
-                      >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          prof.type === 'nutritionist' ? 'bg-green-500/20' : 'bg-blue-500/20'
-                        }`}>
-                          <span className={`font-medium ${
-                            prof.type === 'nutritionist' ? 'text-green-400' : 'text-blue-400'
+                    professionals.map(prof => {
+                      const profName = prof.display_name || prof.fitness_profiles?.nome || 'Sem nome'
+                      return (
+                        <button
+                          key={prof.id}
+                          onClick={() => setSelectedProfessional(prof.id)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                            selectedProfessional === prof.id
+                              ? 'border-violet-500 bg-violet-500/10'
+                              : 'border-slate-600 hover:border-slate-500'
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${
+                            prof.type === 'nutritionist' ? 'bg-green-500/20' : 'bg-blue-500/20'
                           }`}>
-                            {prof.fitness_profiles?.nome?.charAt(0).toUpperCase() || '?'}
-                          </span>
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="text-white font-medium">
-                            {prof.fitness_profiles?.nome || 'Sem nome'}
-                          </p>
-                          <span className={`inline-flex items-center gap-1 text-xs ${getTypeBadgeColor(prof.type)}`}>
-                            {prof.type === 'nutritionist' ? '🥗 Nutricionista' : '💪 Personal'}
-                          </span>
-                        </div>
-                        {selectedProfessional === prof.id && (
-                          <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center">
-                            <span className="text-white text-sm">✓</span>
+                            {prof.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={prof.avatar_url}
+                                alt={profName}
+                                className="w-10 h-10 object-cover"
+                              />
+                            ) : (
+                              <span className={`font-medium ${
+                                prof.type === 'nutritionist' ? 'text-green-400' : 'text-blue-400'
+                              }`}>
+                                {profName.charAt(0).toUpperCase()}
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </button>
-                    ))
+                          <div className="text-left flex-1">
+                            <p className="text-white font-medium">
+                              {profName}
+                            </p>
+                            <span className={`inline-flex items-center gap-1 text-xs ${getTypeBadgeColor(prof.type)}`}>
+                              {prof.type === 'nutritionist' ? '🥗 Nutricionista' : '💪 Personal'}
+                            </span>
+                          </div>
+                          {selectedProfessional === prof.id && (
+                            <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center">
+                              <span className="text-white text-sm">✓</span>
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })
                   )}
                 </div>
               </div>

@@ -45,11 +45,18 @@ export async function GET() {
     const today = new Date().toISOString().split('T')[0]
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-    // Total de clientes (role = client ou null)
-    const { count: totalClients } = await supabaseAdmin
+    // Total de clientes/usuários (todos exceto admin e super_admin)
+    // Primeiro conta total, depois subtrai admins
+    const { count: totalUsers } = await supabaseAdmin
       .from('fitness_profiles')
       .select('*', { count: 'exact', head: true })
-      .or('role.eq.client,role.is.null')
+
+    const { count: totalAdmins } = await supabaseAdmin
+      .from('fitness_profiles')
+      .select('*', { count: 'exact', head: true })
+      .in('role', ['super_admin', 'admin'])
+
+    const totalClients = (totalUsers || 0) - (totalAdmins || 0)
 
     // Total de profissionais
     const { count: totalProfessionals } = await supabaseAdmin
@@ -108,14 +115,13 @@ export async function GET() {
 
     const activeUserIds = new Set(activeUsersRecent?.map(w => w.user_id) || [])
 
+    // Buscar todos os usuários não-admin
     const { data: allClients } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('id')
-      .or('role.eq.client,role.is.null')
+      .select('id, role')
 
-    const clientsAtRisk = allClients
-      ? allClients.filter(c => !activeUserIds.has(c.id)).length
-      : 0
+    const nonAdminClients = allClients?.filter(c => !['super_admin', 'admin'].includes(c.role)) || []
+    const clientsAtRisk = nonAdminClients.filter(c => !activeUserIds.has(c.id)).length
 
     // Atividade recente (últimas 10)
     const { data: recentWorkouts } = await supabaseAdmin

@@ -48,20 +48,10 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    // Buscar atribuições com dados relacionados
+    // Buscar atribuições
     let query = supabaseAdmin
       .from('fitness_client_assignments')
-      .select(`
-        *,
-        client:client_id(id, nome, email, avatar_url),
-        professional:professional_id(
-          id,
-          type,
-          user_id,
-          fitness_profiles:user_id(nome, email, avatar_url)
-        ),
-        assigned_by_user:assigned_by(nome, email)
-      `)
+      .select('*')
 
     // Filtros
     if (professionalId) {
@@ -87,9 +77,82 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Coletar IDs únicos
+    const clientIds = Array.from(new Set(assignments?.map(a => a.client_id) || []))
+    const professionalIds = Array.from(new Set(assignments?.map(a => a.professional_id) || []))
+    const assignedByIds = Array.from(new Set(assignments?.filter(a => a.assigned_by).map(a => a.assigned_by) || []))
+
+    // Buscar perfis de clientes
+    const clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
+    if (clientIds.length > 0) {
+      const { data: clients } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email, avatar_url')
+        .in('id', clientIds)
+
+      clients?.forEach(c => {
+        clientsMap[c.id] = c
+      })
+    }
+
+    // Buscar profissionais
+    const professionalsMap: Record<string, { id: string; type: string; user_id: string; display_name: string | null; avatar_url: string | null }> = {}
+    const professionalUserIds: string[] = []
+    if (professionalIds.length > 0) {
+      const { data: profs } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('id, type, user_id, display_name, avatar_url')
+        .in('id', professionalIds)
+
+      profs?.forEach(p => {
+        professionalsMap[p.id] = p
+        professionalUserIds.push(p.user_id)
+      })
+    }
+
+    // Buscar perfis dos profissionais
+    const professionalProfilesMap: Record<string, { nome: string; email: string; avatar_url?: string }> = {}
+    if (professionalUserIds.length > 0) {
+      const { data: profProfiles } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email, avatar_url')
+        .in('id', professionalUserIds)
+
+      profProfiles?.forEach(p => {
+        professionalProfilesMap[p.id] = { nome: p.nome, email: p.email, avatar_url: p.avatar_url }
+      })
+    }
+
+    // Buscar quem atribuiu
+    const assignedByMap: Record<string, { nome: string; email: string }> = {}
+    if (assignedByIds.length > 0) {
+      const { data: assigners } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email')
+        .in('id', assignedByIds)
+
+      assigners?.forEach(a => {
+        assignedByMap[a.id] = { nome: a.nome, email: a.email }
+      })
+    }
+
+    // Montar resposta com dados relacionados
+    const assignmentsWithData = assignments?.map(a => {
+      const prof = professionalsMap[a.professional_id]
+      return {
+        ...a,
+        client: clientsMap[a.client_id] || { id: a.client_id, nome: 'Cliente', email: '' },
+        professional: prof ? {
+          ...prof,
+          fitness_profiles: professionalProfilesMap[prof.user_id] || { nome: 'Profissional', email: '' }
+        } : null,
+        assigned_by_user: a.assigned_by ? assignedByMap[a.assigned_by] : null
+      }
+    })
+
     return NextResponse.json({
       success: true,
-      assignments: assignments || []
+      assignments: assignmentsWithData || []
     })
 
   } catch (error) {
@@ -180,6 +243,16 @@ export async function POST(request: NextRequest) {
           )
         }
 
+        // Criar conversa automaticamente ao reativar
+        try {
+          await supabaseAdmin.rpc('get_or_create_conversation', {
+            p_client_id: clientId,
+            p_professional_id: professionalId
+          })
+        } catch (convError) {
+          console.error('Erro ao criar conversa na reativação:', convError)
+        }
+
         return NextResponse.json({
           success: true,
           message: 'Atribuição reativada com sucesso'
@@ -226,6 +299,24 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Erro ao criar atribuição' },
         { status: 500 }
       )
+    }
+
+    // Criar conversa automaticamente entre cliente e profissional
+    try {
+      const { data: conversationResult, error: conversationError } = await supabaseAdmin
+        .rpc('get_or_create_conversation', {
+          p_client_id: clientId,
+          p_professional_id: professionalId
+        })
+
+      if (conversationError) {
+        console.error('Erro ao criar conversa:', conversationError)
+        // Não falhar a atribuição por causa da conversa
+      } else {
+        console.log('Conversa criada/obtida:', conversationResult)
+      }
+    } catch (convError) {
+      console.error('Erro ao criar conversa (catch):', convError)
     }
 
     return NextResponse.json({

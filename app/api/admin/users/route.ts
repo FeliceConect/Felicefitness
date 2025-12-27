@@ -64,8 +64,24 @@ export async function GET(request: NextRequest) {
     if (role) {
       if (role === 'client') {
         query = query.or('role.eq.client,role.is.null')
+      } else if (role === 'not_admin') {
+        // Todos que não são admin/super_admin (para adicionar como profissional)
+        query = query.or('role.eq.client,role.eq.nutritionist,role.eq.trainer,role.is.null')
       } else {
         query = query.eq('role', role)
+      }
+    }
+
+    // Filtrar usuários que não estão na tabela de profissionais
+    const excludeProfessionals = searchParams.get('excludeProfessionals')
+    if (excludeProfessionals === 'true') {
+      const { data: existingProfessionals } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('user_id')
+
+      const professionalUserIds = existingProfessionals?.map(p => p.user_id) || []
+      if (professionalUserIds.length > 0) {
+        query = query.not('id', 'in', `(${professionalUserIds.join(',')})`)
       }
     }
 
