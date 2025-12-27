@@ -22,6 +22,13 @@ export type MealType =
 
 export type MealStatus = 'pendente' | 'concluido' | 'pulado'
 
+// Porção comum para seleção rápida (ex: "1 unidade", "1 fatia")
+export interface CommonPortion {
+  label: string       // Ex: "1 unidade", "1 fatia", "1 colher de sopa"
+  grams: number       // Peso em gramas ou ml
+  isDefault?: boolean // Se é a porção padrão sugerida
+}
+
 export interface Food {
   id: string
   nome: string
@@ -35,8 +42,10 @@ export interface Food {
   gorduras: number
   fibras?: number
   sodio?: number
+  porcoes_comuns?: CommonPortion[] // Porções comuns para seleção rápida
   is_favorite?: boolean
   is_user_created?: boolean
+  source?: 'manual' | 'ai_analysis' // Origem do alimento
   created_at?: string
 }
 

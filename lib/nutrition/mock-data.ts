@@ -55,6 +55,12 @@ export const mockFoods: Food[] = [
     proteinas: 6,
     carboidratos: 0.6,
     gorduras: 5,
+    porcoes_comuns: [
+      { label: '1 ovo', grams: 50, isDefault: true },
+      { label: '2 ovos', grams: 100 },
+      { label: '3 ovos', grams: 150 },
+      { label: '4 ovos', grams: 200 }
+    ],
     is_favorite: true
   },
   {
@@ -66,7 +72,13 @@ export const mockFoods: Food[] = [
     calorias: 17,
     proteinas: 3.6,
     carboidratos: 0.2,
-    gorduras: 0.1
+    gorduras: 0.1,
+    porcoes_comuns: [
+      { label: '1 clara', grams: 33, isDefault: true },
+      { label: '2 claras', grams: 66 },
+      { label: '3 claras', grams: 99 },
+      { label: '4 claras', grams: 132 }
+    ]
   },
   {
     id: 'food-carne-moida',
@@ -268,6 +280,10 @@ export const mockFoods: Food[] = [
     proteinas: 25,
     carboidratos: 9,
     gorduras: 0,
+    porcoes_comuns: [
+      { label: '1 pote', grams: 160, isDefault: true },
+      { label: '½ pote', grams: 80 }
+    ],
     is_favorite: true
   },
   {
@@ -403,6 +419,12 @@ export const mockFoods: Food[] = [
     proteinas: 2.7,
     carboidratos: 28,
     gorduras: 0.3,
+    porcoes_comuns: [
+      { label: '1 colher de servir', grams: 60, isDefault: true },
+      { label: '2 colheres de servir', grams: 120 },
+      { label: '3 colheres de servir', grams: 180 },
+      { label: '1 escumadeira cheia', grams: 100 }
+    ],
     is_favorite: true
   },
   {
@@ -427,6 +449,12 @@ export const mockFoods: Food[] = [
     proteinas: 5,
     carboidratos: 14,
     gorduras: 0.5,
+    porcoes_comuns: [
+      { label: '1 concha', grams: 80, isDefault: true },
+      { label: '2 conchas', grams: 160 },
+      { label: '½ concha', grams: 40 },
+      { label: '1 concha cheia', grams: 120 }
+    ],
     is_favorite: true
   },
   {
@@ -517,7 +545,12 @@ export const mockFoods: Food[] = [
     calorias: 70,
     proteinas: 3,
     carboidratos: 12,
-    gorduras: 1
+    gorduras: 1,
+    porcoes_comuns: [
+      { label: '1 fatia', grams: 30, isDefault: true },
+      { label: '2 fatias', grams: 60 },
+      { label: '3 fatias', grams: 90 }
+    ]
   },
   {
     id: 'food-pao-frances',
@@ -528,7 +561,12 @@ export const mockFoods: Food[] = [
     calorias: 150,
     proteinas: 4,
     carboidratos: 29,
-    gorduras: 2
+    gorduras: 2,
+    porcoes_comuns: [
+      { label: '1 pão francês', grams: 50, isDefault: true },
+      { label: '2 pães franceses', grams: 100 },
+      { label: '½ pão francês', grams: 25 }
+    ]
   },
   {
     id: 'food-pao-forma-branco',
@@ -550,7 +588,12 @@ export const mockFoods: Food[] = [
     calorias: 105,
     proteinas: 0,
     carboidratos: 26,
-    gorduras: 0
+    gorduras: 0,
+    porcoes_comuns: [
+      { label: '1 colher sopa cheia', grams: 30, isDefault: true },
+      { label: '2 colheres sopa', grams: 60 },
+      { label: '3 colheres sopa', grams: 90 }
+    ]
   },
   {
     id: 'food-aveia',
@@ -562,7 +605,12 @@ export const mockFoods: Food[] = [
     proteinas: 4.4,
     carboidratos: 20,
     gorduras: 2.4,
-    fibras: 3
+    fibras: 3,
+    porcoes_comuns: [
+      { label: '2 colheres sopa', grams: 30, isDefault: true },
+      { label: '3 colheres sopa', grams: 45 },
+      { label: '4 colheres sopa', grams: 60 }
+    ]
   },
   {
     id: 'food-granola',
@@ -677,6 +725,12 @@ export const mockFoods: Food[] = [
     proteinas: 1.1,
     carboidratos: 23,
     gorduras: 0.3,
+    porcoes_comuns: [
+      { label: '1 banana média', grams: 100, isDefault: true },
+      { label: '1 banana pequena', grams: 70 },
+      { label: '1 banana grande', grams: 130 },
+      { label: '2 bananas', grams: 200 }
+    ],
     is_favorite: true
   },
   {
@@ -688,7 +742,12 @@ export const mockFoods: Food[] = [
     calorias: 78,
     proteinas: 0.4,
     carboidratos: 21,
-    gorduras: 0.2
+    gorduras: 0.2,
+    porcoes_comuns: [
+      { label: '1 maçã média', grams: 150, isDefault: true },
+      { label: '1 maçã pequena', grams: 100 },
+      { label: '1 maçã grande', grams: 200 }
+    ]
   },
   {
     id: 'food-laranja',
@@ -699,7 +758,12 @@ export const mockFoods: Food[] = [
     calorias: 62,
     proteinas: 1.2,
     carboidratos: 15,
-    gorduras: 0.2
+    gorduras: 0.2,
+    porcoes_comuns: [
+      { label: '1 laranja média', grams: 150, isDefault: true },
+      { label: '1 laranja pequena', grams: 100 },
+      { label: '1 laranja grande', grams: 200 }
+    ]
   },
   {
     id: 'food-mamao',
@@ -1308,6 +1372,11 @@ export const mockFoods: Food[] = [
     proteinas: 24,
     carboidratos: 3,
     gorduras: 1.5,
+    porcoes_comuns: [
+      { label: '1 scoop', grams: 30, isDefault: true },
+      { label: '2 scoops', grams: 60 },
+      { label: '½ scoop', grams: 15 }
+    ],
     is_favorite: true
   },
   {
@@ -1420,6 +1489,10 @@ export const mockFoods: Food[] = [
     proteinas: 10,
     carboidratos: 18,
     gorduras: 5,
+    porcoes_comuns: [
+      { label: '1 cookie', grams: 40, isDefault: true },
+      { label: '2 cookies', grams: 80 }
+    ],
     is_favorite: true
   },
   {
@@ -1433,6 +1506,10 @@ export const mockFoods: Food[] = [
     proteinas: 12,
     carboidratos: 22,
     gorduras: 7,
+    porcoes_comuns: [
+      { label: '1 alfajor', grams: 55, isDefault: true },
+      { label: '2 alfajores', grams: 110 }
+    ],
     is_favorite: true
   },
   {
@@ -1468,7 +1545,12 @@ export const mockFoods: Food[] = [
     calorias: 2,
     proteinas: 0.1,
     carboidratos: 0,
-    gorduras: 0
+    gorduras: 0,
+    porcoes_comuns: [
+      { label: '1 xícara', grams: 100, isDefault: true },
+      { label: '1 caneca', grams: 200 },
+      { label: '½ xícara', grams: 50 }
+    ]
   },
   {
     id: 'food-agua-coco',
@@ -1779,7 +1861,12 @@ export const mockFoods: Food[] = [
     calorias: 120,
     proteinas: 3,
     carboidratos: 14,
-    gorduras: 6
+    gorduras: 6,
+    porcoes_comuns: [
+      { label: '1 pão de queijo', grams: 40, isDefault: true },
+      { label: '2 pães de queijo', grams: 80 },
+      { label: '3 pães de queijo', grams: 120 }
+    ]
   },
   {
     id: 'food-acai-completo',

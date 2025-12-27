@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Search, Plus, Star, Heart, Clock, Filter, X } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Star, Heart, Clock, Filter, X, Pencil, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useFoods } from '@/hooks/use-foods'
 import type { FoodCategory, Food } from '@/lib/nutrition/types'
@@ -27,7 +27,7 @@ const categories: FoodCategory[] = [
 
 export default function FoodDatabasePage() {
   const router = useRouter()
-  const { foods, favorites, recent, userFoods, toggleFavorite, deleteFood } = useFoods()
+  const { foods, favorites, recent, userFoods, toggleFavorite, deleteFood, updateFood } = useFoods()
 
   const [activeTab, setActiveTab] = useState<Tab>('todos')
   const [searchQuery, setSearchQuery] = useState('')
@@ -354,6 +354,11 @@ export default function FoodDatabasePage() {
             food={selectedFood}
             onClose={() => setSelectedFood(null)}
             onToggleFavorite={() => toggleFavorite(selectedFood.id)}
+            onUpdate={async (data) => {
+              await updateFood(selectedFood.id, data)
+              // Atualizar o food selecionado com os novos dados
+              setSelectedFood({ ...selectedFood, ...data })
+            }}
           />
         )}
       </AnimatePresence>
@@ -411,11 +416,23 @@ function FoodCard({
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.03 }}
       onClick={onClick}
-      className="flex items-center gap-3 p-3 bg-[#14141F] border border-[#2E2E3E] rounded-xl hover:border-violet-500/30 transition-colors cursor-pointer"
+      className={cn(
+        "flex items-center gap-3 p-3 bg-[#14141F] border rounded-xl hover:border-violet-500/30 transition-colors cursor-pointer",
+        food.is_user_created
+          ? "border-violet-500/30"
+          : "border-[#2E2E3E]"
+      )}
     >
       <span className="text-xl">{categoryInfo.icon}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-medium truncate">{food.nome}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-white font-medium truncate">{food.nome}</p>
+          {food.is_user_created && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/20 text-violet-400 flex-shrink-0">
+              Meu
+            </span>
+          )}
+        </div>
         <p className="text-sm text-slate-400">
           {food.porcao_padrao}{food.unidade} • {food.calorias} kcal • {food.proteinas}g prot
         </p>
@@ -452,13 +469,33 @@ function FoodCard({
 function FoodDetailModal({
   food,
   onClose,
-  onToggleFavorite
+  onToggleFavorite,
+  onUpdate
 }: {
   food: Food
   onClose: () => void
   onToggleFavorite: () => void
+  onUpdate?: (data: Partial<Food>) => Promise<void>
 }) {
   const categoryInfo = foodCategoryLabels[food.categoria]
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(food.nome)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSaveName = async () => {
+    if (!editedName.trim() || editedName === food.nome) {
+      setIsEditingName(false)
+      setEditedName(food.nome)
+      return
+    }
+
+    if (onUpdate) {
+      setIsSaving(true)
+      await onUpdate({ nome: editedName.trim() })
+      setIsSaving(false)
+    }
+    setIsEditingName(false)
+  }
 
   return (
     <motion.div
@@ -480,29 +517,94 @@ function FoodDetailModal({
         <div className="w-12 h-1 bg-slate-700 rounded-full mx-auto mb-6" />
 
         {/* Header */}
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center">
-            <span className="text-3xl">{categoryInfo.icon}</span>
-          </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-white">{food.nome}</h2>
-            {food.marca && (
-              <p className="text-slate-400">{food.marca}</p>
-            )}
-            <p className="text-sm text-slate-500">{categoryInfo.label}</p>
-          </div>
-          <button
-            onClick={onToggleFavorite}
-            className="p-2 hover:bg-slate-800 rounded-lg"
-          >
-            <Heart
-              className={cn(
-                'w-6 h-6',
-                food.is_favorite ? 'text-red-400 fill-red-400' : 'text-slate-500'
-              )}
+        {isEditingName ? (
+          // Modo de edição - layout diferente
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center">
+                <span className="text-2xl">{categoryInfo.icon}</span>
+              </div>
+              <div>
+                <p className="text-sm text-slate-400">Editando nome</p>
+                <p className="text-xs text-slate-500">{categoryInfo.label}</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              autoFocus
+              placeholder="Nome do alimento"
+              className="w-full bg-slate-800 border border-violet-500 rounded-xl px-4 py-3 text-white font-bold text-lg focus:outline-none mb-4"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveName()
+                if (e.key === 'Escape') {
+                  setIsEditingName(false)
+                  setEditedName(food.nome)
+                }
+              }}
             />
-          </button>
-        </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setIsEditingName(false)
+                  setEditedName(food.nome)
+                }}
+                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-300 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveName}
+                disabled={isSaving}
+                className="flex-1 px-4 py-3 bg-violet-500 hover:bg-violet-600 rounded-xl text-white font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Check className="w-5 h-5" />
+                {isSaving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Modo normal
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center">
+              <span className="text-3xl">{categoryInfo.icon}</span>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-white">{food.nome}</h2>
+                {food.is_user_created && onUpdate && (
+                  <button
+                    onClick={() => setIsEditingName(true)}
+                    className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-slate-400" />
+                  </button>
+                )}
+                {food.is_user_created && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/20 text-violet-400">
+                    Meu
+                  </span>
+                )}
+              </div>
+              {food.marca && (
+                <p className="text-slate-400">{food.marca}</p>
+              )}
+              <p className="text-sm text-slate-500">{categoryInfo.label}</p>
+            </div>
+            <button
+              onClick={onToggleFavorite}
+              className="p-2 hover:bg-slate-800 rounded-lg"
+            >
+              <Heart
+                className={cn(
+                  'w-6 h-6',
+                  food.is_favorite ? 'text-red-400 fill-red-400' : 'text-slate-500'
+                )}
+              />
+            </button>
+          </div>
+        )}
 
         {/* Portion info */}
         <div className="bg-slate-800/50 rounded-xl p-4 mb-6">

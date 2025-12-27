@@ -17,7 +17,8 @@ interface PortionSelectorProps {
   onToggleFavorite?: () => void
 }
 
-const quickPortions = [50, 100, 150, 200, 250, 300]
+// Porções genéricas em gramas (fallback quando não há porções comuns)
+const defaultGramPortions = [50, 100, 150, 200, 250, 300]
 
 export function PortionSelector({
   food,
@@ -126,23 +127,51 @@ export function PortionSelector({
             </button>
           </div>
 
-          {/* Quick portions */}
+          {/* Quick portions - Porções comuns ou fallback */}
           <div className="flex justify-center gap-2 mt-4 flex-wrap">
-            {quickPortions.map(portion => (
-              <button
-                key={portion}
-                onClick={() => setQuantity(portion)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  quantity === portion
-                    ? 'bg-violet-500 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                )}
-              >
-                {portion}{food.unidade}
-              </button>
-            ))}
+            {food.porcoes_comuns && food.porcoes_comuns.length > 0 ? (
+              // Mostrar porções comuns quando disponíveis
+              food.porcoes_comuns.map((portion, index) => (
+                <button
+                  key={index}
+                  onClick={() => setQuantity(portion.grams)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    quantity === portion.grams
+                      ? 'bg-violet-500 text-white'
+                      : portion.isDefault
+                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  )}
+                >
+                  {portion.label}
+                </button>
+              ))
+            ) : (
+              // Fallback para porções genéricas em gramas
+              defaultGramPortions.map(portion => (
+                <button
+                  key={portion}
+                  onClick={() => setQuantity(portion)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    quantity === portion
+                      ? 'bg-violet-500 text-white'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  )}
+                >
+                  {portion}{food.unidade}
+                </button>
+              ))
+            )}
           </div>
+
+          {/* Mostrar peso em gramas quando usando porções comuns */}
+          {food.porcoes_comuns && food.porcoes_comuns.length > 0 && (
+            <p className="text-center text-xs text-slate-500 mt-2">
+              = {quantity}{food.unidade}
+            </p>
+          )}
         </div>
 
         {/* Calculated macros */}
