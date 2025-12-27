@@ -62,35 +62,33 @@ export default function OnboardingPage() {
     {
       id: 'welcome',
       title: 'Bem-vindo ao FeliceFit!',
-      description: 'Seu app completo de fitness e saude. Vamos configurar sua conta em poucos passos.',
+      description: 'Seu app completo de fitness e saude.',
       icon: <Logo size="lg" showText={false} />,
       content: (
-        <div className="space-y-6 text-center">
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            <div className="flex flex-col items-center gap-2 p-4 bg-slate-800/50 rounded-xl">
-              <Dumbbell className="w-8 h-8 text-violet-400" />
-              <span className="text-sm text-slate-300">Treinos</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-4 bg-slate-800/50 rounded-xl">
-              <Apple className="w-8 h-8 text-green-400" />
-              <span className="text-sm text-slate-300">Nutricao</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-4 bg-slate-800/50 rounded-xl">
-              <Droplets className="w-8 h-8 text-blue-400" />
-              <span className="text-sm text-slate-300">Hidratacao</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-4 bg-slate-800/50 rounded-xl">
-              <Moon className="w-8 h-8 text-indigo-400" />
-              <span className="text-sm text-slate-300">Sono</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-4 bg-slate-800/50 rounded-xl">
-              <Trophy className="w-8 h-8 text-yellow-400" />
-              <span className="text-sm text-slate-300">Conquistas</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-4 bg-slate-800/50 rounded-xl">
-              <Target className="w-8 h-8 text-orange-400" />
-              <span className="text-sm text-slate-300">Metas</span>
-            </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+            <Dumbbell className="w-6 h-6 text-violet-400" />
+            <span className="text-xs text-slate-300">Treinos</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+            <Apple className="w-6 h-6 text-green-400" />
+            <span className="text-xs text-slate-300">Nutricao</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+            <Droplets className="w-6 h-6 text-blue-400" />
+            <span className="text-xs text-slate-300">Hidratacao</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+            <Moon className="w-6 h-6 text-indigo-400" />
+            <span className="text-xs text-slate-300">Sono</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+            <Trophy className="w-6 h-6 text-yellow-400" />
+            <span className="text-xs text-slate-300">Conquistas</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+            <Target className="w-6 h-6 text-orange-400" />
+            <span className="text-xs text-slate-300">Metas</span>
           </div>
         </div>
       )
@@ -291,9 +289,9 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col">
+    <div className="fixed inset-0 bg-slate-900 flex flex-col z-[100]">
       {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-slate-800 z-50">
+      <div className="h-1 bg-slate-800">
         <motion.div
           className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
           initial={{ width: 0 }}
@@ -302,10 +300,10 @@ export default function OnboardingPage() {
         />
       </div>
 
-      {/* Content - scrollable area */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 pt-10">
+      {/* Content - flex grow to fill space */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
         {/* Step indicator */}
-        <div className="flex justify-center gap-2 mb-4">
+        <div className="flex justify-center gap-2 mb-3">
           {steps.map((_, index) => (
             <div
               key={index}
@@ -329,15 +327,15 @@ export default function OnboardingPage() {
             transition={{ duration: 0.3 }}
           >
             {/* Icon */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-3">
               {steps[currentStep].icon}
             </div>
 
             {/* Title & Description */}
-            <h1 className="text-2xl font-bold text-white text-center mb-2">
+            <h1 className="text-xl font-bold text-white text-center mb-1">
               {steps[currentStep].title}
             </h1>
-            <p className="text-slate-400 text-center mb-4">
+            <p className="text-slate-400 text-center text-sm mb-3">
               {steps[currentStep].description}
             </p>
 
@@ -349,13 +347,13 @@ export default function OnboardingPage() {
         </AnimatePresence>
       </div>
 
-      {/* Navigation - fixed at bottom */}
-      <div className="p-4 pb-safe border-t border-slate-800 bg-slate-900">
-        <div className="flex gap-4">
+      {/* Navigation - always visible at bottom */}
+      <div className="p-4 pb-safe border-t border-slate-800 bg-slate-900 flex-shrink-0">
+        <div className="flex gap-3">
           {currentStep > 0 && (
             <button
               onClick={handleBack}
-              className="flex-1 py-3 px-6 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
             >
               <ChevronLeft className="w-5 h-5" />
               Voltar
@@ -364,7 +362,7 @@ export default function OnboardingPage() {
           <button
             onClick={handleNext}
             disabled={!canProceed() || saving}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
               canProceed() && !saving
                 ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-500 hover:to-purple-500'
                 : 'bg-slate-700 text-slate-400 cursor-not-allowed'
