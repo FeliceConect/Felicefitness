@@ -260,9 +260,14 @@ export default function OnboardingPage() {
     }
   }
 
+  const [error, setError] = useState<string | null>(null)
+
   const completeOnboarding = async () => {
+    console.log('Iniciando completeOnboarding...')
     setSaving(true)
+    setError(null)
     try {
+      console.log('Enviando dados:', { goals, notificationsEnabled, termsVersion: TERMS_VERSION, privacyVersion: PRIVACY_VERSION })
       const response = await fetch('/api/onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -274,15 +279,20 @@ export default function OnboardingPage() {
         })
       })
 
+      console.log('Response status:', response.status)
       const data = await response.json()
+      console.log('Response data:', data)
 
       if (data.success) {
+        console.log('Sucesso! Redirecionando...')
         router.push('/dashboard')
       } else {
         console.error('Erro ao completar onboarding:', data.error)
+        setError(data.error || 'Erro ao salvar. Tente novamente.')
       }
-    } catch (error) {
-      console.error('Erro:', error)
+    } catch (err) {
+      console.error('Erro:', err)
+      setError('Erro de conexao. Verifique sua internet.')
     } finally {
       setSaving(false)
     }
@@ -349,6 +359,11 @@ export default function OnboardingPage() {
 
       {/* Navigation - always visible at bottom */}
       <div className="p-4 pb-safe border-t border-slate-800 bg-slate-900 flex-shrink-0">
+        {error && (
+          <div className="mb-3 p-3 bg-red-500/20 border border-red-500 rounded-xl text-red-400 text-sm text-center">
+            {error}
+          </div>
+        )}
         <div className="flex gap-3">
           {currentStep > 0 && (
             <button
