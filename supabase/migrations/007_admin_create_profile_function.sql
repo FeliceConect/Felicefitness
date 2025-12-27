@@ -16,7 +16,7 @@ AS $$
 DECLARE
   v_result JSON;
 BEGIN
-  -- Inserir o perfil
+  -- Inserir o perfil ou atualizar se já existir
   INSERT INTO fitness_profiles (
     id,
     email,
@@ -35,7 +35,12 @@ BEGIN
     999,
     NOW(),
     NOW()
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    nome = EXCLUDED.nome,
+    role = EXCLUDED.role,
+    updated_at = NOW();
 
   -- Retornar sucesso
   v_result := json_build_object(
