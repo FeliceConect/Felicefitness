@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
             user_agent: request.headers.get('user-agent')
           }
         ])
-    } catch (consentError) {
+    } catch {
       console.warn('Aviso: historico de consentimento nao registrado (execute migration 20241227_onboarding_lgpd.sql)')
     }
 
