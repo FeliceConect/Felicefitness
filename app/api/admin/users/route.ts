@@ -230,24 +230,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Criar perfil do usuário
-    const { error: profileError } = await supabaseAdmin
-      .from('fitness_profiles')
-      .insert({
-        id: newUser.user.id,
-        email,
-        nome: nome || email.split('@')[0],
-        role: userRole,
-        onboarding_completed: true,
-        onboarding_step: 999
+    // Criar perfil do usuário usando função que bypassa RLS
+    const userName = nome || email.split('@')[0]
+
+    const { data: profileResult, error: rpcError } = await supabaseAdmin
+      .rpc('admin_create_profile', {
+        p_user_id: newUser.user.id,
+        p_email: email,
+        p_nome: userName,
+        p_role: userRole
       })
 
-    if (profileError) {
-      console.error('Erro ao criar perfil:', profileError)
+    if (rpcError) {
+      console.error('Erro ao criar perfil (RPC):', rpcError)
       // Tenta deletar o usuário criado se falhar ao criar perfil
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
       return NextResponse.json(
-        { success: false, error: 'Erro ao criar perfil do usuário' },
+        { success: false, error: `Erro ao criar perfil: ${rpcError.message}` },
+        { status: 500 }
+      )
+    }
+
+    // Verificar se a função retornou sucesso
+    if (profileResult && !profileResult.success) {
+      console.error('Erro ao criar perfil (função):', profileResult.error)
+      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
+      return NextResponse.json(
+        { success: false, error: `Erro ao criar perfil: ${profileResult.error}` },
         { status: 500 }
       )
     }
@@ -258,7 +267,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: newUser.user.id,
         email,
-        nome: nome || email.split('@')[0],
+        nome: userName,
         role: userRole
       }
     })
