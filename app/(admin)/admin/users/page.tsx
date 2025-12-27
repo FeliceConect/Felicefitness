@@ -10,7 +10,11 @@ import {
   Shield,
   Activity,
   MoreVertical,
-  X
+  X,
+  Plus,
+  Eye,
+  EyeOff,
+  Loader2
 } from 'lucide-react'
 import { roleLabels, UserRole } from '@/lib/admin/types'
 
@@ -46,6 +50,17 @@ export default function UsersPage() {
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [updatingRole, setUpdatingRole] = useState(false)
 
+  // Estados para criar usuário
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [newUser, setNewUser] = useState({
+    nome: '',
+    email: '',
+    password: '',
+    role: 'client' as UserRole
+  })
+
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
@@ -77,6 +92,46 @@ export default function UsersPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newUser.email || !newUser.password) {
+      alert('Email e senha são obrigatórios')
+      return
+    }
+    if (newUser.password.length < 6) {
+      alert('A senha deve ter pelo menos 6 caracteres')
+      return
+    }
+
+    setCreating(true)
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Limpar form e fechar modal
+        setNewUser({ nome: '', email: '', password: '', role: 'client' })
+        setShowCreateModal(false)
+        setShowPassword(false)
+        // Recarregar lista
+        fetchUsers()
+        alert('Usuário criado com sucesso!')
+      } else {
+        alert(data.error || 'Erro ao criar usuário')
+      }
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error)
+      alert('Erro ao criar usuário')
+    } finally {
+      setCreating(false)
+    }
   }
 
   const handleRoleChange = async (newRole: string) => {
@@ -144,8 +199,17 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-white">Usuários</h1>
           <p className="text-slate-400">Gerenciar usuários do sistema</p>
         </div>
-        <div className="text-sm text-slate-400">
-          {pagination.total} usuário(s) cadastrado(s)
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-slate-400">
+            {pagination.total} usuário(s) cadastrado(s)
+          </span>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Novo Usuário</span>
+          </button>
         </div>
       </div>
 
@@ -445,6 +509,132 @@ export default function UsersPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h3 className="text-lg font-semibold text-white">Criar Novo Usuário</h3>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setNewUser({ nome: '', email: '', password: '', role: 'client' })
+                  setShowPassword(false)
+                }}
+                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateUser} className="p-4 space-y-4">
+              {/* Nome */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Nome
+                </label>
+                <input
+                  type="text"
+                  value={newUser.nome}
+                  onChange={(e) => setNewUser({ ...newUser, nome: e.target.value })}
+                  placeholder="Nome do usuário"
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  placeholder="email@exemplo.com"
+                  required
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              {/* Senha */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Senha *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    placeholder="Mínimo 6 caracteres"
+                    required
+                    minLength={6}
+                    className="w-full px-4 py-2.5 pr-12 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Papel
+                </label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  <option value="client">Cliente</option>
+                  <option value="trainer">Personal Trainer</option>
+                  <option value="nutritionist">Nutricionista</option>
+                  <option value="admin">Administrador</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setNewUser({ nome: '', email: '', password: '', role: 'client' })
+                    setShowPassword(false)
+                  }}
+                  className="flex-1 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="flex-1 py-2.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {creating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Criando...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Criar Usuário
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

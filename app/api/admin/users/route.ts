@@ -141,6 +141,137 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST - Criar novo usuário
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
+
+    // Verificar se é admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile } = await (supabase as any)
+      .from('fitness_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Acesso negado' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { email, password, nome, role } = body
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, error: 'Email e senha são obrigatórios' },
+        { status: 400 }
+      )
+    }
+
+    // Validar role
+    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'client']
+    const userRole = role || 'client'
+    if (!validRoles.includes(userRole)) {
+      return NextResponse.json(
+        { success: false, error: 'Role inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Apenas super_admin pode criar outros admins
+    if (['super_admin', 'admin'].includes(userRole) && profile.role !== 'super_admin') {
+      return NextResponse.json(
+        { success: false, error: 'Apenas super_admin pode criar admins' },
+        { status: 403 }
+      )
+    }
+
+    // Usar admin client para criar usuário
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Criar usuário no auth
+    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    })
+
+    if (createError) {
+      console.error('Erro ao criar usuário:', createError)
+      if (createError.message.includes('already been registered')) {
+        return NextResponse.json(
+          { success: false, error: 'Este email já está cadastrado' },
+          { status: 400 }
+        )
+      }
+      return NextResponse.json(
+        { success: false, error: 'Erro ao criar usuário' },
+        { status: 500 }
+      )
+    }
+
+    // Criar perfil do usuário
+    const { error: profileError } = await supabaseAdmin
+      .from('fitness_profiles')
+      .insert({
+        id: newUser.user.id,
+        email,
+        nome: nome || email.split('@')[0],
+        role: userRole,
+        onboarding_completed: true,
+        onboarding_step: 999
+      })
+
+    if (profileError) {
+      console.error('Erro ao criar perfil:', profileError)
+      // Tenta deletar o usuário criado se falhar ao criar perfil
+      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
+      return NextResponse.json(
+        { success: false, error: 'Erro ao criar perfil do usuário' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Usuário criado com sucesso',
+      user: {
+        id: newUser.user.id,
+        email,
+        nome: nome || email.split('@')[0],
+        role: userRole
+      }
+    })
+
+  } catch (error) {
+    console.error('Erro ao processar requisição:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
 // PATCH - Atualizar role de um usuário
 export async function PATCH(request: NextRequest) {
   try {
