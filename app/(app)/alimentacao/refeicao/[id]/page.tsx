@@ -1,28 +1,106 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Edit2, Trash2, Plus, Clock, Check, X } from 'lucide-react'
+import { ArrowLeft, Edit2, Trash2, Plus, Clock, Check, X, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { FoodSearch } from '@/components/alimentacao/food-search'
 import { PortionSelector } from '@/components/alimentacao/portion-selector'
-import type { Food, MealItem } from '@/lib/nutrition/types'
+import type { Food, MealItem, Meal, MealType } from '@/lib/nutrition/types'
 import { mealTypeLabels, mealTypeIcons, foodCategoryLabels } from '@/lib/nutrition/types'
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
-import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { useFoods } from '@/hooks/use-foods'
+import { createClient } from '@/lib/supabase/client'
 
 export default function MealDetailPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
-  const { meals, updateMeal, deleteMeal } = useDailyMeals()
   const { addToRecent, toggleFavorite } = useFoods()
+  const supabase = createClient()
 
-  const meal = meals.find(m => m.id === id)
+  const [meal, setMeal] = useState<Meal | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Carregar refeição específica pelo ID
+  const loadMeal = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setMeal(null)
+        return
+      }
+
+      // Buscar refeição específica com seus itens
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: mealData, error } = await (supabase as any)
+        .from('fitness_meals')
+        .select('*, itens:fitness_meal_items(*)')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (error || !mealData) {
+        console.error('Error loading meal:', error)
+        setMeal(null)
+        return
+      }
+
+      // Converter itens
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const convertedItems: MealItem[] = (mealData.itens || []).map((item: any) => ({
+        id: item.id,
+        food_id: item.food_id || item.id,
+        food: {
+          id: item.food_id || item.id,
+          nome: item.nome_alimento,
+          categoria: 'outros' as const,
+          porcao_padrao: item.quantidade || 100,
+          unidade: (item.unidade || 'g') as 'g' | 'ml' | 'unidade',
+          calorias: item.calorias || 0,
+          proteinas: item.proteinas || 0,
+          carboidratos: item.carboidratos || 0,
+          gorduras: item.gorduras || 0
+        },
+        quantidade: item.quantidade || 100,
+        calorias: item.calorias || 0,
+        proteinas: item.proteinas || 0,
+        carboidratos: item.carboidratos || 0,
+        gorduras: item.gorduras || 0
+      }))
+
+      setMeal({
+        id: mealData.id,
+        user_id: mealData.user_id,
+        tipo: mealData.tipo_refeicao as MealType,
+        data: mealData.data,
+        horario_planejado: mealData.horario || undefined,
+        horario_real: mealData.horario || undefined,
+        status: 'concluido' as const,
+        itens: convertedItems,
+        calorias_total: mealData.calorias_total || 0,
+        proteinas_total: mealData.proteinas_total || 0,
+        carboidratos_total: mealData.carboidratos_total || 0,
+        gorduras_total: mealData.gorduras_total || 0,
+        foto_url: mealData.foto_url || undefined,
+        notas: mealData.analise_ia || mealData.notas || undefined,
+        created_at: mealData.created_at
+      })
+    } catch (err) {
+      console.error('Error:', err)
+      setMeal(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [id, supabase])
+
+  useEffect(() => {
+    loadMeal()
+  }, [loadMeal])
 
   const [isEditing, setIsEditing] = useState(false)
   const [editedItems, setEditedItems] = useState<MealItem[]>([])
@@ -43,6 +121,18 @@ export default function MealDetailPage() {
       { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
     )
   }, [editedItems])
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
+          <p className="text-slate-400">Carregando refeição...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!meal) {
     return (
@@ -67,6 +157,7 @@ export default function MealDetailPage() {
 
   const handleStartEdit = () => {
     setEditedItems([...meal.itens])
+    setShowAddFood(true) // Abrir seção de adicionar por padrão
     setIsEditing(true)
   }
 
@@ -80,15 +171,61 @@ export default function MealDetailPage() {
   const handleSaveEdit = async () => {
     setSaving(true)
     try {
-      await updateMeal(meal.id, {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      // 1. Deletar itens antigos
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('fitness_meal_items')
+        .delete()
+        .eq('meal_id', meal.id)
+
+      // 2. Inserir novos itens
+      if (editedItems.length > 0) {
+        const itemsToInsert = editedItems.map(item => ({
+          meal_id: meal.id,
+          food_id: item.food_id,
+          nome_alimento: item.food.nome,
+          quantidade: item.quantidade,
+          unidade: item.food.unidade || 'g',
+          calorias: item.calorias,
+          proteinas: item.proteinas,
+          carboidratos: item.carboidratos,
+          gorduras: item.gorduras
+        }))
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('fitness_meal_items')
+          .insert(itemsToInsert)
+      }
+
+      // 3. Atualizar totais na refeição
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('fitness_meals')
+        .update({
+          calorias_total: editedTotals.calorias,
+          proteinas_total: editedTotals.proteinas,
+          carboidratos_total: editedTotals.carboidratos,
+          gorduras_total: editedTotals.gorduras
+        })
+        .eq('id', meal.id)
+
+      // 4. Atualizar estado local
+      setMeal({
+        ...meal,
         itens: editedItems,
         calorias_total: editedTotals.calorias,
         proteinas_total: editedTotals.proteinas,
         carboidratos_total: editedTotals.carboidratos,
         gorduras_total: editedTotals.gorduras
       })
+
       setIsEditing(false)
       setEditedItems([])
+      setShowAddFood(false)
     } catch (error) {
       console.error('Error saving meal:', error)
     } finally {
@@ -130,7 +267,24 @@ export default function MealDetailPage() {
 
     setDeleting(true)
     try {
-      await deleteMeal(meal.id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      // Deletar itens da refeição primeiro
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('fitness_meal_items')
+        .delete()
+        .eq('meal_id', meal.id)
+
+      // Deletar a refeição
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('fitness_meals')
+        .delete()
+        .eq('id', meal.id)
+        .eq('user_id', user.id)
+
       router.push('/alimentacao')
     } catch (error) {
       console.error('Error deleting meal:', error)
