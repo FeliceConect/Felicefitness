@@ -17,6 +17,7 @@ DECLARE
   v_result JSON;
 BEGIN
   -- Inserir o perfil ou atualizar se já existir
+  -- onboarding_completed = FALSE para forçar onboarding no primeiro acesso
   INSERT INTO fitness_profiles (
     id,
     email,
@@ -31,8 +32,8 @@ BEGIN
     p_email,
     p_nome,
     p_role,
-    TRUE,
-    999,
+    FALSE,
+    0,
     NOW(),
     NOW()
   )

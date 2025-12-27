@@ -38,8 +38,14 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Rotas públicas que não precisam de autenticação
-  const publicRoutes = ['/login', '/registro']
+  const publicRoutes = ['/login', '/registro', '/termos', '/privacidade']
   const isPublicRoute = publicRoutes.some(route =>
+    request.nextUrl.pathname.startsWith(route)
+  )
+
+  // Rotas que não devem verificar onboarding
+  const onboardingExemptRoutes = ['/onboarding', '/api', '/termos', '/privacidade']
+  const isOnboardingExempt = onboardingExemptRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
 
@@ -50,11 +56,28 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Se está autenticado e tentando acessar rota pública
-  if (user && isPublicRoute) {
+  // Se está autenticado e tentando acessar rota pública (login/registro)
+  if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/registro'))) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
+  }
+
+  // Se está autenticado, verificar se completou o onboarding
+  if (user && !isOnboardingExempt) {
+    // Buscar perfil do usuário para verificar onboarding
+    const { data: profile } = await supabase
+      .from('fitness_profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single()
+
+    // Se não completou onboarding, redirecionar
+    if (profile && profile.onboarding_completed === false) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse
