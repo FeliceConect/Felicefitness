@@ -16,14 +16,30 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { goals, notificationsEnabled, termsVersion, privacyVersion } = body
 
-    // Atualizar perfil com dados do onboarding
+    // Primeiro, atualizar campos basicos que sempre existem
+    // A coluna 'objetivo' e VARCHAR(100), entao salvamos os goals como string separada por virgula
+    const objetivoString = Array.isArray(goals) ? goals.join(',') : goals || ''
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (supabase as any)
+    const { error: basicUpdateError } = await (supabase as any)
       .from('fitness_profiles')
       .update({
-        objetivos: goals,
+        objetivo: objetivoString,
         onboarding_completed: true,
-        onboarding_step: 999,
+        onboarding_step: 999
+      })
+      .eq('id', user.id)
+
+    if (basicUpdateError) {
+      console.error('Erro ao atualizar perfil (basico):', basicUpdateError)
+      throw basicUpdateError
+    }
+
+    // Tentar atualizar campos de LGPD (podem nao existir se migration nao foi executada)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: lgpdUpdateError } = await (supabase as any)
+      .from('fitness_profiles')
+      .update({
         termos_aceitos: true,
         termos_aceitos_em: new Date().toISOString(),
         termos_versao: termsVersion,
@@ -35,33 +51,37 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', user.id)
 
-    if (updateError) {
-      console.error('Erro ao atualizar perfil:', updateError)
-      throw updateError
+    // Se der erro na atualizacao LGPD, apenas log (colunas podem nao existir ainda)
+    if (lgpdUpdateError) {
+      console.warn('Aviso: campos LGPD nao atualizados (execute migration 20241227_onboarding_lgpd.sql):', lgpdUpdateError.message)
     }
 
-    // Registrar consentimento no historico
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
-      .from('fitness_consent_history')
-      .insert([
-        {
-          user_id: user.id,
-          consent_type: 'termos',
-          consent_version: termsVersion,
-          accepted: true,
-          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
-          user_agent: request.headers.get('user-agent')
-        },
-        {
-          user_id: user.id,
-          consent_type: 'privacidade',
-          consent_version: privacyVersion,
-          accepted: true,
-          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
-          user_agent: request.headers.get('user-agent')
-        }
-      ])
+    // Tentar registrar consentimento no historico (tabela pode nao existir)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('fitness_consent_history')
+        .insert([
+          {
+            user_id: user.id,
+            consent_type: 'termos',
+            consent_version: termsVersion,
+            accepted: true,
+            ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+            user_agent: request.headers.get('user-agent')
+          },
+          {
+            user_id: user.id,
+            consent_type: 'privacidade',
+            consent_version: privacyVersion,
+            accepted: true,
+            ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+            user_agent: request.headers.get('user-agent')
+          }
+        ])
+    } catch (consentError) {
+      console.warn('Aviso: historico de consentimento nao registrado (execute migration 20241227_onboarding_lgpd.sql)')
+    }
 
     return NextResponse.json({
       success: true,

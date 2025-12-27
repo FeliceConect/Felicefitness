@@ -302,10 +302,10 @@ export default function OnboardingPage() {
         />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col px-6 py-8 pt-12">
+      {/* Content - scrollable area */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 pt-10">
         {/* Step indicator */}
-        <div className="flex justify-center gap-2 mb-8">
+        <div className="flex justify-center gap-2 mb-4">
           {steps.map((_, index) => (
             <div
               key={index}
@@ -327,10 +327,9 @@ export default function OnboardingPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col"
           >
             {/* Icon */}
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-4">
               {steps[currentStep].icon}
             </div>
 
@@ -338,20 +337,20 @@ export default function OnboardingPage() {
             <h1 className="text-2xl font-bold text-white text-center mb-2">
               {steps[currentStep].title}
             </h1>
-            <p className="text-slate-400 text-center mb-6">
+            <p className="text-slate-400 text-center mb-4">
               {steps[currentStep].description}
             </p>
 
             {/* Step content */}
-            <div className="flex-1">
+            <div>
               {steps[currentStep].content}
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Navigation */}
-      <div className="p-6 border-t border-slate-800">
+      {/* Navigation - fixed at bottom */}
+      <div className="p-4 pb-safe border-t border-slate-800 bg-slate-900">
         <div className="flex gap-4">
           {currentStep > 0 && (
             <button
