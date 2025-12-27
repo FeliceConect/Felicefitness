@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo, Suspense, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useMemo } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Edit2, Trash2, Plus, Clock, Check, X } from 'lucide-react'
 import { format } from 'date-fns'
@@ -15,8 +15,10 @@ import { calculateFoodMacros } from '@/lib/nutrition/calculations'
 import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { useFoods } from '@/hooks/use-foods'
 
-function MealDetailContent({ id }: { id: string }) {
+export default function MealDetailPage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params.id as string
   const { meals, updateMeal, deleteMeal } = useDailyMeals()
   const { addToRecent, toggleFavorite } = useFoods()
 
@@ -359,18 +361,5 @@ function MealDetailContent({ id }: { id: string }) {
         />
       )}
     </div>
-  )
-}
-
-function MealDetailPageInner({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  return <MealDetailContent id={id} />
-}
-
-export default function MealDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center"><div className="text-slate-400">Carregando...</div></div>}>
-      <MealDetailPageInner params={params} />
-    </Suspense>
   )
 }

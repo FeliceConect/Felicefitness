@@ -1,7 +1,6 @@
 "use client"
 
-import { use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Calendar, Trash2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
@@ -17,13 +16,10 @@ import {
 import { useBodyComposition } from '@/hooks/use-body-composition'
 import { compareMeasurements } from '@/lib/body/calculations'
 
-interface MedicaoPageProps {
-  params: Promise<{ id: string }>
-}
-
-export default function MedicaoPage({ params }: MedicaoPageProps) {
-  const { id } = use(params)
+export default function MedicaoPage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params.id as string
   const { measurements, deleteMeasurement, isLoading } = useBodyComposition()
 
   const measurement = measurements.find(m => m.id === id)
