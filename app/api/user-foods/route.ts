@@ -3,12 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // Categorias válidas no banco de dados
-const VALID_CATEGORIES = [
-  'proteina', 'carboidrato', 'vegetal', 'fruta',
-  'laticinio', 'gordura', 'suplemento', 'bebida', 'outros'
-] as const
-
-type ValidCategory = typeof VALID_CATEGORIES[number]
+type ValidCategory = 'proteina' | 'carboidrato' | 'vegetal' | 'fruta' | 'laticinio' | 'gordura' | 'suplemento' | 'bebida' | 'outros'
 
 // Normalizar categoria da IA para o valor válido do banco
 function normalizeCategory(cat: string): ValidCategory {
