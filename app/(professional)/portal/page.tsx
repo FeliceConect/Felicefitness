@@ -297,39 +297,57 @@ export default function ProfessionalDashboard() {
 
       {/* Quick Actions */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 p-4">
-        <h2 className="text-lg font-semibold text-white mb-4">Ações Rápidas</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <h2 className="text-lg font-semibold text-white mb-4">Acoes Rapidas</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <Link
             href="/portal/clients"
             className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
           >
             <Users className="w-6 h-6 text-violet-400" />
-            <span className="text-sm text-slate-300">Ver Clientes</span>
+            <span className="text-sm text-slate-300 text-center">Ver Clientes</span>
           </Link>
           {isNutritionist && (
-            <Link
-              href="/portal/meals"
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
-            >
-              <Utensils className="w-6 h-6 text-green-400" />
-              <span className="text-sm text-slate-300">Refeições</span>
-            </Link>
+            <>
+              <Link
+                href="/portal/meals"
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
+              >
+                <Utensils className="w-6 h-6 text-green-400" />
+                <span className="text-sm text-slate-300 text-center">Refeicoes</span>
+              </Link>
+              <Link
+                href="/portal/nutrition"
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-500/30 transition-colors"
+              >
+                <Utensils className="w-6 h-6 text-green-400" />
+                <span className="text-sm text-slate-300 text-center">Planos Alimentares</span>
+              </Link>
+            </>
           )}
           {isTrainer && (
-            <Link
-              href="/portal/workouts"
-              className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
-            >
-              <Dumbbell className="w-6 h-6 text-orange-400" />
-              <span className="text-sm text-slate-300">Treinos</span>
-            </Link>
+            <>
+              <Link
+                href="/portal/workouts"
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
+              >
+                <Dumbbell className="w-6 h-6 text-orange-400" />
+                <span className="text-sm text-slate-300 text-center">Treinos</span>
+              </Link>
+              <Link
+                href="/portal/training"
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30 hover:from-orange-500/30 hover:to-red-500/30 transition-colors"
+              >
+                <Dumbbell className="w-6 h-6 text-orange-400" />
+                <span className="text-sm text-slate-300 text-center">Planos de Treino</span>
+              </Link>
+            </>
           )}
           <Link
             href="/portal/messages"
             className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
           >
             <Activity className="w-6 h-6 text-blue-400" />
-            <span className="text-sm text-slate-300">Mensagens</span>
+            <span className="text-sm text-slate-300 text-center">Mensagens</span>
           </Link>
         </div>
       </div>
