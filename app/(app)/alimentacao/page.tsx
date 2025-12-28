@@ -9,9 +9,11 @@ import Link from 'next/link'
 import { MacrosProgress } from '@/components/alimentacao/macros-progress'
 import { RevoladeAlert } from '@/components/alimentacao/revolade-alert'
 import { MealTimeline } from '@/components/alimentacao/meal-timeline'
+import { MealPlanCard } from '@/components/alimentacao/meal-plan-card'
 import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { useRevoladeWindow } from '@/hooks/use-revolade-window'
 import { useWaterLog } from '@/hooks/use-water-log'
+import { useMealPlan } from '@/hooks/use-meal-plan'
 import type { MealType } from '@/lib/nutrition/types'
 
 export default function AlimentacaoPage() {
@@ -19,15 +21,24 @@ export default function AlimentacaoPage() {
   const { meals, plannedMeals, totals, goals, progress, nextMeal, loading } = useDailyMeals()
   const revoladeWindow = useRevoladeWindow()
   const { todayTotal: aguaConsumida } = useWaterLog()
+  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completeMeal, loading: planLoading } = useMealPlan()
 
   const handleAddMeal = (tipo: MealType) => {
     router.push(`/alimentacao/refeicao/nova?tipo=${tipo}`)
   }
 
+  const handleCompletePlanMeal = async (meal: { id: string; meal_type: string; meal_name?: string; scheduled_time?: string; foods: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[]; total_calories?: number; total_protein?: number; total_carbs?: number; total_fat?: number; instructions?: string; alternatives?: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[][] }, alternativeIndex?: number) => {
+    const success = await completeMeal(meal, alternativeIndex)
+    if (success) {
+      // Refresh daily meals to update totals
+      window.location.reload()
+    }
+  }
+
   // Meta de água do perfil
   const aguaMeta = 3000
 
-  if (loading) {
+  if (loading || planLoading) {
     return (
       <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
         <div className="animate-pulse text-slate-400">Carregando...</div>
@@ -104,15 +115,48 @@ export default function AlimentacaoPage() {
         </motion.div>
       </div>
 
-      {/* Meal Timeline */}
-      <div className="px-4 mb-6">
-        <MealTimeline
-          meals={meals}
-          plannedMeals={plannedMeals}
-          nextMeal={nextMeal}
-          onAddMeal={handleAddMeal}
-        />
-      </div>
+      {/* Meal Plan from Nutritionist */}
+      {mealPlan && planMeals.length > 0 && (
+        <div className="px-4 mb-6">
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            Seu Plano Alimentar
+          </h2>
+          <MealPlanCard
+            plan={mealPlan}
+            todayMeals={planMeals}
+            completedMealIds={completedMealIds}
+            onCompleteMeal={handleCompletePlanMeal}
+            onAddDifferentMeal={() => router.push('/alimentacao/refeicao/nova')}
+          />
+        </div>
+      )}
+
+      {/* Meal Timeline - only show if no meal plan */}
+      {(!mealPlan || planMeals.length === 0) && (
+        <div className="px-4 mb-6">
+          <MealTimeline
+            meals={meals}
+            plannedMeals={plannedMeals}
+            nextMeal={nextMeal}
+            onAddMeal={handleAddMeal}
+          />
+        </div>
+      )}
+
+      {/* Today's Meals */}
+      {mealPlan && meals.length > 0 && (
+        <div className="px-4 mb-6">
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            Refeições Registradas Hoje
+          </h2>
+          <MealTimeline
+            meals={meals}
+            plannedMeals={[]}
+            nextMeal={null}
+            onAddMeal={handleAddMeal}
+          />
+        </div>
+      )}
 
       {/* AI Analyzer Quick Access */}
       <div className="px-4 mb-4 space-y-3">

@@ -3,6 +3,7 @@
 // Tipos do Supabase serao gerados apos rodar a migration
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // GET - Listar planos alimentares do profissional
 export async function GET(request: NextRequest) {
@@ -17,8 +18,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Criar admin client para bypass de RLS ao buscar clientes
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é nutricionista
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
@@ -38,12 +51,9 @@ export async function GET(request: NextRequest) {
     const activeOnly = searchParams.get('activeOnly') === 'true'
 
     // Buscar planos
-    let query = supabase
+    let query = supabaseAdmin
       .from('fitness_meal_plans')
-      .select(`
-        *,
-        client:fitness_profiles!client_id(id, nome, email)
-      `)
+      .select('*')
       .eq('professional_id', professional.id)
       .order('created_at', { ascending: false })
 
@@ -69,9 +79,55 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Buscar dados dos clientes separadamente
+    console.log('=== DEBUG MEAL PLANS ===')
+    console.log('Planos encontrados:', plans?.map(p => ({ id: p.id, name: p.name, client_id: p.client_id })))
+
+    const clientIds = (plans || [])
+      .filter(p => p.client_id)
+      .map(p => p.client_id)
+
+    console.log('Client IDs encontrados:', clientIds)
+
+    const clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
+
+    if (clientIds.length > 0) {
+      const { data: clients, error: clientsError } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email, avatar_url')
+        .in('id', clientIds)
+
+      console.log('Clientes buscados:', clients)
+      if (clientsError) console.log('Erro ao buscar clientes:', clientsError)
+
+      if (clients) {
+        clients.forEach(c => {
+          clientsMap[c.id] = c
+        })
+      }
+    }
+
+    console.log('Clients Map:', JSON.stringify(clientsMap, null, 2))
+
+    // Adicionar dados do cliente a cada plano
+    const plansWithClients = (plans || []).map(p => {
+      console.log(`Plano "${p.name}": client_id = "${p.client_id}" (tipo: ${typeof p.client_id})`)
+      if (p.client_id) {
+        console.log(`  Buscando no map: clientsMap["${p.client_id}"] = `, clientsMap[p.client_id])
+        // Tentar com string explícita
+        console.log(`  Keys no map: ${Object.keys(clientsMap).join(', ')}`)
+      }
+      return {
+        ...p,
+        client: p.client_id ? clientsMap[p.client_id] || null : null
+      }
+    })
+
+    console.log('Planos com clientes:', JSON.stringify(plansWithClients.map(p => ({ name: p.name, client_id: p.client_id, client: p.client })), null, 2))
+
     return NextResponse.json({
       success: true,
-      plans: plans || []
+      plans: plansWithClients
     })
 
   } catch (error) {
@@ -244,8 +300,20 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // Criar admin client para bypass de RLS
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é nutricionista
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
@@ -269,7 +337,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verificar se o plano pertence ao profissional
-    const { data: existingPlan } = await supabase
+    const { data: existingPlan } = await supabaseAdmin
       .from('fitness_meal_plans')
       .select('id')
       .eq('id', planId)
@@ -301,10 +369,12 @@ export async function PATCH(request: NextRequest) {
     if (updateData.endsAt !== undefined) updateFields.ends_at = updateData.endsAt
     if (updateData.notes !== undefined) updateFields.notes = updateData.notes
 
-    const { error: updateError } = await supabase
+    const { data: updatedPlan, error: updateError } = await supabaseAdmin
       .from('fitness_meal_plans')
       .update(updateFields)
       .eq('id', planId)
+      .select()
+      .single()
 
     if (updateError) {
       console.error('Erro ao atualizar plano:', updateError)
@@ -314,9 +384,24 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // Buscar dados do cliente se existir
+    let clientData = null
+    if (updatedPlan.client_id) {
+      const { data: client } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email, avatar_url')
+        .eq('id', updatedPlan.client_id)
+        .single()
+      clientData = client
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Plano atualizado com sucesso'
+      message: 'Plano atualizado com sucesso',
+      plan: {
+        ...updatedPlan,
+        client: clientData
+      }
     })
 
   } catch (error) {

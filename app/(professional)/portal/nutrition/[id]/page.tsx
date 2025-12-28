@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import {
   ArrowLeft,
   Save,
@@ -16,7 +16,8 @@ import {
   Check,
   Users,
   Calendar,
-  Target
+  Target,
+  ArrowRightLeft
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -41,6 +42,7 @@ interface Meal {
   total_carbs?: number
   total_fat?: number
   instructions?: string
+  alternatives?: Food[][] // Array de arrays de alimentos alternativos
   order_index: number
 }
 
@@ -90,16 +92,27 @@ const GOAL_LABELS: Record<string, string> = {
   custom: 'Personalizado'
 }
 
-export default function MealPlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+interface Client {
+  id: string
+  nome: string
+  email: string
+  avatar_url?: string
+}
+
+export default function MealPlanDetailPage() {
+  const params = useParams()
+  const id = params.id as string
   const router = useRouter()
   const { isNutritionist, loading: professionalLoading } = useProfessional()
   const [plan, setPlan] = useState<MealPlan | null>(null)
+  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [expandedDays, setExpandedDays] = useState<number[]>([])
   const [showAddMealModal, setShowAddMealModal] = useState<{ dayIndex: number } | null>(null)
   const [showAddFoodModal, setShowAddFoodModal] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
+  const [showAlternativesModal, setShowAlternativesModal] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
+  const [showClientModal, setShowClientModal] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
   useEffect(() => {
@@ -110,7 +123,53 @@ export default function MealPlanDetailPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     fetchPlan()
+    fetchClients()
   }, [id])
+
+  async function fetchClients() {
+    try {
+      const response = await fetch('/api/professional/clients')
+      const data = await response.json()
+      if (data.success) {
+        setClients(data.clients || [])
+      }
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error)
+    }
+  }
+
+  async function assignClient(clientId: string | null) {
+    if (!plan) return
+
+    try {
+      const response = await fetch('/api/portal/meal-plans', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          clientId: clientId
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        const updatedPlan = data.plan
+        setPlan({
+          ...plan,
+          client_id: updatedPlan.client_id || undefined,
+          client: updatedPlan.client || undefined
+        })
+        setShowClientModal(false)
+        alert('Cliente atualizado com sucesso!')
+      } else {
+        alert('Erro ao atribuir cliente: ' + (data.error || 'Erro desconhecido'))
+      }
+    } catch (error) {
+      console.error('Erro ao atribuir cliente:', error)
+      alert('Erro ao atribuir cliente')
+    }
+  }
 
   async function fetchPlan() {
     try {
@@ -171,6 +230,7 @@ export default function MealPlanDetailPage({ params }: { params: Promise<{ id: s
               totalCarbs: meal.total_carbs,
               totalFat: meal.total_fat,
               instructions: meal.instructions,
+              alternatives: meal.alternatives || [],
               orderIndex: idx
             }))
           }))
@@ -270,6 +330,35 @@ export default function MealPlanDetailPage({ params }: { params: Promise<{ id: s
         meals: JSON.parse(JSON.stringify(sourceMeals))
       }
     })
+
+    setPlan({ ...plan, days: newDays })
+    setHasChanges(true)
+  }
+
+  function addAlternative(dayIndex: number, mealIndex: number, foods: Food[]) {
+    if (!plan) return
+
+    const newDays = [...plan.days]
+    const meal = newDays[dayIndex].meals[mealIndex]
+
+    if (!meal.alternatives) {
+      meal.alternatives = []
+    }
+
+    meal.alternatives.push(foods)
+    setPlan({ ...plan, days: newDays })
+    setHasChanges(true)
+  }
+
+  function removeAlternative(dayIndex: number, mealIndex: number, altIndex: number) {
+    if (!plan) return
+
+    const newDays = [...plan.days]
+    const meal = newDays[dayIndex].meals[mealIndex]
+
+    if (meal.alternatives) {
+      meal.alternatives.splice(altIndex, 1)
+    }
 
     setPlan({ ...plan, days: newDays })
     setHasChanges(true)
@@ -377,6 +466,33 @@ export default function MealPlanDetailPage({ params }: { params: Promise<{ id: s
                 <span className="text-white">{plan.fat_target}g</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Client Assignment */}
+      {!plan.is_template && (
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                <Users className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-slate-300">Cliente Atribuído</h3>
+                {plan.client ? (
+                  <p className="text-white font-medium">{plan.client.nome}</p>
+                ) : (
+                  <p className="text-orange-400">Nenhum cliente atribuído</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowClientModal(true)}
+              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors text-sm"
+            >
+              {plan.client ? 'Trocar Cliente' : 'Atribuir Cliente'}
+            </button>
           </div>
         </div>
       )}
@@ -493,13 +609,51 @@ export default function MealPlanDetailPage({ params }: { params: Promise<{ id: s
                           </div>
                         )}
 
-                        <button
-                          onClick={() => setShowAddFoodModal({ dayIndex, mealIndex })}
-                          className="flex items-center gap-1 text-sm text-green-400 hover:text-green-300"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Adicionar alimento
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setShowAddFoodModal({ dayIndex, mealIndex })}
+                            className="flex items-center gap-1 text-sm text-green-400 hover:text-green-300"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Adicionar alimento
+                          </button>
+                          {meal.foods.length > 0 && (
+                            <button
+                              onClick={() => setShowAlternativesModal({ dayIndex, mealIndex })}
+                              className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                            >
+                              <ArrowRightLeft className="w-4 h-4" />
+                              Variações ({meal.alternatives?.length || 0})
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Alternatives/Variations */}
+                        {meal.alternatives && meal.alternatives.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-slate-600">
+                            <p className="text-xs font-medium text-violet-400 mb-2">
+                              Variações disponíveis para o cliente:
+                            </p>
+                            <div className="space-y-2">
+                              {meal.alternatives.map((altFoods, altIndex) => (
+                                <div
+                                  key={altIndex}
+                                  className="flex items-center justify-between bg-violet-500/10 rounded px-3 py-2 text-sm"
+                                >
+                                  <span className="text-slate-300">
+                                    Opção {altIndex + 1}: {altFoods.map(f => f.name).join(', ')}
+                                  </span>
+                                  <button
+                                    onClick={() => removeAlternative(dayIndex, mealIndex, altIndex)}
+                                    className="text-red-400 hover:text-red-300"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -552,6 +706,101 @@ export default function MealPlanDetailPage({ params }: { params: Promise<{ id: s
           onClose={() => setShowAddFoodModal(null)}
           onAdd={(food) => addFood(showAddFoodModal.dayIndex, showAddFoodModal.mealIndex, food)}
         />
+      )}
+
+      {/* Alternatives Modal */}
+      {showAlternativesModal && plan && (
+        <AlternativesModal
+          meal={plan.days[showAlternativesModal.dayIndex].meals[showAlternativesModal.mealIndex]}
+          onClose={() => setShowAlternativesModal(null)}
+          onAddAlternative={(foods) => {
+            addAlternative(showAlternativesModal.dayIndex, showAlternativesModal.mealIndex, foods)
+            setShowAlternativesModal(null)
+          }}
+        />
+      )}
+
+      {/* Client Selection Modal */}
+      {showClientModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-slate-800 rounded-xl max-w-md w-full p-6 my-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">
+                {plan.client ? 'Trocar Cliente' : 'Atribuir Cliente'}
+              </h3>
+              <button onClick={() => setShowClientModal(false)} className="p-1 hover:bg-slate-700 rounded">
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {/* Opção para remover atribuição */}
+              {plan.client && (
+                <button
+                  onClick={() => assignClient(null)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <X className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-red-400 font-medium">Remover atribuição</p>
+                    <p className="text-xs text-slate-400">Este plano ficará sem cliente</p>
+                  </div>
+                </button>
+              )}
+
+              {/* Lista de clientes */}
+              {clients.length === 0 ? (
+                <p className="text-center text-slate-400 py-4">
+                  Nenhum cliente encontrado
+                </p>
+              ) : (
+                clients.map((client) => (
+                  <button
+                    key={client.id}
+                    onClick={() => assignClient(client.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                      plan.client_id === client.id
+                        ? 'border-green-500 bg-green-500/10'
+                        : 'border-slate-600 hover:border-slate-500 hover:bg-slate-700/50'
+                    }`}
+                  >
+                    {client.avatar_url ? (
+                      <img
+                        src={client.avatar_url}
+                        alt={client.nome}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center">
+                        <span className="text-slate-300 font-medium">
+                          {client.nome.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white font-medium">{client.nome}</p>
+                      <p className="text-xs text-slate-400">{client.email}</p>
+                    </div>
+                    {plan.client_id === client.id && (
+                      <Check className="w-5 h-5 text-green-400 ml-auto" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <button
+                onClick={() => setShowClientModal(false)}
+                className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -707,6 +956,204 @@ function AddFoodModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// Alternatives Modal Component
+function AlternativesModal({
+  meal,
+  onClose,
+  onAddAlternative
+}: {
+  meal: Meal
+  onClose: () => void
+  onAddAlternative: (foods: Food[]) => void
+}) {
+  const [foods, setFoods] = useState<Food[]>([])
+  const [currentFood, setCurrentFood] = useState({
+    name: '',
+    quantity: '',
+    unit: 'g',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: ''
+  })
+
+  function addFoodToList() {
+    if (!currentFood.name || !currentFood.quantity) return
+
+    setFoods([
+      ...foods,
+      {
+        name: currentFood.name,
+        quantity: parseFloat(currentFood.quantity),
+        unit: currentFood.unit,
+        calories: currentFood.calories ? parseFloat(currentFood.calories) : 0,
+        protein: currentFood.protein ? parseFloat(currentFood.protein) : 0,
+        carbs: currentFood.carbs ? parseFloat(currentFood.carbs) : 0,
+        fat: currentFood.fat ? parseFloat(currentFood.fat) : 0
+      }
+    ])
+
+    setCurrentFood({
+      name: '',
+      quantity: '',
+      unit: 'g',
+      calories: '',
+      protein: '',
+      carbs: '',
+      fat: ''
+    })
+  }
+
+  function removeFoodFromList(index: number) {
+    setFoods(foods.filter((_, i) => i !== index))
+  }
+
+  function handleSubmit() {
+    if (foods.length === 0) return
+    onAddAlternative(foods)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-slate-800 rounded-xl max-w-2xl w-full p-6 my-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Adicionar Variação</h3>
+            <p className="text-sm text-slate-400">
+              Crie uma opção alternativa para: {meal.meal_name || meal.meal_type}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Original Foods Reference */}
+        <div className="mb-4 p-3 bg-slate-700/50 rounded-lg">
+          <p className="text-xs font-medium text-slate-400 uppercase mb-2">Alimentos originais (referência)</p>
+          <div className="flex flex-wrap gap-2">
+            {meal.foods.map((food, idx) => (
+              <span key={idx} className="px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded">
+                {food.name} - {food.quantity}{food.unit}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Foods in this alternative */}
+        {foods.length > 0 && (
+          <div className="mb-4 p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+            <p className="text-xs font-medium text-violet-400 uppercase mb-2">Alimentos desta variação</p>
+            <div className="space-y-2">
+              {foods.map((food, idx) => (
+                <div key={idx} className="flex items-center justify-between text-sm">
+                  <span className="text-white">{food.name} - {food.quantity}{food.unit}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">{food.calories} kcal</span>
+                    <button
+                      onClick={() => removeFoodFromList(idx)}
+                      className="text-red-400 hover:text-red-300"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add food form */}
+        <div className="space-y-3 mb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={currentFood.name}
+              onChange={(e) => setCurrentFood({ ...currentFood, name: e.target.value })}
+              placeholder="Nome do alimento"
+              className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={currentFood.quantity}
+                onChange={(e) => setCurrentFood({ ...currentFood, quantity: e.target.value })}
+                placeholder="Qtd"
+                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+              />
+              <select
+                value={currentFood.unit}
+                onChange={(e) => setCurrentFood({ ...currentFood, unit: e.target.value })}
+                className="w-20 px-2 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+              >
+                <option value="g">g</option>
+                <option value="ml">ml</option>
+                <option value="un">un</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <input
+              type="number"
+              value={currentFood.calories}
+              onChange={(e) => setCurrentFood({ ...currentFood, calories: e.target.value })}
+              placeholder="kcal"
+              className="px-2 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 text-sm"
+            />
+            <input
+              type="number"
+              value={currentFood.protein}
+              onChange={(e) => setCurrentFood({ ...currentFood, protein: e.target.value })}
+              placeholder="Prot"
+              className="px-2 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 text-sm"
+            />
+            <input
+              type="number"
+              value={currentFood.carbs}
+              onChange={(e) => setCurrentFood({ ...currentFood, carbs: e.target.value })}
+              placeholder="Carb"
+              className="px-2 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 text-sm"
+            />
+            <input
+              type="number"
+              value={currentFood.fat}
+              onChange={(e) => setCurrentFood({ ...currentFood, fat: e.target.value })}
+              placeholder="Gord"
+              className="px-2 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 text-sm"
+            />
+          </div>
+          <button
+            onClick={addFoodToList}
+            disabled={!currentFood.name || !currentFood.quantity}
+            className="w-full py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar alimento à variação
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-4 border-t border-slate-700">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={foods.length === 0}
+            className="flex-1 px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Check className="w-4 h-4" />
+            Salvar Variação
+          </button>
+        </div>
       </div>
     </div>
   )

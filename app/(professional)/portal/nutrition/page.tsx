@@ -83,6 +83,8 @@ export default function NutritionPage() {
     try {
       const response = await fetch('/api/portal/meal-plans')
       const data = await response.json()
+      console.log('=== DEBUG FRONTEND - Planos recebidos ===')
+      console.log('data.plans:', JSON.stringify(data.plans, null, 2))
       if (data.success) {
         setPlans(data.plans || [])
       }
@@ -309,12 +311,16 @@ export default function NutritionPage() {
                         </span>
                       )}
                     </div>
-                    {plan.client && (
-                      <p className="text-sm text-slate-400 flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {plan.client.nome}
-                      </p>
-                    )}
+                    <p className="text-sm flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {plan.client ? (
+                        <span className="text-green-400 font-medium">{plan.client.nome}</span>
+                      ) : plan.is_template ? (
+                        <span className="text-slate-500">Template reutilizável</span>
+                      ) : (
+                        <span className="text-orange-400">Sem cliente atribuído</span>
+                      )}
+                    </p>
                   </div>
                   <div className="relative">
                     <button

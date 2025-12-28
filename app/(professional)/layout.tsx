@@ -52,8 +52,8 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-2">Acesso Negado</h1>
           <p className="text-slate-400">Você não tem permissão para acessar esta área.</p>
-          <Link href="/" className="mt-4 inline-block text-violet-400 hover:text-violet-300">
-            Voltar ao App
+          <Link href="/login" className="mt-4 inline-block text-violet-400 hover:text-violet-300">
+            Ir para Login
           </Link>
         </div>
       </div>
@@ -67,8 +67,8 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-2">Conta Inativa</h1>
           <p className="text-slate-400">Sua conta de profissional está inativa. Entre em contato com o administrador.</p>
-          <Link href="/" className="mt-4 inline-block text-violet-400 hover:text-violet-300">
-            Voltar ao App
+          <Link href="/login" className="mt-4 inline-block text-violet-400 hover:text-violet-300">
+            Ir para Login
           </Link>
         </div>
       </div>
@@ -193,13 +193,6 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   <p className="text-xs text-slate-400">{professional?.registration || 'Sem registro'}</p>
                 </div>
               </div>
-              <Link
-                href="/"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-sm">Voltar ao App</span>
-              </Link>
               <button
                 onClick={async () => {
                   const { createClient } = await import('@/lib/supabase/client')
@@ -207,7 +200,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 transition-colors w-full"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Sair</span>
@@ -215,12 +208,6 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
             </div>
           ) : (
             <div className="space-y-2">
-              <Link
-                href="/"
-                className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
-              >
-                <LogOut className="w-5 h-5" />
-              </Link>
               <button
                 onClick={async () => {
                   const { createClient } = await import('@/lib/supabase/client')
@@ -228,7 +215,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
-                className="flex items-center justify-center p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700"
+                className="flex items-center justify-center p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 w-full"
                 title="Sair"
               >
                 <LogOut className="w-5 h-5" />

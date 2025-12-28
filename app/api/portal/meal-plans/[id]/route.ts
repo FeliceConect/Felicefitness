@@ -3,6 +3,7 @@
 // Tipos do Supabase serao gerados apos rodar a migration
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // GET - Buscar plano alimentar completo com dias e refeições
 export async function GET(
@@ -21,20 +22,29 @@ export async function GET(
       )
     }
 
+    // Criar admin client para bypass de RLS ao buscar clientes
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é nutricionista ou cliente do plano
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
       .single()
 
     // Buscar plano
-    const { data: plan, error: planError } = await supabase
+    const { data: plan, error: planError } = await supabaseAdmin
       .from('fitness_meal_plans')
-      .select(`
-        *,
-        client:fitness_profiles!client_id(id, nome, email)
-      `)
+      .select('*')
       .eq('id', id)
       .single()
 
@@ -43,6 +53,17 @@ export async function GET(
         { success: false, error: 'Plano não encontrado' },
         { status: 404 }
       )
+    }
+
+    // Buscar dados do cliente separadamente
+    let clientData = null
+    if (plan.client_id) {
+      const { data: client } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email, avatar_url')
+        .eq('id', plan.client_id)
+        .single()
+      clientData = client
     }
 
     // Verificar permissão
@@ -57,7 +78,7 @@ export async function GET(
     }
 
     // Buscar dias do plano
-    const { data: days } = await supabase
+    const { data: days } = await supabaseAdmin
       .from('fitness_meal_plan_days')
       .select('*')
       .eq('meal_plan_id', id)
@@ -66,7 +87,7 @@ export async function GET(
     // Buscar refeições de cada dia
     const daysWithMeals = await Promise.all(
       (days || []).map(async (day) => {
-        const { data: meals } = await supabase
+        const { data: meals } = await supabaseAdmin
           .from('fitness_meal_plan_meals')
           .select('*')
           .eq('meal_plan_day_id', day.id)
@@ -83,6 +104,7 @@ export async function GET(
       success: true,
       plan: {
         ...plan,
+        client: clientData,
         days: daysWithMeals
       }
     })
@@ -113,8 +135,20 @@ export async function PUT(
       )
     }
 
+    // Criar admin client para bypass de RLS
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é nutricionista
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
@@ -128,7 +162,7 @@ export async function PUT(
     }
 
     // Verificar se o plano pertence ao profissional
-    const { data: existingPlan } = await supabase
+    const { data: existingPlan } = await supabaseAdmin
       .from('fitness_meal_plans')
       .select('id')
       .eq('id', id)
@@ -164,7 +198,7 @@ export async function PUT(
     if (planData.notes !== undefined) updateFields.notes = planData.notes
 
     if (Object.keys(updateFields).length > 0) {
-      await supabase
+      await supabaseAdmin
         .from('fitness_meal_plans')
         .update(updateFields)
         .eq('id', id)
@@ -173,14 +207,14 @@ export async function PUT(
     // Se dias foram fornecidos, atualizar estrutura
     if (days && Array.isArray(days)) {
       // Deletar dias existentes (cascata remove refeições)
-      await supabase
+      await supabaseAdmin
         .from('fitness_meal_plan_days')
         .delete()
         .eq('meal_plan_id', id)
 
       // Criar novos dias e refeições
       for (const day of days) {
-        const { data: planDay, error: dayError } = await supabase
+        const { data: planDay, error: dayError } = await supabaseAdmin
           .from('fitness_meal_plan_days')
           .insert({
             meal_plan_id: id,
@@ -200,7 +234,7 @@ export async function PUT(
         // Criar refeições do dia
         const meals = day.meals || []
         for (const meal of meals) {
-          await supabase
+          await supabaseAdmin
             .from('fitness_meal_plan_meals')
             .insert({
               meal_plan_day_id: planDay.id,
@@ -253,8 +287,20 @@ export async function DELETE(
       )
     }
 
+    // Criar admin client para bypass de RLS
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é nutricionista
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
@@ -268,7 +314,7 @@ export async function DELETE(
     }
 
     // Verificar se o plano pertence ao profissional
-    const { data: existingPlan } = await supabase
+    const { data: existingPlan } = await supabaseAdmin
       .from('fitness_meal_plans')
       .select('id')
       .eq('id', id)
@@ -283,7 +329,7 @@ export async function DELETE(
     }
 
     // Deletar plano
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('fitness_meal_plans')
       .delete()
       .eq('id', id)

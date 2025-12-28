@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
   Bell,
@@ -22,6 +23,9 @@ import Link from 'next/link'
 import { useNotifications } from '@/hooks/use-notifications'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+
+// Email do superadmin que pode ver a opção Revolade
+const SUPERADMIN_EMAIL = 'felicemed@gmail.com'
 
 interface SettingsItemProps {
   icon: React.ReactNode
@@ -82,6 +86,17 @@ export default function SettingsPage() {
   const router = useRouter()
   const { isSubscribed, unreadCount } = useNotifications()
   const supabase = createClient()
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUserEmail(user?.email || null)
+    }
+    fetchUser()
+  }, [supabase])
+
+  const isSuperAdmin = userEmail === SUPERADMIN_EMAIL
 
   const handleLogout = async () => {
     if (confirm('Tem certeza que deseja sair?')) {
@@ -143,12 +158,14 @@ export default function SettingsPage() {
               description="Refeições, restrições"
               href="/configuracoes/alimentacao"
             />
-            <SettingsItem
-              icon={<Pill className="w-5 h-5" />}
-              label="Revolade"
-              description="Horários, jejum, alertas"
-              href="/configuracoes/revolade"
-            />
+            {isSuperAdmin && (
+              <SettingsItem
+                icon={<Pill className="w-5 h-5" />}
+                label="Revolade"
+                description="Horários, jejum, alertas"
+                href="/configuracoes/revolade"
+              />
+            )}
           </div>
         </section>
 
