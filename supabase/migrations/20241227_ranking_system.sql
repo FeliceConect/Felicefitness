@@ -351,7 +351,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Registrar XP
   INSERT INTO fitness_xp_history (user_id, xp_gained, xp_type, source_id, description)
-  VALUES (NEW.user_id, 15, 'meal', NEW.id, 'Refeição registrada: ' || COALESCE(NEW.tipo, 'Refeição'));
+  VALUES (NEW.user_id, 15, 'meal', NEW.id, 'Refeição registrada: ' || COALESCE(NEW.tipo_refeicao, 'Refeição'));
 
   -- Atualizar XP total
   PERFORM update_user_xp(NEW.user_id);

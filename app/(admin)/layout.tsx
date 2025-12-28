@@ -157,14 +157,40 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Voltar ao App</span>
               </Link>
+              <button
+                onClick={async () => {
+                  const { createClient } = await import('@/lib/supabase/client')
+                  const supabase = createClient()
+                  await supabase.auth.signOut()
+                  router.push('/login')
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">Sair</span>
+              </button>
             </div>
           ) : (
-            <Link
-              href="/"
-              className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
-            >
-              <LogOut className="w-5 h-5" />
-            </Link>
+            <div className="space-y-2">
+              <Link
+                href="/"
+                className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+              >
+                <LogOut className="w-5 h-5" />
+              </Link>
+              <button
+                onClick={async () => {
+                  const { createClient } = await import('@/lib/supabase/client')
+                  const supabase = createClient()
+                  await supabase.auth.signOut()
+                  router.push('/login')
+                }}
+                className="flex items-center justify-center p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700"
+                title="Sair"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           )}
         </div>
       </aside>

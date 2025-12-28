@@ -59,7 +59,7 @@ export async function GET() {
     // Buscar perfis dos clientes
     const { data: profiles } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('id, nome, email, foto, peso, altura, objetivo, updated_at')
+      .select('id, nome, email, peso_atual, altura_cm, objetivo, updated_at')
       .in('id', clientIds)
 
     // Buscar estatísticas recentes para cada cliente
@@ -124,9 +124,8 @@ export async function GET() {
         id: profile.id,
         nome: profile.nome,
         email: profile.email,
-        foto: profile.foto,
-        peso: profile.peso,
-        altura: profile.altura,
+        peso: profile.peso_atual,
+        altura: profile.altura_cm,
         objetivo: profile.objetivo,
         assignedAt: assignment?.assigned_at,
         notes: assignment?.notes,

@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import {
   ArrowLeft,
   Save,
@@ -78,6 +78,13 @@ interface TrainingProgram {
   weeks: Week[]
 }
 
+interface Client {
+  id: string
+  nome: string
+  email: string
+  avatar_url?: string
+}
+
 const GOAL_LABELS: Record<string, string> = {
   hypertrophy: 'Hipertrofia',
   strength: 'Força',
@@ -102,17 +109,20 @@ const MUSCLE_GROUPS = [
   { value: 'cardio', label: 'Cardio' }
 ]
 
-export default function TrainingProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function TrainingProgramDetailPage() {
+  const params = useParams()
+  const id = params.id as string
   const router = useRouter()
   const { isTrainer, loading: professionalLoading } = useProfessional()
   const [program, setProgram] = useState<TrainingProgram | null>(null)
+  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [expandedWeeks, setExpandedWeeks] = useState<number[]>([])
   const [expandedDays, setExpandedDays] = useState<string[]>([])
   const [showAddExerciseModal, setShowAddExerciseModal] = useState<{ weekIndex: number; dayIndex: number } | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
+  const [showClientModal, setShowClientModal] = useState(false)
 
   useEffect(() => {
     if (!professionalLoading && !isTrainer) {
@@ -122,7 +132,20 @@ export default function TrainingProgramDetailPage({ params }: { params: Promise<
 
   useEffect(() => {
     fetchProgram()
+    fetchClients()
   }, [id])
+
+  async function fetchClients() {
+    try {
+      const response = await fetch('/api/professional/clients')
+      const data = await response.json()
+      if (data.success) {
+        setClients(data.clients || [])
+      }
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error)
+    }
+  }
 
   async function fetchProgram() {
     try {
@@ -202,9 +225,13 @@ export default function TrainingProgramDetailPage({ params }: { params: Promise<
       const data = await response.json()
       if (data.success) {
         setHasChanges(false)
+        alert('Programa salvo com sucesso!')
+      } else {
+        alert('Erro ao salvar: ' + (data.error || 'Erro desconhecido'))
       }
     } catch (error) {
       console.error('Erro ao salvar programa:', error)
+      alert('Erro ao salvar programa')
     } finally {
       setSaving(false)
     }
@@ -325,6 +352,41 @@ export default function TrainingProgramDetailPage({ params }: { params: Promise<
     setHasChanges(true)
   }
 
+  async function assignClient(clientId: string | null) {
+    if (!program) return
+
+    try {
+      const response = await fetch('/api/portal/training-programs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          programId: program.id,
+          clientId: clientId
+        })
+      })
+
+      const data = await response.json()
+      console.log('Resposta da API:', data)
+
+      if (data.success) {
+        // Usar os dados retornados pela API para garantir sincronização
+        const updatedProgram = data.program
+        setProgram({
+          ...program,
+          client_id: updatedProgram.client_id || undefined,
+          client: updatedProgram.client || undefined
+        })
+        setShowClientModal(false)
+        alert('Cliente atualizado com sucesso!')
+      } else {
+        alert('Erro ao atribuir cliente: ' + (data.error || 'Erro desconhecido'))
+      }
+    } catch (error) {
+      console.error('Erro ao atribuir cliente:', error)
+      alert('Erro ao atribuir cliente')
+    }
+  }
+
   if (professionalLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -414,6 +476,33 @@ export default function TrainingProgramDetailPage({ params }: { params: Promise<
           </div>
         </div>
       </div>
+
+      {/* Client Assignment */}
+      {!program.is_template && (
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-slate-300">Cliente Atribuído</h3>
+                {program.client ? (
+                  <p className="text-white font-medium">{program.client.nome}</p>
+                ) : (
+                  <p className="text-orange-400">Nenhum cliente atribuído</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowClientModal(true)}
+              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors text-sm"
+            >
+              {program.client ? 'Trocar Cliente' : 'Atribuir Cliente'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Weeks */}
       <div className="space-y-4">
@@ -594,6 +683,89 @@ export default function TrainingProgramDetailPage({ params }: { params: Promise<
             exercise
           )}
         />
+      )}
+
+      {/* Client Selection Modal */}
+      {showClientModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-slate-800 rounded-xl max-w-md w-full p-6 my-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">
+                {program.client ? 'Trocar Cliente' : 'Atribuir Cliente'}
+              </h3>
+              <button onClick={() => setShowClientModal(false)} className="p-1 hover:bg-slate-700 rounded">
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {/* Opção para remover atribuição */}
+              {program.client && (
+                <button
+                  onClick={() => assignClient(null)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <X className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-red-400 font-medium">Remover atribuição</p>
+                    <p className="text-xs text-slate-400">Este treino ficará sem cliente</p>
+                  </div>
+                </button>
+              )}
+
+              {/* Lista de clientes */}
+              {clients.length === 0 ? (
+                <p className="text-center text-slate-400 py-4">
+                  Nenhum cliente encontrado
+                </p>
+              ) : (
+                clients.map((client) => (
+                  <button
+                    key={client.id}
+                    onClick={() => assignClient(client.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                      program.client_id === client.id
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-slate-600 hover:border-slate-500 hover:bg-slate-700/50'
+                    }`}
+                  >
+                    {client.avatar_url ? (
+                      <img
+                        src={client.avatar_url}
+                        alt={client.nome}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center">
+                        <span className="text-slate-300 font-medium">
+                          {client.nome.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white font-medium">{client.nome}</p>
+                      <p className="text-xs text-slate-400">{client.email}</p>
+                    </div>
+                    {program.client_id === client.id && (
+                      <Check className="w-5 h-5 text-blue-400 ml-auto" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <button
+                onClick={() => setShowClientModal(false)}
+                className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

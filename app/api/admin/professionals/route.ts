@@ -75,16 +75,16 @@ export async function GET(request: NextRequest) {
 
     // Buscar perfis dos profissionais separadamente
     const userIds = professionals?.map(p => p.user_id) || []
-    const profilesMap: Record<string, { nome: string; email: string; avatar_url?: string }> = {}
+    const profilesMap: Record<string, { nome: string; email: string }> = {}
 
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email, avatar_url')
+        .select('id, nome, email')
         .in('id', userIds)
 
       profiles?.forEach(p => {
-        profilesMap[p.id] = { nome: p.nome, email: p.email, avatar_url: p.avatar_url }
+        profilesMap[p.id] = { nome: p.nome, email: p.email }
       })
     }
 

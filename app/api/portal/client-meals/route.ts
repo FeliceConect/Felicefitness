@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     // Buscar informacoes dos clientes
     const { data: clients } = await supabase
       .from('fitness_profiles')
-      .select('id, nome, email, avatar_url')
+      .select('id, nome, email')
       .in('id', clientIds)
 
     // Construir query de refeicoes
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       .from('fitness_meals')
       .select(`
         *,
-        profile:fitness_profiles!user_id(id, nome, email, avatar_url)
+        profile:fitness_profiles!user_id(id, nome, email)
       `)
       .in('user_id', clientIds)
       .order('meal_date', { ascending: false })

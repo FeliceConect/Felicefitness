@@ -12,6 +12,8 @@ interface Professional {
   bio: string | null
   max_clients: number
   is_active: boolean
+  avatar_url: string | null
+  display_name: string | null
 }
 
 export function useProfessional() {

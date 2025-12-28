@@ -59,6 +59,20 @@ export default function TreinoPage() {
     setSelectedDay(day)
   }
 
+  // Atualizar selectedDay quando weekDays carregar
+  useEffect(() => {
+    if (weekDays.length > 0 && !selectedDay) {
+      const today = weekDays.find(d => format(d.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'))
+      setSelectedDay(today || null)
+    }
+  }, [weekDays, selectedDay])
+
+  // Determinar se o dia selecionado é descanso
+  const selectedIsRest = selectedDay?.type === 'rest' || selectedDay?.status === 'rest'
+  const selectedIsSpecial = selectedDay?.type === 'beach_tennis'
+  const selectedIsMissed = selectedDay?.status === 'missed'
+  const selectedIsToday = selectedDay && format(selectedDay.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+
   // Loading state
   if (loading) {
     return (
@@ -134,17 +148,44 @@ export default function TreinoPage() {
         />
       </div>
 
-      {/* Today's Workout */}
+      {/* Selected Day's Workout */}
       <div className="px-4 mb-6">
         <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-violet-400" />
-          Hoje
+          {selectedIsToday ? 'Hoje' : selectedDay ? format(selectedDay.date, "EEEE, d 'de' MMMM", { locale: ptBR }) : 'Hoje'}
         </h2>
-        <TodayWorkoutCard
-          workout={todayWorkout}
-          isRest={isRestDay}
-          specialActivity={isSpecialActivity ? { name: 'Beach Tennis', icon: '🎾' } : undefined}
-        />
+
+        {/* Se é dia de treino perdido, mostrar opção de executar */}
+        {selectedIsMissed && selectedDay?.workout ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#14141F] border border-red-500/30 rounded-2xl p-5"
+          >
+            <div className="text-center mb-4">
+              <span className="text-4xl mb-3 block">😅</span>
+              <h3 className="text-lg font-semibold text-white mb-1">Treino não realizado</h3>
+              <p className="text-sm text-slate-400">
+                {selectedDay.workout.nome} • {selectedDay.workout.exercicios?.length || 0} exercícios
+              </p>
+            </div>
+            <Link href={`/treino/${selectedDay.workout.id}`}>
+              <Button variant="gradient" className="w-full">
+                <Play className="w-4 h-4 mr-2" />
+                Fazer agora
+              </Button>
+            </Link>
+            <p className="text-xs text-slate-500 text-center mt-2">
+              O treino será registrado com a data de hoje
+            </p>
+          </motion.div>
+        ) : (
+          <TodayWorkoutCard
+            workout={selectedDay?.workout || null}
+            isRest={selectedIsRest}
+            specialActivity={selectedIsSpecial ? { name: 'Beach Tennis', icon: '🎾' } : undefined}
+          />
+        )}
       </div>
 
       {/* Upcoming Workouts */}

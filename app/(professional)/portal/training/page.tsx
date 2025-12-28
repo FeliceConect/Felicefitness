@@ -317,12 +317,16 @@ export default function TrainingPage() {
                         </span>
                       )}
                     </div>
-                    {program.client && (
-                      <p className="text-sm text-slate-400 flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {program.client.nome}
-                      </p>
-                    )}
+                    <p className="text-sm flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {program.client ? (
+                        <span className="text-blue-400 font-medium">{program.client.nome}</span>
+                      ) : program.is_template ? (
+                        <span className="text-slate-500">Template reutilizável</span>
+                      ) : (
+                        <span className="text-orange-400">Sem cliente atribuído</span>
+                      )}
+                    </p>
                   </div>
                   <div className="relative">
                     <button

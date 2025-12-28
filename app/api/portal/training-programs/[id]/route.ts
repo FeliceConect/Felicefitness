@@ -1,6 +1,7 @@
 // @ts-nocheck - Tipos do Supabase serao gerados apos rodar a migration
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // GET - Buscar programa de treino completo
 export async function GET(
@@ -19,20 +20,29 @@ export async function GET(
       )
     }
 
+    // Criar admin client para bypass de RLS
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é personal trainer ou cliente do programa
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
       .single()
 
     // Buscar programa
-    const { data: program, error: programError } = await supabase
+    const { data: program, error: programError } = await supabaseAdmin
       .from('fitness_training_programs')
-      .select(`
-        *,
-        client:fitness_profiles!client_id(id, nome, email, avatar_url)
-      `)
+      .select('*')
       .eq('id', id)
       .single()
 
@@ -41,6 +51,23 @@ export async function GET(
         { success: false, error: 'Programa não encontrado' },
         { status: 404 }
       )
+    }
+
+    // Buscar dados do cliente separadamente se existir
+    let clientData = null
+    if (program.client_id) {
+      const { data: client } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email')
+        .eq('id', program.client_id)
+        .single()
+      clientData = client
+    }
+
+    // Adicionar cliente ao programa
+    const programWithClient = {
+      ...program,
+      client: clientData
     }
 
     // Verificar permissão
@@ -55,7 +82,7 @@ export async function GET(
     }
 
     // Buscar semanas do programa
-    const { data: weeks } = await supabase
+    const { data: weeks } = await supabaseAdmin
       .from('fitness_training_weeks')
       .select('*')
       .eq('program_id', id)
@@ -64,7 +91,7 @@ export async function GET(
     // Buscar dias e exercícios de cada semana
     const weeksWithDays = await Promise.all(
       (weeks || []).map(async (week) => {
-        const { data: days } = await supabase
+        const { data: days } = await supabaseAdmin
           .from('fitness_training_days')
           .select('*')
           .eq('week_id', week.id)
@@ -72,7 +99,7 @@ export async function GET(
 
         const daysWithExercises = await Promise.all(
           (days || []).map(async (day) => {
-            const { data: exercises } = await supabase
+            const { data: exercises } = await supabaseAdmin
               .from('fitness_training_exercises')
               .select('*')
               .eq('training_day_id', day.id)
@@ -95,7 +122,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       program: {
-        ...program,
+        ...programWithClient,
         weeks: weeksWithDays
       }
     })

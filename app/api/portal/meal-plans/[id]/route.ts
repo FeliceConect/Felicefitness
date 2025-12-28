@@ -31,7 +31,7 @@ export async function GET(
       .from('fitness_meal_plans')
       .select(`
         *,
-        client:fitness_profiles!client_id(id, nome, email, avatar_url)
+        client:fitness_profiles!client_id(id, nome, email)
       `)
       .eq('id', id)
       .single()

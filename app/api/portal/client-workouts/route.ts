@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     // Buscar informacoes dos clientes
     const { data: clients } = await supabase
       .from('fitness_profiles')
-      .select('id, nome, email, avatar_url')
+      .select('id, nome, email')
       .in('id', clientIds)
 
     // Construir query de treinos
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       .from('fitness_workouts')
       .select(`
         *,
-        profile:fitness_profiles!user_id(id, nome, email, avatar_url),
+        profile:fitness_profiles!user_id(id, nome, email),
         exercises:fitness_workout_exercises(*)
       `)
       .in('user_id', clientIds)

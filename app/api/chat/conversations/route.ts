@@ -57,7 +57,7 @@ export async function GET() {
       const clientIds = data?.map(c => c.client_id) || []
       const { data: clients } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email, foto')
+        .select('id, nome, email')
         .in('id', clientIds)
 
       const clientMap = new Map(clients?.map(c => [c.id, c]) || [])
@@ -77,14 +77,16 @@ export async function GET() {
         }
       })
 
-      conversations = data?.map(conv => ({
+      conversations = data?.map(conv => {
+        const client = clientMap.get(conv.client_id)
+        return {
         id: conv.id,
-        participant: clientMap.get(conv.client_id) || { id: conv.client_id, nome: 'Cliente', email: '' },
+        participant: client || { id: conv.client_id, nome: 'Cliente', email: '' },
         unreadCount: conv.professional_unread_count,
         lastMessage: lastMessageMap.get(conv.id) || null,
         lastMessageAt: conv.last_message_at,
         isActive: conv.is_active
-      })) || []
+      }}) || []
 
     } else {
       // É cliente - buscar conversas onde é o cliente
@@ -114,7 +116,7 @@ export async function GET() {
       const professionalUserIds = professionals?.map(p => p.user_id) || []
       const { data: professionalProfiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email, foto')
+        .select('id, nome, email')
         .in('id', professionalUserIds)
 
       const profileMap = new Map(professionalProfiles?.map(p => [p.id, p]) || [])
@@ -146,7 +148,7 @@ export async function GET() {
             id: prof?.user_id || '',
             nome: prof?.profile?.nome || (prof?.type === 'nutritionist' ? 'Nutricionista' : 'Personal Trainer'),
             email: prof?.profile?.email || '',
-            foto: prof?.profile?.foto || null,
+            foto: null,
             type: prof?.type,
             specialty: prof?.specialty
           },

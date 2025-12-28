@@ -171,17 +171,25 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
           {sidebarOpen ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  isNutritionist ? 'bg-green-500/20' : 'bg-orange-500/20'
-                }`}>
-                  {isNutritionist ? (
-                    <Apple className={`w-5 h-5 text-green-400`} />
-                  ) : (
-                    <Dumbbell className={`w-5 h-5 text-orange-400`} />
-                  )}
-                </div>
+                {professional?.avatar_url ? (
+                  <img
+                    src={professional.avatar_url}
+                    alt={professional.display_name || professionalTypeLabel}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-violet-500"
+                  />
+                ) : (
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    isNutritionist ? 'bg-green-500/20' : 'bg-orange-500/20'
+                  }`}>
+                    {isNutritionist ? (
+                      <Apple className={`w-5 h-5 text-green-400`} />
+                    ) : (
+                      <Dumbbell className={`w-5 h-5 text-orange-400`} />
+                    )}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{professional?.specialty || professionalTypeLabel}</p>
+                  <p className="text-sm text-white truncate">{professional?.display_name || professional?.specialty || professionalTypeLabel}</p>
                   <p className="text-xs text-slate-400">{professional?.registration || 'Sem registro'}</p>
                 </div>
               </div>
@@ -192,14 +200,40 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Voltar ao App</span>
               </Link>
+              <button
+                onClick={async () => {
+                  const { createClient } = await import('@/lib/supabase/client')
+                  const supabase = createClient()
+                  await supabase.auth.signOut()
+                  router.push('/login')
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">Sair</span>
+              </button>
             </div>
           ) : (
-            <Link
-              href="/"
-              className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
-            >
-              <LogOut className="w-5 h-5" />
-            </Link>
+            <div className="space-y-2">
+              <Link
+                href="/"
+                className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+              >
+                <LogOut className="w-5 h-5" />
+              </Link>
+              <button
+                onClick={async () => {
+                  const { createClient } = await import('@/lib/supabase/client')
+                  const supabase = createClient()
+                  await supabase.auth.signOut()
+                  router.push('/login')
+                }}
+                className="flex items-center justify-center p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700"
+                title="Sair"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           )}
         </div>
       </aside>

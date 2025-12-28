@@ -83,11 +83,11 @@ export async function GET(request: NextRequest) {
     const assignedByIds = Array.from(new Set(assignments?.filter(a => a.assigned_by).map(a => a.assigned_by) || []))
 
     // Buscar perfis de clientes
-    const clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
+    const clientsMap: Record<string, { id: string; nome: string; email: string }> = {}
     if (clientIds.length > 0) {
       const { data: clients } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email, avatar_url')
+        .select('id, nome, email')
         .in('id', clientIds)
 
       clients?.forEach(c => {
@@ -111,15 +111,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar perfis dos profissionais
-    const professionalProfilesMap: Record<string, { nome: string; email: string; avatar_url?: string }> = {}
+    const professionalProfilesMap: Record<string, { nome: string; email: string }> = {}
     if (professionalUserIds.length > 0) {
       const { data: profProfiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email, avatar_url')
+        .select('id, nome, email')
         .in('id', professionalUserIds)
 
       profProfiles?.forEach(p => {
-        professionalProfilesMap[p.id] = { nome: p.nome, email: p.email, avatar_url: p.avatar_url }
+        professionalProfilesMap[p.id] = { nome: p.nome, email: p.email }
       })
     }
 

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       .from('fitness_meal_plans')
       .select(`
         *,
-        client:fitness_profiles!client_id(id, nome, email, avatar_url)
+        client:fitness_profiles!client_id(id, nome, email)
       `)
       .eq('professional_id', professional.id)
       .order('created_at', { ascending: false })

@@ -1,6 +1,7 @@
 // @ts-nocheck - Tipos do Supabase serao gerados apos rodar a migration
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // GET - Listar programas de treino do profissional
 export async function GET(request: NextRequest) {
@@ -15,8 +16,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Criar admin client para bypass de RLS ao buscar clientes
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é personal trainer
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
@@ -36,12 +49,9 @@ export async function GET(request: NextRequest) {
     const activeOnly = searchParams.get('activeOnly') === 'true'
 
     // Buscar programas
-    let query = supabase
+    let query = supabaseAdmin
       .from('fitness_training_programs')
-      .select(`
-        *,
-        client:fitness_profiles!client_id(id, nome, email, avatar_url)
-      `)
+      .select('*')
       .eq('professional_id', professional.id)
       .order('created_at', { ascending: false })
 
@@ -67,9 +77,47 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Buscar dados dos clientes separadamente
+    console.log('=== DEBUG GET PROGRAMAS ===')
+    console.log('Programas encontrados:', programs?.map(p => ({ id: p.id, name: p.name, client_id: p.client_id })))
+
+    const clientIds = (programs || [])
+      .filter(p => p.client_id)
+      .map(p => p.client_id)
+
+    console.log('Client IDs encontrados:', clientIds)
+
+    let clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
+
+    if (clientIds.length > 0) {
+      const { data: clients, error: clientsError } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email')
+        .in('id', clientIds)
+
+      console.log('Clientes buscados:', clients)
+      if (clientsError) console.log('Erro ao buscar clientes:', clientsError)
+
+      if (clients) {
+        clients.forEach(c => {
+          clientsMap[c.id] = c
+        })
+      }
+    }
+
+    console.log('Clients Map:', clientsMap)
+
+    // Adicionar dados do cliente a cada programa
+    const programsWithClients = (programs || []).map(p => ({
+      ...p,
+      client: p.client_id ? clientsMap[p.client_id] || null : null
+    }))
+
+    console.log('Programas com clientes:', programsWithClients.map(p => ({ name: p.name, client_id: p.client_id, client: p.client })))
+
     return NextResponse.json({
       success: true,
-      programs: programs || []
+      programs: programsWithClients
     })
 
   } catch (error) {
@@ -269,8 +317,20 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // Criar admin client para bypass de RLS
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Verificar se é personal trainer
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
@@ -294,9 +354,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verificar se o programa pertence ao profissional
-    const { data: existingProgram } = await supabase
+    const { data: existingProgram } = await supabaseAdmin
       .from('fitness_training_programs')
-      .select('id')
+      .select('id, client_id')
       .eq('id', programId)
       .eq('professional_id', professional.id)
       .single()
@@ -312,7 +372,25 @@ export async function PATCH(request: NextRequest) {
     const updateFields: Record<string, unknown> = {}
     if (updateData.name !== undefined) updateFields.name = updateData.name
     if (updateData.description !== undefined) updateFields.description = updateData.description
-    if (updateData.clientId !== undefined) updateFields.client_id = updateData.clientId
+    // Tratar clientId especificamente - pode ser string, null, ou undefined
+    if ('clientId' in updateData) {
+      // Se clientId for fornecido, validar que existe em fitness_profiles
+      if (updateData.clientId) {
+        const { data: clientExists } = await supabaseAdmin
+          .from('fitness_profiles')
+          .select('id')
+          .eq('id', updateData.clientId)
+          .single()
+
+        if (!clientExists) {
+          return NextResponse.json(
+            { success: false, error: 'Cliente não encontrado' },
+            { status: 400 }
+          )
+        }
+      }
+      updateFields.client_id = updateData.clientId || null
+    }
     if (updateData.goal !== undefined) updateFields.goal = updateData.goal
     if (updateData.difficulty !== undefined) updateFields.difficulty = updateData.difficulty
     if (updateData.durationWeeks !== undefined) updateFields.duration_weeks = updateData.durationWeeks
@@ -324,22 +402,36 @@ export async function PATCH(request: NextRequest) {
     if (updateData.endsAt !== undefined) updateFields.ends_at = updateData.endsAt
     if (updateData.notes !== undefined) updateFields.notes = updateData.notes
 
-    const { error: updateError } = await supabase
+    console.log('Atualizando programa:', programId, 'com campos:', updateFields)
+
+    if (Object.keys(updateFields).length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Nenhum campo para atualizar' },
+        { status: 400 }
+      )
+    }
+
+    const { data: updatedProgram, error: updateError } = await supabaseAdmin
       .from('fitness_training_programs')
       .update(updateFields)
       .eq('id', programId)
+      .select('*, client:fitness_profiles!client_id(id, nome, email)')
+      .single()
 
     if (updateError) {
       console.error('Erro ao atualizar programa:', updateError)
       return NextResponse.json(
-        { success: false, error: 'Erro ao atualizar programa' },
+        { success: false, error: 'Erro ao atualizar programa: ' + updateError.message },
         { status: 500 }
       )
     }
 
+    console.log('Programa atualizado:', updatedProgram)
+
     return NextResponse.json({
       success: true,
-      message: 'Programa atualizado com sucesso'
+      message: 'Programa atualizado com sucesso',
+      program: updatedProgram
     })
 
   } catch (error) {
