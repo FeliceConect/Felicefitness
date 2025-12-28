@@ -54,14 +54,16 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
       // Check if this is a template-based workout (ID starts with "template-")
       const isTemplateWorkout = data.workoutId.startsWith('template-')
 
-      // Extract template ID from the workout ID if it's a template workout
-      let templateId = data.templateId
-      if (isTemplateWorkout && !templateId) {
-        // Format: template-YYYY-MM-DD-templateId
-        const parts = data.workoutId.split('-')
-        if (parts.length >= 5) {
-          templateId = parts.slice(4).join('-')
-        }
+      // Only use templateId if it's explicitly provided and NOT from a professional's program
+      // Template workouts from professionals have IDs like "template-2024-12-28-uuid"
+      // but that UUID is from fitness_training_days, not fitness_workout_templates
+      // So we should NOT use it as template_id to avoid foreign key violations
+      let templateId: string | null = null
+
+      // Only use templateId if explicitly provided AND the workout is NOT template-based
+      // (real user templates that exist in fitness_workout_templates)
+      if (data.templateId && !isTemplateWorkout) {
+        templateId = data.templateId
       }
 
       // Calculate total volume

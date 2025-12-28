@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { format } from 'date-fns'
 import { X, Pause, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RestTimerModal } from '@/components/treino/rest-timer-modal'
@@ -114,13 +115,16 @@ export default function WorkoutExecutionPage() {
     const summary = finishWorkout()
     if (summary && workout) {
       // Save summary data for the resume page
+      // IMPORTANT: Always use today's date (when workout was actually done)
+      // not the original scheduled date
+      const todayDate = format(new Date(), 'yyyy-MM-dd')
       const summaryData = {
         // Workout info for saving to database
         workoutId: workoutId,
         templateId: workout.template_id,
         nome: workout.nome,
         tipo: workout.tipo,
-        data: workout.data,
+        data: todayDate, // Use actual execution date, not scheduled date
         // Summary stats
         duration: summary.duracao,
         exercisesCompleted: summary.exerciciosCompletos,
