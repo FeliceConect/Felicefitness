@@ -399,22 +399,44 @@ export function useWorkouts(): UseWorkoutsReturn {
 
       // Determinar status
       let status: DayWorkout['status'] = 'future'
-      if (isBefore(date, todayDate) && !isToday(date)) {
-        status = realWorkout?.status === 'concluido' ? 'completed' : 'missed'
-      } else if (isToday(date)) {
-        status = realWorkout?.status === 'concluido' ? 'completed' : 'pending'
-      }
 
       // Determinar tipo baseado em dados reais (template ou workout)
       let type: string | undefined
       let icon: string | undefined
 
-      // Se não tem template nem treino real para o dia, é descanso
-      if (!template && !realWorkout) {
-        if (!isAfter(date, todayDate) || isToday(date)) {
+      // Se não tem template nem treino real para o dia, é descanso (não missed)
+      const hasPlannedWorkout = template || realWorkout
+
+      if (isBefore(date, todayDate) && !isToday(date)) {
+        // Dia passou
+        if (realWorkout?.status === 'concluido') {
+          status = 'completed'
+        } else if (template && !realWorkout) {
+          // Tinha treino planejado mas não fez
+          status = 'missed'
+        } else if (!template && !realWorkout) {
+          // Não tinha treino planejado - é descanso
           status = 'rest'
+          type = 'rest'
+        } else {
+          // Tem workout mas não está concluído
+          status = 'missed'
         }
-        type = 'rest'
+      } else if (isToday(date)) {
+        if (realWorkout?.status === 'concluido') {
+          status = 'completed'
+        } else if (hasPlannedWorkout) {
+          status = 'pending'
+        } else {
+          status = 'rest'
+          type = 'rest'
+        }
+      } else {
+        // Dia futuro
+        if (!hasPlannedWorkout) {
+          status = 'rest'
+          type = 'rest'
+        }
       }
 
       // Criar workout object
