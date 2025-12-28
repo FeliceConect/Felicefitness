@@ -24,6 +24,10 @@ interface DBWorkout {
     id: string
     nome: string
     email: string
+  }[] | {
+    id: string
+    nome: string
+    email: string
   }
   exercises?: DBWorkoutExercise[]
 }
@@ -136,7 +140,7 @@ export async function GET(request: NextRequest) {
     console.log('Program Client IDs:', programClientIds)
 
     // Combinar IDs unicos
-    const clientIds = [...new Set([...assignmentClientIds, ...programClientIds])]
+    const clientIds = Array.from(new Set([...assignmentClientIds, ...programClientIds]))
     console.log('Combined Client IDs:', clientIds)
 
     if (clientIds.length === 0) {
@@ -317,7 +321,7 @@ export async function GET(request: NextRequest) {
         notes: w.notas,
         rating: null, // Nao temos esse campo no banco
         perceived_effort: w.nivel_dificuldade,
-        profile: w.profile,
+        profile: Array.isArray(w.profile) ? w.profile[0] : w.profile,
         exercises: mappedExercises
       }
     })

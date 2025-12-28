@@ -8,7 +8,6 @@ import {
   Save,
   Plus,
   Trash2,
-  Edit,
   Clock,
   Flame,
   ChevronDown,
@@ -17,8 +16,7 @@ import {
   Check,
   Users,
   Calendar,
-  Target,
-  GripVertical
+  Target
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 

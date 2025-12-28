@@ -9,7 +9,6 @@ import {
   Calendar,
   ArrowLeft,
   Flame,
-  TrendingUp,
   Clock,
   ChevronDown,
   ChevronRight,

@@ -421,10 +421,6 @@ export default function TrainingPage() {
         <CreateProgramModal
           clients={clients}
           onClose={() => setShowCreateModal(false)}
-          onCreated={() => {
-            setShowCreateModal(false)
-            fetchPrograms()
-          }}
         />
       )}
 
@@ -468,12 +464,10 @@ export default function TrainingPage() {
 // Create Program Modal Component
 function CreateProgramModal({
   clients,
-  onClose,
-  onCreated
+  onClose
 }: {
   clients: Client[]
   onClose: () => void
-  onCreated: () => void
 }) {
   const [formData, setFormData] = useState({
     name: '',

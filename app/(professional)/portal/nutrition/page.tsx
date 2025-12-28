@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import {
   Plus,
   Search,
-  Filter,
   MoreVertical,
   Edit,
   Trash2,
@@ -410,10 +409,6 @@ export default function NutritionPage() {
         <CreatePlanModal
           clients={clients}
           onClose={() => setShowCreateModal(false)}
-          onCreated={() => {
-            setShowCreateModal(false)
-            fetchPlans()
-          }}
         />
       )}
 
@@ -457,12 +452,10 @@ export default function NutritionPage() {
 // Create Plan Modal Component
 function CreatePlanModal({
   clients,
-  onClose,
-  onCreated
+  onClose
 }: {
   clients: Client[]
   onClose: () => void
-  onCreated: () => void
 }) {
   const [formData, setFormData] = useState({
     name: '',

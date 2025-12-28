@@ -6,9 +6,7 @@ import { useProfessional } from '@/hooks/use-professional'
 import {
   Utensils,
   Search,
-  Filter,
   Calendar,
-  User,
   ArrowLeft,
   Flame,
   TrendingUp,

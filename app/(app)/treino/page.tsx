@@ -23,7 +23,7 @@ const typeIcons: Record<string, string> = {
 
 export default function TreinoPage() {
   const router = useRouter()
-  const { weekDays, todayWorkout, upcomingWorkouts, recentWorkouts, loading } = useWorkouts()
+  const { weekDays, upcomingWorkouts, recentWorkouts, loading } = useWorkouts()
   const { state, getSavedWorkoutId, clearSavedWorkout } = useWorkoutExecution()
   const [selectedDay, setSelectedDay] = useState<DayWorkout | null>(
     weekDays.find(d => format(d.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) || null
@@ -49,11 +49,6 @@ export default function TreinoPage() {
     const total = weekDays.filter(d => d.workout || d.type === 'beach_tennis').length
     return { completed, total }
   }, [weekDays])
-
-  // Verificar se hoje é dia de descanso ou atividade especial
-  const todayDay = weekDays.find(d => format(d.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'))
-  const isRestDay = todayDay?.type === 'rest' || todayDay?.status === 'rest'
-  const isSpecialActivity = todayDay?.type === 'beach_tennis'
 
   const handleSelectDay = (day: DayWorkout) => {
     setSelectedDay(day)

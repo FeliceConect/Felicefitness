@@ -1,4 +1,6 @@
-// @ts-nocheck - Tipos do Supabase serao gerados apos rodar a migration
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+// Tipos do Supabase serao gerados apos rodar a migration
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'

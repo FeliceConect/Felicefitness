@@ -1,4 +1,6 @@
-// @ts-nocheck - Tipos do Supabase serao gerados apos rodar a migration
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+// Tipos do Supabase serao gerados apos rodar a migration
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
@@ -87,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Client IDs encontrados:', clientIds)
 
-    let clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
+    const clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
 
     if (clientIds.length > 0) {
       const { data: clients, error: clientsError } = await supabaseAdmin

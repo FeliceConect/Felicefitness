@@ -17,7 +17,6 @@ import {
   Target,
   Dumbbell,
   Clock,
-  Zap,
   GripVertical,
   Pencil
 } from 'lucide-react'
