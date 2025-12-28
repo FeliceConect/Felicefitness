@@ -142,7 +142,7 @@ export default function TrainingPage() {
           daysPerWeek: program.days_per_week,
           sessionDuration: program.session_duration,
           equipmentNeeded: program.equipment_needed,
-          isTemplate: true
+          isTemplate: false // Cópia é um programa normal, não template
         })
       })
       const data = await response.json()

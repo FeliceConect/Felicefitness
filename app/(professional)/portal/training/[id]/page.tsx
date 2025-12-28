@@ -18,7 +18,8 @@ import {
   Dumbbell,
   Clock,
   Zap,
-  GripVertical
+  GripVertical,
+  Pencil
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -123,6 +124,8 @@ export default function TrainingProgramDetailPage() {
   const [showAddExerciseModal, setShowAddExerciseModal] = useState<{ weekIndex: number; dayIndex: number } | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [showClientModal, setShowClientModal] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState('')
 
   useEffect(() => {
     if (!professionalLoading && !isTrainer) {
@@ -418,7 +421,68 @@ export default function TrainingProgramDetailPage() {
             <ArrowLeft className="w-5 h-5 text-slate-400" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">{program.name}</h1>
+            <div className="flex items-center gap-2">
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="text-2xl font-bold text-white bg-slate-700 border border-slate-600 rounded-lg px-3 py-1 focus:outline-none focus:border-violet-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (editedName.trim()) {
+                          setProgram({ ...program, name: editedName.trim() })
+                          setHasChanges(true)
+                        }
+                        setIsEditingName(false)
+                      } else if (e.key === 'Escape') {
+                        setIsEditingName(false)
+                        setEditedName(program.name)
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (editedName.trim()) {
+                        setProgram({ ...program, name: editedName.trim() })
+                        setHasChanges(true)
+                      }
+                      setIsEditingName(false)
+                    }}
+                    className="p-1.5 hover:bg-green-500/20 rounded text-green-400"
+                    title="Confirmar"
+                  >
+                    <Check className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingName(false)
+                      setEditedName(program.name)
+                    }}
+                    className="p-1.5 hover:bg-red-500/20 rounded text-red-400"
+                    title="Cancelar"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold text-white">{program.name}</h1>
+                  <button
+                    onClick={() => {
+                      setEditedName(program.name)
+                      setIsEditingName(true)
+                    }}
+                    className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                    title="Editar nome"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-3 text-sm text-slate-400">
               {program.is_template && (
                 <span className="px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded-full text-xs">
