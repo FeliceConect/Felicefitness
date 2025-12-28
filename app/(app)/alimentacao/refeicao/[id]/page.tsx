@@ -150,7 +150,9 @@ export default function MealDetailPage() {
   }, [loadMeal])
 
   const [isEditing, setIsEditing] = useState(false)
+  const [isAdding, setIsAdding] = useState(false) // Modo complementar - só adiciona sem deletar
   const [editedItems, setEditedItems] = useState<MealItem[]>([])
+  const [newItems, setNewItems] = useState<MealItem[]>([]) // Novos itens no modo complementar
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
   const [showAddFood, setShowAddFood] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -168,6 +170,25 @@ export default function MealDetailPage() {
       { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
     )
   }, [editedItems])
+
+  // Calculate totals for adding mode (existing + new)
+  const addingTotals = useMemo(() => {
+    const newTotals = newItems.reduce(
+      (acc, item) => ({
+        calorias: acc.calorias + item.calorias,
+        proteinas: acc.proteinas + item.proteinas,
+        carboidratos: acc.carboidratos + item.carboidratos,
+        gorduras: acc.gorduras + item.gorduras
+      }),
+      { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
+    )
+    return {
+      calorias: (meal?.calorias_total || 0) + newTotals.calorias,
+      proteinas: (meal?.proteinas_total || 0) + newTotals.proteinas,
+      carboidratos: (meal?.carboidratos_total || 0) + newTotals.carboidratos,
+      gorduras: (meal?.gorduras_total || 0) + newTotals.gorduras
+    }
+  }, [meal, newItems])
 
   // Loading state
   if (loading) {
@@ -194,17 +215,19 @@ export default function MealDetailPage() {
     )
   }
 
-  const items = isEditing ? editedItems : meal.itens
-  const totals = isEditing ? editedTotals : {
+  // Itens a exibir dependendo do modo
+  const items = isEditing ? editedItems : isAdding ? [...meal.itens, ...newItems] : meal.itens
+  const totals = isEditing ? editedTotals : isAdding ? addingTotals : {
     calorias: meal.calorias_total,
     proteinas: meal.proteinas_total,
     carboidratos: meal.carboidratos_total,
     gorduras: meal.gorduras_total
   }
 
+  // === MODO EDITAR (substitui tudo) ===
   const handleStartEdit = () => {
     setEditedItems([...meal.itens])
-    setShowAddFood(true) // Abrir seção de adicionar por padrão
+    setShowAddFood(true)
     setIsEditing(true)
   }
 
@@ -213,6 +236,89 @@ export default function MealDetailPage() {
     setIsEditing(false)
     setShowAddFood(false)
     setSelectedFood(null)
+  }
+
+  // === MODO COMPLEMENTAR (preserva existentes) ===
+  const handleStartAdding = () => {
+    setNewItems([])
+    setShowAddFood(true)
+    setIsAdding(true)
+  }
+
+  const handleCancelAdding = () => {
+    setNewItems([])
+    setIsAdding(false)
+    setShowAddFood(false)
+    setSelectedFood(null)
+  }
+
+  const handleSaveAdding = async () => {
+    if (newItems.length === 0) return
+
+    setSaving(true)
+    console.log('=== SALVANDO ITENS COMPLEMENTARES ===')
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      // 1. Inserir APENAS os novos itens (preserva os existentes)
+      console.log('Inserindo', newItems.length, 'novos itens')
+      for (const item of newItems) {
+        const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
+
+        const itemToInsert = {
+          meal_id: meal.id,
+          food_id: isValidUUID ? item.food_id : null,
+          nome_alimento: item.food.nome,
+          quantidade: Math.round(item.quantidade),
+          unidade: item.food.unidade || 'g',
+          calorias: Math.round(item.calorias),
+          proteinas: Math.round(item.proteinas),
+          carboidratos: Math.round(item.carboidratos),
+          gorduras: Math.round(item.gorduras)
+        }
+        console.log('Inserindo item:', itemToInsert)
+
+        const { error: insertError } = await supabase
+          .from('fitness_meal_items')
+          .insert(itemToInsert as never)
+
+        if (insertError) {
+          console.error('Erro ao inserir item:', insertError)
+        }
+      }
+
+      // 2. Atualizar totais na refeição
+      console.log('Atualizando totais da refeição')
+      await supabase
+        .from('fitness_meals')
+        .update({
+          calorias_total: addingTotals.calorias,
+          proteinas_total: addingTotals.proteinas,
+          carboidratos_total: addingTotals.carboidratos,
+          gorduras_total: addingTotals.gorduras
+        } as never)
+        .eq('id', meal.id)
+
+      // 3. Atualizar estado local
+      setMeal({
+        ...meal,
+        itens: [...meal.itens, ...newItems],
+        calorias_total: addingTotals.calorias,
+        proteinas_total: addingTotals.proteinas,
+        carboidratos_total: addingTotals.carboidratos,
+        gorduras_total: addingTotals.gorduras
+      })
+
+      console.log('=== ITENS COMPLEMENTARES SALVOS COM SUCESSO ===')
+      setIsAdding(false)
+      setNewItems([])
+      setShowAddFood(false)
+    } catch (error) {
+      console.error('Erro ao salvar itens:', error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleSaveEdit = async () => {
@@ -297,7 +403,11 @@ export default function MealDetailPage() {
   }
 
   const handleRemoveItem = (itemId: string) => {
-    setEditedItems(prev => prev.filter(item => item.id !== itemId))
+    if (isEditing) {
+      setEditedItems(prev => prev.filter(item => item.id !== itemId))
+    } else if (isAdding) {
+      setNewItems(prev => prev.filter(item => item.id !== itemId))
+    }
   }
 
   const handleFoodSelect = (food: Food) => {
@@ -319,7 +429,12 @@ export default function MealDetailPage() {
       gorduras: macros.gorduras
     }
 
-    setEditedItems(prev => [...prev, newItem])
+    // Adicionar ao array correto dependendo do modo
+    if (isEditing) {
+      setEditedItems(prev => [...prev, newItem])
+    } else if (isAdding) {
+      setNewItems(prev => [...prev, newItem])
+    }
     addToRecent(selectedFood.id)
     setSelectedFood(null)
     setShowAddFood(false)
@@ -384,11 +499,21 @@ export default function MealDetailPage() {
             </div>
           </div>
 
-          {!isEditing && (
+          {!isEditing && !isAdding && (
             <div className="flex gap-2">
+              {/* Botão Adicionar Mais (principal) */}
+              <button
+                onClick={handleStartAdding}
+                className="p-2 bg-violet-500/20 hover:bg-violet-500/30 rounded-lg transition-colors"
+                title="Adicionar mais alimentos"
+              >
+                <Plus className="w-5 h-5 text-violet-400" />
+              </button>
+              {/* Botão Editar (substituir tudo) */}
               <button
                 onClick={handleStartEdit}
                 className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                title="Editar refeição"
               >
                 <Edit2 className="w-5 h-5 text-slate-400" />
               </button>
@@ -396,6 +521,7 @@ export default function MealDetailPage() {
                 onClick={handleDelete}
                 disabled={deleting}
                 className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+                title="Excluir refeição"
               >
                 <Trash2 className="w-5 h-5 text-red-400" />
               </button>
@@ -448,8 +574,11 @@ export default function MealDetailPage() {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
             Alimentos ({items.length})
+            {isAdding && newItems.length > 0 && (
+              <span className="text-emerald-400 ml-2">+{newItems.length} novo(s)</span>
+            )}
           </h3>
-          {isEditing && (
+          {(isEditing || isAdding) && (
             <button
               onClick={() => setShowAddFood(true)}
               className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
@@ -460,7 +589,7 @@ export default function MealDetailPage() {
           )}
         </div>
 
-        {items.length === 0 && !isEditing && meal.calorias_total > 0 && (
+        {items.length === 0 && !isEditing && !isAdding && meal.calorias_total > 0 && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-3">
             <p className="text-amber-400 text-sm">
               Esta refeição foi salva sem detalhes dos alimentos. Clique em editar para adicionar os alimentos.
@@ -468,25 +597,47 @@ export default function MealDetailPage() {
           </div>
         )}
 
+        {/* Indicador de modo complementar */}
+        {isAdding && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 mb-3">
+            <p className="text-emerald-400 text-sm">
+              Modo complementar: os alimentos originais serão preservados. Adicione apenas o que faltou.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2">
           {items.map((item, index) => {
             const categoryInfo = foodCategoryLabels[item.food.categoria]
+            const isNewItem = isAdding && newItems.some(ni => ni.id === item.id)
             return (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="flex items-center gap-3 p-3 bg-[#14141F] border border-[#2E2E3E] rounded-xl"
+                className={`flex items-center gap-3 p-3 rounded-xl ${
+                  isNewItem
+                    ? 'bg-emerald-500/10 border border-emerald-500/30'
+                    : 'bg-[#14141F] border border-[#2E2E3E]'
+                }`}
               >
                 <span className="text-xl">{categoryInfo.icon}</span>
                 <div className="flex-1">
-                  <p className="text-white font-medium">{item.food.nome}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-medium">{item.food.nome}</p>
+                    {isNewItem && (
+                      <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+                        Novo
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-slate-400">
                     {item.quantidade}{item.food.unidade} • {Math.round(item.calorias)} kcal • {Math.round(item.proteinas)}g prot
                   </p>
                 </div>
-                {isEditing && (
+                {/* Só permite remover se estiver editando, ou se for novo item no modo adicionar */}
+                {(isEditing || (isAdding && isNewItem)) && (
                   <button
                     onClick={() => handleRemoveItem(item.id)}
                     className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -500,12 +651,14 @@ export default function MealDetailPage() {
         </div>
       </div>
 
-      {/* Add food section (when editing) */}
-      {isEditing && showAddFood && (
+      {/* Add food section (when editing or adding) */}
+      {(isEditing || isAdding) && showAddFood && (
         <div className="px-4 mb-6">
           <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-slate-400">Adicionar Alimento</h4>
+              <h4 className="text-sm font-medium text-slate-400">
+                {isAdding ? 'Complementar Refeição' : 'Adicionar Alimento'}
+              </h4>
               <button
                 onClick={() => setShowAddFood(false)}
                 className="p-1 hover:bg-slate-800 rounded-lg"
@@ -515,7 +668,7 @@ export default function MealDetailPage() {
             </div>
             <FoodSearch
               onSelect={handleFoodSelect}
-              excludeIds={editedItems.map(i => i.food_id)}
+              excludeIds={isEditing ? editedItems.map(i => i.food_id) : [...meal.itens.map(i => i.food_id), ...newItems.map(i => i.food_id)]}
             />
           </div>
         </div>
@@ -569,6 +722,34 @@ export default function MealDetailPage() {
             >
               <Check className="w-5 h-5 mr-2" />
               {saving ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Adding mode actions */}
+      {isAdding && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-12 z-50">
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              className="flex-1"
+              onClick={handleCancelAdding}
+              disabled={saving}
+            >
+              <X className="w-5 h-5 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              variant="gradient"
+              size="lg"
+              className="flex-1"
+              onClick={handleSaveAdding}
+              disabled={saving || newItems.length === 0}
+            >
+              <Check className="w-5 h-5 mr-2" />
+              {saving ? 'Salvando...' : `Salvar +${newItems.length}`}
             </Button>
           </div>
         </div>
