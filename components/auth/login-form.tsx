@@ -36,7 +36,7 @@ export function LoginForm() {
     try {
       const supabase = createClient()
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       })
@@ -53,13 +53,37 @@ export function LoginForm() {
         return
       }
 
-      toast({
-        variant: "success",
-        title: "Bem-vindo!",
-        description: "Login realizado com sucesso.",
-      })
+      // Verificar se é profissional (personal ou nutricionista)
+      let redirectPath = "/dashboard"
 
-      router.push("/dashboard")
+      if (authData.user) {
+        const { data: professionalData } = await supabase
+          .from('fitness_professionals')
+          .select('id, type, is_active')
+          .eq('user_id', authData.user.id)
+          .eq('is_active', true)
+          .single()
+
+        const professional = professionalData as { id: string; type: string; is_active: boolean } | null
+
+        if (professional) {
+          // Profissional vai direto para o portal
+          redirectPath = "/portal"
+          toast({
+            variant: "success",
+            title: `Bem-vindo, ${professional.type === 'trainer' ? 'Personal' : 'Nutricionista'}!`,
+            description: "Acessando o Portal Profissional.",
+          })
+        } else {
+          toast({
+            variant: "success",
+            title: "Bem-vindo!",
+            description: "Login realizado com sucesso.",
+          })
+        }
+      }
+
+      router.push(redirectPath)
       router.refresh()
     } catch {
       setHasError(true)

@@ -44,8 +44,17 @@ export async function updateSession(request: NextRequest) {
   )
 
   // Rotas que não devem verificar onboarding
-  const onboardingExemptRoutes = ['/onboarding', '/api', '/termos', '/privacidade']
+  const onboardingExemptRoutes = ['/onboarding', '/api', '/termos', '/privacidade', '/portal']
   const isOnboardingExempt = onboardingExemptRoutes.some(route =>
+    request.nextUrl.pathname.startsWith(route)
+  )
+
+  // Rotas do portal (exclusivas para profissionais)
+  const isPortalRoute = request.nextUrl.pathname.startsWith('/portal')
+
+  // Rotas do app (exclusivas para usuários comuns)
+  const appRoutes = ['/dashboard', '/treino', '/alimentacao', '/hidratacao', '/suplementos', '/fotos', '/bioimpedancia', '/sono', '/bem-estar', '/conquistas', '/perfil', '/coach', '/widgets', '/compartilhar', '/insights']
+  const isAppRoute = appRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
 
@@ -56,15 +65,46 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Verificar se é profissional (personal ou nutricionista)
+  let isProfessional = false
+
+  if (user) {
+    const { data: professional } = await supabase
+      .from('fitness_professionals')
+      .select('id, is_active')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single()
+
+    if (professional) {
+      isProfessional = true
+    }
+  }
+
   // Se está autenticado e tentando acessar rota pública (login/registro)
   if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/registro'))) {
+    const url = request.nextUrl.clone()
+    // Profissionais vão direto para o portal
+    url.pathname = isProfessional ? '/portal' : '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  // Se é profissional tentando acessar rotas do app, redirecionar para o portal
+  if (user && isProfessional && isAppRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/portal'
+    return NextResponse.redirect(url)
+  }
+
+  // Se NÃO é profissional tentando acessar portal, redirecionar para o app
+  if (user && !isProfessional && isPortalRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  // Se está autenticado, verificar se completou o onboarding
-  if (user && !isOnboardingExempt) {
+  // Se está autenticado (usuário comum), verificar se completou o onboarding
+  if (user && !isProfessional && !isOnboardingExempt) {
     // Buscar perfil do usuário para verificar onboarding
     const { data: profile } = await supabase
       .from('fitness_profiles')
