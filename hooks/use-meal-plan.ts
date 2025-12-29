@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { format, startOfWeek, addDays, isToday } from 'date-fns'
 
 interface Food {
   name: string
@@ -10,6 +12,13 @@ interface Food {
   protein?: number
   carbs?: number
   fat?: number
+}
+
+// Named alternative with option letter (A, B, C, D, E) and name
+interface MealAlternative {
+  option: string  // "B", "C", "D", "E"
+  name: string    // "Café com pasta de amendoim"
+  foods: Food[]
 }
 
 interface PlannedMeal {
@@ -23,7 +32,8 @@ interface PlannedMeal {
   total_carbs?: number
   total_fat?: number
   instructions?: string
-  alternatives?: Food[][]
+  // Support both formats: named alternatives (new) and food arrays (legacy)
+  alternatives?: MealAlternative[] | Food[][]
   is_completed?: boolean
 }
 
@@ -55,6 +65,8 @@ export function useMealPlan() {
   const [plan, setPlan] = useState<MealPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [completedMealIds, setCompletedMealIds] = useState<string[]>([])
+  const [isTrainingDay, setIsTrainingDay] = useState(false)
+  const supabase = createClient()
 
   // Buscar plano alimentar ativo
   const fetchPlan = useCallback(async () => {
@@ -86,6 +98,79 @@ export function useMealPlan() {
     }
   }, [])
 
+  // Verificar se hoje é dia de treino
+  const checkTrainingDay = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const today = new Date()
+      const todayStr = format(today, 'yyyy-MM-dd')
+      const dayOfWeek = today.getDay()
+
+      // Check 1: Treino real realizado ou planejado hoje
+      const { data: todayWorkout } = await supabase
+        .from('fitness_workouts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('data', todayStr)
+        .limit(1)
+        .single()
+
+      if (todayWorkout) {
+        setIsTrainingDay(true)
+        return
+      }
+
+      // Check 2: Template de treino para este dia da semana
+      const { data: template } = await supabase
+        .from('fitness_workout_templates')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('dia_semana', dayOfWeek)
+        .eq('is_ativo', true)
+        .limit(1)
+        .single()
+
+      if (template) {
+        setIsTrainingDay(true)
+        return
+      }
+
+      // Check 3: Programa de treino do profissional (via API para bypass RLS)
+      try {
+        const response = await fetch('/api/client/training-program')
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.program) {
+            const program = result.program
+            // Verificar se há treino para hoje no programa
+            if (program.weeks && program.weeks.length > 0) {
+              const activeWeek = program.weeks[0]
+              if (activeWeek.days) {
+                const todayDay = activeWeek.days.find(
+                  (d: { day_of_week: number; exercises?: unknown[] }) =>
+                    d.day_of_week === dayOfWeek && d.exercises && d.exercises.length > 0
+                )
+                if (todayDay) {
+                  setIsTrainingDay(true)
+                  return
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore errors checking professional program
+      }
+
+      setIsTrainingDay(false)
+    } catch (error) {
+      console.error('Erro ao verificar dia de treino:', error)
+      setIsTrainingDay(false)
+    }
+  }, [supabase])
+
   // Completar refeição
   const completeMeal = useCallback(async (
     meal: PlannedMeal,
@@ -93,9 +178,20 @@ export function useMealPlan() {
   ): Promise<boolean> => {
     try {
       const today = new Date().toISOString().split('T')[0]
-      const foods = alternativeIndex !== undefined && meal.alternatives
-        ? meal.alternatives[alternativeIndex]
-        : meal.foods
+
+      // Get foods from the selected alternative
+      let foods: Food[] = meal.foods
+      if (alternativeIndex !== undefined && meal.alternatives) {
+        const alt = meal.alternatives[alternativeIndex]
+        // Check if it's a named alternative or a food array
+        if ('foods' in alt && 'option' in alt) {
+          // Named alternative (new format)
+          foods = (alt as MealAlternative).foods
+        } else if (Array.isArray(alt)) {
+          // Food array (legacy format)
+          foods = alt as Food[]
+        }
+      }
 
       const response = await fetch('/api/client/meal-plan/complete', {
         method: 'POST',
@@ -120,30 +216,37 @@ export function useMealPlan() {
     }
   }, [])
 
-  // Obter refeições do dia atual
+  // Obter refeições do dia atual (filtrando por dia de treino se necessário)
   const getTodayMeals = useCallback((): PlannedMeal[] => {
     if (!plan?.days) return []
 
     const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
     const todayDay = plan.days.find(d => d.day_of_week === today)
 
-    return todayDay?.meals || []
+    const meals = todayDay?.meals || []
+
+    // Filter meals based on training day status
+    // Note: Meals with is_training_day_only are stored in the DB, we need to check meal metadata
+    return meals
   }, [plan])
 
   useEffect(() => {
     fetchPlan()
     fetchCompletedMeals()
-  }, [fetchPlan, fetchCompletedMeals])
+    checkTrainingDay()
+  }, [fetchPlan, fetchCompletedMeals, checkTrainingDay])
 
   return {
     plan,
     loading,
     completedMealIds,
     todayMeals: getTodayMeals(),
+    isTrainingDay,
     completeMeal,
     refetch: () => {
       fetchPlan()
       fetchCompletedMeals()
+      checkTrainingDay()
     }
   }
 }

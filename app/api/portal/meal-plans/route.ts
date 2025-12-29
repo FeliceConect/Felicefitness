@@ -80,50 +80,48 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar dados dos clientes separadamente
-    console.log('=== DEBUG MEAL PLANS ===')
-    console.log('Planos encontrados:', plans?.map(p => ({ id: p.id, name: p.name, client_id: p.client_id })))
-
     const clientIds = (plans || [])
       .filter(p => p.client_id)
       .map(p => p.client_id)
 
-    console.log('Client IDs encontrados:', clientIds)
-
     const clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
 
     if (clientIds.length > 0) {
-      const { data: clients, error: clientsError } = await supabaseAdmin
+      // Buscar clientes em fitness_profiles
+      const { data: clients } = await supabaseAdmin
         .from('fitness_profiles')
         .select('id, nome, email, avatar_url')
         .in('id', clientIds)
-
-      console.log('Clientes buscados:', clients)
-      if (clientsError) console.log('Erro ao buscar clientes:', clientsError)
 
       if (clients) {
         clients.forEach(c => {
           clientsMap[c.id] = c
         })
       }
+
+      // Se algum cliente não foi encontrado, tentar buscar no auth.users
+      const missingClientIds = clientIds.filter(id => !clientsMap[id])
+      if (missingClientIds.length > 0) {
+        // Buscar email dos usuários no auth
+        for (const clientId of missingClientIds) {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(clientId)
+          if (authUser?.user) {
+            clientsMap[clientId] = {
+              id: clientId,
+              nome: authUser.user.user_metadata?.nome || authUser.user.email?.split('@')[0] || 'Cliente',
+              email: authUser.user.email || '',
+              avatar_url: authUser.user.user_metadata?.avatar_url
+            }
+          }
+        }
+      }
     }
 
-    console.log('Clients Map:', JSON.stringify(clientsMap, null, 2))
-
     // Adicionar dados do cliente a cada plano
-    const plansWithClients = (plans || []).map(p => {
-      console.log(`Plano "${p.name}": client_id = "${p.client_id}" (tipo: ${typeof p.client_id})`)
-      if (p.client_id) {
-        console.log(`  Buscando no map: clientsMap["${p.client_id}"] = `, clientsMap[p.client_id])
-        // Tentar com string explícita
-        console.log(`  Keys no map: ${Object.keys(clientsMap).join(', ')}`)
-      }
-      return {
-        ...p,
-        client: p.client_id ? clientsMap[p.client_id] || null : null
-      }
-    })
-
-    console.log('Planos com clientes:', JSON.stringify(plansWithClients.map(p => ({ name: p.name, client_id: p.client_id, client: p.client })), null, 2))
+    const plansWithClients = (plans || []).map(p => ({
+      ...p,
+      client: p.client_id ? clientsMap[p.client_id] || null : null
+    }))
 
     return NextResponse.json({
       success: true,

@@ -31,6 +31,13 @@ interface Food {
   fat?: number
 }
 
+// Formato novo para alternativas importadas por IA
+interface MealAlternative {
+  option: string  // "B", "C", "D", etc
+  name: string    // Nome da opção
+  foods: Food[]
+}
+
 interface Meal {
   id?: string
   meal_type: string
@@ -42,7 +49,7 @@ interface Meal {
   total_carbs?: number
   total_fat?: number
   instructions?: string
-  alternatives?: Food[][] // Array de arrays de alimentos alternativos
+  alternatives?: MealAlternative[] | Food[][] // Suporta ambos formatos
   order_index: number
 }
 
@@ -342,10 +349,12 @@ export default function MealPlanDetailPage() {
     const meal = newDays[dayIndex].meals[mealIndex]
 
     if (!meal.alternatives) {
-      meal.alternatives = []
+      // Inicializa como Food[][] para manter compatibilidade com adições manuais
+      meal.alternatives = [] as Food[][]
     }
 
-    meal.alternatives.push(foods)
+    // Cast para Food[][] já que estamos adicionando no formato antigo
+    (meal.alternatives as Food[][]).push(foods)
     setPlan({ ...plan, days: newDays })
     setHasChanges(true)
   }
@@ -502,9 +511,9 @@ export default function MealPlanDetailPage() {
         {plan.days.map((day, dayIndex) => (
           <div key={dayIndex} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
             {/* Day Header */}
-            <button
+            <div
               onClick={() => toggleDay(dayIndex)}
-              className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
@@ -536,7 +545,7 @@ export default function MealPlanDetailPage() {
                   <ChevronDown className="w-5 h-5 text-slate-400" />
                 )}
               </div>
-            </button>
+            </div>
 
             {/* Day Content */}
             {expandedDays.includes(dayIndex) && (
@@ -635,22 +644,36 @@ export default function MealPlanDetailPage() {
                               Variações disponíveis para o cliente:
                             </p>
                             <div className="space-y-2">
-                              {meal.alternatives.map((altFoods, altIndex) => (
-                                <div
-                                  key={altIndex}
-                                  className="flex items-center justify-between bg-violet-500/10 rounded px-3 py-2 text-sm"
-                                >
-                                  <span className="text-slate-300">
-                                    Opção {altIndex + 1}: {altFoods.map(f => f.name).join(', ')}
-                                  </span>
-                                  <button
-                                    onClick={() => removeAlternative(dayIndex, mealIndex, altIndex)}
-                                    className="text-red-400 hover:text-red-300"
+                              {meal.alternatives.map((altItem, altIndex) => {
+                                // Suporta ambos formatos: MealAlternative ou Food[]
+                                const isNewFormat = 'option' in altItem && 'foods' in altItem
+                                const altFoods = isNewFormat
+                                  ? (altItem as MealAlternative).foods
+                                  : (altItem as Food[])
+                                const optionLabel = isNewFormat
+                                  ? `Opção ${(altItem as MealAlternative).option}: ${(altItem as MealAlternative).name}`
+                                  : `Opção ${altIndex + 2}`
+
+                                return (
+                                  <div
+                                    key={altIndex}
+                                    className="flex items-center justify-between bg-violet-500/10 rounded px-3 py-2 text-sm"
                                   >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))}
+                                    <div className="flex-1">
+                                      <span className="text-violet-300 font-medium">{optionLabel}</span>
+                                      <span className="text-slate-400 ml-2">
+                                        {altFoods.map(f => f.name).join(', ')}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => removeAlternative(dayIndex, mealIndex, altIndex)}
+                                      className="text-red-400 hover:text-red-300 ml-2"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                         )}

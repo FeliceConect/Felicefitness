@@ -21,13 +21,29 @@ export default function AlimentacaoPage() {
   const { meals, plannedMeals, totals, goals, progress, nextMeal, loading } = useDailyMeals()
   const revoladeWindow = useRevoladeWindow()
   const { todayTotal: aguaConsumida } = useWaterLog()
-  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completeMeal, loading: planLoading } = useMealPlan()
+  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, isTrainingDay, completeMeal, loading: planLoading } = useMealPlan()
 
   const handleAddMeal = (tipo: MealType) => {
     router.push(`/alimentacao/refeicao/nova?tipo=${tipo}`)
   }
 
-  const handleCompletePlanMeal = async (meal: { id: string; meal_type: string; meal_name?: string; scheduled_time?: string; foods: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[]; total_calories?: number; total_protein?: number; total_carbs?: number; total_fat?: number; instructions?: string; alternatives?: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[][] }, alternativeIndex?: number) => {
+  const handleCompletePlanMeal = async (
+    meal: {
+      id: string
+      meal_type: string
+      meal_name?: string
+      scheduled_time?: string
+      foods: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[]
+      total_calories?: number
+      total_protein?: number
+      total_carbs?: number
+      total_fat?: number
+      instructions?: string
+      // Support both formats: named alternatives and food arrays
+      alternatives?: { option: string; name: string; foods: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[] }[] | { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[][]
+    },
+    alternativeIndex?: number
+  ) => {
     const success = await completeMeal(meal, alternativeIndex)
     if (success) {
       // Refresh daily meals to update totals
@@ -125,6 +141,7 @@ export default function AlimentacaoPage() {
             plan={mealPlan}
             todayMeals={planMeals}
             completedMealIds={completedMealIds}
+            isTrainingDay={isTrainingDay}
             onCompleteMeal={handleCompletePlanMeal}
             onAddDifferentMeal={() => router.push('/alimentacao/refeicao/nova')}
           />

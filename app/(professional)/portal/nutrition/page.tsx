@@ -18,7 +18,8 @@ import {
   X,
   Check,
   AlertCircle,
-  FileText
+  FileText,
+  FileUp
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -181,13 +182,22 @@ export default function NutritionPage() {
           <h1 className="text-2xl font-bold text-white">Planos Alimentares</h1>
           <p className="text-slate-400">Crie e gerencie planos alimentares para seus clientes</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all"
-        >
-          <Plus className="w-5 h-5" />
-          Novo Plano
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/portal/nutrition/import"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-all"
+          >
+            <FileUp className="w-5 h-5" />
+            Importar
+          </Link>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Plano
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

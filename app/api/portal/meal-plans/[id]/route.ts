@@ -58,12 +58,27 @@ export async function GET(
     // Buscar dados do cliente separadamente
     let clientData = null
     if (plan.client_id) {
+      // Primeiro tentar em fitness_profiles
       const { data: client } = await supabaseAdmin
         .from('fitness_profiles')
         .select('id, nome, email, avatar_url')
         .eq('id', plan.client_id)
         .single()
-      clientData = client
+
+      if (client) {
+        clientData = client
+      } else {
+        // Se não encontrar, buscar no auth.users
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(plan.client_id)
+        if (authUser?.user) {
+          clientData = {
+            id: plan.client_id,
+            nome: authUser.user.user_metadata?.nome || authUser.user.email?.split('@')[0] || 'Cliente',
+            email: authUser.user.email || '',
+            avatar_url: authUser.user.user_metadata?.avatar_url
+          }
+        }
+      }
     }
 
     // Verificar permissão

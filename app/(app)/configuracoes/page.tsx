@@ -17,7 +17,8 @@ import {
   Info,
   MessageSquare,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  FileUp
 } from 'lucide-react'
 import Link from 'next/link'
 import { useNotifications } from '@/hooks/use-notifications'
@@ -168,6 +169,23 @@ export default function SettingsPage() {
             )}
           </div>
         </section>
+
+        {/* Superadmin */}
+        {isSuperAdmin && (
+          <section>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+              Superadmin
+            </h2>
+            <div className="bg-card rounded-xl border divide-y">
+              <SettingsItem
+                icon={<FileUp className="w-5 h-5" />}
+                label="Importar Plano Alimentar"
+                description="PDF, foto ou texto"
+                href="/configuracoes/importar-plano"
+              />
+            </div>
+          </section>
+        )}
 
         {/* App */}
         <section>

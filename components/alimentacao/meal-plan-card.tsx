@@ -25,6 +25,12 @@ interface Food {
   fat?: number
 }
 
+interface MealAlternative {
+  option: string  // "B", "C", "D", "E"
+  name: string    // "Café com pasta de amendoim"
+  foods: Food[]
+}
+
 interface PlannedMeal {
   id: string
   meal_type: string
@@ -36,7 +42,7 @@ interface PlannedMeal {
   total_carbs?: number
   total_fat?: number
   instructions?: string
-  alternatives?: Food[][]
+  alternatives?: MealAlternative[] | Food[][]  // Support both formats
   is_completed?: boolean
 }
 
@@ -61,6 +67,7 @@ interface MealPlanCardProps {
   plan: MealPlan
   todayMeals: PlannedMeal[]
   completedMealIds: string[]
+  isTrainingDay?: boolean
   onCompleteMeal: (meal: PlannedMeal, useAlternative?: number) => void
   onAddDifferentMeal: () => void
 }
@@ -87,6 +94,7 @@ export function MealPlanCard({
   plan,
   todayMeals,
   completedMealIds,
+  isTrainingDay = false,
   onCompleteMeal,
   onAddDifferentMeal
 }: MealPlanCardProps) {
@@ -127,6 +135,18 @@ export function MealPlanCard({
             <p className="text-lg font-bold text-green-400">{completedCount}/{totalCount}</p>
             <p className="text-xs text-slate-400">refeições</p>
           </div>
+        </div>
+
+        {/* Training Day Indicator */}
+        <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg ${
+          isTrainingDay
+            ? 'bg-violet-500/10 border border-violet-500/20'
+            : 'bg-slate-800/50 border border-slate-700/50'
+        }`}>
+          <span className="text-lg">{isTrainingDay ? '💪' : '😴'}</span>
+          <span className={`text-sm font-medium ${isTrainingDay ? 'text-violet-400' : 'text-slate-400'}`}>
+            {isTrainingDay ? 'Dia de Treino' : 'Dia de Descanso'}
+          </span>
         </div>
 
         {/* Progress bar */}
@@ -231,15 +251,49 @@ export function MealPlanCard({
                         <p className="text-xs text-slate-400 italic">{meal.instructions}</p>
                       )}
 
-                      {/* Alternatives */}
+                      {/* Alternatives with Option Buttons */}
                       {hasAlternatives && (
-                        <div>
+                        <div className="space-y-3">
+                          {/* Quick Option Selector */}
+                          {!isCompleted && (
+                            <div>
+                              <p className="text-xs text-slate-400 mb-2">Escolha uma opção:</p>
+                              <div className="flex gap-2 flex-wrap">
+                                {/* Option A (primary) */}
+                                <button
+                                  onClick={() => onCompleteMeal(meal)}
+                                  className="flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                                >
+                                  <span className="w-6 h-6 rounded-full bg-green-500 text-white text-sm font-bold flex items-center justify-center">A</span>
+                                  <span className="text-sm font-medium truncate max-w-[120px]">{meal.meal_name || 'Principal'}</span>
+                                </button>
+                                {/* Other options */}
+                                {meal.alternatives!.map((alt, altIdx) => {
+                                  const isNamedAlt = 'option' in alt && 'name' in alt
+                                  const optionLetter = isNamedAlt ? (alt as MealAlternative).option : String.fromCharCode(66 + altIdx) // B, C, D, E...
+                                  const optionName = isNamedAlt ? (alt as MealAlternative).name : `Opção ${optionLetter}`
+                                  return (
+                                    <button
+                                      key={altIdx}
+                                      onClick={() => onCompleteMeal(meal, altIdx)}
+                                      className="flex items-center gap-2 px-3 py-2 bg-violet-500/20 border border-violet-500/30 text-violet-400 rounded-lg hover:bg-violet-500/30 transition-colors"
+                                    >
+                                      <span className="w-6 h-6 rounded-full bg-violet-500 text-white text-sm font-bold flex items-center justify-center">{optionLetter}</span>
+                                      <span className="text-sm font-medium truncate max-w-[120px]">{optionName}</span>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Expandable Details */}
                           <button
                             onClick={() => setShowAlternatives(showAlternatives === meal.id ? null : meal.id)}
-                            className="flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300"
+                            className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-300"
                           >
                             <ArrowRightLeft className="w-4 h-4" />
-                            Ver {meal.alternatives!.length} {meal.alternatives!.length === 1 ? 'variação' : 'variações'}
+                            {showAlternatives === meal.id ? 'Esconder' : 'Ver'} detalhes das opções
                           </button>
 
                           <AnimatePresence>
@@ -248,43 +302,56 @@ export function MealPlanCard({
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                className="mt-2 space-y-2"
+                                className="space-y-2"
                               >
-                                {meal.alternatives!.map((altFoods, altIdx) => (
-                                  <div key={altIdx} className="bg-violet-500/10 border border-violet-500/20 rounded-lg p-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-xs font-medium text-violet-400">
-                                        Opção {altIdx + 1}
-                                      </span>
-                                      {!isCompleted && (
-                                        <button
-                                          onClick={() => onCompleteMeal(meal, altIdx)}
-                                          className="text-xs px-2 py-1 bg-violet-500/20 text-violet-400 rounded hover:bg-violet-500/30"
-                                        >
-                                          Usar esta
-                                        </button>
-                                      )}
-                                    </div>
-                                    <div className="space-y-1">
-                                      {altFoods.map((food, foodIdx) => (
-                                        <div key={foodIdx} className="flex items-center justify-between text-xs">
-                                          <span className="text-slate-300">{food.name}</span>
-                                          <span className="text-slate-400">
-                                            {food.quantity}{food.unit}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
+                                {/* Option A Details */}
+                                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="w-5 h-5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center justify-center">A</span>
+                                    <span className="text-sm font-medium text-green-400">{meal.meal_name || 'Principal'}</span>
                                   </div>
-                                ))}
+                                  <div className="space-y-1">
+                                    {meal.foods?.map((food, foodIdx) => (
+                                      <div key={foodIdx} className="flex items-center justify-between text-xs">
+                                        <span className="text-slate-300">{food.name}</span>
+                                        <span className="text-slate-400">{food.quantity}{food.unit}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Other Options Details */}
+                                {meal.alternatives!.map((alt, altIdx) => {
+                                  const isNamedAlt = 'option' in alt && 'name' in alt
+                                  const optionLetter = isNamedAlt ? (alt as MealAlternative).option : String.fromCharCode(66 + altIdx)
+                                  const optionName = isNamedAlt ? (alt as MealAlternative).name : `Opção ${optionLetter}`
+                                  const foods = isNamedAlt ? (alt as MealAlternative).foods : (alt as Food[])
+
+                                  return (
+                                    <div key={altIdx} className="bg-violet-500/10 border border-violet-500/20 rounded-lg p-3">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="w-5 h-5 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center">{optionLetter}</span>
+                                        <span className="text-sm font-medium text-violet-400">{optionName}</span>
+                                      </div>
+                                      <div className="space-y-1">
+                                        {foods.map((food, foodIdx) => (
+                                          <div key={foodIdx} className="flex items-center justify-between text-xs">
+                                            <span className="text-slate-300">{food.name}</span>
+                                            <span className="text-slate-400">{food.quantity}{food.unit}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
                               </motion.div>
                             )}
                           </AnimatePresence>
                         </div>
                       )}
 
-                      {/* Action Buttons */}
-                      {!isCompleted && (
+                      {/* Action Buttons - show only when no alternatives */}
+                      {!isCompleted && !hasAlternatives && (
                         <div className="flex gap-2 pt-2">
                           <button
                             onClick={() => onCompleteMeal(meal)}
@@ -301,6 +368,17 @@ export function MealPlanCard({
                             <Plus className="w-4 h-4" />
                           </button>
                         </div>
+                      )}
+
+                      {/* Edit button when there are alternatives */}
+                      {!isCompleted && hasAlternatives && (
+                        <button
+                          onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
+                          className="w-full flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-white border border-dashed border-slate-600 rounded-lg hover:border-slate-500 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Adicionar refeição personalizada
+                        </button>
                       )}
                     </div>
                   </motion.div>
