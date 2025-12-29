@@ -121,19 +121,39 @@ export async function POST(request: NextRequest) {
     // Determinar o professional_id
     let professionalId = professional?.id
 
-    // Se superadmin sem professional, usar null - superadmin pode criar planos sem ser profissional
+    // Se superadmin sem professional, criar um do tipo "admin" (não aparece no portal)
     if (!professionalId && isSuperAdmin) {
-      // Verificar se já existe um professional para este usuário (mas não criar se não existir)
+      // Verificar se já existe um professional para este usuário
       const { data: existingProf } = await supabaseAdmin
         .from('fitness_professionals')
-        .select('id')
+        .select('id, type')
         .eq('user_id', user.id)
         .single()
 
       if (existingProf) {
         professionalId = existingProf.id
+      } else {
+        // Criar professional do tipo "admin" - NÃO aparece no portal (só nutritionist/trainer)
+        const { data: newProf, error: profError } = await supabaseAdmin
+          .from('fitness_professionals')
+          .insert({
+            user_id: user.id,
+            type: 'admin', // Tipo especial que não é reconhecido pelo portal
+            specialty: 'Administrador do Sistema',
+            is_active: false // Inativo para não aparecer em listagens
+          })
+          .select('id')
+          .single()
+
+        if (profError) {
+          console.error('Error creating admin professional:', profError)
+          return NextResponse.json(
+            { error: 'Erro ao criar registro administrativo', details: profError.message },
+            { status: 500 }
+          )
+        }
+        professionalId = newProf.id
       }
-      // Se não existir, deixar como null - superadmin pode criar planos sem ser profissional registrado
     }
 
     // Determinar client_id
