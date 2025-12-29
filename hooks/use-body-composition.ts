@@ -50,23 +50,94 @@ export function useBodyComposition(): UseBodyCompositionReturn {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        // Usar dados mock do Leonardo
-        const mockData = getMockMeasurements()
-        setMeasurements(mockData)
+        setMeasurements([])
         setIsLoading(false)
         return
       }
 
-      // TODO: Implementar busca real do Supabase
-      // Por enquanto, usar mock
-      const mockData = getMockMeasurements()
-      setMeasurements(mockData)
+      // Buscar medições reais do Supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: fetchError } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('data', { ascending: false })
+
+      if (fetchError) {
+        console.error('Erro ao buscar medições:', fetchError)
+        throw fetchError
+      }
+
+      if (!data || data.length === 0) {
+        setMeasurements([])
+        setIsLoading(false)
+        return
+      }
+
+      // Transformar dados do banco para o formato do hook
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transformedData: BodyCompositionMeasurement[] = data.map((row: any) => ({
+        id: row.id,
+        user_id: row.user_id,
+        data: row.data,
+        horario: row.created_at ? new Date(row.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '00:00',
+        peso: row.peso || 0,
+        altura: row.altura_cm || 0,
+        idade: row.idade || 0,
+
+        composicao: {
+          agua_total: row.agua_corporal_l || 0,
+          proteina: row.proteina_kg || 0,
+          minerais: row.minerais_kg || 0,
+          gordura_corporal: row.massa_gordura_kg || 0
+        },
+
+        musculo_gordura: {
+          peso: row.peso || 0,
+          massa_muscular_esqueletica: row.massa_muscular_esqueletica_kg || 0,
+          massa_gordura_corporal: row.massa_gordura_kg || 0,
+          imc: row.imc || 0,
+          percentual_gordura: row.percentual_gordura || 0
+        },
+
+        adicional: {
+          taxa_metabolica_basal: row.taxa_metabolica_basal || 0,
+          nivel_gordura_visceral: row.gordura_visceral || 0,
+          massa_magra: row.massa_livre_gordura_kg || 0,
+          massa_muscular: row.massa_muscular_esqueletica_kg || 0,
+          agua_intracelular: 0,
+          agua_extracelular: 0,
+          relacao_cintura_quadril: 0,
+          altura: row.altura_cm || 0,
+          idade: row.idade || 0
+        },
+
+        segmental: {
+          braco_esquerdo: { massa_magra: row.massa_magra_braco_esquerdo || 0, percentual_gordura: row.gordura_braco_esquerdo || 0, avaliacao: 'normal' as const },
+          braco_direito: { massa_magra: row.massa_magra_braco_direito || 0, percentual_gordura: row.gordura_braco_direito || 0, avaliacao: 'normal' as const },
+          tronco: { massa_magra: row.massa_magra_tronco || 0, percentual_gordura: row.gordura_tronco || 0, avaliacao: 'normal' as const },
+          perna_esquerda: { massa_magra: row.massa_magra_perna_esquerda || 0, percentual_gordura: row.gordura_perna_esquerda || 0, avaliacao: 'normal' as const },
+          perna_direita: { massa_magra: row.massa_magra_perna_direita || 0, percentual_gordura: row.gordura_perna_direita || 0, avaliacao: 'normal' as const }
+        },
+
+        score: {
+          pontuacao: row.pontuacao_inbody || 0,
+          categoria: row.pontuacao_inbody && row.pontuacao_inbody >= 90 ? 'excelente' as const :
+                     row.pontuacao_inbody && row.pontuacao_inbody >= 80 ? 'bom' as const :
+                     row.pontuacao_inbody && row.pontuacao_inbody >= 70 ? 'normal' as const :
+                     row.pontuacao_inbody && row.pontuacao_inbody >= 60 ? 'abaixo_media' as const : 'fraco' as const
+        },
+
+        fonte: row.fonte || 'manual',
+        notas: row.notas,
+        created_at: row.created_at
+      }))
+
+      setMeasurements(transformedData)
     } catch (err) {
       console.error('Erro ao carregar medições:', err)
       setError(err as Error)
-      // Fallback para mock
-      const mockData = getMockMeasurements()
-      setMeasurements(mockData)
+      setMeasurements([])
     } finally {
       setIsLoading(false)
     }

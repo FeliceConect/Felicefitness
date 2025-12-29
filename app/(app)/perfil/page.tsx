@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Edit, Trophy, Ruler, Target, Camera, X, Check, ImageIcon, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ProfileHeader, ProfileStats, ProfilePhotoUpload } from '@/components/profile'
 import { useProfile } from '@/hooks/use-profile'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
@@ -25,6 +26,11 @@ const OBJECTIVES = [
   { id: 'outro', title: 'Outro', icon: '🎯', defaultDate: '' },
 ]
 
+interface BodyCompositionData {
+  gordura: number | null
+  musculo: number | null
+}
+
 export default function PerfilPage() {
   const router = useRouter()
   const { profile, stats, loading, updatePhoto, updateProfile } = useProfile()
@@ -36,6 +42,35 @@ export default function PerfilPage() {
     data: ''
   })
   const [savingObjective, setSavingObjective] = useState(false)
+  const [bodyComposition, setBodyComposition] = useState<BodyCompositionData>({ gordura: null, musculo: null })
+
+  // Fetch latest body composition data
+  useEffect(() => {
+    async function fetchBodyComposition() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) return
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select('percentual_gordura, massa_muscular_esqueletica_kg')
+        .eq('user_id', user.id)
+        .order('data', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (!error && data) {
+        setBodyComposition({
+          gordura: data.percentual_gordura,
+          musculo: data.massa_muscular_esqueletica_kg
+        })
+      }
+    }
+
+    fetchBodyComposition()
+  }, [])
 
   if (loading) {
     return (
@@ -61,11 +96,11 @@ export default function PerfilPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const profileData = profile as any
   const bodyData = {
-    altura: profileData.altura_cm || 181,
-    peso: profileData.peso_atual || 81.8,
-    pesoMeta: profileData.meta_peso || 80.0,
-    gordura: 16.5,
-    musculo: 38.8
+    altura: profileData.altura_cm || null,
+    peso: profileData.peso_atual || null,
+    pesoMeta: profileData.meta_peso || null,
+    gordura: bodyComposition.gordura,
+    musculo: bodyComposition.musculo
   }
 
   // Get objective from profile - stored as JSON string: "id|titulo|data"
@@ -187,23 +222,23 @@ export default function PerfilPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Altura</p>
-                  <p className="text-lg font-semibold">{bodyData.altura} cm</p>
+                  <p className="text-lg font-semibold">{bodyData.altura ? `${bodyData.altura} cm` : '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Peso atual</p>
-                  <p className="text-lg font-semibold">{bodyData.peso} kg</p>
+                  <p className="text-lg font-semibold">{bodyData.peso ? `${bodyData.peso} kg` : '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Meta</p>
-                  <p className="text-lg font-semibold">{bodyData.pesoMeta} kg</p>
+                  <p className="text-lg font-semibold">{bodyData.pesoMeta ? `${bodyData.pesoMeta} kg` : '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">% Gordura</p>
-                  <p className="text-lg font-semibold">{bodyData.gordura}%</p>
+                  <p className="text-lg font-semibold">{bodyData.gordura !== null ? `${bodyData.gordura}%` : '-'}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-muted-foreground">Massa muscular</p>
-                  <p className="text-lg font-semibold">{bodyData.musculo} kg</p>
+                  <p className="text-lg font-semibold">{bodyData.musculo !== null ? `${bodyData.musculo} kg` : '-'}</p>
                 </div>
               </div>
             </CardContent>
