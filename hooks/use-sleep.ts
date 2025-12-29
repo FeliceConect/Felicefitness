@@ -171,13 +171,43 @@ export function useSleep(days: number = 30): UseSleepReturn {
 
       const duration = calculateSleepDuration(data.bedtime, data.wake_time)
 
-      // Converter horarios para timestamp completo
+      // Obter o offset do timezone local (ex: -03:00 para Brasília)
+      const getTimezoneOffset = () => {
+        const offset = new Date().getTimezoneOffset()
+        const hours = Math.floor(Math.abs(offset) / 60)
+        const minutes = Math.abs(offset) % 60
+        const sign = offset <= 0 ? '+' : '-'
+        return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+      }
+      const tzOffset = getTimezoneOffset()
+
+      // Converter horarios para timestamp completo COM timezone
       // data.date = "2024-12-25", data.bedtime = "22:00"
-      // hora_dormir pode ser no dia anterior se for tarde da noite
+      // Hora de dormir: se for >= 18h, é no mesmo dia; se for < 6h, é no dia seguinte ao date
       const bedtimeHour = parseInt(data.bedtime.split(':')[0])
-      const bedtimeDate = bedtimeHour >= 18 ? data.date : data.date // mesmo dia se >= 18h
-      const horaDormir = `${bedtimeDate}T${data.bedtime}:00`
-      const horaAcordar = `${data.date}T${data.wake_time}:00`
+      let bedtimeDate = data.date
+
+      // Se hora de dormir for de madrugada (antes das 6h), foi no dia seguinte
+      // Mas como estamos registrando a noite anterior, mantemos a lógica original
+      // Ex: dormiu 22:00 do dia 25, acordou 05:00 do dia 26
+      // date = 26 (dia que acordou - 1 = 25)
+      // bedtimeDate = 25 (mesmo que date pois >= 18h)
+
+      // Se bedtime < 6h, significa que dormiu de madrugada do dia anterior
+      if (bedtimeHour < 6) {
+        // Dormiu na madrugada, então é no dia do acordar
+        const nextDay = new Date(data.date)
+        nextDay.setDate(nextDay.getDate() + 1)
+        bedtimeDate = nextDay.toISOString().split('T')[0]
+      }
+
+      // Adicionar timezone offset para garantir que seja salvo corretamente
+      const horaDormir = `${bedtimeDate}T${data.bedtime}:00${tzOffset}`
+
+      // Hora de acordar é sempre no dia seguinte ao date (pois date é o dia anterior)
+      const wakeDate = new Date(data.date)
+      wakeDate.setDate(wakeDate.getDate() + 1)
+      const horaAcordar = `${wakeDate.toISOString().split('T')[0]}T${data.wake_time}:00${tzOffset}`
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: insertError } = await (supabase as any)
@@ -213,6 +243,16 @@ export function useSleep(days: number = 30): UseSleepReturn {
         duration = calculateSleepDuration(data.bedtime, data.wake_time)
       }
 
+      // Obter o offset do timezone local
+      const getTimezoneOffset = () => {
+        const offset = new Date().getTimezoneOffset()
+        const hours = Math.floor(Math.abs(offset) / 60)
+        const minutes = Math.abs(offset) % 60
+        const sign = offset <= 0 ? '+' : '-'
+        return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+      }
+      const tzOffset = getTimezoneOffset()
+
       // Preparar objeto de update apenas com campos definidos
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: Record<string, any> = {
@@ -221,12 +261,21 @@ export function useSleep(days: number = 30): UseSleepReturn {
 
       if (data.date) {
         updateData.data = data.date
-        // Converter horarios para timestamp se fornecidos
+        // Converter horarios para timestamp COM timezone se fornecidos
         if (data.bedtime) {
-          updateData.hora_dormir = `${data.date}T${data.bedtime}:00`
+          const bedtimeHour = parseInt(data.bedtime.split(':')[0])
+          let bedtimeDate = data.date
+          if (bedtimeHour < 6) {
+            const nextDay = new Date(data.date)
+            nextDay.setDate(nextDay.getDate() + 1)
+            bedtimeDate = nextDay.toISOString().split('T')[0]
+          }
+          updateData.hora_dormir = `${bedtimeDate}T${data.bedtime}:00${tzOffset}`
         }
         if (data.wake_time) {
-          updateData.hora_acordar = `${data.date}T${data.wake_time}:00`
+          const wakeDate = new Date(data.date)
+          wakeDate.setDate(wakeDate.getDate() + 1)
+          updateData.hora_acordar = `${wakeDate.toISOString().split('T')[0]}T${data.wake_time}:00${tzOffset}`
         }
       }
       if (duration !== undefined) updateData.duracao_minutos = duration
