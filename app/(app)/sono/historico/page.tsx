@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useSleep } from '@/hooks/use-sleep'
 import { SleepLogCard, SleepChart } from '@/components/sleep'
 import { formatSleepDuration, formatSleepDate } from '@/lib/sleep/calculations'
+import { toast } from 'sonner'
 
 type Period = 'week' | 'month' | '3months' | 'year'
 
@@ -23,7 +24,17 @@ export default function HistoricoSonoPage() {
     year: 365,
   }
 
-  const { sleepLogs, stats, loading } = useSleep(daysMap[period])
+  const { sleepLogs, stats, loading, deleteSleep } = useSleep(daysMap[period])
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSleep(id)
+      toast.success('Registro de sono excluído')
+    } catch (error) {
+      console.error('Erro ao excluir:', error)
+      toast.error('Erro ao excluir registro')
+    }
+  }
 
   if (loading) {
     return (
@@ -186,7 +197,7 @@ export default function HistoricoSonoPage() {
           ) : (
             <div className="space-y-2">
               {sleepLogs.slice(0, 10).map((log) => (
-                <SleepLogCard key={log.id} log={log} />
+                <SleepLogCard key={log.id} log={log} onDelete={handleDelete} />
               ))}
             </div>
           )}
