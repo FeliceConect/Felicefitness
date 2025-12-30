@@ -21,7 +21,7 @@ export default function AlimentacaoPage() {
   const { meals, plannedMeals, totals, goals, progress, nextMeal, loading } = useDailyMeals()
   const revoladeWindow = useRevoladeWindow()
   const { todayTotal: aguaConsumida } = useWaterLog()
-  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, isTrainingDay, completeMeal, loading: planLoading } = useMealPlan()
+  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completedMealsData, isTrainingDay, completeMeal, loading: planLoading } = useMealPlan()
 
   const handleAddMeal = (tipo: MealType) => {
     router.push(`/alimentacao/refeicao/nova?tipo=${tipo}`)
@@ -141,6 +141,7 @@ export default function AlimentacaoPage() {
             plan={mealPlan}
             todayMeals={planMeals}
             completedMealIds={completedMealIds}
+            completedMealsData={completedMealsData}
             isTrainingDay={isTrainingDay}
             onCompleteMeal={handleCompletePlanMeal}
             onAddDifferentMeal={() => router.push('/alimentacao/refeicao/nova')}

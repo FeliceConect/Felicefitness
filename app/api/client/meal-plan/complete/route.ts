@@ -143,10 +143,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
-    // Buscar refeições completadas nesta data (por tipo de refeição)
+    // Buscar refeições completadas nesta data COM os itens (alimentos reais consumidos)
     const { data: completedMeals, error } = await supabase
       .from('fitness_meals')
-      .select('id, tipo_refeicao, notas')
+      .select(`
+        id,
+        tipo_refeicao,
+        notas,
+        horario,
+        calorias_total,
+        proteinas_total,
+        carboidratos_total,
+        gorduras_total,
+        fitness_meal_items (
+          id,
+          nome_alimento,
+          quantidade,
+          unidade,
+          calorias,
+          proteinas,
+          carboidratos,
+          gorduras
+        )
+      `)
       .eq('user_id', user.id)
       .eq('data', date)
 
@@ -158,20 +177,62 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Extrair IDs das refeições do plano que foram completadas (se tiver no notas)
-    const completedIds: string[] = []
+    // Formatar dados das refeições completadas com os alimentos reais
+    const completedMealsData: Record<string, {
+      id: string
+      meal_type: string
+      time: string
+      total_calories: number
+      total_protein: number
+      total_carbs: number
+      total_fat: number
+      foods: Array<{
+        name: string
+        quantity: number
+        unit: string
+        calories: number
+        protein: number
+        carbs: number
+        fat: number
+      }>
+      notes?: string
+    }> = {}
+
     for (const meal of completedMeals || []) {
-      // Verificar se a nota indica que veio do plano
-      if (meal.notas && meal.notas.includes('Refeição do plano:')) {
-        // Adicionar o tipo da refeição como identificador
-        completedIds.push(meal.tipo_refeicao)
+      completedMealsData[meal.tipo_refeicao] = {
+        id: meal.id,
+        meal_type: meal.tipo_refeicao,
+        time: meal.horario || '',
+        total_calories: meal.calorias_total || 0,
+        total_protein: meal.proteinas_total || 0,
+        total_carbs: meal.carboidratos_total || 0,
+        total_fat: meal.gorduras_total || 0,
+        foods: (meal.fitness_meal_items || []).map((item: {
+          nome_alimento: string
+          quantidade: number
+          unidade: string
+          calorias: number
+          proteinas: number
+          carboidratos: number
+          gorduras: number
+        }) => ({
+          name: item.nome_alimento,
+          quantity: item.quantidade,
+          unit: item.unidade || 'g',
+          calories: item.calorias || 0,
+          protein: item.proteinas || 0,
+          carbs: item.carboidratos || 0,
+          fat: item.gorduras || 0
+        })),
+        notes: meal.notas
       }
     }
 
     return NextResponse.json({
       success: true,
-      completedMealIds: completedIds,
-      completedMealTypes: (completedMeals || []).map(m => m.tipo_refeicao)
+      completedMealIds: Object.keys(completedMealsData),
+      completedMealTypes: (completedMeals || []).map(m => m.tipo_refeicao),
+      completedMealsData // Dados completos das refeições com alimentos reais
     })
 
   } catch (error) {

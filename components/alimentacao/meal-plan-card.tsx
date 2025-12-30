@@ -26,6 +26,19 @@ interface Food {
   fat?: number
 }
 
+// Dados da refeição realmente consumida
+interface CompletedMealData {
+  id: string
+  meal_type: string
+  time: string
+  total_calories: number
+  total_protein: number
+  total_carbs: number
+  total_fat: number
+  foods: Food[]
+  notes?: string
+}
+
 interface MealAlternative {
   option: string  // "B", "C", "D", "E"
   name: string    // "Café com pasta de amendoim"
@@ -68,6 +81,7 @@ interface MealPlanCardProps {
   plan: MealPlan
   todayMeals: PlannedMeal[]
   completedMealIds: string[]
+  completedMealsData?: Record<string, CompletedMealData> // Dados das refeições realmente consumidas
   isTrainingDay?: boolean
   onCompleteMeal: (meal: PlannedMeal, useAlternative?: number) => void
   onAddDifferentMeal: () => void
@@ -95,6 +109,7 @@ export function MealPlanCard({
   plan,
   todayMeals,
   completedMealIds,
+  completedMealsData = {},
   isTrainingDay = false,
   onCompleteMeal,
   onAddDifferentMeal
@@ -169,6 +184,25 @@ export function MealPlanCard({
           const isExpanded = expandedMeal === meal.id
           const hasAlternatives = meal.alternatives && meal.alternatives.length > 0
 
+          // Obter dados da refeição realmente consumida (se existir)
+          const actualMealData = completedMealsData[meal.meal_type]
+          const displayFoods = isCompleted && actualMealData?.foods?.length > 0
+            ? actualMealData.foods
+            : meal.foods
+          const displayCalories = isCompleted && actualMealData
+            ? actualMealData.total_calories
+            : meal.total_calories
+          const displayProtein = isCompleted && actualMealData
+            ? actualMealData.total_protein
+            : meal.total_protein
+          const displayCarbs = isCompleted && actualMealData
+            ? actualMealData.total_carbs
+            : meal.total_carbs
+          const displayFat = isCompleted && actualMealData
+            ? actualMealData.total_fat
+            : meal.total_fat
+          const isCustomMeal = isCompleted && actualMealData?.foods?.length > 0
+
           return (
             <div key={meal.id} className={`${isCompleted ? 'bg-green-500/5' : ''}`}>
               {/* Meal Header */}
@@ -200,10 +234,10 @@ export function MealPlanCard({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {meal.total_calories && (
+                  {displayCalories && displayCalories > 0 && (
                     <span className="text-sm text-orange-400 flex items-center gap-1">
                       <Flame className="w-3 h-3" />
-                      {meal.total_calories} kcal
+                      {displayCalories} kcal
                     </span>
                   )}
                   {isExpanded ? (
@@ -226,9 +260,18 @@ export function MealPlanCard({
                   >
                     <div className="px-4 pb-4 space-y-3">
                       {/* Foods List */}
-                      <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
-                        <p className="text-xs font-medium text-slate-400 uppercase">Alimentos</p>
-                        {meal.foods?.map((food, idx) => (
+                      <div className={`rounded-lg p-3 space-y-2 ${
+                        isCustomMeal ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-slate-800/50'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-slate-400 uppercase">Alimentos</p>
+                          {isCustomMeal && (
+                            <span className="text-xs text-violet-400 px-2 py-0.5 bg-violet-500/20 rounded">
+                              Personalizada
+                            </span>
+                          )}
+                        </div>
+                        {displayFoods?.map((food, idx) => (
                           <div key={idx} className="flex items-center justify-between text-sm">
                             <span className="text-slate-300">{food.name}</span>
                             <span className="text-slate-400">
@@ -239,11 +282,11 @@ export function MealPlanCard({
                       </div>
 
                       {/* Macros */}
-                      {(meal.total_protein || meal.total_carbs || meal.total_fat) && (
+                      {(displayProtein || displayCarbs || displayFat) && (
                         <div className="flex gap-4 text-xs">
-                          <span className="text-green-400">P: {meal.total_protein?.toFixed(1) || 0}g</span>
-                          <span className="text-blue-400">C: {meal.total_carbs?.toFixed(1) || 0}g</span>
-                          <span className="text-yellow-400">G: {meal.total_fat?.toFixed(1) || 0}g</span>
+                          <span className="text-green-400">P: {typeof displayProtein === 'number' ? displayProtein.toFixed(1) : '0'}g</span>
+                          <span className="text-blue-400">C: {typeof displayCarbs === 'number' ? displayCarbs.toFixed(1) : '0'}g</span>
+                          <span className="text-yellow-400">G: {typeof displayFat === 'number' ? displayFat.toFixed(1) : '0'}g</span>
                         </div>
                       )}
 

@@ -37,6 +37,19 @@ interface PlannedMeal {
   is_completed?: boolean
 }
 
+// Dados da refeição realmente consumida
+interface CompletedMealData {
+  id: string
+  meal_type: string
+  time: string
+  total_calories: number
+  total_protein: number
+  total_carbs: number
+  total_fat: number
+  foods: Food[]
+  notes?: string
+}
+
 interface MealPlanDay {
   id: string
   day_of_week: number
@@ -65,6 +78,7 @@ export function useMealPlan() {
   const [plan, setPlan] = useState<MealPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [completedMealIds, setCompletedMealIds] = useState<string[]>([])
+  const [completedMealsData, setCompletedMealsData] = useState<Record<string, CompletedMealData>>({})
   const [isTrainingDay, setIsTrainingDay] = useState(false)
   const supabase = createClient()
 
@@ -92,6 +106,10 @@ export function useMealPlan() {
       if (data.success) {
         // Usar meal_type como identificador de refeições completadas
         setCompletedMealIds(data.completedMealTypes || [])
+        // Armazenar dados completos das refeições (alimentos reais consumidos)
+        if (data.completedMealsData) {
+          setCompletedMealsData(data.completedMealsData)
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar refeições completadas:', error)
@@ -240,6 +258,7 @@ export function useMealPlan() {
     plan,
     loading,
     completedMealIds,
+    completedMealsData, // Dados das refeições realmente consumidas
     todayMeals: getTodayMeals(),
     isTrainingDay,
     completeMeal,
