@@ -183,6 +183,12 @@ export default function SettingsPage() {
                 description="PDF, foto ou texto"
                 href="/configuracoes/importar-plano"
               />
+              <SettingsItem
+                icon={<Dumbbell className="w-5 h-5" />}
+                label="Importar Plano de Treinos"
+                description="PDF, foto ou texto"
+                href="/configuracoes/importar-treino"
+              />
             </div>
           </section>
         )}
