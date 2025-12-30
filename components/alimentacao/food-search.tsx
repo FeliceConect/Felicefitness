@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Star, Clock, X, Plus, Edit3 } from 'lucide-react'
+import { Search, Star, Clock, X, Plus } from 'lucide-react'
 import type { Food, FoodCategory } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { useFoods } from '@/hooks/use-foods'
@@ -93,7 +93,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
             {searchResults.length === 0 ? (
               <div className="py-4 text-center space-y-3">
                 <p className="text-sm text-slate-500">
-                  Nenhum alimento encontrado para "{query || selectedCategory}"
+                  Nenhum alimento encontrado para &ldquo;{query || selectedCategory}&rdquo;
                 </p>
                 {showAddCustom && query && (
                   <button
@@ -101,7 +101,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
                     className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500/20 border border-violet-500/30 text-violet-400 rounded-lg hover:bg-violet-500/30 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    Adicionar "{query}" manualmente
+                    Adicionar &ldquo;{query}&rdquo; manualmente
                   </button>
                 )}
               </div>
