@@ -54,13 +54,25 @@ export default function TreinoPage() {
     setSelectedDay(day)
   }
 
-  // Atualizar selectedDay quando weekDays carregar
+  // Atualizar selectedDay quando weekDays carregar ou mudar
   useEffect(() => {
-    if (weekDays.length > 0 && !selectedDay) {
-      const today = weekDays.find(d => format(d.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'))
-      setSelectedDay(today || null)
+    if (weekDays.length > 0) {
+      // Sempre buscar o dia atualizado de weekDays
+      const currentDateStr = selectedDay ? format(selectedDay.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+      const updatedDay = weekDays.find(d => format(d.date, 'yyyy-MM-dd') === currentDateStr)
+
+      // Atualizar se o status ou workout mudou
+      if (updatedDay && (!selectedDay ||
+          updatedDay.status !== selectedDay.status ||
+          updatedDay.workout?.id !== selectedDay.workout?.id)) {
+        setSelectedDay(updatedDay)
+      } else if (!selectedDay) {
+        // Se não tem selectedDay, setar para hoje
+        const today = weekDays.find(d => format(d.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'))
+        setSelectedDay(today || null)
+      }
     }
-  }, [weekDays, selectedDay])
+  }, [weekDays])
 
   // Determinar se o dia selecionado é descanso
   const selectedIsRest = selectedDay?.type === 'rest' || selectedDay?.status === 'rest'
