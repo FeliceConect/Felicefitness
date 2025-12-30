@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Clock, Dumbbell, Flame, Trophy, Share2, Home, Loader2 } from 'lucide-react'
+import { Clock, Dumbbell, Flame, Trophy, Share2, Home, Loader2, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useWorkouts } from '@/hooks/use-workouts'
@@ -11,6 +11,7 @@ import { useSaveWorkout } from '@/hooks/use-save-workout'
 import { useGamification } from '@/hooks/use-gamification'
 import { cn } from '@/lib/utils'
 import { getTodayDateSP } from '@/lib/utils/date'
+import type { CompletedCardio, CardioExerciseType } from '@/lib/workout/types'
 
 interface CompletedSetData {
   exerciseId: string
@@ -39,6 +40,18 @@ interface WorkoutSummaryData {
   newPRs: Array<{ exercise: string; weight: number; reps: number }>
   // Completed sets for database
   completedSets?: CompletedSetData[]
+  // Cardio exercises
+  cardioExercises?: CompletedCardio[]
+}
+
+// Icons for cardio types
+const cardioIcons: Record<CardioExerciseType, string> = {
+  esteira: '🏃',
+  bicicleta: '🚴',
+  eliptico: '🔄',
+  step: '🪜',
+  remo: '🚣',
+  outro: '💪'
 }
 
 const SUMMARY_STORAGE_KEY = 'felicefit_workout_summary'
@@ -68,7 +81,8 @@ function getDefaultSummaryData(): WorkoutSummaryData {
     totalVolume: 0,
     caloriesBurned: 0,
     newPRs: [],
-    completedSets: []
+    completedSets: [],
+    cardioExercises: []
   }
 }
 
@@ -140,6 +154,7 @@ export default function WorkoutSummaryPage() {
       data: summary.data || workout?.data || getTodayDateSP(),
       duracao: summary.duration,
       completedSets: summary.completedSets || [],
+      cardioExercises: summary.cardioExercises || [],
       difficulty: difficulty || undefined,
       energy: energy || undefined,
       notes: notes || undefined
@@ -320,6 +335,52 @@ export default function WorkoutSummaryPage() {
                     {pr.weight}kg × {pr.reps}
                   </span>
                 </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Cardio section */}
+      {summary.cardioExercises && summary.cardioExercises.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className="px-4 mt-6"
+        >
+          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-emerald-400" />
+            Cardio
+          </h2>
+          <div className="space-y-2">
+            {summary.cardioExercises.map((cardio, index) => (
+              <div
+                key={index}
+                className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 rounded-xl p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{cardioIcons[cardio.tipo]}</span>
+                    <span className="text-white font-medium">{cardio.nome}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-emerald-400 font-bold block">
+                      {cardio.duracao_minutos} min
+                    </span>
+                    {cardio.distancia_km && (
+                      <span className="text-xs text-slate-400">
+                        {cardio.distancia_km.toFixed(1)} km
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {cardio.calorias && (
+                  <div className="mt-2 flex items-center gap-1 text-sm text-orange-400">
+                    <Flame className="w-3 h-3" />
+                    {cardio.calorias} kcal
+                  </div>
+                )}
               </div>
             ))}
           </div>

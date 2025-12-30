@@ -1,6 +1,22 @@
 // Tipos para o módulo de treinos
 
 export type WorkoutType = 'tradicional' | 'circuito' | 'hiit' | 'mobilidade'
+export type ExerciseType = 'strength' | 'cardio' | 'mobility'
+
+// Tipos de exercícios cardio disponíveis
+export type CardioExerciseType = 'esteira' | 'bicicleta' | 'eliptico' | 'step' | 'remo' | 'outro'
+
+export interface CardioExercise {
+  id: string
+  tipo: CardioExerciseType
+  nome: string
+  duracao_minutos: number
+  distancia_km?: number
+  velocidade_media?: number // km/h
+  calorias?: number
+  inclinacao?: number // %
+  notas?: string
+}
 export type WorkoutStatus = 'pendente' | 'em_andamento' | 'concluido' | 'cancelado'
 export type WorkoutPhase = 'base' | 'construcao' | 'pico'
 
@@ -84,6 +100,18 @@ export interface CompletedSet {
   isPR: boolean
 }
 
+export interface CompletedCardio {
+  id: string
+  tipo: CardioExerciseType
+  nome: string
+  duracao_minutos: number
+  distancia_km?: number
+  velocidade_media?: number
+  calorias?: number
+  inclinacao?: number
+  notas?: string
+}
+
 export interface PersonalRecord {
   id: string
   user_id: string
@@ -106,6 +134,7 @@ export interface WorkoutSummary {
   volumeTotal: number // peso × reps de todas as séries
   caloriasEstimadas: number
   novosRecordes: PersonalRecord[]
+  cardioExercises?: CompletedCardio[]
 }
 
 export interface DayWorkout {

@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { X, Pause, Loader2 } from 'lucide-react'
+import { X, Pause, Loader2, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RestTimerModal } from '@/components/treino/rest-timer-modal'
 import { SetInputModal } from '@/components/treino/set-input-modal'
+import { CardioInputModal } from '@/components/treino/cardio-input-modal'
 import { PRCelebration } from '@/components/treino/pr-celebration'
 import { useWorkoutExecution } from '@/hooks/use-workout-execution'
 import { useRestTimer } from '@/hooks/use-rest-timer'
@@ -15,6 +16,7 @@ import { useWorkouts } from '@/hooks/use-workouts'
 import { useSettings } from '@/hooks/use-settings'
 import { getExerciseLastWeight } from '@/lib/workout/mock-data'
 import { cn } from '@/lib/utils'
+import type { CompletedCardio } from '@/lib/workout/types'
 
 function formatTime(seconds: number): string {
   const hrs = Math.floor(seconds / 3600)
@@ -32,6 +34,7 @@ export default function WorkoutExecutionPage() {
   const workoutId = params.id as string
 
   const [showSetInput, setShowSetInput] = useState(false)
+  const [showCardioInput, setShowCardioInput] = useState(false)
   const [showPRCelebration, setShowPRCelebration] = useState(false)
   const [latestPR, setLatestPR] = useState<{ name: string; weight: number; reps: number } | null>(null)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
@@ -50,6 +53,7 @@ export default function WorkoutExecutionPage() {
     completeSet,
     skipSet,
     skipExercise,
+    addCardio,
     finishWorkout,
     currentExercise,
     currentSet,
@@ -139,7 +143,9 @@ export default function WorkoutExecutionPage() {
           reps: pr.reps
         })),
         // Completed sets for saving to database
-        completedSets: state.completedSets
+        completedSets: state.completedSets,
+        // Cardio exercises
+        cardioExercises: summary.cardioExercises || []
       }
       localStorage.setItem('felicefit_workout_summary', JSON.stringify(summaryData))
       router.push(`/treino/${workoutId}/resumo`)
@@ -165,6 +171,12 @@ export default function WorkoutExecutionPage() {
       const restTime = currentSet?.descanso || 45
       restTimer.start(restTime)
     }
+  }
+
+  // Handle cardio addition
+  const handleAddCardio = (cardioData: CompletedCardio) => {
+    setShowCardioInput(false)
+    addCardio(cardioData)
   }
 
   // Loading state
@@ -341,7 +353,7 @@ export default function WorkoutExecutionPage() {
               className="w-full"
               onClick={() => setShowSetInput(true)}
             >
-              Concluir Série
+              Concluir Serie
             </Button>
 
             <div className="flex gap-3">
@@ -351,7 +363,7 @@ export default function WorkoutExecutionPage() {
                 className="flex-1"
                 onClick={skipSet}
               >
-                Pular Série
+                Pular Serie
               </Button>
               <Button
                 variant="outline"
@@ -359,9 +371,25 @@ export default function WorkoutExecutionPage() {
                 className="flex-1"
                 onClick={skipExercise}
               >
-                Pular Exercício
+                Pular Exercicio
               </Button>
             </div>
+
+            {/* Cardio button */}
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+              onClick={() => setShowCardioInput(true)}
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Adicionar Cardio
+              {state.completedCardio.length > 0 && (
+                <span className="ml-2 bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {state.completedCardio.length}
+                </span>
+              )}
+            </Button>
           </div>
         </div>
       )}
@@ -376,6 +404,13 @@ export default function WorkoutExecutionPage() {
         lastWeight={lastWeight}
         onComplete={handleCompleteSet}
         onCancel={() => setShowSetInput(false)}
+      />
+
+      {/* Cardio input modal */}
+      <CardioInputModal
+        isOpen={showCardioInput}
+        onComplete={handleAddCardio}
+        onCancel={() => setShowCardioInput(false)}
       />
 
       {/* Rest timer modal */}

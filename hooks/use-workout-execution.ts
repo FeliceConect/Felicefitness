@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { Workout, WorkoutExercise, ExerciseSet, CompletedSet, PersonalRecord, WorkoutSummary } from '@/lib/workout/types'
+import type { Workout, WorkoutExercise, ExerciseSet, CompletedSet, CompletedCardio, PersonalRecord, WorkoutSummary } from '@/lib/workout/types'
 import { getExercisePR } from '@/lib/workout/mock-data'
 
 type ExecutionStatus = 'not_started' | 'in_progress' | 'resting' | 'completed'
@@ -11,6 +11,7 @@ interface WorkoutExecutionState {
   currentExerciseIndex: number
   currentSetIndex: number
   completedSets: CompletedSet[]
+  completedCardio: CompletedCardio[]
   isResting: boolean
   restTimeRemaining: number
   elapsedTime: number
@@ -31,6 +32,7 @@ interface UseWorkoutExecutionReturn {
   startRest: (seconds: number) => void
   skipRest: () => void
   addRestTime: (seconds: number) => void
+  addCardio: (cardio: CompletedCardio) => void
   finishWorkout: () => WorkoutSummary | null
   clearSavedWorkout: () => void
   hasSavedWorkout: () => boolean
@@ -53,6 +55,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     currentExerciseIndex: 0,
     currentSetIndex: 0,
     completedSets: [],
+    completedCardio: [],
     isResting: false,
     restTimeRemaining: 0,
     elapsedTime: 0,
@@ -265,6 +268,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
       currentExerciseIndex: 0,
       currentSetIndex: 0,
       completedSets: [],
+      completedCardio: [],
       isResting: false,
       restTimeRemaining: 0,
       elapsedTime: 0,
@@ -287,6 +291,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
       currentExerciseIndex: 0,
       currentSetIndex: 0,
       completedSets: [],
+      completedCardio: [],
       isResting: false,
       restTimeRemaining: 0,
       elapsedTime: 0,
@@ -451,8 +456,20 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     }))
   }, [])
 
+  const addCardio = useCallback((cardio: CompletedCardio) => {
+    setState(prev => ({
+      ...prev,
+      completedCardio: [...prev.completedCardio, cardio]
+    }))
+  }, [])
+
   const finishWorkout = useCallback((): WorkoutSummary | null => {
     if (!state.workout) return null
+
+    // Calcular calorias do cardio
+    const cardioCalories = state.completedCardio.reduce((acc, c) => acc + (c.calorias || 0), 0)
+    // Calorias da musculação: MET * peso * horas (aproximado)
+    const strengthCalories = Math.round(state.elapsedTime / 60 * 5 * 80)
 
     const summary: WorkoutSummary = {
       workout: state.workout,
@@ -462,8 +479,9 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
       seriesCompletas: state.completedSets.length,
       seriesTotal: totalSets,
       volumeTotal: state.completedSets.reduce((acc, s) => acc + s.weight * s.reps, 0),
-      caloriasEstimadas: Math.round(state.elapsedTime / 60 * 5 * 80), // MET * peso * horas
-      novosRecordes: state.newPRs
+      caloriasEstimadas: strengthCalories + cardioCalories,
+      novosRecordes: state.newPRs,
+      cardioExercises: state.completedCardio.length > 0 ? state.completedCardio : undefined
     }
 
     // Limpar localStorage
@@ -481,6 +499,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     startRest,
     skipRest,
     addRestTime,
+    addCardio,
     finishWorkout,
     clearSavedWorkout,
     hasSavedWorkout,

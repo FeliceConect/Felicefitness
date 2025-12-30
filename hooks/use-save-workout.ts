@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
+import type { CompletedCardio } from '@/lib/workout/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTable = any
@@ -24,6 +25,7 @@ interface WorkoutSaveData {
   data: string // YYYY-MM-DD
   duracao: number // minutes
   completedSets: CompletedSetData[]
+  cardioExercises?: CompletedCardio[]
   difficulty?: number
   energy?: number
   notes?: string
@@ -69,8 +71,11 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
       // Calculate total volume
       const totalVolume = data.completedSets.reduce((acc, set) => acc + (set.weight * set.reps), 0)
 
-      // Estimate calories (rough estimate: 5 calories per minute of strength training)
-      const caloriesEstimated = Math.round(data.duracao * 5)
+      // Calculate cardio calories
+      const cardioCalories = data.cardioExercises?.reduce((acc, c) => acc + (c.calorias || 0), 0) || 0
+
+      // Estimate calories (rough estimate: 5 calories per minute of strength training + cardio calories)
+      const caloriesEstimated = Math.round(data.duracao * 5) + cardioCalories
 
       // Group sets by exercise
       const exerciseMap = new Map<string, CompletedSetData[]>()
@@ -156,6 +161,53 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
         }
 
         exerciseOrder++
+      }
+
+      // 3. Save cardio exercises
+      if (data.cardioExercises && data.cardioExercises.length > 0) {
+        for (const cardio of data.cardioExercises) {
+          // Create workout exercise for cardio
+          const { data: cardioExercise, error: cardioExerciseError } = await (supabase as AnyTable)
+            .from('fitness_workout_exercises')
+            .insert({
+              workout_id: workoutRecordId,
+              exercise_id: null,
+              exercicio_nome: cardio.nome,
+              ordem: exerciseOrder,
+              status: 'concluido',
+              notas: cardio.notas || `Cardio: ${cardio.duracao_minutos}min${cardio.distancia_km ? ` | ${cardio.distancia_km}km` : ''}${cardio.velocidade_media ? ` | ${cardio.velocidade_media}km/h` : ''}`
+            })
+            .select()
+            .single()
+
+          if (cardioExerciseError) {
+            console.error('Error creating cardio exercise:', cardioExerciseError)
+            throw cardioExerciseError
+          }
+
+          // Create a "set" for cardio with duration as time
+          const { error: cardioSetError } = await (supabase as AnyTable)
+            .from('fitness_exercise_sets')
+            .insert({
+              workout_exercise_id: cardioExercise.id,
+              numero_serie: 1,
+              repeticoes_planejadas: cardio.duracao_minutos,
+              repeticoes_realizadas: cardio.duracao_minutos,
+              carga: cardio.distancia_km || 0, // Use carga for distance if available
+              unidade_carga: 'km',
+              tempo_segundos: cardio.duracao_minutos * 60,
+              status: 'concluido',
+              is_pr: false,
+              notas: `Cardio - ${cardio.calorias || 0} kcal`
+            })
+
+          if (cardioSetError) {
+            console.error('Error creating cardio set:', cardioSetError)
+            throw cardioSetError
+          }
+
+          exerciseOrder++
+        }
       }
 
       return workoutRecordId

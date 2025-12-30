@@ -24,7 +24,8 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
 
   const handleViewDetails = () => {
     if (workout) {
-      router.push(`/treino/${workout.id}/detalhes`)
+      // Treino concluído está no histórico
+      router.push(`/treino/historico/${workout.id}`)
     }
   }
 
