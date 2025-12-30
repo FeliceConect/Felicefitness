@@ -33,8 +33,9 @@ function NewMealContent() {
   const { addToRecent, toggleFavorite } = useFoods()
   const { addMeal } = useDailyMeals()
 
-  // Get meal type from URL params
+  // Get meal type and planMealId from URL params
   const initialType = (searchParams.get('tipo') as MealType) || 'almoco'
+  const planMealId = searchParams.get('planMealId')
 
   const [selectedType, setSelectedType] = useState<MealType>(initialType)
   const [items, setItems] = useState<MealItem[]>([])
@@ -100,20 +101,53 @@ function NewMealContent() {
 
     setSaving(true)
     try {
-      await addMeal({
-        user_id: 'mock-user',
-        tipo: selectedType,
-        data: format(new Date(), 'yyyy-MM-dd'),
-        horario_planejado: horario,
-        horario_real: format(new Date(), 'HH:mm'),
-        status: 'concluido',
-        itens: items,
-        calorias_total: totals.calorias,
-        proteinas_total: totals.proteinas,
-        carboidratos_total: totals.carboidratos,
-        gorduras_total: totals.gorduras,
-        notas: notas || undefined
-      })
+      // If coming from meal plan, use the API to link custom foods to the plan
+      if (planMealId) {
+        // Convert items to the format expected by the API
+        const completedFoods = items.map(item => ({
+          name: item.food?.nome || 'Alimento',
+          quantity: item.quantidade,
+          unit: item.food?.unidade || 'g',
+          calories: item.calorias,
+          protein: item.proteinas,
+          carbs: item.carboidratos,
+          fat: item.gorduras
+        }))
+
+        const response = await fetch('/api/client/meal-plan/complete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            planMealId,
+            date: format(new Date(), 'yyyy-MM-dd'),
+            completedFoods,
+            notes: notas || `Refeição personalizada às ${horario}`
+          })
+        })
+
+        const result = await response.json()
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao salvar refeição')
+        }
+      } else {
+        // No plan meal ID, save as independent meal
+        await addMeal({
+          user_id: 'mock-user',
+          tipo: selectedType,
+          data: format(new Date(), 'yyyy-MM-dd'),
+          horario_planejado: horario,
+          horario_real: format(new Date(), 'HH:mm'),
+          status: 'concluido',
+          itens: items,
+          calorias_total: totals.calorias,
+          proteinas_total: totals.proteinas,
+          carboidratos_total: totals.carboidratos,
+          gorduras_total: totals.gorduras,
+          notas: notas || undefined
+        })
+      }
       router.push('/alimentacao')
     } catch (error) {
       console.error('Error saving meal:', error)

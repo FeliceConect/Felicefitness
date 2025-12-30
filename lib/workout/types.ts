@@ -4,7 +4,8 @@ export type WorkoutType = 'tradicional' | 'circuito' | 'hiit' | 'mobilidade'
 export type ExerciseType = 'strength' | 'cardio' | 'mobility'
 
 // Tipos de exercícios cardio disponíveis
-export type CardioExerciseType = 'esteira' | 'bicicleta' | 'eliptico' | 'step' | 'remo' | 'outro'
+export type CardioExerciseType = 'esteira' | 'bicicleta' | 'eliptico' | 'step' | 'remo' | 'transport' | 'escada' | 'pular_corda' | 'outro'
+export type CardioIntensity = 'leve' | 'moderado' | 'intenso' | 'muito_intenso'
 
 export interface CardioExercise {
   id: string
@@ -13,8 +14,14 @@ export interface CardioExercise {
   duracao_minutos: number
   distancia_km?: number
   velocidade_media?: number // km/h
-  calorias?: number
+  velocidade_max?: number // km/h
+  ritmo_medio?: string // min/km (ex: "5:30")
   inclinacao?: number // %
+  resistencia?: number // nível de resistência (1-20)
+  intensidade?: CardioIntensity
+  frequencia_cardiaca_media?: number // bpm
+  frequencia_cardiaca_max?: number // bpm
+  calorias?: number
   notas?: string
 }
 export type WorkoutStatus = 'pendente' | 'em_andamento' | 'concluido' | 'cancelado'
@@ -106,9 +113,16 @@ export interface CompletedCardio {
   nome: string
   duracao_minutos: number
   distancia_km?: number
-  velocidade_media?: number
-  calorias?: number
-  inclinacao?: number
+  velocidade_media?: number // km/h
+  velocidade_max?: number // km/h
+  ritmo_medio?: string // min/km (ex: "5:30")
+  inclinacao?: number // %
+  resistencia?: number // nível de resistência (1-20)
+  intensidade?: CardioIntensity
+  frequencia_cardiaca_media?: number // bpm
+  frequencia_cardiaca_max?: number // bpm
+  calorias: number
+  met?: number // MET value used for calculation
   notas?: string
 }
 

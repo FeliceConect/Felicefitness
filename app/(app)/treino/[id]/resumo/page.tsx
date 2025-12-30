@@ -49,8 +49,11 @@ const cardioIcons: Record<CardioExerciseType, string> = {
   esteira: '🏃',
   bicicleta: '🚴',
   eliptico: '🔄',
+  transport: '🚶',
   step: '🪜',
   remo: '🚣',
+  escada: '🪜',
+  pular_corda: '🪢',
   outro: '💪'
 }
 
@@ -353,34 +356,82 @@ export default function WorkoutSummaryPage() {
             <Zap className="w-5 h-5 text-emerald-400" />
             Cardio
           </h2>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {summary.cardioExercises.map((cardio, index) => (
               <div
                 key={index}
                 className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 rounded-xl p-4"
               >
-                <div className="flex items-center justify-between">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{cardioIcons[cardio.tipo]}</span>
-                    <span className="text-white font-medium">{cardio.nome}</span>
+                    <div>
+                      <span className="text-white font-medium block">{cardio.nome}</span>
+                      {cardio.intensidade && (
+                        <span className="text-xs text-slate-400 capitalize">{cardio.intensidade.replace('_', ' ')}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-emerald-400 font-bold block">
-                      {cardio.duracao_minutos} min
+                    <span className="text-orange-400 font-bold text-lg block">
+                      {cardio.calorias} kcal
                     </span>
-                    {cardio.distancia_km && (
-                      <span className="text-xs text-slate-400">
-                        {cardio.distancia_km.toFixed(1)} km
-                      </span>
+                    {cardio.met && (
+                      <span className="text-[10px] text-slate-500">MET: {cardio.met}</span>
                     )}
                   </div>
                 </div>
-                {cardio.calorias && (
-                  <div className="mt-2 flex items-center gap-1 text-sm text-orange-400">
-                    <Flame className="w-3 h-3" />
-                    {cardio.calorias} kcal
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-slate-800/50 rounded-lg p-2">
+                    <span className="text-xs text-slate-500 block">Duracao</span>
+                    <span className="text-white font-semibold">{cardio.duracao_minutos} min</span>
                   </div>
-                )}
+                  {cardio.distancia_km && (
+                    <div className="bg-slate-800/50 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 block">Distancia</span>
+                      <span className="text-white font-semibold">{cardio.distancia_km.toFixed(2)} km</span>
+                    </div>
+                  )}
+                  {cardio.velocidade_media && (
+                    <div className="bg-slate-800/50 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 block">Vel. Media</span>
+                      <span className="text-white font-semibold">{cardio.velocidade_media} km/h</span>
+                    </div>
+                  )}
+                  {cardio.ritmo_medio && cardio.ritmo_medio !== '--:--' && (
+                    <div className="bg-slate-800/50 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 block">Ritmo</span>
+                      <span className="text-white font-semibold">{cardio.ritmo_medio} /km</span>
+                    </div>
+                  )}
+                  {cardio.inclinacao && cardio.inclinacao > 0 && (
+                    <div className="bg-slate-800/50 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 block">Inclinacao</span>
+                      <span className="text-white font-semibold">{cardio.inclinacao}%</span>
+                    </div>
+                  )}
+                  {cardio.resistencia && (
+                    <div className="bg-slate-800/50 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 block">Resistencia</span>
+                      <span className="text-white font-semibold">{cardio.resistencia}/20</span>
+                    </div>
+                  )}
+                  {cardio.frequencia_cardiaca_media && (
+                    <div className="bg-slate-800/50 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 block">FC Media</span>
+                      <span className="text-red-400 font-semibold">{cardio.frequencia_cardiaca_media} bpm</span>
+                    </div>
+                  )}
+                  {cardio.frequencia_cardiaca_max && (
+                    <div className="bg-slate-800/50 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 block">FC Max</span>
+                      <span className="text-red-400 font-semibold">{cardio.frequencia_cardiaca_max} bpm</span>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
