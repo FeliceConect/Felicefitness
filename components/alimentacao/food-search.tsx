@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Star, Clock, X } from 'lucide-react'
+import { Search, Star, Clock, X, Plus, Edit3 } from 'lucide-react'
 import type { Food, FoodCategory } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { useFoods } from '@/hooks/use-foods'
@@ -10,9 +10,11 @@ import { useFoods } from '@/hooks/use-foods'
 interface FoodSearchProps {
   onSelect: (food: Food) => void
   excludeIds?: string[]
+  onAddCustomFood?: (name: string) => void
+  showAddCustom?: boolean
 }
 
-export function FoodSearch({ onSelect, excludeIds = [] }: FoodSearchProps) {
+export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAddCustom = true }: FoodSearchProps) {
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | null>(null)
   const { favorites, recent, search, getByCategory } = useFoods()
@@ -89,9 +91,20 @@ export function FoodSearch({ onSelect, excludeIds = [] }: FoodSearchProps) {
           >
             <h4 className="text-sm font-medium text-slate-400">Resultados</h4>
             {searchResults.length === 0 ? (
-              <p className="text-sm text-slate-500 py-4 text-center">
-                Nenhum alimento encontrado
-              </p>
+              <div className="py-4 text-center space-y-3">
+                <p className="text-sm text-slate-500">
+                  Nenhum alimento encontrado para "{query || selectedCategory}"
+                </p>
+                {showAddCustom && query && (
+                  <button
+                    onClick={() => onAddCustomFood?.(query)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500/20 border border-violet-500/30 text-violet-400 rounded-lg hover:bg-violet-500/30 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Adicionar "{query}" manualmente
+                  </button>
+                )}
+              </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {searchResults.map((food) => (

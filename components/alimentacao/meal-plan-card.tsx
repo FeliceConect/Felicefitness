@@ -11,7 +11,8 @@ import {
   ArrowRightLeft,
   Plus,
   Utensils,
-  User
+  User,
+  Camera
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -361,9 +362,16 @@ export function MealPlanCard({
                             Marcar como feita
                           </button>
                           <button
+                            onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
+                            className="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                            title="Analisar foto com IA"
+                          >
+                            <Camera className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
                             className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
-                            title="Editar e salvar"
+                            title="Adicionar manualmente"
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -372,13 +380,22 @@ export function MealPlanCard({
 
                       {/* Edit button when there are alternatives */}
                       {!isCompleted && hasAlternatives && (
-                        <button
-                          onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
-                          className="w-full flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-white border border-dashed border-slate-600 rounded-lg hover:border-slate-500 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Adicionar refeição personalizada
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-violet-400 hover:text-white border border-dashed border-violet-500/50 rounded-lg hover:border-violet-500 transition-colors"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Analisar foto
+                          </button>
+                          <button
+                            onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-white border border-dashed border-slate-600 rounded-lg hover:border-slate-500 transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Adicionar manual
+                          </button>
+                        </div>
                       )}
                     </div>
                   </motion.div>

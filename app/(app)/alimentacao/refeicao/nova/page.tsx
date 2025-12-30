@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { FoodSearch } from '@/components/alimentacao/food-search'
 import { PortionSelector } from '@/components/alimentacao/portion-selector'
+import { AddCustomFoodModal } from '@/components/alimentacao/add-custom-food-modal'
 import type { Food, MealItem, MealType } from '@/lib/nutrition/types'
 import { mealTypeLabels, mealTypeIcons } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
@@ -43,6 +44,8 @@ function NewMealContent() {
   const [horario, setHorario] = useState(format(new Date(), 'HH:mm'))
   const [notas, setNotas] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showCustomFoodModal, setShowCustomFoodModal] = useState(false)
+  const [customFoodName, setCustomFoodName] = useState('')
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -93,6 +96,20 @@ function NewMealContent() {
     if (selectedFood) {
       toggleFavorite(selectedFood.id)
     }
+  }
+
+  // Handle add custom food
+  const handleAddCustomFood = (name: string) => {
+    setCustomFoodName(name)
+    setShowCustomFoodModal(true)
+  }
+
+  // Handle custom food saved
+  const handleCustomFoodSaved = (food: Food) => {
+    // Select the new custom food to allow portion selection
+    setSelectedFood(food)
+    setShowCustomFoodModal(false)
+    setCustomFoodName('')
   }
 
   // Handle save
@@ -277,6 +294,8 @@ function NewMealContent() {
         <FoodSearch
           onSelect={handleFoodSelect}
           excludeIds={items.map(i => i.food_id)}
+          onAddCustomFood={handleAddCustomFood}
+          showAddCustom={true}
         />
       </div>
 
@@ -349,6 +368,17 @@ function NewMealContent() {
           />
         )}
       </AnimatePresence>
+
+      {/* Custom food modal */}
+      <AddCustomFoodModal
+        isOpen={showCustomFoodModal}
+        onClose={() => {
+          setShowCustomFoodModal(false)
+          setCustomFoodName('')
+        }}
+        onSave={handleCustomFoodSaved}
+        initialName={customFoodName}
+      />
     </div>
   )
 }

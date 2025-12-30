@@ -9,6 +9,7 @@ import { ptBR } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { FoodSearch } from '@/components/alimentacao/food-search'
 import { PortionSelector } from '@/components/alimentacao/portion-selector'
+import { AddCustomFoodModal } from '@/components/alimentacao/add-custom-food-modal'
 import type { Food, MealItem, Meal, MealType } from '@/lib/nutrition/types'
 import { mealTypeLabels, mealTypeIcons, foodCategoryLabels } from '@/lib/nutrition/types'
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
@@ -157,6 +158,8 @@ export default function MealDetailPage() {
   const [showAddFood, setShowAddFood] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showCustomFoodModal, setShowCustomFoodModal] = useState(false)
+  const [customFoodName, setCustomFoodName] = useState('')
 
   // Calculate totals for edited items
   const editedTotals = useMemo(() => {
@@ -474,6 +477,20 @@ export default function MealDetailPage() {
     }
   }
 
+  // Handle add custom food
+  const handleAddCustomFood = (name: string) => {
+    setCustomFoodName(name)
+    setShowCustomFoodModal(true)
+  }
+
+  // Handle custom food saved
+  const handleCustomFoodSaved = (food: Food) => {
+    // Select the new custom food to allow portion selection
+    setSelectedFood(food)
+    setShowCustomFoodModal(false)
+    setCustomFoodName('')
+  }
+
   return (
     <div className="min-h-screen bg-[#0A0A0F] pb-32">
       {/* Header */}
@@ -669,6 +686,8 @@ export default function MealDetailPage() {
             <FoodSearch
               onSelect={handleFoodSelect}
               excludeIds={isEditing ? editedItems.map(i => i.food_id) : [...meal.itens.map(i => i.food_id), ...newItems.map(i => i.food_id)]}
+              onAddCustomFood={handleAddCustomFood}
+              showAddCustom={true}
             />
           </div>
         </div>
@@ -764,6 +783,17 @@ export default function MealDetailPage() {
           onToggleFavorite={handleToggleFavorite}
         />
       )}
+
+      {/* Custom food modal */}
+      <AddCustomFoodModal
+        isOpen={showCustomFoodModal}
+        onClose={() => {
+          setShowCustomFoodModal(false)
+          setCustomFoodName('')
+        }}
+        onSave={handleCustomFoodSaved}
+        initialName={customFoodName}
+      />
     </div>
   )
 }

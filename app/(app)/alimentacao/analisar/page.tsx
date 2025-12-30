@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Check, Clock, Plus, Camera, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Check, Clock, Plus, Camera, Trash2, ChevronDown, ChevronUp, Link2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { AIMealAnalyzer } from '@/components/alimentacao/ai-meal-analyzer'
 import type { MealAnalysisResult, AnalyzedFoodItem } from '@/types/analysis'
@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import type { Meal, MealInsert } from '@/types/database'
 import type { MealType } from '@/lib/nutrition/types'
+import { Suspense } from 'react'
 
 // Interface para um prato/foto analisado
 interface AnalyzedPlate {
@@ -39,14 +40,20 @@ const MEAL_TYPES: Array<{ id: MealType; label: string; icon: string }> = [
 
 type Step = 'analyze' | 'confirm'
 
-export default function AnalisarRefeicaoPage() {
+// Componente interno que usa useSearchParams
+function AnalisarRefeicaoContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<User | null>(null)
+
+  // Parâmetros do plano alimentar (quando vindo de uma refeição do plano)
+  const planMealId = searchParams.get('planMealId')
+  const planMealType = searchParams.get('tipo')
 
   const [step, setStep] = useState<Step>('analyze')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_analysisResult, setAnalysisResult] = useState<MealAnalysisResult | null>(null)
-  const [selectedMealType, setSelectedMealType] = useState<MealType>('almoco')
+  const [selectedMealType, setSelectedMealType] = useState<MealType>((planMealType as MealType) || 'almoco')
   const [mealDate, setMealDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealTime, setMealTime] = useState(format(new Date(), 'HH:mm'))
   const [isSaving, setIsSaving] = useState(false)
@@ -65,6 +72,24 @@ export default function AnalisarRefeicaoPage() {
     }
     fetchUser()
   }, [])
+
+  // Se veio do plano, usar o tipo de refeição correto
+  useEffect(() => {
+    if (planMealType) {
+      // Mapear tipos do plano para tipos internos
+      const typeMap: Record<string, MealType> = {
+        'breakfast': 'cafe_manha',
+        'morning_snack': 'lanche_manha',
+        'lunch': 'almoco',
+        'afternoon_snack': 'lanche_tarde',
+        'pre_workout': 'pre_treino',
+        'dinner': 'jantar',
+        'supper': 'ceia'
+      }
+      const mappedType = typeMap[planMealType] || planMealType as MealType
+      setSelectedMealType(mappedType)
+    }
+  }, [planMealType])
 
   // Quando análise é concluída
   const handleAnalysisComplete = (result: MealAnalysisResult) => {
@@ -164,19 +189,10 @@ export default function AnalisarRefeicaoPage() {
   const handleSave = async () => {
     console.log('=== INICIANDO SALVAMENTO ===')
     console.log('plates:', plates)
-    console.log('plates.length:', plates.length)
-    console.log('allItems calculado:', allItems)
-    console.log('allItems.length:', allItems.length)
-
-    // Debug cada plate
-    plates.forEach((plate, i) => {
-      console.log(`Plate ${i}:`, plate)
-      console.log(`Plate ${i} items:`, plate.items)
-      console.log(`Plate ${i} items length:`, plate.items?.length)
-    })
+    console.log('planMealId:', planMealId)
 
     if (plates.length === 0 || !user) {
-      console.log('Saindo: plates.length === 0 ou !user', { platesLength: plates.length, user: !!user })
+      console.log('Saindo: plates.length === 0 ou !user')
       return
     }
 
@@ -184,78 +200,100 @@ export default function AnalisarRefeicaoPage() {
     setSaveError(null)
 
     try {
-      const supabase = createClient()
+      // Se veio de uma refeição do plano, usar a API do meal-plan/complete
+      if (planMealId) {
+        console.log('=== SALVANDO VINCULADO AO PLANO ===')
 
-      // Descrição combinada de todos os pratos
-      const combinedDescription = plates.length > 1
-        ? `Refeição com ${plates.length} pratos: ${plates.map(p => p.description).join(', ')}`
-        : plates[0].description || 'Refeição analisada por IA'
+        // Converter items para o formato esperado pela API
+        const completedFoods = allItems.map(item => ({
+          name: item.name || 'Alimento',
+          quantity: Math.round(item.portion_grams || 100),
+          unit: 'g',
+          calories: Math.round(item.calories || 0),
+          protein: Math.round(item.protein || 0),
+          carbs: Math.round(item.carbs || 0),
+          fat: Math.round(item.fat || 0)
+        }))
 
-      // 1. Criar a refeição principal com totais combinados
-      const mealData: MealInsert = {
-        user_id: user.id,
-        data: mealDate,
-        horario: mealTime,
-        tipo_refeicao: selectedMealType,
-        analise_ia: combinedDescription,
-        calorias_total: combinedTotals.calories,
-        proteinas_total: combinedTotals.protein,
-        carboidratos_total: combinedTotals.carbs,
-        gorduras_total: combinedTotals.fat,
-        status: 'concluido'
-      }
+        const combinedDescription = plates.length > 1
+          ? `Refeição com ${plates.length} pratos: ${plates.map(p => p.description).join(', ')}`
+          : plates[0].description || 'Refeição analisada por IA'
 
-      const { data, error: mealError } = await supabase
-        .from('fitness_meals')
-        .insert(mealData as never)
-        .select()
-        .single()
+        const response = await fetch('/api/client/meal-plan/complete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            planMealId,
+            date: mealDate,
+            completedFoods,
+            notes: `${combinedDescription} (Analisado por IA às ${mealTime})`
+          })
+        })
 
-      const meal = data as Meal | null
-
-      if (mealError) {
-        console.error('Erro ao criar refeição:', mealError)
-        throw new Error('Erro ao salvar refeição: ' + mealError.message)
-      }
-
-      // 2. Criar os itens de todos os pratos
-      if (meal && allItems.length > 0) {
-        console.log('=== SALVANDO ITENS ===')
-        console.log('meal.id:', meal.id)
-        console.log('allItems:', allItems)
-
-        // Criar array de itens para inserir - um por um para debug
-        for (const item of allItems) {
-          const itemToInsert = {
-            meal_id: meal.id,
-            nome_alimento: item.name || 'Alimento',
-            quantidade: Math.round(item.portion_grams || 100),
-            unidade: 'g',
-            calorias: Math.round(item.calories || 0),
-            proteinas: Math.round(item.protein || 0),
-            carboidratos: Math.round(item.carbs || 0),
-            gorduras: Math.round(item.fat || 0)
-          }
-
-          console.log('Inserindo item:', itemToInsert)
-
-          const { data: insertedItem, error: itemError } = await supabase
-            .from('fitness_meal_items')
-            .insert(itemToInsert as never)
-            .select()
-            .single()
-
-          if (itemError) {
-            console.error('Erro ao inserir item:', item.name, itemError)
-            throw new Error(`Erro ao salvar item "${item.name}": ${itemError.message}`)
-          }
-
-          console.log('Item salvo:', insertedItem)
+        const result = await response.json()
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao salvar refeição no plano')
         }
 
-        console.log('=== TODOS OS ITENS SALVOS ===')
+        console.log('=== REFEIÇÃO SALVA NO PLANO ===')
       } else {
-        console.log('Nenhum item para salvar:', { meal: !!meal, itemsCount: allItems.length })
+        // Salvar como refeição independente (fluxo original)
+        console.log('=== SALVANDO COMO REFEIÇÃO INDEPENDENTE ===')
+        const supabase = createClient()
+
+        const combinedDescription = plates.length > 1
+          ? `Refeição com ${plates.length} pratos: ${plates.map(p => p.description).join(', ')}`
+          : plates[0].description || 'Refeição analisada por IA'
+
+        const mealData: MealInsert = {
+          user_id: user.id,
+          data: mealDate,
+          horario: mealTime,
+          tipo_refeicao: selectedMealType,
+          analise_ia: combinedDescription,
+          calorias_total: combinedTotals.calories,
+          proteinas_total: combinedTotals.protein,
+          carboidratos_total: combinedTotals.carbs,
+          gorduras_total: combinedTotals.fat,
+          status: 'concluido'
+        }
+
+        const { data, error: mealError } = await supabase
+          .from('fitness_meals')
+          .insert(mealData as never)
+          .select()
+          .single()
+
+        const meal = data as Meal | null
+
+        if (mealError) {
+          console.error('Erro ao criar refeição:', mealError)
+          throw new Error('Erro ao salvar refeição: ' + mealError.message)
+        }
+
+        // Criar os itens
+        if (meal && allItems.length > 0) {
+          for (const item of allItems) {
+            const { error: itemError } = await supabase
+              .from('fitness_meal_items')
+              .insert({
+                meal_id: meal.id,
+                nome_alimento: item.name || 'Alimento',
+                quantidade: Math.round(item.portion_grams || 100),
+                unidade: 'g',
+                calorias: Math.round(item.calories || 0),
+                proteinas: Math.round(item.protein || 0),
+                carboidratos: Math.round(item.carbs || 0),
+                gorduras: Math.round(item.fat || 0)
+              } as never)
+
+            if (itemError) {
+              throw new Error(`Erro ao salvar item "${item.name}": ${itemError.message}`)
+            }
+          }
+        }
       }
 
       // Redirecionar para a página de alimentação
@@ -529,6 +567,23 @@ export default function AnalisarRefeicaoPage() {
         </div>
       </motion.div>
 
+      {/* Indicador de vinculação ao plano */}
+      {planMealId && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 mb-4"
+        >
+          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center gap-3">
+            <Link2 className="w-5 h-5 text-green-400" />
+            <div>
+              <p className="text-green-400 text-sm font-medium">Vinculado ao plano alimentar</p>
+              <p className="text-slate-400 text-xs">Esta refeição será salva no seu plano</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Erro de salvamento */}
       {saveError && (
         <motion.div
@@ -553,7 +608,9 @@ export default function AnalisarRefeicaoPage() {
             'w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg',
             isSaving || plates.length === 0
               ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-violet-500/20'
+              : planMealId
+                ? 'bg-gradient-to-r from-green-600 to-emerald-500 text-white shadow-green-500/20'
+                : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-violet-500/20'
           )}
         >
           {isSaving ? (
@@ -564,11 +621,24 @@ export default function AnalisarRefeicaoPage() {
           ) : (
             <>
               <Check className="w-5 h-5" />
-              Salvar Refeição {plates.length > 1 && `(${plates.length} pratos)`}
+              {planMealId ? 'Salvar no Plano' : 'Salvar Refeição'} {plates.length > 1 && `(${plates.length} pratos)`}
             </>
           )}
         </motion.button>
       </div>
     </div>
+  )
+}
+
+// Componente principal com Suspense
+export default function AnalisarRefeicaoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+      </div>
+    }>
+      <AnalisarRefeicaoContent />
+    </Suspense>
   )
 }
