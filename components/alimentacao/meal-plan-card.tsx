@@ -12,7 +12,8 @@ import {
   Plus,
   Utensils,
   User,
-  Camera
+  Camera,
+  Edit2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -437,6 +438,33 @@ export function MealPlanCard({
                           >
                             <Plus className="w-4 h-4" />
                             Adicionar manual
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Action buttons for completed meals */}
+                      {isCompleted && actualMealData && (
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => router.push(`/alimentacao/refeicao/${actualMealData.id}`)}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => router.push(`/alimentacao/analisar?mealId=${actualMealData.id}&tipo=${meal.meal_type}`)}
+                            className="px-3 py-2 text-sm bg-violet-500/20 text-violet-400 rounded-lg hover:bg-violet-500/30 transition-colors"
+                            title="Adicionar foto com IA"
+                          >
+                            <Camera className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => router.push(`/alimentacao/refeicao/${actualMealData.id}`)}
+                            className="px-3 py-2 text-sm bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                            title="Adicionar mais alimentos"
+                          >
+                            <Plus className="w-4 h-4" />
                           </button>
                         </div>
                       )}

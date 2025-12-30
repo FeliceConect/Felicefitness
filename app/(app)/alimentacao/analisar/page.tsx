@@ -49,6 +49,8 @@ function AnalisarRefeicaoContent() {
   // Parâmetros do plano alimentar (quando vindo de uma refeição do plano)
   const planMealId = searchParams.get('planMealId')
   const planMealType = searchParams.get('tipo')
+  // ID de uma refeição existente para adicionar mais alimentos
+  const existingMealId = searchParams.get('mealId')
 
   const [step, setStep] = useState<Step>('analyze')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -190,6 +192,7 @@ function AnalisarRefeicaoContent() {
     console.log('=== INICIANDO SALVAMENTO ===')
     console.log('plates:', plates)
     console.log('planMealId:', planMealId)
+    console.log('existingMealId:', existingMealId)
 
     if (plates.length === 0 || !user) {
       console.log('Saindo: plates.length === 0 ou !user')
@@ -200,6 +203,71 @@ function AnalisarRefeicaoContent() {
     setSaveError(null)
 
     try {
+      // Se veio de uma refeição existente, adicionar os itens a ela
+      if (existingMealId) {
+        console.log('=== ADICIONANDO A REFEIÇÃO EXISTENTE ===')
+        const supabase = createClient()
+
+        // Buscar dados atuais da refeição
+        const { data: currentMealData, error: fetchError } = await supabase
+          .from('fitness_meals')
+          .select('calorias_total, proteinas_total, carboidratos_total, gorduras_total')
+          .eq('id', existingMealId)
+          .single()
+
+        if (fetchError) {
+          throw new Error('Erro ao buscar refeição existente: ' + fetchError.message)
+        }
+
+        const currentMeal = currentMealData as {
+          calorias_total: number | null
+          proteinas_total: number | null
+          carboidratos_total: number | null
+          gorduras_total: number | null
+        } | null
+
+        // Adicionar novos itens
+        for (const item of allItems) {
+          const { error: itemError } = await supabase
+            .from('fitness_meal_items')
+            .insert({
+              meal_id: existingMealId,
+              nome_alimento: item.name || 'Alimento',
+              quantidade: Math.round(item.portion_grams || 100),
+              unidade: 'g',
+              calorias: Math.round(item.calories || 0),
+              proteinas: Math.round(item.protein || 0),
+              carboidratos: Math.round(item.carbs || 0),
+              gorduras: Math.round(item.fat || 0)
+            } as never)
+
+          if (itemError) {
+            throw new Error(`Erro ao adicionar item "${item.name}": ${itemError.message}`)
+          }
+        }
+
+        // Atualizar totais da refeição
+        const newTotals = {
+          calorias_total: (currentMeal?.calorias_total || 0) + combinedTotals.calories,
+          proteinas_total: (currentMeal?.proteinas_total || 0) + combinedTotals.protein,
+          carboidratos_total: (currentMeal?.carboidratos_total || 0) + combinedTotals.carbs,
+          gorduras_total: (currentMeal?.gorduras_total || 0) + combinedTotals.fat
+        }
+
+        const { error: updateError } = await supabase
+          .from('fitness_meals')
+          .update(newTotals as never)
+          .eq('id', existingMealId)
+
+        if (updateError) {
+          throw new Error('Erro ao atualizar totais: ' + updateError.message)
+        }
+
+        console.log('=== ITENS ADICIONADOS À REFEIÇÃO EXISTENTE ===')
+        router.push(`/alimentacao/refeicao/${existingMealId}`)
+        return
+      }
+
       // Se veio de uma refeição do plano, usar a API do meal-plan/complete
       if (planMealId) {
         console.log('=== SALVANDO VINCULADO AO PLANO ===')
@@ -579,6 +647,23 @@ function AnalisarRefeicaoContent() {
             <div>
               <p className="text-green-400 text-sm font-medium">Vinculado ao plano alimentar</p>
               <p className="text-slate-400 text-xs">Esta refeição será salva no seu plano</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Indicador de adição a refeição existente */}
+      {existingMealId && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 mb-4"
+        >
+          <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4 flex items-center gap-3">
+            <Plus className="w-5 h-5 text-violet-400" />
+            <div>
+              <p className="text-violet-400 text-sm font-medium">Adicionando à refeição existente</p>
+              <p className="text-slate-400 text-xs">Os itens serão adicionados à refeição já salva</p>
             </div>
           </div>
         </motion.div>
