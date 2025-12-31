@@ -83,6 +83,10 @@ self.addEventListener('notificationclick', (event) => {
       case 'ver-conquista':
         urlToOpen = '/conquistas'
         break
+      case 'continue':
+        // Timer notification - voltar ao treino
+        urlToOpen = data.url || '/treino'
+        break
       default:
         urlToOpen = data.url || '/'
     }
@@ -118,16 +122,130 @@ self.addEventListener('notificationclose', (event) => {
   }
 })
 
+// Timer notification state
+let timerNotificationTimeout = null
+let timerExpiresAt = null
+
 // Message handler for communication with main app
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'GET_SUBSCRIPTION') {
-    event.waitUntil(
-      self.registration.pushManager.getSubscription()
-        .then((subscription) => {
-          event.ports[0].postMessage({ subscription })
-        })
-    )
+  if (!event.data || !event.data.type) return
+
+  switch (event.data.type) {
+    case 'GET_SUBSCRIPTION':
+      event.waitUntil(
+        self.registration.pushManager.getSubscription()
+          .then((subscription) => {
+            event.ports[0].postMessage({ subscription })
+          })
+      )
+      break
+
+    case 'SCHEDULE_TIMER_NOTIFICATION':
+      // Agendar notificação do timer
+      handleScheduleTimerNotification(event.data.payload)
+      break
+
+    case 'CANCEL_TIMER_NOTIFICATION':
+      // Cancelar notificação agendada
+      handleCancelTimerNotification()
+      break
+
+    case 'SHOW_TIMER_NOTIFICATION':
+      // Mostrar notificação imediatamente
+      handleShowTimerNotification(event.data.payload)
+      break
   }
 })
 
-console.log('[SW] Push notification handler loaded')
+// Agendar notificação do timer
+function handleScheduleTimerNotification(payload) {
+  const { title, body, tag, expiresAt, seconds } = payload
+
+  console.log('[SW] Agendando notificação do timer para', seconds, 'segundos')
+
+  // Cancelar timeout anterior se existir
+  if (timerNotificationTimeout) {
+    clearTimeout(timerNotificationTimeout)
+    timerNotificationTimeout = null
+  }
+
+  // Salvar tempo de expiração
+  timerExpiresAt = expiresAt
+
+  // Agendar novo timeout
+  timerNotificationTimeout = setTimeout(() => {
+    showTimerNotification(title, body, tag)
+  }, seconds * 1000)
+}
+
+// Cancelar notificação agendada
+function handleCancelTimerNotification() {
+  console.log('[SW] Cancelando notificação do timer')
+
+  if (timerNotificationTimeout) {
+    clearTimeout(timerNotificationTimeout)
+    timerNotificationTimeout = null
+  }
+
+  timerExpiresAt = null
+
+  // Fechar notificações existentes do timer
+  self.registration.getNotifications({ tag: 'rest-timer-complete' })
+    .then(notifications => {
+      notifications.forEach(n => n.close())
+    })
+}
+
+// Mostrar notificação imediatamente
+function handleShowTimerNotification(payload) {
+  const { title, body, tag, requireInteraction } = payload
+  showTimerNotification(title, body, tag, requireInteraction)
+}
+
+// Função para mostrar a notificação do timer
+function showTimerNotification(title, body, tag, requireInteraction = true) {
+  console.log('[SW] Mostrando notificação do timer:', title)
+
+  const options = {
+    body: body || 'Hora de voltar ao treino!',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    tag: tag || 'rest-timer-complete',
+    vibrate: [200, 100, 200, 100, 300],
+    requireInteraction: requireInteraction,
+    silent: false,
+    data: {
+      type: 'timer',
+      url: '/treino',
+      timestamp: Date.now()
+    },
+    actions: [
+      {
+        action: 'continue',
+        title: 'Continuar Treino'
+      }
+    ]
+  }
+
+  self.registration.showNotification(title || 'Descanso Finalizado!', options)
+    .then(() => {
+      console.log('[SW] Notificação do timer mostrada com sucesso')
+    })
+    .catch(err => {
+      console.error('[SW] Erro ao mostrar notificação:', err)
+    })
+
+  // Limpar estado
+  timerNotificationTimeout = null
+  timerExpiresAt = null
+}
+
+// Verificar timer ao iniciar SW (caso tenha sido reiniciado)
+self.addEventListener('activate', (event) => {
+  // Se havia um timer agendado, verificar se já expirou
+  if (timerExpiresAt && Date.now() >= timerExpiresAt) {
+    showTimerNotification('Descanso Finalizado!', 'Hora de voltar ao treino!', 'rest-timer-complete')
+  }
+})
+
+console.log('[SW] Push notification handler loaded (with timer support)')

@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { playSound } from '@/lib/immersive/sounds'
+import { timerNotificationService } from '@/lib/workout/timer-notifications'
+import { backgroundAudioService } from '@/lib/workout/background-audio'
 
 interface UseRestTimerOptions {
   soundEnabled?: boolean
   vibrationEnabled?: boolean
+  notificationsEnabled?: boolean
   onComplete?: () => void
 }
 
@@ -20,6 +23,7 @@ interface UseRestTimerReturn {
   skip: () => void
   addTime: (seconds: number) => void
   reset: () => void
+  requestNotificationPermission: () => Promise<boolean>
 }
 
 /**
@@ -35,6 +39,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
   const {
     soundEnabled = true,
     vibrationEnabled = true,
+    notificationsEnabled = true,
     onComplete
   } = resolvedOptions
   const [timeRemaining, setTimeRemaining] = useState(0)
@@ -149,6 +154,18 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     setTimeRemaining(seconds)
     setIsRunning(true)
 
+    // Iniciar áudio em background para manter o app ativo no iOS
+    backgroundAudioService.start()
+
+    // Agendar notificação para quando o timer terminar
+    if (notificationsEnabled) {
+      timerNotificationService.scheduleNotification(seconds, {
+        title: 'Descanso Finalizado!',
+        body: 'Hora de voltar ao treino!',
+        requireInteraction: true
+      })
+    }
+
     // Intervalo apenas para atualizar a UI, não para controlar o tempo
     intervalRef.current = setInterval(() => {
       const remaining = calculateRemaining()
@@ -163,9 +180,17 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         setIsRunning(false)
         endTimeRef.current = null
 
+        // Parar áudio em background
+        backgroundAudioService.stop()
+
+        // Cancelar notificação agendada (já disparou ou será disparada pelo SW)
+        timerNotificationService.cancelScheduledNotification()
+
         // Tocar som ao completar (se habilitado)
         if (soundEnabled) {
           try {
+            // Usar o backgroundAudioService para garantir que funciona no iOS
+            backgroundAudioService.playAlertSound(0.8)
             playSound('timerComplete', 0.8)
           } catch (e) {
             // Ignore audio errors
@@ -182,6 +207,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         // Countdown beeps nos últimos 3 segundos (se som habilitado)
         if (soundEnabled) {
           try {
+            backgroundAudioService.playCountdownBeep(0.6)
             playSound('countdown', 0.6)
           } catch (e) {
             // Ignore audio errors
@@ -189,7 +215,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         }
       }
     }, 1000)
-  }, [calculateRemaining, soundEnabled, vibrationEnabled])
+  }, [calculateRemaining, soundEnabled, vibrationEnabled, notificationsEnabled])
 
   const pause = useCallback(() => {
     if (intervalRef.current) {
@@ -201,6 +227,10 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     setTimeRemaining(remaining)
     endTimeRef.current = null
     setIsRunning(false)
+
+    // Parar áudio em background e cancelar notificação
+    backgroundAudioService.stop()
+    timerNotificationService.cancelScheduledNotification()
   }, [calculateRemaining])
 
   const resume = useCallback(() => {
@@ -208,6 +238,16 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
       hasCompletedRef.current = false
       endTimeRef.current = Date.now() + (timeRemaining * 1000)
       setIsRunning(true)
+
+      // Reiniciar áudio em background e reagendar notificação
+      backgroundAudioService.start()
+      if (notificationsEnabled) {
+        timerNotificationService.scheduleNotification(timeRemaining, {
+          title: 'Descanso Finalizado!',
+          body: 'Hora de voltar ao treino!',
+          requireInteraction: true
+        })
+      }
 
       intervalRef.current = setInterval(() => {
         const remaining = calculateRemaining()
@@ -222,9 +262,14 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
           setIsRunning(false)
           endTimeRef.current = null
 
+          // Parar áudio em background e cancelar notificação
+          backgroundAudioService.stop()
+          timerNotificationService.cancelScheduledNotification()
+
           // Tocar som ao completar (se habilitado)
           if (soundEnabled) {
             try {
+              backgroundAudioService.playAlertSound(0.8)
               playSound('timerComplete', 0.8)
             } catch (e) {
               // Ignore audio errors
@@ -241,6 +286,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
           // Countdown beeps nos últimos 3 segundos (se som habilitado)
           if (soundEnabled) {
             try {
+              backgroundAudioService.playCountdownBeep(0.6)
               playSound('countdown', 0.6)
             } catch (e) {
               // Ignore audio errors
@@ -249,7 +295,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         }
       }, 1000)
     }
-  }, [timeRemaining, isRunning, calculateRemaining, soundEnabled, vibrationEnabled])
+  }, [timeRemaining, isRunning, calculateRemaining, soundEnabled, vibrationEnabled, notificationsEnabled])
 
   const skip = useCallback(() => {
     if (intervalRef.current) {
@@ -260,6 +306,11 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     endTimeRef.current = null
     setTimeRemaining(0)
     setIsRunning(false)
+
+    // Parar áudio em background e cancelar notificação
+    backgroundAudioService.stop()
+    timerNotificationService.cancelScheduledNotification()
+
     onCompleteRef.current?.()
   }, [])
 
@@ -280,7 +331,16 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     endTimeRef.current = null
     setTimeRemaining(totalTime)
     setIsRunning(false)
+
+    // Parar áudio em background e cancelar notificação
+    backgroundAudioService.stop()
+    timerNotificationService.cancelScheduledNotification()
   }, [totalTime])
+
+  // Função para solicitar permissão de notificações
+  const requestNotificationPermission = useCallback(async (): Promise<boolean> => {
+    return timerNotificationService.ensurePermission()
+  }, [])
 
   const progress = totalTime > 0 ? ((totalTime - timeRemaining) / totalTime) * 100 : 0
 
@@ -294,6 +354,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     resume,
     skip,
     addTime,
-    reset
+    reset,
+    requestNotificationPermission
   }
 }

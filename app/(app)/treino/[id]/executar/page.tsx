@@ -65,8 +65,16 @@ export default function WorkoutExecutionPage() {
 
   const restTimer = useRestTimer({
     soundEnabled: settings?.workout?.som_timer ?? true,
-    vibrationEnabled: settings?.workout?.vibracao_timer ?? true
+    vibrationEnabled: settings?.workout?.vibracao_timer ?? true,
+    notificationsEnabled: true
   })
+
+  // Solicitar permissão de notificações ao iniciar o treino
+  useEffect(() => {
+    if (!loading && workout && state.status === 'in_progress') {
+      restTimer.requestNotificationPermission()
+    }
+  }, [loading, workout, state.status, restTimer])
 
   // Start workout on mount (only after loading is complete)
   useEffect(() => {
