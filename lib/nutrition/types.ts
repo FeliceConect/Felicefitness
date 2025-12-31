@@ -9,6 +9,10 @@ export type FoodCategory =
   | 'gordura'
   | 'suplemento'
   | 'bebida'
+  | 'suco'
+  | 'prato_pronto'
+  | 'sobremesa'
+  | 'condimento'
   | 'outros'
 
 export type MealType =
@@ -178,6 +182,10 @@ export const foodCategoryLabels: Record<FoodCategory, { label: string; icon: str
   gordura: { label: 'Gorduras', icon: '🥜' },
   suplemento: { label: 'Suplementos', icon: '💊' },
   bebida: { label: 'Bebidas', icon: '🥤' },
+  suco: { label: 'Sucos Naturais', icon: '🧃' },
+  prato_pronto: { label: 'Pratos Prontos', icon: '🍲' },
+  sobremesa: { label: 'Sobremesas', icon: '🍰' },
+  condimento: { label: 'Molhos e Condimentos', icon: '🫙' },
   outros: { label: 'Outros', icon: '🍴' }
 }
 
