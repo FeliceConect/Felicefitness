@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { playSound } from '@/lib/immersive/sounds'
 import { timerNotificationService } from '@/lib/workout/timer-notifications'
 import { backgroundAudioService } from '@/lib/workout/background-audio'
+import { audioPlayerService } from '@/lib/workout/audio-player'
 
 interface UseRestTimerOptions {
   soundEnabled?: boolean
@@ -140,6 +141,33 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     }
   }, [])
 
+  // Listener para mensagens do Service Worker (quando timer completa em background)
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'TIMER_COMPLETE') {
+        console.log('[RestTimer] Recebido TIMER_COMPLETE do SW')
+        // Tocar som quando o SW notifica que o timer completou
+        if (soundEnabled) {
+          audioPlayerService.playTimerComplete(1.0).catch(() => {})
+          backgroundAudioService.playAlertSound(1.0)
+          try {
+            playSound('timerComplete', 1.0)
+          } catch (e) {
+            // Ignore
+          }
+        }
+      }
+    }
+
+    navigator.serviceWorker.addEventListener('message', handleMessage)
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleMessage)
+    }
+  }, [soundEnabled])
+
   const start = useCallback((seconds: number) => {
     // Clear any existing interval
     if (intervalRef.current) {
@@ -153,6 +181,10 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     setTotalTime(seconds)
     setTimeRemaining(seconds)
     setIsRunning(true)
+
+    // Inicializar e "aquecer" o áudio (importante para iOS)
+    audioPlayerService.initialize()
+    audioPlayerService.warmUp()
 
     // Iniciar áudio em background para manter o app ativo no iOS
     backgroundAudioService.start()
@@ -186,29 +218,35 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         // Cancelar notificação agendada (já disparou ou será disparada pelo SW)
         timerNotificationService.cancelScheduledNotification()
 
-        // Tocar som ao completar (se habilitado)
+        // Tocar som ao completar (se habilitado) - ANTES da notificação
         if (soundEnabled) {
+          // Tentar múltiplos métodos para garantir que o som toque
+          audioPlayerService.playTimerComplete(1.0).catch(() => {})
+          backgroundAudioService.playAlertSound(1.0)
           try {
-            // Usar o backgroundAudioService para garantir que funciona no iOS
-            backgroundAudioService.playAlertSound(0.8)
-            playSound('timerComplete', 0.8)
+            playSound('timerComplete', 1.0)
           } catch (e) {
             // Ignore audio errors
           }
         }
 
-        // Vibrar ao completar (se habilitado)
-        if (vibrationEnabled && navigator.vibrate) {
-          navigator.vibrate([200, 100, 200, 100, 300])
+        // Vibrar ao completar (se habilitado) - Android apenas
+        if (vibrationEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
+          try {
+            navigator.vibrate([200, 100, 200, 100, 300])
+          } catch (e) {
+            // Ignore - iOS não suporta
+          }
         }
 
         onCompleteRef.current?.()
       } else if (remaining <= 3 && remaining > 0) {
         // Countdown beeps nos últimos 3 segundos (se som habilitado)
         if (soundEnabled) {
+          audioPlayerService.playCountdownBeep(0.8).catch(() => {})
+          backgroundAudioService.playCountdownBeep(0.8)
           try {
-            backgroundAudioService.playCountdownBeep(0.6)
-            playSound('countdown', 0.6)
+            playSound('countdown', 0.8)
           } catch (e) {
             // Ignore audio errors
           }
@@ -239,8 +277,12 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
       endTimeRef.current = Date.now() + (timeRemaining * 1000)
       setIsRunning(true)
 
-      // Reiniciar áudio em background e reagendar notificação
+      // Inicializar áudio e reiniciar background
+      audioPlayerService.initialize()
+      audioPlayerService.warmUp()
       backgroundAudioService.start()
+
+      // Reagendar notificação
       if (notificationsEnabled) {
         timerNotificationService.scheduleNotification(timeRemaining, {
           title: 'Descanso Finalizado!',
@@ -268,26 +310,32 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
 
           // Tocar som ao completar (se habilitado)
           if (soundEnabled) {
+            audioPlayerService.playTimerComplete(1.0).catch(() => {})
+            backgroundAudioService.playAlertSound(1.0)
             try {
-              backgroundAudioService.playAlertSound(0.8)
-              playSound('timerComplete', 0.8)
+              playSound('timerComplete', 1.0)
             } catch (e) {
               // Ignore audio errors
             }
           }
 
-          // Vibrar ao completar (se habilitado)
-          if (vibrationEnabled && navigator.vibrate) {
-            navigator.vibrate([200, 100, 200, 100, 300])
+          // Vibrar ao completar (se habilitado) - Android apenas
+          if (vibrationEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
+            try {
+              navigator.vibrate([200, 100, 200, 100, 300])
+            } catch (e) {
+              // Ignore - iOS não suporta
+            }
           }
 
           onCompleteRef.current?.()
         } else if (remaining <= 3 && remaining > 0) {
           // Countdown beeps nos últimos 3 segundos (se som habilitado)
           if (soundEnabled) {
+            audioPlayerService.playCountdownBeep(0.8).catch(() => {})
+            backgroundAudioService.playCountdownBeep(0.8)
             try {
-              backgroundAudioService.playCountdownBeep(0.6)
-              playSound('countdown', 0.6)
+              playSound('countdown', 0.8)
             } catch (e) {
               // Ignore audio errors
             }

@@ -206,14 +206,18 @@ function handleShowTimerNotification(payload) {
 function showTimerNotification(title, body, tag, requireInteraction = true) {
   console.log('[SW] Mostrando notificação do timer:', title)
 
+  // Usar timestamp único para evitar que notificações sejam agrupadas/substituídas
+  const uniqueTag = (tag || 'rest-timer-complete') + '-' + Date.now()
+
   const options = {
     body: body || 'Hora de voltar ao treino!',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
-    tag: tag || 'rest-timer-complete',
-    vibrate: [200, 100, 200, 100, 300],
-    requireInteraction: requireInteraction,
-    silent: false,
+    tag: uniqueTag,
+    vibrate: [200, 100, 200, 100, 400, 100, 200], // Padrão mais longo
+    requireInteraction: true, // Forçar para tentar persistir
+    silent: false, // Usar som do sistema
+    renotify: true, // Notificar mesmo se já existe uma com a mesma tag
     data: {
       type: 'timer',
       url: '/treino',
@@ -222,14 +226,26 @@ function showTimerNotification(title, body, tag, requireInteraction = true) {
     actions: [
       {
         action: 'continue',
-        title: 'Continuar Treino'
+        title: 'Continuar'
       }
     ]
   }
 
+  // Mostrar notificação
   self.registration.showNotification(title || 'Descanso Finalizado!', options)
     .then(() => {
       console.log('[SW] Notificação do timer mostrada com sucesso')
+
+      // Tentar notificar o cliente para tocar som
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'TIMER_COMPLETE',
+              payload: { playSound: true }
+            })
+          })
+        })
     })
     .catch(err => {
       console.error('[SW] Erro ao mostrar notificação:', err)
