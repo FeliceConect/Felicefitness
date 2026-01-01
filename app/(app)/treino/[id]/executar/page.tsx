@@ -14,7 +14,7 @@ import { useWorkoutExecution } from '@/hooks/use-workout-execution'
 import { useRestTimer } from '@/hooks/use-rest-timer'
 import { useWorkouts } from '@/hooks/use-workouts'
 import { useSettings } from '@/hooks/use-settings'
-import { getExerciseLastWeight } from '@/lib/workout/mock-data'
+import { useExerciseHistory } from '@/hooks/use-exercise-history'
 import { cn } from '@/lib/utils'
 import type { CompletedCardio } from '@/lib/workout/types'
 
@@ -46,6 +46,9 @@ export default function WorkoutExecutionPage() {
   // Get user settings for rest timer
   const { settings } = useSettings()
   const defaultRestTime = settings?.workout?.descanso_padrao || 60
+
+  // Get exercise history (last weights)
+  const { getLastWeight } = useExerciseHistory()
 
   const {
     state,
@@ -233,7 +236,8 @@ export default function WorkoutExecutionPage() {
     )
   }
 
-  const lastWeight = currentExercise ? getExerciseLastWeight(currentExercise.exercise_id) : null
+  // Buscar último peso pelo nome do exercício (dados reais do banco)
+  const lastWeight = currentExercise ? getLastWeight(currentExercise.nome) : null
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] flex flex-col pb-44">

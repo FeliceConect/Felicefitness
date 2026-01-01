@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ExerciseCard } from '@/components/treino/exercise-card'
 import { useWorkouts } from '@/hooks/use-workouts'
+import { useExerciseHistory } from '@/hooks/use-exercise-history'
 import { formatDuration } from '@/lib/utils/format'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +31,9 @@ export default function WorkoutDetailPage() {
 
   const { getWorkoutById, loading } = useWorkouts()
   const workout = getWorkoutById(workoutId)
+
+  // Histórico de pesos para mostrar últimas cargas
+  const { getLastWeight } = useExerciseHistory()
 
   // Loading state
   if (loading) {
@@ -145,6 +149,7 @@ export default function WorkoutDetailPage() {
                 index={index}
                 isSuperset={isSuperset}
                 supersetPartner={supersetPartner}
+                lastWeight={getLastWeight(exercise.nome)}
               />
             )
           })}

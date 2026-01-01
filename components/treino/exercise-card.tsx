@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import { Info } from 'lucide-react'
 import Link from 'next/link'
 import type { WorkoutExercise } from '@/lib/workout/types'
-import { getExerciseLastWeight } from '@/lib/workout/mock-data'
 import { cn } from '@/lib/utils'
 
 interface ExerciseCardProps {
@@ -12,10 +11,11 @@ interface ExerciseCardProps {
   index: number
   isSuperset?: boolean
   supersetPartner?: WorkoutExercise
+  // Último peso realizado (passado pelo parent que tem acesso ao hook)
+  lastWeight?: { weight: number; reps: number } | null
 }
 
-export function ExerciseCard({ exercise, index, isSuperset, supersetPartner }: ExerciseCardProps) {
-  const lastWeight = getExerciseLastWeight(exercise.exercise_id)
+export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, lastWeight }: ExerciseCardProps) {
   const totalSets = exercise.series.length
   const targetReps = exercise.series[0]?.repeticoes_planejadas || '12'
 
