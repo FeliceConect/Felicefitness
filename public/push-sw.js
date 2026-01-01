@@ -209,20 +209,26 @@ function showTimerNotification(title, body, tag, requireInteraction = true) {
   // Usar timestamp único para evitar que notificações sejam agrupadas/substituídas
   const uniqueTag = (tag || 'rest-timer-complete') + '-' + Date.now()
 
+  // Configurações otimizadas para iOS
   const options = {
     body: body || 'Hora de voltar ao treino!',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
     tag: uniqueTag,
-    vibrate: [200, 100, 200, 100, 400, 100, 200], // Padrão mais longo
-    requireInteraction: true, // Forçar para tentar persistir
-    silent: false, // Usar som do sistema
-    renotify: true, // Notificar mesmo se já existe uma com a mesma tag
+    // Vibração: iOS ignora isso, mas Android usa
+    vibrate: [200, 100, 200, 100, 400, 100, 200],
+    // IMPORTANTE para iOS: não usar requireInteraction (pode impedir notificação)
+    requireInteraction: false,
+    // silent: false permite som do sistema no iOS
+    silent: false,
+    // renotify garante nova notificação mesmo com mesma tag
+    renotify: true,
     data: {
       type: 'timer',
       url: '/treino',
       timestamp: Date.now()
     },
+    // Actions podem não aparecer no iOS, mas incluímos mesmo assim
     actions: [
       {
         action: 'continue',
@@ -236,9 +242,10 @@ function showTimerNotification(title, body, tag, requireInteraction = true) {
     .then(() => {
       console.log('[SW] Notificação do timer mostrada com sucesso')
 
-      // Tentar notificar o cliente para tocar som
+      // Notificar TODOS os clientes para tocar som (caso app esteja aberto)
       self.clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then(clients => {
+          console.log('[SW] Notificando', clients.length, 'clientes')
           clients.forEach(client => {
             client.postMessage({
               type: 'TIMER_COMPLETE',

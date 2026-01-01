@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { playSound } from '@/lib/immersive/sounds'
 import { timerNotificationService } from '@/lib/workout/timer-notifications'
-import { backgroundAudioService } from '@/lib/workout/background-audio'
-import { audioPlayerService } from '@/lib/workout/audio-player'
+// Removido backgroundAudioService - causa pausa na música do usuário no iOS
+// Removido audioPlayerService - também pode interferir com música
 
 interface UseRestTimerOptions {
   soundEnabled?: boolean
@@ -150,9 +150,8 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         console.log('[RestTimer] Recebido TIMER_COMPLETE do SW')
         // Tocar som quando o SW notifica que o timer completou
         if (soundEnabled) {
-          audioPlayerService.playTimerComplete(1.0).catch(() => {})
-          backgroundAudioService.playAlertSound(1.0)
           try {
+            // Usar apenas playSound que usa Web Audio API (não interfere com música)
             playSound('timerComplete', 1.0)
           } catch (e) {
             // Ignore
@@ -182,12 +181,8 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     setTimeRemaining(seconds)
     setIsRunning(true)
 
-    // Inicializar e "aquecer" o áudio (importante para iOS)
-    audioPlayerService.initialize()
-    audioPlayerService.warmUp()
-
-    // Iniciar áudio em background para manter o app ativo no iOS
-    backgroundAudioService.start()
+    // NOTA: Removido audioPlayerService e backgroundAudioService
+    // Eles causavam pausa na música do usuário no iOS
 
     // Agendar notificação para quando o timer terminar
     if (notificationsEnabled) {
@@ -212,17 +207,12 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         setIsRunning(false)
         endTimeRef.current = null
 
-        // Parar áudio em background
-        backgroundAudioService.stop()
-
         // Cancelar notificação agendada (já disparou ou será disparada pelo SW)
         timerNotificationService.cancelScheduledNotification()
 
-        // Tocar som ao completar (se habilitado) - ANTES da notificação
+        // Tocar som ao completar (se habilitado)
+        // Usa apenas playSound com Web Audio API (não interfere com música)
         if (soundEnabled) {
-          // Tentar múltiplos métodos para garantir que o som toque
-          audioPlayerService.playTimerComplete(1.0).catch(() => {})
-          backgroundAudioService.playAlertSound(1.0)
           try {
             playSound('timerComplete', 1.0)
           } catch (e) {
@@ -243,8 +233,6 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
       } else if (remaining <= 3 && remaining > 0) {
         // Countdown beeps nos últimos 3 segundos (se som habilitado)
         if (soundEnabled) {
-          audioPlayerService.playCountdownBeep(0.8).catch(() => {})
-          backgroundAudioService.playCountdownBeep(0.8)
           try {
             playSound('countdown', 0.8)
           } catch (e) {
@@ -266,8 +254,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     endTimeRef.current = null
     setIsRunning(false)
 
-    // Parar áudio em background e cancelar notificação
-    backgroundAudioService.stop()
+    // Cancelar notificação agendada
     timerNotificationService.cancelScheduledNotification()
   }, [calculateRemaining])
 
@@ -276,11 +263,6 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
       hasCompletedRef.current = false
       endTimeRef.current = Date.now() + (timeRemaining * 1000)
       setIsRunning(true)
-
-      // Inicializar áudio e reiniciar background
-      audioPlayerService.initialize()
-      audioPlayerService.warmUp()
-      backgroundAudioService.start()
 
       // Reagendar notificação
       if (notificationsEnabled) {
@@ -304,14 +286,11 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
           setIsRunning(false)
           endTimeRef.current = null
 
-          // Parar áudio em background e cancelar notificação
-          backgroundAudioService.stop()
+          // Cancelar notificação agendada
           timerNotificationService.cancelScheduledNotification()
 
           // Tocar som ao completar (se habilitado)
           if (soundEnabled) {
-            audioPlayerService.playTimerComplete(1.0).catch(() => {})
-            backgroundAudioService.playAlertSound(1.0)
             try {
               playSound('timerComplete', 1.0)
             } catch (e) {
@@ -332,8 +311,6 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
         } else if (remaining <= 3 && remaining > 0) {
           // Countdown beeps nos últimos 3 segundos (se som habilitado)
           if (soundEnabled) {
-            audioPlayerService.playCountdownBeep(0.8).catch(() => {})
-            backgroundAudioService.playCountdownBeep(0.8)
             try {
               playSound('countdown', 0.8)
             } catch (e) {
@@ -355,8 +332,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     setTimeRemaining(0)
     setIsRunning(false)
 
-    // Parar áudio em background e cancelar notificação
-    backgroundAudioService.stop()
+    // Cancelar notificação agendada
     timerNotificationService.cancelScheduledNotification()
 
     onCompleteRef.current?.()
@@ -380,8 +356,7 @@ export function useRestTimer(options?: UseRestTimerOptions | (() => void)): UseR
     setTimeRemaining(totalTime)
     setIsRunning(false)
 
-    // Parar áudio em background e cancelar notificação
-    backgroundAudioService.stop()
+    // Cancelar notificação agendada
     timerNotificationService.cancelScheduledNotification()
   }, [totalTime])
 

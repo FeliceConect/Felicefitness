@@ -9,11 +9,35 @@ export interface TodayWorkout {
   id: string
   nome: string
   tipo: string
+  fase?: string
   duracao_estimada: number
   exercicios_count: number
   status: 'pendente' | 'em_andamento' | 'concluido'
   data_realizado?: string
   duracao_minutos?: number
+}
+
+// Tipos para programas de treino do profissional
+interface TrainingProgram {
+  id: string
+  weeks?: TrainingWeek[]
+}
+
+interface TrainingWeek {
+  id: string
+  days?: TrainingDay[]
+}
+
+interface TrainingDay {
+  id: string
+  day_of_week: number
+  name: string | null
+  estimated_duration: number | null
+  exercises?: TrainingExercise[]
+}
+
+interface TrainingExercise {
+  id: string
 }
 
 export interface TodayMeal {
@@ -201,43 +225,111 @@ export function useDashboardData(): DashboardData {
           duracao_minutos: workoutData.duracao_minutos ?? undefined
         })
       } else {
-        // Não há treino real para hoje - buscar template para o dia da semana
-        // getDay() retorna 0=domingo, 1=segunda, etc.
-        // Usando timezone de São Paulo para garantir dia correto
+        // Não há treino real para hoje - buscar programa do profissional OU template local
         const nowSP = new Date(today + 'T12:00:00-03:00')
         const dayOfWeek = nowSP.getDay()
 
-        console.log('Dashboard: Buscando template para dia_semana =', dayOfWeek, '(0=Dom, 1=Seg, ..., 6=Sab)')
+        console.log('Dashboard: Buscando treino para dia_semana =', dayOfWeek, '(0=Dom, 1=Seg, ..., 6=Sab)')
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: templateData, error: templateError } = await (supabase as any)
-          .from('fitness_workout_templates')
-          .select(`
-            id, nome, tipo, duracao_estimada_min,
-            exercicios:fitness_workout_template_exercises(id)
-          `)
-          .eq('user_id', user.id)
-          .eq('is_ativo', true)
-          .eq('dia_semana', dayOfWeek)
-          .maybeSingle()
+        // PRIORIDADE 1: Buscar programa de treino do profissional
+        let foundWorkout = false
+        try {
+          const programResponse = await fetch('/api/client/training-program')
+          if (programResponse.ok) {
+            const programResult = await programResponse.json()
+            if (programResult.success && programResult.program) {
+              const program = programResult.program as TrainingProgram
 
-        if (templateError) {
-          console.log('Dashboard: Erro ao buscar template:', templateError.message)
+              // Encontrar o treino para o dia da semana atual
+              if (program.weeks && program.weeks.length > 0) {
+                const activeWeek = program.weeks[0]
+
+                if (activeWeek.days) {
+                  // Filtrar dias com exercícios
+                  const daysWithExercises = activeWeek.days.filter(
+                    (day: TrainingDay) => day.exercises && day.exercises.length > 0
+                  )
+
+                  // Encontrar o treino para o dia atual
+                  // Primeiro, tentar encontrar pelo day_of_week
+                  let todayTraining = daysWithExercises.find(
+                    (day: TrainingDay) => day.day_of_week === dayOfWeek
+                  )
+
+                  // Se não encontrou pelo day_of_week, usar distribuição automática
+                  if (!todayTraining) {
+                    const numDays = daysWithExercises.length
+                    const dayDistribution: Record<number, number[]> = {
+                      1: [1], // 1 treino: segunda
+                      2: [1, 4], // 2 treinos: segunda e quinta
+                      3: [1, 3, 5], // 3 treinos: segunda, quarta, sexta
+                      4: [1, 2, 4, 5], // 4 treinos: seg, ter, qui, sex
+                      5: [1, 2, 3, 4, 5], // 5 treinos: seg a sex
+                      6: [1, 2, 3, 4, 5, 6], // 6 treinos: seg a sab
+                      7: [0, 1, 2, 3, 4, 5, 6] // 7 treinos: todos os dias
+                    }
+
+                    const distribution = dayDistribution[numDays] || dayDistribution[Math.min(numDays, 7)]
+                    const dayIndex = distribution.indexOf(dayOfWeek)
+
+                    if (dayIndex !== -1 && daysWithExercises[dayIndex]) {
+                      todayTraining = daysWithExercises[dayIndex]
+                    }
+                  }
+
+                  if (todayTraining) {
+                    console.log('Dashboard: Treino do profissional encontrado:', todayTraining.name)
+                    setTodayWorkout({
+                      id: `template-${today}-${todayTraining.id}`,
+                      nome: todayTraining.name || 'Treino do dia',
+                      tipo: 'tradicional',
+                      fase: 'Fase Base',
+                      duracao_estimada: todayTraining.estimated_duration || 45,
+                      exercicios_count: todayTraining.exercises?.length || 0,
+                      status: 'pendente'
+                    })
+                    foundWorkout = true
+                  }
+                }
+              }
+            }
+          }
+        } catch (programError) {
+          console.error('Dashboard: Erro ao buscar programa do profissional:', programError)
         }
 
-        if (templateData) {
-          console.log('Dashboard: Template encontrado:', templateData.nome)
-          setTodayWorkout({
-            id: `template-${today}-${templateData.id}`,
-            nome: templateData.nome,
-            tipo: templateData.tipo,
-            duracao_estimada: templateData.duracao_estimada_min || 45,
-            exercicios_count: templateData.exercicios?.length || 0,
-            status: 'pendente'
-          })
-        } else {
-          console.log('Dashboard: Nenhum template encontrado para dia_semana =', dayOfWeek, '- Dia de descanso')
-          setTodayWorkout(null) // Dia de descanso
+        // PRIORIDADE 2: Se não encontrou programa do profissional, buscar template local
+        if (!foundWorkout) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: templateData, error: templateError } = await (supabase as any)
+            .from('fitness_workout_templates')
+            .select(`
+              id, nome, tipo, duracao_estimada_min,
+              exercicios:fitness_workout_template_exercises(id)
+            `)
+            .eq('user_id', user.id)
+            .eq('is_ativo', true)
+            .eq('dia_semana', dayOfWeek)
+            .maybeSingle()
+
+          if (templateError) {
+            console.log('Dashboard: Erro ao buscar template:', templateError.message)
+          }
+
+          if (templateData) {
+            console.log('Dashboard: Template local encontrado:', templateData.nome)
+            setTodayWorkout({
+              id: `template-${today}-${templateData.id}`,
+              nome: templateData.nome,
+              tipo: templateData.tipo,
+              duracao_estimada: templateData.duracao_estimada_min || 45,
+              exercicios_count: templateData.exercicios?.length || 0,
+              status: 'pendente'
+            })
+          } else {
+            console.log('Dashboard: Nenhum treino encontrado para dia_semana =', dayOfWeek, '- Dia de descanso')
+            setTodayWorkout(null) // Dia de descanso
+          }
         }
       }
 

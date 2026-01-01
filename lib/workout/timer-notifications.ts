@@ -14,11 +14,22 @@ class TimerNotificationService {
   private notificationTag = 'rest-timer-complete'
   private isSupported = false
   private hasPermission = false
+  private isIOS = false
+  private isPWA = false
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.isSupported = 'Notification' in window
       this.hasPermission = this.isSupported && Notification.permission === 'granted'
+
+      // Detectar iOS
+      this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+
+      // Detectar se está em modo PWA (standalone)
+      this.isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+        // @ts-expect-error - Safari-specific property
+        window.navigator.standalone === true
     }
   }
 
@@ -34,6 +45,39 @@ class TimerNotificationService {
    */
   get permitted(): boolean {
     return this.hasPermission
+  }
+
+  /**
+   * Verifica se é iOS
+   */
+  get isIOSDevice(): boolean {
+    return this.isIOS
+  }
+
+  /**
+   * Verifica se está em modo PWA
+   */
+  get isStandalone(): boolean {
+    return this.isPWA
+  }
+
+  /**
+   * Retorna informações sobre limitações no iOS
+   */
+  getIOSInfo(): { needsInstall: boolean; message: string } | null {
+    if (!this.isIOS) return null
+
+    if (!this.isPWA) {
+      return {
+        needsInstall: true,
+        message: 'Para receber notificações no iPhone, adicione o app à Tela de Início. Toque no botão de compartilhar e selecione "Adicionar à Tela de Início".'
+      }
+    }
+
+    return {
+      needsInstall: false,
+      message: 'No iPhone, certifique-se que o telefone não está no modo silencioso para ouvir o som das notificações.'
+    }
   }
 
   /**
