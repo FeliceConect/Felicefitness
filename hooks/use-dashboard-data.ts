@@ -250,32 +250,33 @@ export function useDashboardData(): DashboardData {
                     (day: TrainingDay) => day.exercises && day.exercises.length > 0
                   )
 
-                  // Encontrar o treino para o dia atual
-                  // Primeiro, tentar encontrar pelo day_of_week
-                  let todayTraining = daysWithExercises.find(
-                    (day: TrainingDay) => day.day_of_week === dayOfWeek
+                  // Usar a mesma lógica de distribuição do use-workouts.ts
+                  // Primeiro, calcular o dia_semana para cada treino
+                  const numDays = daysWithExercises.length
+                  const dayDistribution: Record<number, number[]> = {
+                    1: [1], // 1 treino: segunda
+                    2: [1, 4], // 2 treinos: segunda e quinta
+                    3: [1, 3, 5], // 3 treinos: segunda, quarta, sexta
+                    4: [1, 2, 4, 5], // 4 treinos: seg, ter, qui, sex
+                    5: [1, 2, 3, 4, 5], // 5 treinos: seg a sex
+                    6: [1, 2, 3, 4, 5, 6], // 6 treinos: seg a sab
+                    7: [0, 1, 2, 3, 4, 5, 6] // 7 treinos: todos os dias
+                  }
+                  const distribution = dayDistribution[numDays] || dayDistribution[Math.min(numDays, 7)]
+
+                  // Mapear cada dia com seu dia_semana calculado (igual use-workouts.ts)
+                  const daysWithCalculatedWeekday = daysWithExercises.map((day: TrainingDay, index: number) => ({
+                    ...day,
+                    calculatedDiaSemana: day.day_of_week ?? distribution[index % distribution.length]
+                  }))
+
+                  // Agora buscar pelo dia_semana calculado
+                  const todayTraining = daysWithCalculatedWeekday.find(
+                    day => day.calculatedDiaSemana === dayOfWeek
                   )
 
-                  // Se não encontrou pelo day_of_week, usar distribuição automática
-                  if (!todayTraining) {
-                    const numDays = daysWithExercises.length
-                    const dayDistribution: Record<number, number[]> = {
-                      1: [1], // 1 treino: segunda
-                      2: [1, 4], // 2 treinos: segunda e quinta
-                      3: [1, 3, 5], // 3 treinos: segunda, quarta, sexta
-                      4: [1, 2, 4, 5], // 4 treinos: seg, ter, qui, sex
-                      5: [1, 2, 3, 4, 5], // 5 treinos: seg a sex
-                      6: [1, 2, 3, 4, 5, 6], // 6 treinos: seg a sab
-                      7: [0, 1, 2, 3, 4, 5, 6] // 7 treinos: todos os dias
-                    }
-
-                    const distribution = dayDistribution[numDays] || dayDistribution[Math.min(numDays, 7)]
-                    const dayIndex = distribution.indexOf(dayOfWeek)
-
-                    if (dayIndex !== -1 && daysWithExercises[dayIndex]) {
-                      todayTraining = daysWithExercises[dayIndex]
-                    }
-                  }
+                  console.log('Dashboard: Dias com exercícios:', numDays, 'Distribuição:', distribution)
+                  console.log('Dashboard: Treinos mapeados:', daysWithCalculatedWeekday.map(d => ({ name: d.name, diaSemana: d.calculatedDiaSemana })))
 
                   if (todayTraining) {
                     console.log('Dashboard: Treino do profissional encontrado:', todayTraining.name)

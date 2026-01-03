@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Check, Clock, Plus, Camera, Trash2, ChevronDown, ChevronUp, Link2 } from 'lucide-react'
+import { ArrowLeft, Check, Clock, Plus, Camera, Trash2, ChevronDown, ChevronUp, Link2, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { AIMealAnalyzer } from '@/components/alimentacao/ai-meal-analyzer'
 import type { MealAnalysisResult, AnalyzedFoodItem } from '@/types/analysis'
@@ -11,8 +11,10 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import type { Meal, MealInsert } from '@/types/database'
-import type { MealType } from '@/lib/nutrition/types'
+import type { MealType, Food } from '@/lib/nutrition/types'
 import { Suspense } from 'react'
+import { FoodSearch } from '@/components/alimentacao/food-search'
+import { AddCustomFoodModal } from '@/components/alimentacao/add-custom-food-modal'
 
 // Interface para um prato/foto analisado
 interface AnalyzedPlate {
@@ -64,6 +66,11 @@ function AnalisarRefeicaoContent() {
   // Estado para múltiplos pratos
   const [plates, setPlates] = useState<AnalyzedPlate[]>([])
   const [expandedPlates, setExpandedPlates] = useState<Set<string>>(new Set())
+
+  // Estado para modal de adicionar item
+  const [addingToPlateId, setAddingToPlateId] = useState<string | null>(null)
+  const [showCustomFoodModal, setShowCustomFoodModal] = useState(false)
+  const [customFoodName, setCustomFoodName] = useState('')
 
   // Fetch user on mount
   useEffect(() => {
@@ -161,6 +168,78 @@ function AnalisarRefeicaoContent() {
       }
       return newSet
     })
+  }
+
+  // Remover um item específico de um prato
+  const handleRemoveItem = (plateId: string, itemId: string) => {
+    setPlates(prev => prev.map(plate => {
+      if (plate.id !== plateId) return plate
+
+      const newItems = plate.items.filter(item => item.id !== itemId)
+
+      // Recalcular totais
+      const newTotals = newItems.reduce(
+        (acc, item) => ({
+          calories: acc.calories + (item.calories || 0),
+          protein: acc.protein + (item.protein || 0),
+          carbs: acc.carbs + (item.carbs || 0),
+          fat: acc.fat + (item.fat || 0)
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      )
+
+      return { ...plate, items: newItems, totals: newTotals }
+    }).filter(plate => plate.items.length > 0)) // Remove prato se ficar vazio
+  }
+
+  // Adicionar item do banco de dados ao prato
+  const handleAddFoodToPlate = (food: Food) => {
+    if (!addingToPlateId) return
+
+    // Converter Food para AnalyzedFoodItem
+    const newItem: AnalyzedFoodItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: food.nome,
+      portion_grams: food.porcao_padrao,
+      calories: food.calorias,
+      protein: food.proteinas,
+      carbs: food.carboidratos,
+      fat: food.gorduras,
+      confidence: 'alto', // Items do banco são confiáveis
+      notes: `Porção padrão: ${food.porcao_padrao}${food.unidade}`,
+      edited: false
+    }
+
+    setPlates(prev => prev.map(plate => {
+      if (plate.id !== addingToPlateId) return plate
+
+      const newItems = [...plate.items, newItem]
+
+      // Recalcular totais
+      const newTotals = {
+        calories: plate.totals.calories + newItem.calories,
+        protein: plate.totals.protein + newItem.protein,
+        carbs: plate.totals.carbs + newItem.carbs,
+        fat: plate.totals.fat + newItem.fat
+      }
+
+      return { ...plate, items: newItems, totals: newTotals }
+    }))
+
+    setAddingToPlateId(null)
+  }
+
+  // Callback para adicionar alimento customizado
+  const handleAddCustomFood = (name: string) => {
+    setCustomFoodName(name)
+    setShowCustomFoodModal(true)
+  }
+
+  // Quando alimento customizado é salvo
+  const handleCustomFoodSaved = (food: Food) => {
+    handleAddFoodToPlate(food)
+    setShowCustomFoodModal(false)
+    setCustomFoodName('')
   }
 
   // Calcular totais combinados de todos os pratos
@@ -545,16 +624,43 @@ function AnalisarRefeicaoContent() {
                             </div>
                           </div>
 
-                          {/* Itens do prato */}
-                          <div className="flex flex-wrap gap-1">
+                          {/* Itens do prato com botões de deletar */}
+                          <div className="space-y-2">
                             {plate.items.map((item) => (
-                              <span
+                              <div
                                 key={item.id}
-                                className="px-2 py-1 bg-[#1E1E2E] rounded-lg text-xs text-slate-300"
+                                className="flex items-center justify-between p-2 bg-[#1E1E2E] rounded-lg group"
                               >
-                                {item.name}
-                              </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-slate-300 truncate">{item.name}</p>
+                                  <p className="text-xs text-slate-500">
+                                    {item.portion_grams}g • {item.calories} kcal
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRemoveItem(plate.id, item.id)
+                                  }}
+                                  className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors ml-2"
+                                  title="Remover item"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
                             ))}
+
+                            {/* Botão para adicionar item */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setAddingToPlateId(plate.id)
+                              }}
+                              className="w-full p-2 border border-dashed border-[#3E3E4E] rounded-lg text-slate-400 hover:border-violet-500/50 hover:text-violet-400 transition-colors flex items-center justify-center gap-2 text-sm"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Adicionar alimento
+                            </button>
                           </div>
                         </div>
                       </motion.div>
@@ -711,6 +817,63 @@ function AnalisarRefeicaoContent() {
           )}
         </motion.button>
       </div>
+
+      {/* Modal de adicionar alimento */}
+      <AnimatePresence>
+        {addingToPlateId && !showCustomFoodModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center"
+            onClick={() => setAddingToPlateId(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full sm:max-w-md bg-[#14141F] rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">Adicionar Alimento</h2>
+                <button
+                  onClick={() => setAddingToPlateId(null)}
+                  className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              {/* Info sobre cálculo automático */}
+              <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-3 mb-4">
+                <p className="text-violet-300 text-sm">
+                  Selecione um alimento e os macros serão calculados automaticamente com base na porção padrão.
+                </p>
+              </div>
+
+              {/* Busca de alimentos */}
+              <FoodSearch
+                onSelect={handleAddFoodToPlate}
+                onAddCustomFood={handleAddCustomFood}
+                showAddCustom={true}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de alimento customizado */}
+      <AddCustomFoodModal
+        isOpen={showCustomFoodModal}
+        onClose={() => {
+          setShowCustomFoodModal(false)
+          setCustomFoodName('')
+        }}
+        onSave={handleCustomFoodSaved}
+        initialName={customFoodName}
+      />
     </div>
   )
 }
