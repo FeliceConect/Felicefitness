@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronRight, Calendar, Dumbbell, TrendingUp, Loader2, Play, X, Settings2 } from 'lucide-react'
+import { ChevronRight, Calendar, Dumbbell, TrendingUp, Loader2, Play, X, Settings2, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { WeekCalendar } from '@/components/treino/week-calendar'
@@ -13,6 +13,9 @@ import { useWorkouts } from '@/hooks/use-workouts'
 import { useWorkoutExecution } from '@/hooks/use-workout-execution'
 import { Button } from '@/components/ui/button'
 import type { DayWorkout } from '@/lib/workout/types'
+import type { Activity, ActivityType, IntensityLevel } from '@/lib/activity/types'
+import { AddActivityModal } from '@/components/treino/add-activity-modal'
+import { ActivityCard } from '@/components/treino/activity-card'
 
 const typeIcons: Record<string, string> = {
   tradicional: '🏋️',
@@ -30,6 +33,77 @@ export default function TreinoPage() {
   )
   const [showResumeModal, setShowResumeModal] = useState(false)
   const [savedWorkoutId, setSavedWorkoutId] = useState<string | null>(null)
+
+  // Estado para atividades extras
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [loadingActivities, setLoadingActivities] = useState(false)
+  const [showAddActivityModal, setShowAddActivityModal] = useState(false)
+
+  // Buscar atividades do dia selecionado
+  const fetchActivities = useCallback(async (date: string) => {
+    setLoadingActivities(true)
+    try {
+      const response = await fetch(`/api/activities?date=${date}`)
+      if (response.ok) {
+        const data = await response.json()
+        setActivities(data.activities || [])
+      }
+    } catch (error) {
+      console.error('Erro ao buscar atividades:', error)
+    } finally {
+      setLoadingActivities(false)
+    }
+  }, [])
+
+  // Salvar nova atividade
+  const handleSaveActivity = async (activity: {
+    activity_type: ActivityType
+    custom_name?: string
+    duration_minutes: number
+    intensity: IntensityLevel
+    calories_burned?: number
+    distance_km?: number
+    notes?: string
+    location?: string
+    date: string
+  }) => {
+    try {
+      const response = await fetch('/api/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(activity)
+      })
+
+      if (response.ok) {
+        // Recarregar atividades
+        fetchActivities(activity.date)
+      }
+    } catch (error) {
+      console.error('Erro ao salvar atividade:', error)
+    }
+  }
+
+  // Deletar atividade
+  const handleDeleteActivity = async (id: string) => {
+    try {
+      const response = await fetch(`/api/activities?id=${id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok && selectedDay) {
+        fetchActivities(format(selectedDay.date, 'yyyy-MM-dd'))
+      }
+    } catch (error) {
+      console.error('Erro ao deletar atividade:', error)
+    }
+  }
+
+  // Buscar atividades quando o dia selecionado mudar
+  useEffect(() => {
+    if (selectedDay) {
+      fetchActivities(format(selectedDay.date, 'yyyy-MM-dd'))
+    }
+  }, [selectedDay, fetchActivities])
 
   // Verificar se há treino em andamento
   useEffect(() => {
@@ -195,6 +269,55 @@ export default function TreinoPage() {
         )}
       </div>
 
+      {/* Atividades Extras do Dia */}
+      <div className="px-4 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <span className="text-xl">🎯</span>
+            Atividades do dia
+          </h2>
+          <button
+            onClick={() => setShowAddActivityModal(true)}
+            className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar
+          </button>
+        </div>
+
+        {loadingActivities ? (
+          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-center">
+            <Loader2 className="w-5 h-5 text-slate-400 animate-spin mx-auto" />
+          </div>
+        ) : activities.length > 0 ? (
+          <div className="space-y-3">
+            {activities.map((activity, index) => (
+              <ActivityCard
+                key={activity.id}
+                activity={activity}
+                index={index}
+                onDelete={handleDeleteActivity}
+              />
+            ))}
+          </div>
+        ) : (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => setShowAddActivityModal(true)}
+            className="w-full bg-[#14141F] border-2 border-dashed border-[#2E2E3E] rounded-xl p-6 text-center hover:border-violet-500/50 transition-colors"
+          >
+            <span className="text-3xl mb-2 block">🏃</span>
+            <p className="text-slate-400 text-sm">
+              Fez alguma atividade extra hoje?
+            </p>
+            <p className="text-violet-400 text-sm font-medium mt-1">
+              Beach tennis, corrida, natação...
+            </p>
+          </motion.button>
+        )}
+      </div>
+
       {/* Upcoming Workouts */}
       {upcomingWorkouts.length > 0 && (
         <div className="px-4 mb-6">
@@ -332,6 +455,14 @@ export default function TreinoPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Modal de adicionar atividade */}
+      <AddActivityModal
+        isOpen={showAddActivityModal}
+        onClose={() => setShowAddActivityModal(false)}
+        onSave={handleSaveActivity}
+        date={selectedDay ? format(selectedDay.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')}
+      />
     </div>
   )
 }

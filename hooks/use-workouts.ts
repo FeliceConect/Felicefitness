@@ -580,7 +580,55 @@ export function useWorkouts(): UseWorkoutsReturn {
 
     // Se não encontrou, buscar nos dias da semana (pode ser template)
     const day = weekDays.find(d => d.workout?.id === id)
-    return day?.workout || null
+    if (day?.workout) {
+      return day.workout
+    }
+
+    // Se é um ID de template (formato: template-{date}-{templateId}), gerar o workout
+    if (id.startsWith('template-')) {
+      const parts = id.split('-')
+      // Formato: template-YYYY-MM-DD-templateId
+      if (parts.length >= 5) {
+        const dateStr = `${parts[1]}-${parts[2]}-${parts[3]}`
+        const templateId = parts.slice(4).join('-')
+
+        // Buscar o template
+        const template = templates.find(t => t.id === templateId)
+        if (template) {
+          // Gerar workout a partir do template
+          return {
+            id: id,
+            template_id: template.id,
+            user_id: '',
+            nome: template.nome,
+            tipo: template.tipo,
+            fase: template.fase,
+            data: dateStr,
+            status: 'pendente',
+            duracao_estimada: template.duracao_estimada,
+            created_at: new Date().toISOString(),
+            exercicios: template.exercicios.map((te, idx) => ({
+              id: `${id}-ex-${idx}`,
+              workout_id: id,
+              exercise_id: te.exercise_id,
+              nome: te.nome,
+              ordem: te.ordem,
+              is_superset: te.is_superset,
+              series: Array.from({ length: te.series }, (_, i) => ({
+                id: `${id}-set-${idx}-${i}`,
+                workout_exercise_id: `${id}-ex-${idx}`,
+                numero_serie: i + 1,
+                repeticoes_planejadas: te.repeticoes,
+                carga_planejada: te.carga_sugerida,
+                status: 'pendente' as const
+              }))
+            }))
+          }
+        }
+      }
+    }
+
+    return null
   }, [workouts, templates, weekDays, convertWorkout])
 
   return {
