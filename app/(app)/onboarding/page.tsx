@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronRight,
@@ -31,7 +30,6 @@ const TERMS_VERSION = '1.0.0'
 const PRIVACY_VERSION = '1.0.0'
 
 export default function OnboardingPage() {
-  const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [saving, setSaving] = useState(false)
 
@@ -285,7 +283,9 @@ export default function OnboardingPage() {
 
       if (data.success) {
         console.log('Sucesso! Redirecionando...')
-        router.push('/dashboard')
+        // Usar window.location para forçar reload completo (bypass cache do middleware)
+        window.location.href = '/dashboard'
+        return // Evitar continuar execução
       } else {
         console.error('Erro ao completar onboarding:', data.error)
         setError(data.error || 'Erro ao salvar. Tente novamente.')

@@ -74,7 +74,7 @@ export async function updateSession(request: NextRequest) {
       .select('id, is_active')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .single()
+      .maybeSingle() // Usar maybeSingle para evitar erro 406 quando não encontra
 
     if (professional) {
       isProfessional = true
