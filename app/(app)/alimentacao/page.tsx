@@ -7,11 +7,9 @@ import { ptBR } from 'date-fns/locale'
 import { ChevronRight, Calendar, TrendingUp, Droplets, Sparkles, Search } from 'lucide-react'
 import Link from 'next/link'
 import { MacrosProgress } from '@/components/alimentacao/macros-progress'
-import { RevoladeAlert } from '@/components/alimentacao/revolade-alert'
 import { MealTimeline } from '@/components/alimentacao/meal-timeline'
 import { MealPlanCard } from '@/components/alimentacao/meal-plan-card'
 import { useDailyMeals } from '@/hooks/use-daily-meals'
-import { useRevoladeWindow } from '@/hooks/use-revolade-window'
 import { useWaterLog } from '@/hooks/use-water-log'
 import { useMealPlan } from '@/hooks/use-meal-plan'
 import type { MealType } from '@/lib/nutrition/types'
@@ -19,7 +17,6 @@ import type { MealType } from '@/lib/nutrition/types'
 export default function AlimentacaoPage() {
   const router = useRouter()
   const { meals, plannedMeals, totals, goals, progress, nextMeal, loading } = useDailyMeals()
-  const revoladeWindow = useRevoladeWindow()
   const { todayTotal: aguaConsumida } = useWaterLog()
   const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completedMealsData, isTrainingDay, completeMeal, loading: planLoading } = useMealPlan()
 
@@ -81,13 +78,6 @@ export default function AlimentacaoPage() {
           <span>{format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}</span>
         </div>
       </div>
-
-      {/* Revolade Alert */}
-      {revoladeWindow.alertType !== 'none' && (
-        <div className="px-4 mb-4">
-          <RevoladeAlert window={revoladeWindow} />
-        </div>
-      )}
 
       {/* Macros Progress */}
       <div className="px-4 mb-6">

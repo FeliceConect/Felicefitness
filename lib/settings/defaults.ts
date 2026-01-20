@@ -26,7 +26,7 @@ export const defaultGoals: Goals = {
 }
 
 export const defaultRevoladeSettings: RevoladeSettings = {
-  ativo: true,
+  ativo: false, // Desativado por padrão - cada usuário deve ativar manualmente se usar
   horario_medicamento: '14:00',
   jejum_inicio: '12:00',
   jejum_fim: '14:00',

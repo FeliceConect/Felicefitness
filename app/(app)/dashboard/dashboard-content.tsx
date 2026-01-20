@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
@@ -11,7 +11,6 @@ import {
   WorkoutCard,
   WaterCard,
   MealsCard,
-  RevoladeWidget,
   CountdownCard,
   StatsOverview,
   QuickActions
@@ -89,16 +88,9 @@ export function DashboardContent() {
   // Water - usando hook real que salva no banco
   const { todayTotal: waterTotal, addWater, isAdding: isAddingWater } = useWaterLog()
 
-  const [medicamentoTomado, setMedicamentoTomado] = useState(false)
-
   const handleAddWater = useCallback(async (ml: number): Promise<boolean> => {
     return await addWater(ml)
   }, [addWater])
-
-  const handleMarcarMedicamento = useCallback(() => {
-    setMedicamentoTomado(true)
-    // Aqui salvaria no banco
-  }, [])
 
   // Dados para o score diário
   const scoreData = {
@@ -181,21 +173,6 @@ export function DashboardContent() {
 
         {/* Treino do dia */}
         <WorkoutCard workout={todayWorkout} />
-
-        {/* Revolade Widget (se configurado) */}
-        {profile?.usa_medicamento_jejum && profile?.medicamento_nome && (
-          <RevoladeWidget
-            config={{
-              nome: profile.medicamento_nome,
-              horario: profile.medicamento_horario || '14:00',
-              jejumAntes: profile.medicamento_jejum_antes_horas || 2,
-              restricaoDepois: profile.medicamento_restricao_depois_horas || 4,
-              restricaoTipo: profile.medicamento_restricao_tipo || 'laticínios'
-            }}
-            tomadoHoje={medicamentoTomado}
-            onMarcarTomado={handleMarcarMedicamento}
-          />
-        )}
 
         {/* Grid: Água e Alimentação */}
         <div className="grid grid-cols-2 gap-3">
