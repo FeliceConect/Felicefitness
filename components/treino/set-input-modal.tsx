@@ -27,13 +27,16 @@ export function SetInputModal({
   onComplete,
   onCancel
 }: SetInputModalProps) {
-  const [weight, setWeight] = useState(suggestedWeight || lastWeight?.weight || 0)
+  // Prioridade: último peso usado > peso sugerido do template > 0
+  const initialWeight = lastWeight?.weight ?? suggestedWeight ?? 0
+  const [weight, setWeight] = useState(initialWeight)
   const [reps, setReps] = useState(parseInt(targetReps) || 12)
 
   // Reset when modal opens
   useEffect(() => {
     if (isOpen) {
-      setWeight(suggestedWeight || lastWeight?.weight || 0)
+      // Prioridade: último peso usado > peso sugerido do template > 0
+      setWeight(lastWeight?.weight ?? suggestedWeight ?? 0)
       setReps(parseInt(targetReps) || 12)
     }
   }, [isOpen, suggestedWeight, lastWeight, targetReps])

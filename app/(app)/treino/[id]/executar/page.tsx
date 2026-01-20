@@ -335,7 +335,8 @@ export default function WorkoutExecutionPage() {
                   <div className="flex items-center justify-center gap-4">
                     <div>
                       <p className="text-4xl font-bold text-white">
-                        {currentSet.carga_planejada || lastWeight?.weight || '-'}
+                        {/* Prioridade: último peso usado > peso do template > '-' */}
+                        {lastWeight?.weight ?? currentSet.carga_planejada ?? '-'}
                       </p>
                       <p className="text-sm text-slate-400">kg</p>
                     </div>
@@ -347,6 +348,12 @@ export default function WorkoutExecutionPage() {
                       <p className="text-sm text-slate-400">reps</p>
                     </div>
                   </div>
+                  {/* Indicar se é baseado no histórico */}
+                  {lastWeight && (
+                    <p className="text-xs text-violet-400 mt-2">
+                      Baseado no seu último treino
+                    </p>
+                  )}
                 </div>
               </div>
             )}
