@@ -27,6 +27,7 @@ interface UseWorkoutExecutionReturn {
   // Ações
   startWorkout: (workout: Workout, forceNew?: boolean) => void
   completeSet: (data: { reps: number; weight: number }) => void
+  editCompletedSet: (exerciseId: string, setNumber: number, data: { reps: number; weight: number }) => void
   skipSet: () => void
   skipExercise: () => void
   startRest: (seconds: number) => void
@@ -395,6 +396,33 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     })
   }, [currentExercise, currentSet, state.currentSetIndex, checkForPR])
 
+  const editCompletedSet = useCallback((exerciseId: string, setNumber: number, data: { reps: number; weight: number }) => {
+    setState(prev => {
+      const updatedSets = prev.completedSets.map(set => {
+        if (set.exerciseId === exerciseId && set.setNumber === setNumber) {
+          // Verificar se a edição resulta em novo PR
+          const exercise = prev.workout?.exercicios.find(e => e.id === exerciseId)
+          let isPR = set.isPR
+          if (exercise) {
+            const pr = checkForPR(exercise.exercise_id, exercise.nome, data.weight, data.reps)
+            isPR = !!pr
+          }
+          return {
+            ...set,
+            reps: data.reps,
+            weight: data.weight,
+            isPR
+          }
+        }
+        return set
+      })
+      return {
+        ...prev,
+        completedSets: updatedSets
+      }
+    })
+  }, [checkForPR])
+
   const skipSet = useCallback(() => {
     if (!currentExercise) return
 
@@ -494,6 +522,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     state,
     startWorkout,
     completeSet,
+    editCompletedSet,
     skipSet,
     skipExercise,
     startRest,

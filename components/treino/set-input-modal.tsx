@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Minus, Plus, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -32,13 +32,17 @@ export function SetInputModal({
   const [weight, setWeight] = useState(initialWeight)
   const [reps, setReps] = useState(parseInt(targetReps) || 12)
 
-  // Reset when modal opens
+  // Track if modal was previously open to only reset on actual open
+  const wasOpenRef = useRef(false)
+
+  // Reset ONLY when modal actually opens (not on every prop change)
   useEffect(() => {
-    if (isOpen) {
-      // Prioridade: último peso usado > peso sugerido do template > 0
+    if (isOpen && !wasOpenRef.current) {
+      // Modal is opening - reset values
       setWeight(lastWeight?.weight ?? suggestedWeight ?? 0)
       setReps(parseInt(targetReps) || 12)
     }
+    wasOpenRef.current = isOpen
   }, [isOpen, suggestedWeight, lastWeight, targetReps])
 
   const adjustWeight = (delta: number) => {
@@ -74,8 +78,10 @@ export function SetInputModal({
                 <h3 className="text-lg font-bold text-white">{exerciseName}</h3>
               </div>
               <button
+                type="button"
                 onClick={onCancel}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                onTouchEnd={(e) => { e.preventDefault(); onCancel(); }}
+                className="p-2 hover:bg-slate-800 active:bg-slate-700 rounded-lg transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5 text-slate-400" />
               </button>
@@ -97,40 +103,46 @@ export function SetInputModal({
                 <label className="text-sm text-slate-400 block mb-2">Carga (kg)</label>
                 <div className="flex items-center justify-center gap-3">
                   <button
+                    type="button"
                     onClick={() => adjustWeight(-2.5)}
-                    className="w-11 h-11 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
+                    onTouchEnd={(e) => { e.preventDefault(); adjustWeight(-2.5); }}
+                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
                   >
-                    <Minus className="w-5 h-5 text-white" />
+                    <Minus className="w-6 h-6 text-white" />
                   </button>
-                  <div className="w-24 text-center">
+                  <div className="w-28 text-center">
                     <motion.span
                       key={weight}
                       initial={{ scale: 1.2, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-3xl font-bold text-white"
+                      className="text-4xl font-bold text-white"
                     >
                       {weight}
                     </motion.span>
-                    <span className="text-base text-slate-400 ml-1">kg</span>
+                    <span className="text-lg text-slate-400 ml-1">kg</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => adjustWeight(2.5)}
-                    className="w-11 h-11 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
+                    onTouchEnd={(e) => { e.preventDefault(); adjustWeight(2.5); }}
+                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
                   >
-                    <Plus className="w-5 h-5 text-white" />
+                    <Plus className="w-6 h-6 text-white" />
                   </button>
                 </div>
                 {/* Quick weight buttons */}
-                <div className="flex justify-center gap-2 mt-2">
-                  {[5, 10, 20].map(w => (
+                <div className="flex justify-center gap-2 mt-3">
+                  {[5, 10, 20, 30, 40].map(w => (
                     <button
                       key={w}
+                      type="button"
                       onClick={() => setWeight(w)}
+                      onTouchEnd={(e) => { e.preventDefault(); setWeight(w); }}
                       className={cn(
-                        'px-3 py-1 rounded-lg text-sm font-medium transition-colors',
+                        'px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation select-none',
                         weight === w
                           ? 'bg-violet-500 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 active:bg-slate-600'
                       )}
                     >
                       {w}kg
@@ -144,31 +156,54 @@ export function SetInputModal({
                 <label className="text-sm text-slate-400 block mb-2">Repetições</label>
                 <div className="flex items-center justify-center gap-3">
                   <button
+                    type="button"
                     onClick={() => adjustReps(-1)}
-                    className="w-11 h-11 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
+                    onTouchEnd={(e) => { e.preventDefault(); adjustReps(-1); }}
+                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
                   >
-                    <Minus className="w-5 h-5 text-white" />
+                    <Minus className="w-6 h-6 text-white" />
                   </button>
-                  <div className="w-24 text-center">
+                  <div className="w-28 text-center">
                     <motion.span
                       key={reps}
                       initial={{ scale: 1.2, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-3xl font-bold text-white"
+                      className="text-4xl font-bold text-white"
                     >
                       {reps}
                     </motion.span>
-                    <span className="text-base text-slate-400 ml-1">reps</span>
+                    <span className="text-lg text-slate-400 ml-1">reps</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => adjustReps(1)}
-                    className="w-11 h-11 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
+                    onTouchEnd={(e) => { e.preventDefault(); adjustReps(1); }}
+                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
                   >
-                    <Plus className="w-5 h-5 text-white" />
+                    <Plus className="w-6 h-6 text-white" />
                   </button>
                 </div>
+                {/* Quick reps buttons */}
+                <div className="flex justify-center gap-2 mt-3">
+                  {[8, 10, 12, 15, 20].map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setReps(r)}
+                      onTouchEnd={(e) => { e.preventDefault(); setReps(r); }}
+                      className={cn(
+                        'px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation select-none',
+                        reps === r
+                          ? 'bg-violet-500 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 active:bg-slate-600'
+                      )}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
                 {/* Target hint */}
-                <p className="text-center text-xs text-slate-500 mt-1">
+                <p className="text-center text-xs text-slate-500 mt-2">
                   Meta: {targetReps} reps
                 </p>
               </div>

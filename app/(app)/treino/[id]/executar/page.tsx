@@ -38,6 +38,8 @@ export default function WorkoutExecutionPage() {
   const [showPRCelebration, setShowPRCelebration] = useState(false)
   const [latestPR, setLatestPR] = useState<{ name: string; weight: number; reps: number } | null>(null)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  // Estado para edição de série completada
+  const [editingSet, setEditingSet] = useState<{ exerciseId: string; setNumber: number; weight: number; reps: number; exerciseName: string } | null>(null)
 
   // Find workout from real data via useWorkouts hook
   const { getWorkoutById, loading } = useWorkouts()
@@ -54,6 +56,7 @@ export default function WorkoutExecutionPage() {
     state,
     startWorkout,
     completeSet,
+    editCompletedSet,
     skipSet,
     skipExercise,
     addCardio,
@@ -86,9 +89,16 @@ export default function WorkoutExecutionPage() {
     }
   }, [loading, workout, state.status, startWorkout])
 
-  // Handle set completion
+  // Handle set completion (new set or editing existing)
   const handleCompleteSet = (data: { reps: number; weight: number }) => {
     setShowSetInput(false)
+
+    // Se estamos editando uma série existente
+    if (editingSet) {
+      editCompletedSet(editingSet.exerciseId, editingSet.setNumber, data)
+      setEditingSet(null)
+      return
+    }
 
     // Check if this will be a PR (before completing)
     const previousPRsCount = state.newPRs.length
@@ -118,6 +128,29 @@ export default function WorkoutExecutionPage() {
         restTimer.start(restTime)
       }
     }, 100)
+  }
+
+  // Handle click on completed set to edit
+  const handleEditCompletedSet = (exerciseId: string, setNumber: number) => {
+    const completedSet = state.completedSets.find(
+      cs => cs.exerciseId === exerciseId && cs.setNumber === setNumber
+    )
+    if (completedSet) {
+      setEditingSet({
+        exerciseId,
+        setNumber,
+        weight: completedSet.weight,
+        reps: completedSet.reps,
+        exerciseName: completedSet.exerciseName
+      })
+      setShowSetInput(true)
+    }
+  }
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setShowSetInput(false)
+    setEditingSet(null)
   }
 
   // Handle skip rest
@@ -302,9 +335,10 @@ export default function WorkoutExecutionPage() {
             <div className="flex justify-center gap-3 mb-4">
               {currentExercise.series.map((set, index) => {
                 // Use the unique workout exercise id (currentExercise.id) not exercise_id
-                const isCompleted = state.completedSets.some(
+                const completedSet = state.completedSets.find(
                   cs => cs.exerciseId === currentExercise.id && cs.setNumber === index + 1
                 )
+                const isCompleted = !!completedSet
                 const isCurrent = index === state.currentSetIndex
 
                 return (
@@ -312,20 +346,32 @@ export default function WorkoutExecutionPage() {
                     key={set.id}
                     animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ repeat: isCurrent ? Infinity : 0, duration: 2 }}
+                    onClick={() => isCompleted && handleEditCompletedSet(currentExercise.id, index + 1)}
                     className={cn(
-                      'w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold',
+                      'w-12 h-12 rounded-full flex flex-col items-center justify-center text-lg font-bold',
                       isCompleted
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-400 active:scale-95 transition-all'
                         : isCurrent
                           ? 'bg-violet-500 text-white ring-2 ring-violet-400 ring-offset-2 ring-offset-[#0A0A0F]'
                           : 'bg-slate-800 text-slate-500'
                     )}
                   >
-                    {isCompleted ? '✓' : index + 1}
+                    {isCompleted ? (
+                      <>
+                        <span className="text-xs leading-none">{completedSet.weight}kg</span>
+                        <span className="text-[10px] leading-none opacity-80">×{completedSet.reps}</span>
+                      </>
+                    ) : index + 1}
                   </motion.div>
                 )
               })}
             </div>
+            {/* Hint para edição */}
+            {state.completedSets.some(cs => cs.exerciseId === currentExercise.id) && (
+              <p className="text-center text-xs text-slate-500 mb-2">
+                Toque nas séries verdes para editar
+              </p>
+            )}
 
             {/* Current set info */}
             {currentSet && (
@@ -416,13 +462,13 @@ export default function WorkoutExecutionPage() {
       {/* Set input modal */}
       <SetInputModal
         isOpen={showSetInput}
-        exerciseName={currentExercise?.nome || ''}
-        setNumber={state.currentSetIndex + 1}
+        exerciseName={editingSet?.exerciseName || currentExercise?.nome || ''}
+        setNumber={editingSet?.setNumber || state.currentSetIndex + 1}
         targetReps={currentSet?.repeticoes_planejadas || '12'}
-        suggestedWeight={currentSet?.carga_planejada}
-        lastWeight={lastWeight}
+        suggestedWeight={editingSet?.weight ?? currentSet?.carga_planejada}
+        lastWeight={editingSet ? { weight: editingSet.weight, reps: editingSet.reps } : lastWeight}
         onComplete={handleCompleteSet}
-        onCancel={() => setShowSetInput(false)}
+        onCancel={handleCancelEdit}
       />
 
       {/* Cardio input modal */}
