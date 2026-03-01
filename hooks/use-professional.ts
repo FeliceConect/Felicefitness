@@ -21,6 +21,8 @@ export function useProfessional() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [profileName, setProfileName] = useState<string | null>(null)
 
   useEffect(() => {
     async function checkProfessional() {
@@ -37,12 +39,18 @@ export function useProfessional() {
           return
         }
 
+        setUserEmail(user.email || null)
+
         // Verificar se é super_admin
         const { data: profile } = await supabase
           .from('fitness_profiles')
-          .select('role')
+          .select('role, nome')
           .eq('id', user.id)
           .single()
+
+        if (profile?.nome) {
+          setProfileName(profile.nome)
+        }
 
         if (profile?.role === 'super_admin') {
           setIsSuperAdmin(true)
@@ -71,6 +79,8 @@ export function useProfessional() {
     loading,
     error,
     isSuperAdmin,
+    userEmail,
+    profileName,
     isProfessional: !!professional || isSuperAdmin,
     isNutritionist: professional?.type === 'nutritionist',
     isTrainer: professional?.type === 'trainer',

@@ -31,7 +31,7 @@ interface ProfessionalLayoutProps {
 
 export default function ProfessionalLayout({ children }: ProfessionalLayoutProps) {
   const router = useRouter()
-  const { professional, loading, isProfessional, isSuperAdmin, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isActive } = useProfessional()
+  const { professional, loading, isProfessional, isSuperAdmin, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isActive, userEmail, profileName } = useProfessional()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -84,28 +84,30 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
   const menuItems = [
     { href: '/portal', icon: LayoutDashboard, label: 'Dashboard', show: true },
     { href: '/portal/clients', icon: Users, label: 'Meus Pacientes', show: true },
-    { href: '/portal/meals', icon: Utensils, label: 'Refeições', show: isNutritionist || isSuperAdmin },
-    { href: '/portal/workouts', icon: Dumbbell, label: 'Treinos', show: isTrainer || isSuperAdmin },
-    { href: '/portal/nutrition', icon: Apple, label: 'Planos Alimentares', show: isNutritionist || isSuperAdmin },
-    { href: '/portal/training', icon: Activity, label: 'Planos de Treino', show: isTrainer || isSuperAdmin },
-    { href: '/portal/coach', icon: Brain, label: 'Dashboard Coach', show: isCoach || isSuperAdmin },
+    { href: '/portal/meals', icon: Utensils, label: 'Refeições', show: isNutritionist },
+    { href: '/portal/workouts', icon: Dumbbell, label: 'Treinos', show: isTrainer },
+    { href: '/portal/nutrition', icon: Apple, label: 'Planos Alimentares', show: isNutritionist },
+    { href: '/portal/training', icon: Activity, label: 'Planos de Treino', show: isTrainer },
+    { href: '/portal/coach', icon: Brain, label: 'Dashboard Coach', show: isCoach },
     { href: '/portal/notes', icon: FileText, label: 'Prontuário', show: true },
-    { href: '/portal/exercises', icon: Library, label: 'Exercícios', show: isTrainer || isSuperAdmin },
+    { href: '/portal/exercises', icon: Library, label: 'Exercícios', show: isTrainer },
     { href: '/portal/agenda', icon: CalendarDays, label: 'Agenda', show: true },
     { href: '/portal/forms', icon: ClipboardList, label: 'Formulários', show: true },
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
     { href: '/portal/settings', icon: Settings, label: 'Configurações', show: true },
   ].filter(item => item.show)
 
-  const professionalTypeLabel = isSuperAdmin
-    ? 'Super Admin'
-    : isNutritionist
-      ? 'Nutricionista'
-      : isCoach
-        ? 'Coach Alta Performance'
-        : isPhysiotherapist
-          ? 'Fisioterapeuta'
-          : 'Personal Trainer'
+  const professionalTypeLabel = isNutritionist
+    ? 'Nutricionista'
+    : isCoach
+      ? 'Coach Alta Performance'
+      : isPhysiotherapist
+        ? 'Fisioterapeuta'
+        : 'Personal Trainer'
+
+  // Nome de exibição para o sidebar
+  const displayName = professional?.display_name || profileName || professionalTypeLabel
+  const displaySubtitle = professional?.registration || userEmail || 'Sem registro'
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,7 +123,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
             <Menu className="w-6 h-6 text-seda" />
           )}
         </button>
-        <span className="text-seda font-semibold truncate">{professional?.display_name || professionalTypeLabel}</span>
+        <span className="text-seda font-semibold">Portal Profissional</span>
         <div className="w-10" />
       </div>
 
@@ -155,7 +157,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   <Dumbbell className="w-4 h-4 text-white" />
                 )}
               </div>
-              <span className="text-seda font-semibold">{professional?.display_name || professionalTypeLabel}</span>
+              <span className="text-seda font-semibold">Portal</span>
             </Link>
           )}
           <button
@@ -210,8 +212,8 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-seda truncate">{professional?.display_name || professional?.specialty || professionalTypeLabel}</p>
-                  <p className="text-xs text-nude">{professional?.registration || 'Sem registro'}</p>
+                  <p className="text-sm text-seda truncate">{displayName}</p>
+                  <p className="text-xs text-nude truncate">{displaySubtitle}</p>
                 </div>
               </div>
               <button
