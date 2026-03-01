@@ -1,4 +1,4 @@
-// FeliceFit - Tipos auxiliares
+// Complexo Wellness - Tipos auxiliares
 // Tipos e constantes utilizados em todo o app
 
 // Re-exportar tipos do banco de dados

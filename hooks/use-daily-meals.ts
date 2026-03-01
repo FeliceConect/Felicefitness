@@ -120,7 +120,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
     } finally {
       setLoading(false)
     }
-  }, [dateStr, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateStr])
 
   useEffect(() => {
     loadMeals()
@@ -194,10 +195,6 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         throw new Error('Usuário não autenticado')
       }
 
-      console.log('=== addMeal: SALVANDO REFEIÇÃO ===')
-      console.log('meal.itens:', meal.itens)
-      console.log('meal.itens.length:', meal.itens?.length)
-
       // Preparar dados para o banco
       const mealData = {
         user_id: user.id,
@@ -224,11 +221,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         throw error
       }
 
-      console.log('Refeição salva com ID:', data.id)
-
       // SALVAR OS ITENS DA REFEIÇÃO
       if (meal.itens && meal.itens.length > 0) {
-        console.log('=== addMeal: SALVANDO ITENS ===')
         for (const item of meal.itens) {
           // Verificar se food_id é um UUID válido (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
           const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
@@ -245,8 +239,6 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
             gorduras: Math.round(item.gorduras || 0)
           }
 
-          console.log('Inserindo item:', itemToInsert)
-
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error: itemError } = await (supabase as any)
             .from('fitness_meal_items')
@@ -255,13 +247,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
           if (itemError) {
             console.error('Erro ao salvar item:', item.food?.nome, itemError)
             // Continuar mesmo com erro para salvar outros itens
-          } else {
-            console.log('Item salvo:', item.food?.nome)
           }
         }
-        console.log('=== addMeal: ITENS SALVOS ===')
-      } else {
-        console.log('Nenhum item para salvar')
       }
 
       // Converter para formato Meal e adicionar ao estado
@@ -288,7 +275,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
       console.error('Error adding meal:', err)
       throw err
     }
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Atualizar refeição
   const updateMeal = useCallback(async (id: string, data: Partial<Meal>) => {
@@ -330,7 +318,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
       console.error('Error updating meal:', err)
       throw err
     }
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Deletar refeição
   const deleteMeal = useCallback(async (id: string) => {
@@ -367,7 +356,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
       console.error('Error deleting meal:', err)
       throw err
     }
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Refresh
   const refresh = useCallback(async () => {

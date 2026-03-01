@@ -10,83 +10,92 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Paleta Complexo Felice
+        cafe: "#322b29",
+        vinho: "#663739",
+        dourado: "#c29863",
+        nude: "#ae9b89",
+        fendi: "#cac2b9",
+        seda: "#ddd5c7",
+
         // Cores principais
         primary: {
-          DEFAULT: "#8B5CF6",
-          hover: "#7C3AED",
-          foreground: "#FFFFFF",
+          DEFAULT: "#c29863", // dourado
+          hover: "#b08850",
+          foreground: "#ffffff",
         },
         secondary: {
-          DEFAULT: "#06B6D4",
-          hover: "#0891B2",
-          foreground: "#FFFFFF",
+          DEFAULT: "#663739", // vinho
+          hover: "#7a4446",
+          foreground: "#ffffff",
         },
 
-        // Backgrounds
+        // Backgrounds — warm light (base nude/fendi)
         background: {
-          DEFAULT: "#0A0A0F",
-          card: "#14141F",
-          elevated: "#1E1E2E",
-          input: "#1A1A2E",
+          DEFAULT: "#f7f2ed",    // warm cream
+          card: "#ffffff",       // white cards
+          elevated: "#ede7e0",   // light warm
+          input: "#f2ece5",      // input fields
         },
 
         // Borders
         border: {
-          DEFAULT: "#2E2E3E",
-          focus: "#8B5CF6",
+          DEFAULT: "#d4cbc2",    // warm muted
+          focus: "#c29863",
         },
 
         // Status
         success: {
-          DEFAULT: "#10B981",
-          foreground: "#FFFFFF",
+          DEFAULT: "#7dad6a",
+          foreground: "#ffffff",
         },
         warning: {
-          DEFAULT: "#F59E0B",
-          foreground: "#000000",
+          DEFAULT: "#d4850f",
+          foreground: "#ffffff",
         },
         error: {
-          DEFAULT: "#EF4444",
-          foreground: "#FFFFFF",
+          DEFAULT: "#a04045",
+          foreground: "#ffffff",
         },
         info: {
-          DEFAULT: "#3B82F6",
-          foreground: "#FFFFFF",
+          DEFAULT: "#6b9bd2",
+          foreground: "#ffffff",
         },
 
         // Texto
         foreground: {
-          DEFAULT: "#F8FAFC",
-          secondary: "#94A3B8",
-          muted: "#64748B",
+          DEFAULT: "#322b29",    // café (dark on light)
+          secondary: "#7a6e64",  // muted café
+          muted: "#ae9b89",      // nude
         },
 
         // Para compatibilidade com shadcn/ui
         card: {
-          DEFAULT: "#14141F",
-          foreground: "#F8FAFC",
+          DEFAULT: "#ffffff",
+          foreground: "#322b29",
         },
         popover: {
-          DEFAULT: "#14141F",
-          foreground: "#F8FAFC",
+          DEFAULT: "#ffffff",
+          foreground: "#322b29",
         },
         muted: {
-          DEFAULT: "#1E1E2E",
-          foreground: "#94A3B8",
+          DEFAULT: "#ede7e0",
+          foreground: "#ae9b89",
         },
         accent: {
-          DEFAULT: "#1E1E2E",
-          foreground: "#F8FAFC",
+          DEFAULT: "#c29863",
+          foreground: "#ffffff",
         },
         destructive: {
-          DEFAULT: "#EF4444",
-          foreground: "#FFFFFF",
+          DEFAULT: "#a04045",
+          foreground: "#ffffff",
         },
-        input: "#1A1A2E",
-        ring: "#8B5CF6",
+        input: "#f2ece5",
+        ring: "#c29863",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["var(--font-sarabun)", "Sarabun", "sans-serif"],
+        heading: ["Butler", "serif"],
       },
       fontSize: {
         "title-lg": ["32px", { lineHeight: "1.2", fontWeight: "700" }],
@@ -98,8 +107,10 @@ const config: Config = {
         "label-sm": ["12px", { lineHeight: "1.4", fontWeight: "500" }],
       },
       backgroundImage: {
-        "gradient-primary": "linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%)",
-        "gradient-card": "linear-gradient(180deg, #14141F 0%, #0A0A0F 100%)",
+        "gradient-primary": "linear-gradient(135deg, #c29863 0%, #b08850 100%)",
+        "gradient-card": "linear-gradient(180deg, #ffffff 0%, #f7f2ed 100%)",
+        "gradient-gold": "linear-gradient(135deg, #c29863 0%, #ddd5c7 100%)",
+        "gradient-vinho": "linear-gradient(135deg, #663739 0%, #a04045 100%)",
       },
       borderRadius: {
         lg: "12px",
@@ -134,8 +145,8 @@ const config: Config = {
           "100%": { opacity: "1", transform: "scale(1)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgba(139, 92, 246, 0.4)" },
-          "50%": { boxShadow: "0 0 0 10px rgba(139, 92, 246, 0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(194, 152, 99, 0.4)" },
+          "50%": { boxShadow: "0 0 0 10px rgba(194, 152, 99, 0)" },
         },
         "float": {
           "0%, 100%": { transform: "translateY(0)" },

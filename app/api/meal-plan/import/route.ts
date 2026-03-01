@@ -96,11 +96,7 @@ const MEAL_PLAN_PROMPT = `Você é um especialista em nutrição. Analise este p
     "carbs": 190,
     "fat": 70
   },
-  "special_rules": [
-    { "time": "12:00-14:00", "rule": "Jejum - apenas água" },
-    { "time": "14:00", "rule": "Revolade" },
-    { "time": "14:00-18:00", "rule": "Sem laticínios" }
-  ],
+  "special_rules": [],
   "meals": [
     {
       "type": "breakfast",

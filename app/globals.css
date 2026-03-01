@@ -5,35 +5,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Butler Font - Self-hosted */
+@font-face {
+  font-family: 'Butler';
+  src: url('/fonts/Butler_Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Butler';
+  src: url('/fonts/Butler_Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Butler';
+  src: url('/fonts/Butler_Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
-    --background: 240 10% 4%; /* #0A0A0F */
-    --foreground: 210 40% 98%; /* #F8FAFC */
+    --background: 30 39% 95%; /* #f7f2ed - warm cream (base nude/fendi) */
+    --foreground: 13 10% 18%; /* #322b29 - café */
 
-    --card: 240 14% 10%; /* #14141F */
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%; /* #ffffff - white cards */
+    --card-foreground: 13 10% 18%;
 
-    --popover: 240 14% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 13 10% 18%;
 
-    --primary: 258 90% 66%; /* #8B5CF6 */
+    --primary: 33 47% 57%; /* #c29863 - dourado */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 187 91% 43%; /* #06B6D4 */
+    --secondary: 358 30% 31%; /* #663739 - vinho */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 14% 15%; /* #1E1E2E */
-    --muted-foreground: 215 20% 65%; /* #94A3B8 */
+    --muted: 33 27% 90%; /* #ede7e0 - light warm */
+    --muted-foreground: 31 20% 61%; /* #ae9b89 - nude */
 
-    --accent: 240 14% 15%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 33 47% 57%; /* dourado */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive: 357 40% 44%; /* #a04045 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 10% 21%; /* #2E2E3E */
-    --input: 240 18% 14%; /* #1A1A2E */
-    --ring: 258 90% 66%; /* #8B5CF6 */
+    --border: 30 17% 80%; /* #d4cbc2 - warm border */
+    --input: 32 34% 92%; /* #f2ece5 */
+    --ring: 33 47% 57%; /* dourado */
+
+    --success: 105 28% 55%; /* #7dad6a */
+    --warning: 36 87% 45%; /* #d4850f - darker amber for light bg */
 
     --radius: 8px;
   }
@@ -58,11 +86,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
+    @apply bg-nude/50 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-foreground-muted;
+    @apply bg-nude;
   }
 
   /* Seleção de texto */

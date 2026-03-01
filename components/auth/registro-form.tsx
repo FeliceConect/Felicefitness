@@ -90,7 +90,7 @@ export function RegistroForm() {
       toast({
         variant: "success",
         title: "Conta criada!",
-        description: "Bem-vindo ao FeliceFit!",
+        description: "Bem-vindo ao Complexo Wellness!",
       })
 
       router.push("/dashboard")

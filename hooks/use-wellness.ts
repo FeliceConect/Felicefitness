@@ -105,7 +105,8 @@ export function useWellness(): UseWellnessReturn {
     }
 
     loadData()
-  }, [supabase, today])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today])
 
   // Submit check-in
   const submitCheckin = useCallback(
@@ -169,7 +170,8 @@ export function useWellness(): UseWellnessReturn {
         throw err
       }
     },
-    [supabase, today, todayCheckin]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [today, todayCheckin]
   )
 
   // Calculate today's score

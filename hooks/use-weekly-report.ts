@@ -9,7 +9,6 @@ import {
   calculateTrend,
   formatDateRange
 } from '@/lib/reports'
-import { generateInsightsFromSummary } from '@/lib/reports/insights-engine'
 import type { WeeklyReport, UseWeeklyReportReturn, PeriodSummary } from '@/types/reports'
 import { format, getWeek, getYear, eachDayOfInterval } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -255,8 +254,7 @@ export function useWeeklyReport(): UseWeeklyReportReturn {
         date: format(new Date(pr.created_at), 'yyyy-MM-dd')
       }))
 
-      // Generate insights
-      const insights = generateInsightsFromSummary(summary, null)
+      const insights: never[] = []
 
       return {
         weekNumber: week,
@@ -278,7 +276,8 @@ export function useWeeklyReport(): UseWeeklyReportReturn {
       console.error('Error fetching weekly report:', err)
       return getEmptyReport(week, year, dateRange)
     }
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const getEmptyReport = (week: number, year: number, dateRange: { start: Date; end: Date }): WeeklyReport => ({
     weekNumber: week,
@@ -364,7 +363,7 @@ export function useWeeklyReport(): UseWeeklyReportReturn {
       doc.text(`Média diária: ${report.summary.hydration.avgDaily}L`, 20, 130)
 
       doc.setFontSize(8)
-      doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - FeliceFit`, 20, 280)
+      doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - Complexo Wellness`, 20, 280)
     }
 
     return doc.output('blob')

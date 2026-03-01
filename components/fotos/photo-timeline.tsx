@@ -83,7 +83,7 @@ export function PhotoTimeline({
   if (photos.length === 0) {
     return (
       <div className={cn('text-center py-8', className)}>
-        <p className="text-slate-400">Nenhuma foto para exibir</p>
+        <p className="text-foreground-secondary">Nenhuma foto para exibir</p>
       </div>
     )
   }
@@ -96,11 +96,11 @@ export function PhotoTimeline({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl overflow-hidden"
+        className="bg-white border border-border rounded-2xl overflow-hidden"
       >
         <div className="aspect-[3/4] max-w-[350px] mx-auto relative">
           {/* Foto placeholder */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-900/30 to-cyan-900/30 flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-dourado/10 to-vinho/10 flex items-center justify-center">
             <span className="text-[80px] opacity-30">
               {selectedPhoto.tipo === 'frente' ? '🧍' :
                selectedPhoto.tipo === 'lado_esquerdo' ? '👈' :
@@ -115,13 +115,13 @@ export function PhotoTimeline({
                 <p className="text-white font-semibold">
                   {PHOTO_TYPE_LABELS[selectedPhoto.tipo]}
                 </p>
-                <p className="text-slate-400 text-sm">
+                <p className="text-foreground-secondary text-sm">
                   {format(parseISO(selectedPhoto.data), "d 'de' MMMM, yyyy", { locale: ptBR })}
                 </p>
               </div>
               {selectedPhoto.peso && (
                 <div className="text-right">
-                  <p className="text-cyan-400 font-bold text-lg">
+                  <p className="text-dourado font-bold text-lg">
                     {selectedPhoto.peso.toFixed(1)}kg
                   </p>
                   {selectedPhoto.percentual_gordura && (
@@ -162,8 +162,8 @@ export function PhotoTimeline({
           className={cn(
             'flex items-center gap-2 px-4 py-2 rounded-xl transition-colors',
             isPlaying
-              ? 'bg-violet-500 text-white'
-              : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+              ? 'bg-dourado text-white'
+              : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
           )}
         >
           {isPlaying ? (
@@ -195,11 +195,11 @@ export function PhotoTimeline({
               className={cn(
                 'flex-shrink-0 w-16 aspect-[3/4] rounded-lg overflow-hidden border-2 transition-colors',
                 index === selectedIndex
-                  ? 'border-violet-500'
-                  : 'border-transparent hover:border-violet-500/50'
+                  ? 'border-dourado'
+                  : 'border-transparent hover:border-dourado/50'
               )}
             >
-              <div className="w-full h-full bg-gradient-to-br from-violet-900/30 to-cyan-900/30 flex items-center justify-center">
+              <div className="w-full h-full bg-gradient-to-br from-dourado/10 to-vinho/10 flex items-center justify-center">
                 <span className="text-xl opacity-30">
                   {photo.tipo === 'frente' ? '🧍' :
                    photo.tipo === 'lado_esquerdo' ? '👈' :
@@ -213,9 +213,9 @@ export function PhotoTimeline({
 
       {/* Linha do tempo */}
       <div className="relative px-4">
-        <div className="h-1 bg-[#2E2E3E] rounded-full">
+        <div className="h-1 bg-border rounded-full">
           <motion.div
-            className="h-full bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full"
+            className="h-full bg-gradient-to-r from-dourado to-dourado rounded-full"
             initial={{ width: 0 }}
             animate={{
               width: `${((selectedIndex + 1) / photos.length) * 100}%`
@@ -225,7 +225,7 @@ export function PhotoTimeline({
         </div>
 
         {/* Marcadores de data */}
-        <div className="flex justify-between mt-2 text-xs text-slate-500">
+        <div className="flex justify-between mt-2 text-xs text-foreground-muted">
           <span>
             {format(parseISO(photos[0].data), 'MMM/yy', { locale: ptBR })}
           </span>
@@ -236,7 +236,7 @@ export function PhotoTimeline({
       </div>
 
       {/* Indicador de progresso */}
-      <div className="text-center text-sm text-slate-400">
+      <div className="text-center text-sm text-foreground-secondary">
         {selectedIndex + 1} de {photos.length} fotos
       </div>
     </div>

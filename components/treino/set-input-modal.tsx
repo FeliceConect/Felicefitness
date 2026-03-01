@@ -68,22 +68,22 @@ export function SetInputModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-md bg-[#14141F] rounded-2xl flex flex-col max-h-[80vh]"
+            className="w-full max-w-md bg-white rounded-2xl flex flex-col max-h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 pb-2">
               <div>
-                <p className="text-slate-400 text-sm">Série {setNumber}</p>
-                <h3 className="text-lg font-bold text-white">{exerciseName}</h3>
+                <p className="text-foreground-secondary text-sm">Série {setNumber}</p>
+                <h3 className="text-lg font-bold text-foreground">{exerciseName}</h3>
               </div>
               <button
                 type="button"
                 onClick={onCancel}
                 onTouchEnd={(e) => { e.preventDefault(); onCancel(); }}
-                className="p-2 hover:bg-slate-800 active:bg-slate-700 rounded-lg transition-colors touch-manipulation"
+                className="p-2 hover:bg-background-elevated active:bg-border rounded-lg transition-colors touch-manipulation"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
 
@@ -91,43 +91,43 @@ export function SetInputModal({
             <div className="flex-1 overflow-y-auto px-4">
               {/* Last performance hint */}
               {lastWeight && (
-                <div className="bg-slate-800/50 rounded-lg p-2 mb-3 text-center">
-                  <p className="text-sm text-slate-400">
-                    Última vez: <span className="text-white font-medium">{lastWeight.weight}kg × {lastWeight.reps}</span>
+                <div className="bg-background-elevated/50 rounded-lg p-2 mb-3 text-center">
+                  <p className="text-sm text-foreground-secondary">
+                    Última vez: <span className="text-foreground font-medium">{lastWeight.weight}kg × {lastWeight.reps}</span>
                   </p>
                 </div>
               )}
 
               {/* Weight input */}
               <div className="mb-3">
-                <label className="text-sm text-slate-400 block mb-2">Carga (kg)</label>
+                <label className="text-sm text-foreground-secondary block mb-2">Carga (kg)</label>
                 <div className="flex items-center justify-center gap-3">
                   <button
                     type="button"
                     onClick={() => adjustWeight(-2.5)}
                     onTouchEnd={(e) => { e.preventDefault(); adjustWeight(-2.5); }}
-                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
+                    className="w-14 h-14 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border active:bg-border transition-colors touch-manipulation select-none"
                   >
-                    <Minus className="w-6 h-6 text-white" />
+                    <Minus className="w-6 h-6 text-foreground" />
                   </button>
                   <div className="w-28 text-center">
                     <motion.span
                       key={weight}
                       initial={{ scale: 1.2, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-4xl font-bold text-white"
+                      className="text-4xl font-bold text-foreground"
                     >
                       {weight}
                     </motion.span>
-                    <span className="text-lg text-slate-400 ml-1">kg</span>
+                    <span className="text-lg text-foreground-secondary ml-1">kg</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => adjustWeight(2.5)}
                     onTouchEnd={(e) => { e.preventDefault(); adjustWeight(2.5); }}
-                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
+                    className="w-14 h-14 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border active:bg-border transition-colors touch-manipulation select-none"
                   >
-                    <Plus className="w-6 h-6 text-white" />
+                    <Plus className="w-6 h-6 text-foreground" />
                   </button>
                 </div>
                 {/* Quick weight buttons */}
@@ -141,8 +141,8 @@ export function SetInputModal({
                       className={cn(
                         'px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation select-none',
                         weight === w
-                          ? 'bg-violet-500 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 active:bg-slate-600'
+                          ? 'bg-dourado text-white'
+                          : 'bg-background-elevated text-foreground-secondary hover:bg-border active:bg-border'
                       )}
                     >
                       {w}kg
@@ -153,34 +153,34 @@ export function SetInputModal({
 
               {/* Reps input */}
               <div className="mb-2">
-                <label className="text-sm text-slate-400 block mb-2">Repetições</label>
+                <label className="text-sm text-foreground-secondary block mb-2">Repetições</label>
                 <div className="flex items-center justify-center gap-3">
                   <button
                     type="button"
                     onClick={() => adjustReps(-1)}
                     onTouchEnd={(e) => { e.preventDefault(); adjustReps(-1); }}
-                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
+                    className="w-14 h-14 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border active:bg-border transition-colors touch-manipulation select-none"
                   >
-                    <Minus className="w-6 h-6 text-white" />
+                    <Minus className="w-6 h-6 text-foreground" />
                   </button>
                   <div className="w-28 text-center">
                     <motion.span
                       key={reps}
                       initial={{ scale: 1.2, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-4xl font-bold text-white"
+                      className="text-4xl font-bold text-foreground"
                     >
                       {reps}
                     </motion.span>
-                    <span className="text-lg text-slate-400 ml-1">reps</span>
+                    <span className="text-lg text-foreground-secondary ml-1">reps</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => adjustReps(1)}
                     onTouchEnd={(e) => { e.preventDefault(); adjustReps(1); }}
-                    className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors touch-manipulation select-none"
+                    className="w-14 h-14 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border active:bg-border transition-colors touch-manipulation select-none"
                   >
-                    <Plus className="w-6 h-6 text-white" />
+                    <Plus className="w-6 h-6 text-foreground" />
                   </button>
                 </div>
                 {/* Quick reps buttons */}
@@ -194,8 +194,8 @@ export function SetInputModal({
                       className={cn(
                         'px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation select-none',
                         reps === r
-                          ? 'bg-violet-500 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 active:bg-slate-600'
+                          ? 'bg-dourado text-white'
+                          : 'bg-background-elevated text-foreground-secondary hover:bg-border active:bg-border'
                       )}
                     >
                       {r}
@@ -203,14 +203,14 @@ export function SetInputModal({
                   ))}
                 </div>
                 {/* Target hint */}
-                <p className="text-center text-xs text-slate-500 mt-2">
+                <p className="text-center text-xs text-foreground-muted mt-2">
                   Meta: {targetReps} reps
                 </p>
               </div>
             </div>
 
             {/* Actions - Fixed at bottom */}
-            <div className="flex gap-3 p-4 pt-3 border-t border-slate-800">
+            <div className="flex gap-3 p-4 pt-3 border-t border-border">
               <Button
                 variant="outline"
                 size="default"

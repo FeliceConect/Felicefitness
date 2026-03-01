@@ -67,12 +67,12 @@ export function WaterQuickAdd({
             disabled={disabled}
             className={cn(
               'relative flex flex-col items-center justify-center',
-              'bg-[#1E1E2E] hover:bg-[#2E2E3E] rounded-2xl',
-              'border-2 border-transparent hover:border-cyan-500/30',
+              'bg-background-elevated hover:bg-border rounded-2xl',
+              'border-2 border-transparent hover:border-dourado/30',
               'transition-all duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               compact ? 'py-3 px-2' : 'py-4 px-3',
-              animatingAmount === ml && 'bg-cyan-500/20 border-cyan-500/50',
+              animatingAmount === ml && 'bg-dourado/20 border-dourado/50',
               splashEffect === ml && 'animate-pulse'
             )}
           >
@@ -83,7 +83,7 @@ export function WaterQuickAdd({
                   initial={{ scale: 0, opacity: 0.8 }}
                   animate={{ scale: 2, opacity: 0 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 rounded-2xl bg-cyan-500/30"
+                  className="absolute inset-0 rounded-2xl bg-dourado/30"
                 />
               )}
             </AnimatePresence>
@@ -99,7 +99,7 @@ export function WaterQuickAdd({
 
             {/* Amount */}
             <span className={cn(
-              'font-semibold text-white',
+              'font-semibold text-foreground',
               compact ? 'text-sm' : 'text-base'
             )}>
               +{ml}ml
@@ -112,7 +112,7 @@ export function WaterQuickAdd({
                 animate={{ opacity: 1 }}
                 className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-2xl"
               >
-                <Droplets className="w-5 h-5 text-cyan-400 animate-bounce" />
+                <Droplets className="w-5 h-5 text-dourado animate-bounce" />
               </motion.div>
             )}
           </motion.button>
@@ -128,15 +128,15 @@ export function WaterQuickAdd({
           disabled={disabled}
           className={cn(
             'w-full flex items-center justify-center gap-2',
-            'bg-[#14141F] hover:bg-[#1E1E2E] rounded-xl',
-            'border border-[#2E2E3E] hover:border-violet-500/30',
+            'bg-white hover:bg-background-elevated rounded-xl',
+            'border border-border hover:border-dourado/30',
             'py-3 px-4',
             'transition-all duration-200',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
-          <Plus className="w-5 h-5 text-violet-400" />
-          <span className="text-slate-400">Quantidade personalizada</span>
+          <Plus className="w-5 h-5 text-dourado" />
+          <span className="text-foreground-secondary">Quantidade personalizada</span>
         </motion.button>
       )}
     </div>

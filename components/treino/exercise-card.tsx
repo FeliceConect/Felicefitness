@@ -25,7 +25,7 @@ export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, las
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        'bg-[#14141F] border border-[#2E2E3E] rounded-xl overflow-hidden',
+        'bg-white border border-border rounded-xl overflow-hidden',
         isSuperset && 'border-l-2 border-l-amber-500'
       )}
     >
@@ -34,7 +34,7 @@ export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, las
         <div className="bg-amber-500/10 px-4 py-1.5 flex items-center gap-2">
           <span className="text-xs font-medium text-amber-400">SUPERSET</span>
           {supersetPartner && (
-            <span className="text-xs text-slate-400">com {supersetPartner.nome}</span>
+            <span className="text-xs text-foreground-secondary">com {supersetPartner.nome}</span>
           )}
         </div>
       )}
@@ -43,21 +43,21 @@ export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, las
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
             {/* Order number */}
-            <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-violet-400">{exercise.ordem}</span>
+            <div className="w-8 h-8 rounded-lg bg-dourado/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-dourado">{exercise.ordem}</span>
             </div>
 
             {/* Exercise info */}
             <div className="flex-1">
-              <h3 className="text-white font-medium mb-1">{exercise.nome}</h3>
-              <div className="flex items-center gap-3 text-sm text-slate-400">
+              <h3 className="text-foreground font-medium mb-1">{exercise.nome}</h3>
+              <div className="flex items-center gap-3 text-sm text-foreground-secondary">
                 <span>{totalSets} séries</span>
                 <span>•</span>
                 <span>{targetReps} reps</span>
                 {lastWeight && (
                   <>
                     <span>•</span>
-                    <span className="text-violet-400">{lastWeight.weight}kg</span>
+                    <span className="text-dourado">{lastWeight.weight}kg</span>
                   </>
                 )}
               </div>
@@ -67,9 +67,9 @@ export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, las
           {/* Action */}
           <Link
             href={`/treino/exercicio/${exercise.exercise_id}`}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
           >
-            <Info className="w-5 h-5 text-slate-500" />
+            <Info className="w-5 h-5 text-foreground-muted" />
           </Link>
         </div>
 
@@ -82,7 +82,7 @@ export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, las
                 'flex-1 py-2 rounded-lg text-center text-sm',
                 set.status === 'concluido'
                   ? 'bg-emerald-500/20 text-emerald-400'
-                  : 'bg-slate-800 text-slate-400'
+                  : 'bg-background-elevated text-foreground-secondary'
               )}
             >
               <div className="font-medium">

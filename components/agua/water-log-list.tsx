@@ -43,10 +43,10 @@ export function WaterLogList({ logs, onDelete, showTotal = true }: WaterLogListP
 
   if (logs.length === 0) {
     return (
-      <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-6 text-center">
-        <Droplets className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-        <p className="text-slate-400">Nenhum registro hoje</p>
-        <p className="text-sm text-slate-500 mt-1">
+      <div className="bg-white border border-border rounded-xl p-6 text-center">
+        <Droplets className="w-10 h-10 text-foreground-muted mx-auto mb-3" />
+        <p className="text-foreground-secondary">Nenhum registro hoje</p>
+        <p className="text-sm text-foreground-muted mt-1">
           Adicione água para começar a rastrear
         </p>
       </div>
@@ -54,22 +54,22 @@ export function WaterLogList({ logs, onDelete, showTotal = true }: WaterLogListP
   }
 
   return (
-    <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl overflow-hidden">
+    <div className="bg-white border border-border rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#2E2E3E] flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-slate-500" />
-          <span className="text-sm font-medium text-slate-400">
+          <Clock className="w-4 h-4 text-foreground-muted" />
+          <span className="text-sm font-medium text-foreground-secondary">
             Registros de hoje
           </span>
         </div>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-foreground-muted">
           {logs.length} {logs.length === 1 ? 'registro' : 'registros'}
         </span>
       </div>
 
       {/* Log items */}
-      <div className="divide-y divide-[#2E2E3E]">
+      <div className="divide-y divide-border">
         <AnimatePresence initial={false}>
           {logs.map((log, index) => (
             <motion.div
@@ -78,11 +78,11 @@ export function WaterLogList({ logs, onDelete, showTotal = true }: WaterLogListP
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20, height: 0 }}
               transition={{ duration: 0.2, delay: index * 0.03 }}
-              className="flex items-center justify-between px-4 py-3 hover:bg-[#1E1E2E] transition-colors group"
+              className="flex items-center justify-between px-4 py-3 hover:bg-background-elevated transition-colors group"
             >
               <div className="flex items-center gap-3">
                 {/* Time */}
-                <span className="text-slate-500 text-sm w-12">
+                <span className="text-foreground-muted text-sm w-12">
                   {formatTime(log.horario)}
                 </span>
 
@@ -94,7 +94,7 @@ export function WaterLogList({ logs, onDelete, showTotal = true }: WaterLogListP
                 </div>
 
                 {/* Amount */}
-                <span className="text-white font-medium">
+                <span className="text-foreground font-medium">
                   +{log.quantidade_ml}ml
                 </span>
               </div>
@@ -119,9 +119,9 @@ export function WaterLogList({ logs, onDelete, showTotal = true }: WaterLogListP
 
       {/* Total */}
       {showTotal && (
-        <div className="px-4 py-3 border-t border-[#2E2E3E] bg-[#0A0A0F] flex items-center justify-between">
-          <span className="text-sm text-slate-400">Total do dia</span>
-          <span className="font-bold text-cyan-400">
+        <div className="px-4 py-3 border-t border-border bg-background flex items-center justify-between">
+          <span className="text-sm text-foreground-secondary">Total do dia</span>
+          <span className="font-bold text-dourado">
             {total >= 1000 ? `${(total / 1000).toFixed(1)}L` : `${total}ml`}
           </span>
         </div>

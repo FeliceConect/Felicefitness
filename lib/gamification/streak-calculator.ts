@@ -1,4 +1,4 @@
-// Calculador de Streaks - FeliceFit Gamification
+// Calculador de Streaks - Complexo Wellness Gamification
 
 import type { StreakData, StreakDay } from '@/types/gamification'
 

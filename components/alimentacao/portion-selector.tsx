@@ -52,78 +52,78 @@ export function PortionSelector({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="w-full bg-[#14141F] rounded-t-3xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom)+80px)] max-h-[90vh] overflow-y-auto"
+        className="w-full bg-white rounded-t-3xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom)+80px)] max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{categoryInfo.icon}</span>
             <div>
-              <h3 className="text-xl font-bold text-white">{food.nome}</h3>
+              <h3 className="text-xl font-bold text-foreground">{food.nome}</h3>
               {food.marca && (
-                <p className="text-sm text-slate-400">{food.marca}</p>
+                <p className="text-sm text-foreground-secondary">{food.marca}</p>
               )}
             </div>
           </div>
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-slate-400" />
+            <X className="w-5 h-5 text-foreground-secondary" />
           </button>
         </div>
 
         {/* Nutrition info per portion */}
-        <div className="bg-slate-800/50 rounded-xl p-4 mb-6">
-          <p className="text-xs text-slate-500 mb-2">
+        <div className="bg-white/50 rounded-xl p-4 mb-6">
+          <p className="text-xs text-foreground-muted mb-2">
             Por {food.porcao_padrao}{food.unidade}
           </p>
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-lg font-bold text-white">{food.calorias}</p>
-              <p className="text-xs text-slate-400">kcal</p>
+              <p className="text-lg font-bold text-foreground">{food.calorias}</p>
+              <p className="text-xs text-foreground-secondary">kcal</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-violet-400">{food.proteinas}g</p>
-              <p className="text-xs text-slate-400">prot</p>
+              <p className="text-lg font-bold text-dourado">{food.proteinas}g</p>
+              <p className="text-xs text-foreground-secondary">prot</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-cyan-400">{food.carboidratos}g</p>
-              <p className="text-xs text-slate-400">carb</p>
+              <p className="text-lg font-bold text-dourado">{food.carboidratos}g</p>
+              <p className="text-xs text-foreground-secondary">carb</p>
             </div>
             <div>
               <p className="text-lg font-bold text-amber-400">{food.gorduras}g</p>
-              <p className="text-xs text-slate-400">gord</p>
+              <p className="text-xs text-foreground-secondary">gord</p>
             </div>
           </div>
         </div>
 
         {/* Quantity selector */}
         <div className="mb-6">
-          <label className="text-sm text-slate-400 block mb-3">Quantidade</label>
+          <label className="text-sm text-foreground-secondary block mb-3">Quantidade</label>
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => adjustQuantity(-10)}
-              className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
+              className="w-14 h-14 rounded-xl bg-white flex items-center justify-center hover:bg-background-elevated transition-colors"
             >
-              <Minus className="w-6 h-6 text-white" />
+              <Minus className="w-6 h-6 text-foreground" />
             </button>
             <div className="w-32 text-center">
               <motion.span
                 key={quantity}
                 initial={{ scale: 1.2, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="text-4xl font-bold text-white"
+                className="text-4xl font-bold text-foreground"
               >
                 {quantity}
               </motion.span>
-              <span className="text-xl text-slate-400 ml-1">{food.unidade}</span>
+              <span className="text-xl text-foreground-secondary ml-1">{food.unidade}</span>
             </div>
             <button
               onClick={() => adjustQuantity(10)}
-              className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
+              className="w-14 h-14 rounded-xl bg-white flex items-center justify-center hover:bg-background-elevated transition-colors"
             >
-              <Plus className="w-6 h-6 text-white" />
+              <Plus className="w-6 h-6 text-foreground" />
             </button>
           </div>
 
@@ -138,10 +138,10 @@ export function PortionSelector({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                     quantity === portion.grams
-                      ? 'bg-violet-500 text-white'
+                      ? 'bg-dourado text-white'
                       : portion.isDefault
-                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
-                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-dourado/20 text-dourado border border-dourado/30 hover:bg-dourado/30'
+                        : 'bg-white text-foreground-secondary hover:bg-background-elevated'
                   )}
                 >
                   {portion.label}
@@ -156,8 +156,8 @@ export function PortionSelector({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                     quantity === portion
-                      ? 'bg-violet-500 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      ? 'bg-dourado text-white'
+                      : 'bg-white text-foreground-secondary hover:bg-background-elevated'
                   )}
                 >
                   {portion}{food.unidade}
@@ -168,31 +168,31 @@ export function PortionSelector({
 
           {/* Mostrar peso em gramas quando usando porções comuns */}
           {food.porcoes_comuns && food.porcoes_comuns.length > 0 && (
-            <p className="text-center text-xs text-slate-500 mt-2">
+            <p className="text-center text-xs text-foreground-muted mt-2">
               = {quantity}{food.unidade}
             </p>
           )}
         </div>
 
         {/* Calculated macros */}
-        <div className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/20 rounded-xl p-4 mb-6">
-          <p className="text-xs text-slate-400 mb-2">Total para {quantity}{food.unidade}</p>
+        <div className="bg-gradient-to-r from-dourado/10 to-dourado/5 border border-dourado/20 rounded-xl p-4 mb-6">
+          <p className="text-xs text-foreground-secondary mb-2">Total para {quantity}{food.unidade}</p>
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-xl font-bold text-white">{macros.calorias}</p>
-              <p className="text-xs text-slate-400">kcal</p>
+              <p className="text-xl font-bold text-foreground">{macros.calorias}</p>
+              <p className="text-xs text-foreground-secondary">kcal</p>
             </div>
             <div>
-              <p className="text-xl font-bold text-violet-400">{macros.proteinas}g</p>
-              <p className="text-xs text-slate-400">prot</p>
+              <p className="text-xl font-bold text-dourado">{macros.proteinas}g</p>
+              <p className="text-xs text-foreground-secondary">prot</p>
             </div>
             <div>
-              <p className="text-xl font-bold text-cyan-400">{macros.carboidratos}g</p>
-              <p className="text-xs text-slate-400">carb</p>
+              <p className="text-xl font-bold text-dourado">{macros.carboidratos}g</p>
+              <p className="text-xs text-foreground-secondary">carb</p>
             </div>
             <div>
               <p className="text-xl font-bold text-amber-400">{macros.gorduras}g</p>
-              <p className="text-xs text-slate-400">gord</p>
+              <p className="text-xs text-foreground-secondary">gord</p>
             </div>
           </div>
         </div>
@@ -222,7 +222,7 @@ export function PortionSelector({
         {onToggleFavorite && (
           <button
             onClick={onToggleFavorite}
-            className="w-full mt-3 flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-amber-400 transition-colors"
+            className="w-full mt-3 flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-amber-400 transition-colors"
           >
             <Star className={cn(
               'w-4 h-4',

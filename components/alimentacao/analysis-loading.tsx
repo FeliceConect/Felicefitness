@@ -77,7 +77,7 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Preview da imagem com overlay */}
       <div className="relative aspect-square max-w-[300px] mx-auto mt-8 rounded-2xl overflow-hidden">
         {imagePreview && (
@@ -93,7 +93,7 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
 
         {/* Efeito de escaneamento */}
         <motion.div
-          className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-violet-500 to-transparent"
+          className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-dourado to-transparent"
           animate={{
             top: ['0%', '100%', '0%']
           }}
@@ -116,23 +116,23 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
               repeat: Infinity,
               ease: 'easeInOut'
             }}
-            className="w-20 h-20 rounded-full bg-violet-500/30 flex items-center justify-center"
+            className="w-20 h-20 rounded-full bg-dourado/30 flex items-center justify-center"
           >
-            <Sparkles className="w-10 h-10 text-violet-400" />
+            <Sparkles className="w-10 h-10 text-dourado" />
           </motion.div>
         </div>
       </div>
 
       {/* Status */}
       <div className="px-6 mt-8 flex-1">
-        <h2 className="text-xl font-bold text-white text-center mb-2">
+        <h2 className="text-xl font-bold text-foreground text-center mb-2">
           Analisando sua refeição...
         </h2>
 
         {/* Barra de progresso */}
-        <div className="bg-[#1E1E2E] rounded-full h-2 mb-6 overflow-hidden">
+        <div className="bg-background-elevated rounded-full h-2 mb-6 overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-violet-600 to-cyan-500"
+            className="h-full bg-gradient-to-r from-dourado to-dourado/70"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3 }}
@@ -157,8 +157,8 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center transition-colors',
                     status === 'completed' && 'bg-emerald-500',
-                    status === 'in_progress' && 'bg-violet-500',
-                    status === 'pending' && 'bg-[#2E2E3E]'
+                    status === 'in_progress' && 'bg-dourado',
+                    status === 'pending' && 'bg-border'
                   )}
                 >
                   {status === 'completed' ? (
@@ -185,7 +185,7 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
                       <Icon className="w-4 h-4 text-white" />
                     </motion.div>
                   ) : (
-                    <Icon className="w-4 h-4 text-slate-500" />
+                    <Icon className="w-4 h-4 text-foreground-muted" />
                   )}
                 </div>
 
@@ -193,8 +193,8 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
                   className={cn(
                     'text-sm font-medium',
                     status === 'completed' && 'text-emerald-400',
-                    status === 'in_progress' && 'text-white',
-                    status === 'pending' && 'text-slate-500'
+                    status === 'in_progress' && 'text-foreground',
+                    status === 'pending' && 'text-foreground-muted'
                   )}
                 >
                   {step.label}
@@ -205,7 +205,7 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: [0, 1, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
-                    className="text-violet-400 text-sm"
+                    className="text-dourado text-sm"
                   >
                     ...
                   </motion.span>
@@ -221,13 +221,13 @@ export function AnalysisLoading({ imagePreview }: AnalysisLoadingProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
+            <div className="w-8 h-8 rounded-full bg-dourado/20 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-dourado" />
             </div>
-            <p className="text-slate-400 text-sm">{TIPS[tipIndex]}</p>
+            <p className="text-foreground-secondary text-sm">{TIPS[tipIndex]}</p>
           </div>
         </motion.div>
       </div>

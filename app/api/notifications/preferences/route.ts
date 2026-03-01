@@ -72,6 +72,9 @@ export async function GET() {
       conquistas: {
         enabled: true
       },
+      consulta: {
+        enabled: true
+      },
       quietHours: DEFAULT_NOTIFICATION_PREFERENCES.quietHours
     }
 

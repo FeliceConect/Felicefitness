@@ -221,20 +221,20 @@ export function CardioInputModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-md bg-[#14141F] rounded-2xl flex flex-col max-h-[90vh]"
+            className="w-full max-w-md bg-white rounded-2xl flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 pb-2 border-b border-slate-800">
+            <div className="flex items-center justify-between p-4 pb-2 border-b border-border">
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-lg font-bold text-white">Adicionar Cardio</h3>
+                <h3 className="text-lg font-bold text-foreground">Adicionar Cardio</h3>
               </div>
               <button
                 onClick={onCancel}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
 
@@ -242,7 +242,7 @@ export function CardioInputModal({
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
               {/* Tipo de cardio */}
               <div>
-                <label className="text-sm text-slate-400 block mb-2">Tipo de exercicio</label>
+                <label className="text-sm text-foreground-secondary block mb-2">Tipo de exercicio</label>
                 <div className="grid grid-cols-3 gap-2">
                   {CARDIO_TYPES.map((cardioType) => (
                     <button
@@ -252,7 +252,7 @@ export function CardioInputModal({
                         'p-2 rounded-xl border transition-all',
                         tipo === cardioType.value
                           ? 'bg-emerald-500/20 border-emerald-500/50 text-white'
-                          : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-600'
+                          : 'bg-background-elevated/50 border-border text-foreground-secondary hover:border-dourado/30'
                       )}
                     >
                       <span className="text-xl block">{cardioType.icon}</span>
@@ -264,7 +264,7 @@ export function CardioInputModal({
 
               {/* Intensidade */}
               <div>
-                <label className="text-sm text-slate-400 flex items-center gap-1 mb-2">
+                <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                   <Activity className="w-4 h-4" />
                   Intensidade
                 </label>
@@ -276,12 +276,12 @@ export function CardioInputModal({
                       className={cn(
                         'p-2 rounded-xl border transition-all text-center',
                         intensidade === opt.value
-                          ? 'bg-violet-500/20 border-violet-500/50'
-                          : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                          ? 'bg-dourado/20 border-dourado/50'
+                          : 'bg-background-elevated/50 border-border hover:border-dourado/30'
                       )}
                     >
                       <span className="text-lg block">{opt.emoji}</span>
-                      <span className="text-[10px] text-slate-300">{opt.label}</span>
+                      <span className="text-[10px] text-foreground-secondary">{opt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -289,26 +289,26 @@ export function CardioInputModal({
 
               {/* Duracao */}
               <div>
-                <label className="text-sm text-slate-400 flex items-center gap-1 mb-2">
+                <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                   <Timer className="w-4 h-4" />
                   Duracao
                 </label>
                 <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => setDuracao(prev => Math.max(1, prev - 5))}
-                    className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                    className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                   >
-                    <Minus className="w-4 h-4 text-white" />
+                    <Minus className="w-4 h-4 text-foreground" />
                   </button>
                   <div className="w-24 text-center">
-                    <span className="text-3xl font-bold text-white">{duracao}</span>
-                    <span className="text-sm text-slate-400 ml-1">min</span>
+                    <span className="text-3xl font-bold text-foreground">{duracao}</span>
+                    <span className="text-sm text-foreground-secondary ml-1">min</span>
                   </div>
                   <button
                     onClick={() => setDuracao(prev => prev + 5)}
-                    className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                    className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                   >
-                    <Plus className="w-4 h-4 text-white" />
+                    <Plus className="w-4 h-4 text-foreground" />
                   </button>
                 </div>
                 <div className="flex justify-center gap-2 mt-2">
@@ -320,7 +320,7 @@ export function CardioInputModal({
                         'px-2 py-1 rounded-lg text-xs font-medium transition-colors',
                         duracao === d
                           ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                          : 'bg-background-elevated text-foreground-secondary hover:bg-border'
                       )}
                     >
                       {d}
@@ -332,32 +332,32 @@ export function CardioInputModal({
               {/* Distancia - se o tipo suportar */}
               {selectedType.hasDistance && (
                 <div>
-                  <label className="text-sm text-slate-400 flex items-center gap-1 mb-2">
+                  <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <Route className="w-4 h-4" />
                     Distancia (km)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={() => setDistancia(prev => Math.max(0, prev - 0.5))}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Minus className="w-4 h-4 text-white" />
+                      <Minus className="w-4 h-4 text-foreground" />
                     </button>
                     <div className="w-24 text-center">
-                      <span className="text-3xl font-bold text-white">{distancia.toFixed(1)}</span>
-                      <span className="text-sm text-slate-400 ml-1">km</span>
+                      <span className="text-3xl font-bold text-foreground">{distancia.toFixed(1)}</span>
+                      <span className="text-sm text-foreground-secondary ml-1">km</span>
                     </div>
                     <button
                       onClick={() => setDistancia(prev => prev + 0.5)}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Plus className="w-4 h-4 text-white" />
+                      <Plus className="w-4 h-4 text-foreground" />
                     </button>
                   </div>
                   {distancia > 0 && (
                     <div className="flex justify-center gap-4 mt-2 text-xs">
-                      <span className="text-cyan-400">Vel: {velocidadeCalculada} km/h</span>
-                      <span className="text-violet-400">Ritmo: {ritmo} /km</span>
+                      <span className="text-dourado">Vel: {velocidadeCalculada} km/h</span>
+                      <span className="text-dourado">Ritmo: {ritmo} /km</span>
                     </div>
                   )}
                 </div>
@@ -366,26 +366,26 @@ export function CardioInputModal({
               {/* Velocidade manual (se nao tiver distancia) */}
               {selectedType.hasDistance && distancia === 0 && (
                 <div>
-                  <label className="text-sm text-slate-400 flex items-center gap-1 mb-2">
+                  <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <Gauge className="w-4 h-4" />
                     Velocidade media (km/h)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={() => setVelocidade(prev => Math.max(0, prev - 0.5))}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Minus className="w-4 h-4 text-white" />
+                      <Minus className="w-4 h-4 text-foreground" />
                     </button>
                     <div className="w-24 text-center">
-                      <span className="text-3xl font-bold text-white">{velocidade.toFixed(1)}</span>
-                      <span className="text-sm text-slate-400 ml-1">km/h</span>
+                      <span className="text-3xl font-bold text-foreground">{velocidade.toFixed(1)}</span>
+                      <span className="text-sm text-foreground-secondary ml-1">km/h</span>
                     </div>
                     <button
                       onClick={() => setVelocidade(prev => prev + 0.5)}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Plus className="w-4 h-4 text-white" />
+                      <Plus className="w-4 h-4 text-foreground" />
                     </button>
                   </div>
                   <div className="flex justify-center gap-2 mt-2">
@@ -396,8 +396,8 @@ export function CardioInputModal({
                         className={cn(
                           'px-2 py-1 rounded-lg text-xs font-medium transition-colors',
                           velocidade === v
-                            ? 'bg-cyan-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            ? 'bg-dourado text-white'
+                            : 'bg-background-elevated text-foreground-secondary hover:bg-border'
                         )}
                       >
                         {v}
@@ -410,26 +410,26 @@ export function CardioInputModal({
               {/* Inclinacao - se o tipo suportar */}
               {selectedType.hasIncline && (
                 <div>
-                  <label className="text-sm text-slate-400 flex items-center gap-1 mb-2">
+                  <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <TrendingUp className="w-4 h-4" />
                     Inclinacao (%)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={() => setInclinacao(prev => Math.max(0, prev - 1))}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Minus className="w-4 h-4 text-white" />
+                      <Minus className="w-4 h-4 text-foreground" />
                     </button>
                     <div className="w-24 text-center">
-                      <span className="text-3xl font-bold text-white">{inclinacao}</span>
-                      <span className="text-sm text-slate-400 ml-1">%</span>
+                      <span className="text-3xl font-bold text-foreground">{inclinacao}</span>
+                      <span className="text-sm text-foreground-secondary ml-1">%</span>
                     </div>
                     <button
                       onClick={() => setInclinacao(prev => Math.min(15, prev + 1))}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Plus className="w-4 h-4 text-white" />
+                      <Plus className="w-4 h-4 text-foreground" />
                     </button>
                   </div>
                   <div className="flex justify-center gap-2 mt-2">
@@ -441,7 +441,7 @@ export function CardioInputModal({
                           'px-2 py-1 rounded-lg text-xs font-medium transition-colors',
                           inclinacao === i
                             ? 'bg-amber-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            : 'bg-background-elevated text-foreground-secondary hover:bg-border'
                         )}
                       >
                         {i}%
@@ -454,77 +454,77 @@ export function CardioInputModal({
               {/* Resistencia - se o tipo suportar */}
               {selectedType.hasResistance && (
                 <div>
-                  <label className="text-sm text-slate-400 flex items-center gap-1 mb-2">
+                  <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <Gauge className="w-4 h-4" />
                     Resistencia (nivel)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={() => setResistencia(prev => Math.max(1, prev - 1))}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Minus className="w-4 h-4 text-white" />
+                      <Minus className="w-4 h-4 text-foreground" />
                     </button>
                     <div className="w-24 text-center">
-                      <span className="text-3xl font-bold text-white">{resistencia}</span>
-                      <span className="text-sm text-slate-400 ml-1">/20</span>
+                      <span className="text-3xl font-bold text-foreground">{resistencia}</span>
+                      <span className="text-sm text-foreground-secondary ml-1">/20</span>
                     </div>
                     <button
                       onClick={() => setResistencia(prev => Math.min(20, prev + 1))}
-                      className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                      className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                     >
-                      <Plus className="w-4 h-4 text-white" />
+                      <Plus className="w-4 h-4 text-foreground" />
                     </button>
                   </div>
                 </div>
               )}
 
               {/* Frequencia Cardiaca */}
-              <div className="bg-slate-800/30 rounded-xl p-3">
-                <label className="text-sm text-slate-400 flex items-center gap-1 mb-3">
+              <div className="bg-background-elevated/30 rounded-xl p-3">
+                <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-3">
                   <Heart className="w-4 h-4 text-red-400" />
                   Frequencia Cardiaca (opcional)
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="text-xs text-slate-500 block mb-1">FC Media</span>
+                    <span className="text-xs text-foreground-muted block mb-1">FC Media</span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setFcMedia(prev => Math.max(0, prev - 5))}
-                        className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                        className="w-8 h-8 rounded-lg bg-background-elevated flex items-center justify-center hover:bg-border"
                       >
-                        <Minus className="w-3 h-3 text-white" />
+                        <Minus className="w-3 h-3 text-foreground" />
                       </button>
                       <div className="flex-1 text-center">
-                        <span className="text-xl font-bold text-white">{fcMedia || '--'}</span>
-                        <span className="text-xs text-slate-400 ml-1">bpm</span>
+                        <span className="text-xl font-bold text-foreground">{fcMedia || '--'}</span>
+                        <span className="text-xs text-foreground-secondary ml-1">bpm</span>
                       </div>
                       <button
                         onClick={() => setFcMedia(prev => prev + 5)}
-                        className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                        className="w-8 h-8 rounded-lg bg-background-elevated flex items-center justify-center hover:bg-border"
                       >
-                        <Plus className="w-3 h-3 text-white" />
+                        <Plus className="w-3 h-3 text-foreground" />
                       </button>
                     </div>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-500 block mb-1">FC Max</span>
+                    <span className="text-xs text-foreground-muted block mb-1">FC Max</span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setFcMax(prev => Math.max(0, prev - 5))}
-                        className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                        className="w-8 h-8 rounded-lg bg-background-elevated flex items-center justify-center hover:bg-border"
                       >
-                        <Minus className="w-3 h-3 text-white" />
+                        <Minus className="w-3 h-3 text-foreground" />
                       </button>
                       <div className="flex-1 text-center">
-                        <span className="text-xl font-bold text-white">{fcMax || '--'}</span>
-                        <span className="text-xs text-slate-400 ml-1">bpm</span>
+                        <span className="text-xl font-bold text-foreground">{fcMax || '--'}</span>
+                        <span className="text-xs text-foreground-secondary ml-1">bpm</span>
                       </div>
                       <button
                         onClick={() => setFcMax(prev => prev + 5)}
-                        className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700"
+                        className="w-8 h-8 rounded-lg bg-background-elevated flex items-center justify-center hover:bg-border"
                       >
-                        <Plus className="w-3 h-3 text-white" />
+                        <Plus className="w-3 h-3 text-foreground" />
                       </button>
                     </div>
                   </div>
@@ -536,40 +536,40 @@ export function CardioInputModal({
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Flame className="w-5 h-5 text-orange-400" />
-                    <span className="text-sm text-slate-300">Calorias estimadas</span>
+                    <span className="text-sm text-foreground-secondary">Calorias estimadas</span>
                   </div>
-                  <span className="text-xs text-slate-500">MET: {met}</span>
+                  <span className="text-xs text-foreground-muted">MET: {met}</span>
                 </div>
                 <p className="text-4xl font-bold text-orange-400 text-center">{calorias} kcal</p>
 
                 {/* Resumo dos dados */}
                 <div className="mt-3 pt-3 border-t border-orange-500/20 grid grid-cols-3 gap-2 text-center text-xs">
                   <div>
-                    <span className="text-slate-500 block">Duracao</span>
-                    <span className="text-white font-medium">{duracao} min</span>
+                    <span className="text-foreground-muted block">Duracao</span>
+                    <span className="text-foreground font-medium">{duracao} min</span>
                   </div>
                   {distancia > 0 && (
                     <div>
-                      <span className="text-slate-500 block">Distancia</span>
-                      <span className="text-white font-medium">{distancia.toFixed(1)} km</span>
+                      <span className="text-foreground-muted block">Distancia</span>
+                      <span className="text-foreground font-medium">{distancia.toFixed(1)} km</span>
                     </div>
                   )}
                   {velocidadeFinal > 0 && (
                     <div>
-                      <span className="text-slate-500 block">Vel. Media</span>
-                      <span className="text-white font-medium">{velocidadeFinal} km/h</span>
+                      <span className="text-foreground-muted block">Vel. Media</span>
+                      <span className="text-foreground font-medium">{velocidadeFinal} km/h</span>
                     </div>
                   )}
                   {inclinacao > 0 && (
                     <div>
-                      <span className="text-slate-500 block">Inclinacao</span>
-                      <span className="text-white font-medium">{inclinacao}%</span>
+                      <span className="text-foreground-muted block">Inclinacao</span>
+                      <span className="text-foreground font-medium">{inclinacao}%</span>
                     </div>
                   )}
                   {fcMedia > 0 && (
                     <div>
-                      <span className="text-slate-500 block">FC Media</span>
-                      <span className="text-white font-medium">{fcMedia} bpm</span>
+                      <span className="text-foreground-muted block">FC Media</span>
+                      <span className="text-foreground font-medium">{fcMedia} bpm</span>
                     </div>
                   )}
                 </div>
@@ -577,7 +577,7 @@ export function CardioInputModal({
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 p-4 pt-3 border-t border-slate-800">
+            <div className="flex gap-3 p-4 pt-3 border-t border-border">
               <Button
                 variant="outline"
                 size="default"

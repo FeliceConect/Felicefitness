@@ -174,23 +174,23 @@ function NewMealContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-32">
+    <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Nova Refeição</h1>
+        <h1 className="text-2xl font-bold text-foreground">Nova Refeição</h1>
       </div>
 
       {/* Meal type selector */}
       <div className="px-4 mb-6">
-        <label className="text-sm text-slate-400 block mb-2">Tipo de refeição</label>
+        <label className="text-sm text-foreground-secondary block mb-2">Tipo de refeição</label>
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
           {mealTypes.map(type => (
             <button
@@ -199,8 +199,8 @@ function NewMealContent() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all',
                 selectedType === type
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  ? 'bg-dourado text-white'
+                  : 'bg-white text-foreground-secondary hover:bg-background-elevated'
               )}
             >
               <span>{mealTypeIcons[type]}</span>
@@ -212,14 +212,14 @@ function NewMealContent() {
 
       {/* Time selector */}
       <div className="px-4 mb-6">
-        <label className="text-sm text-slate-400 block mb-2">Horário</label>
+        <label className="text-sm text-foreground-secondary block mb-2">Horário</label>
         <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-slate-500" />
+          <Clock className="w-5 h-5 text-foreground-muted" />
           <input
             type="time"
             value={horario}
             onChange={(e) => setHorario(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="bg-white border border-border rounded-xl px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-dourado"
           />
         </div>
       </div>
@@ -228,7 +228,7 @@ function NewMealContent() {
       {items.length > 0 && (
         <div className="px-4 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
               Alimentos ({items.length})
             </h3>
           </div>
@@ -242,12 +242,12 @@ function NewMealContent() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="flex items-center gap-3 p-3 bg-[#14141F] border border-[#2E2E3E] rounded-xl"
+                  className="flex items-center gap-3 p-3 bg-white border border-border rounded-xl"
                 >
                   <span className="text-xl">{categoryInfo.icon}</span>
                   <div className="flex-1">
-                    <p className="text-white font-medium">{item.food.nome}</p>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-foreground font-medium">{item.food.nome}</p>
+                    <p className="text-sm text-foreground-secondary">
                       {item.quantidade}{item.food.unidade} • {item.calorias} kcal • {item.proteinas}g prot
                     </p>
                   </div>
@@ -263,23 +263,23 @@ function NewMealContent() {
           </div>
 
           {/* Totals */}
-          <div className="mt-4 p-4 bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/20 rounded-xl">
+          <div className="mt-4 p-4 bg-gradient-to-r from-dourado/10 to-dourado/5 border border-dourado/20 rounded-xl">
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <p className="text-lg font-bold text-white">{Math.round(totals.calorias)}</p>
-                <p className="text-xs text-slate-400">kcal</p>
+                <p className="text-lg font-bold text-foreground">{Math.round(totals.calorias)}</p>
+                <p className="text-xs text-foreground-secondary">kcal</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-violet-400">{Math.round(totals.proteinas)}g</p>
-                <p className="text-xs text-slate-400">prot</p>
+                <p className="text-lg font-bold text-dourado">{Math.round(totals.proteinas)}g</p>
+                <p className="text-xs text-foreground-secondary">prot</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-cyan-400">{Math.round(totals.carboidratos)}g</p>
-                <p className="text-xs text-slate-400">carb</p>
+                <p className="text-lg font-bold text-dourado">{Math.round(totals.carboidratos)}g</p>
+                <p className="text-xs text-foreground-secondary">carb</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-amber-400">{Math.round(totals.gorduras)}g</p>
-                <p className="text-xs text-slate-400">gord</p>
+                <p className="text-xs text-foreground-secondary">gord</p>
               </div>
             </div>
           </div>
@@ -288,7 +288,7 @@ function NewMealContent() {
 
       {/* Food search */}
       <div className="px-4 mb-6">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-3">
           Adicionar Alimentos
         </h3>
         <FoodSearch
@@ -305,19 +305,19 @@ function NewMealContent() {
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-gradient-to-r from-violet-500/20 to-cyan-500/20 border border-violet-500/30 rounded-xl p-4"
+            className="bg-gradient-to-r from-dourado/20 to-dourado/10 border border-dourado/30 rounded-xl p-4"
           >
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-7 h-7 text-white" />
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-dourado to-dourado/70 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-7 h-7 text-foreground" />
               </div>
               <div className="flex-1">
-                <p className="text-white font-semibold mb-1">Analisar com IA</p>
-                <p className="text-slate-400 text-sm">
+                <p className="text-foreground font-semibold mb-1">Analisar com IA</p>
+                <p className="text-foreground-secondary text-sm">
                   Tire uma foto e a IA identifica os alimentos e macros automaticamente
                 </p>
               </div>
-              <div className="text-violet-400">
+              <div className="text-dourado">
                 <Camera className="w-6 h-6" />
               </div>
             </div>
@@ -326,25 +326,25 @@ function NewMealContent() {
       </div>
 
       <div className="px-4 mb-6 flex items-center gap-4">
-        <div className="flex-1 h-px bg-[#2E2E3E]" />
-        <span className="text-slate-500 text-sm">ou adicione manualmente</span>
-        <div className="flex-1 h-px bg-[#2E2E3E]" />
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-foreground-muted text-sm">ou adicione manualmente</span>
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       {/* Notes */}
       <div className="px-4 mb-6">
-        <label className="text-sm text-slate-400 block mb-2">Notas (opcional)</label>
+        <label className="text-sm text-foreground-secondary block mb-2">Notas (opcional)</label>
         <textarea
           value={notas}
           onChange={(e) => setNotas(e.target.value)}
           placeholder="Ex: Antes do treino, pós jejum..."
-          className="w-full bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+          className="w-full bg-white border border-border rounded-xl p-4 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado resize-none"
           rows={2}
         />
       </div>
 
       {/* Save button */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-8 z-40">
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8 z-40">
         <Button
           variant="gradient"
           size="lg"
@@ -385,7 +385,7 @@ function NewMealContent() {
 
 export default function NewMealPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center"><div className="text-slate-400">Carregando...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="text-foreground-secondary">Carregando...</div></div>}>
       <NewMealContent />
     </Suspense>
   )

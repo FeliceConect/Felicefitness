@@ -49,19 +49,19 @@ export default function MedicaoPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">Carregando...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-foreground-secondary">Carregando...</div>
       </div>
     )
   }
 
   if (!measurement) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] pb-24">
+      <div className="min-h-screen bg-background pb-24">
         <div className="px-4 pt-12">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground-secondary transition-colors mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
@@ -69,8 +69,8 @@ export default function MedicaoPage() {
         </div>
 
         <div className="px-4 text-center mt-12">
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-8">
-            <p className="text-slate-400">Medição não encontrada</p>
+          <div className="bg-white border border-border rounded-2xl p-8">
+            <p className="text-foreground-secondary">Medição não encontrada</p>
           </div>
         </div>
       </div>
@@ -78,13 +78,13 @@ export default function MedicaoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground-secondary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
@@ -102,8 +102,8 @@ export default function MedicaoPage() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-white mb-1">Detalhes da Medição</h1>
-        <div className="flex items-center gap-2 text-slate-400 text-sm">
+        <h1 className="text-2xl font-bold text-foreground mb-1">Detalhes da Medição</h1>
+        <div className="flex items-center gap-2 text-foreground-secondary text-sm">
           <Calendar className="w-4 h-4" />
           <span>
             {format(parseISO(measurement.data), "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
@@ -116,7 +116,7 @@ export default function MedicaoPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-br from-violet-500/10 to-cyan-500/5 border border-violet-500/20 rounded-2xl p-6"
+          className="bg-gradient-to-br from-dourado/10 to-dourado/5 border border-dourado/20 rounded-2xl p-6"
         >
           <div className="flex justify-center mb-6">
             <InBodyScoreRing
@@ -130,20 +130,20 @@ export default function MedicaoPage() {
           {/* Quick metrics */}
           <div className="grid grid-cols-4 gap-2 text-center">
             <div>
-              <p className="text-slate-500 text-[10px] mb-0.5">Peso</p>
-              <p className="text-sm font-bold text-white">{measurement.peso.toFixed(1)}kg</p>
+              <p className="text-foreground-muted text-[10px] mb-0.5">Peso</p>
+              <p className="text-sm font-bold text-foreground">{measurement.peso.toFixed(1)}kg</p>
             </div>
             <div>
-              <p className="text-slate-500 text-[10px] mb-0.5">Gordura</p>
-              <p className="text-sm font-bold text-white">{measurement.musculo_gordura.percentual_gordura.toFixed(1)}%</p>
+              <p className="text-foreground-muted text-[10px] mb-0.5">Gordura</p>
+              <p className="text-sm font-bold text-foreground">{measurement.musculo_gordura.percentual_gordura.toFixed(1)}%</p>
             </div>
             <div>
-              <p className="text-slate-500 text-[10px] mb-0.5">Músculo</p>
-              <p className="text-sm font-bold text-white">{measurement.musculo_gordura.massa_muscular_esqueletica.toFixed(1)}kg</p>
+              <p className="text-foreground-muted text-[10px] mb-0.5">Músculo</p>
+              <p className="text-sm font-bold text-foreground">{measurement.musculo_gordura.massa_muscular_esqueletica.toFixed(1)}kg</p>
             </div>
             <div>
-              <p className="text-slate-500 text-[10px] mb-0.5">IMC</p>
-              <p className="text-sm font-bold text-white">{measurement.musculo_gordura.imc.toFixed(1)}</p>
+              <p className="text-foreground-muted text-[10px] mb-0.5">IMC</p>
+              <p className="text-sm font-bold text-foreground">{measurement.musculo_gordura.imc.toFixed(1)}</p>
             </div>
           </div>
         </motion.div>
@@ -196,12 +196,12 @@ export default function MedicaoPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4"
+            className="bg-white border border-border rounded-2xl p-4"
           >
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">
+            <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-2">
               Observações
             </h3>
-            <p className="text-slate-300">{measurement.notas}</p>
+            <p className="text-foreground-secondary">{measurement.notas}</p>
           </motion.div>
         </div>
       )}
@@ -211,27 +211,27 @@ export default function MedicaoPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4"
+          className="bg-white border border-border rounded-2xl p-4"
         >
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-slate-500 text-xs mb-1">Fonte</p>
-              <p className="text-white capitalize">
+              <p className="text-foreground-muted text-xs mb-1">Fonte</p>
+              <p className="text-foreground capitalize">
                 {measurement.fonte === 'inbody' ? 'InBody' :
                  measurement.fonte === 'manual' ? 'Manual' : 'Balança Smart'}
               </p>
             </div>
             <div>
-              <p className="text-slate-500 text-xs mb-1">Horário</p>
-              <p className="text-white">{measurement.horario || '--'}</p>
+              <p className="text-foreground-muted text-xs mb-1">Horário</p>
+              <p className="text-foreground">{measurement.horario || '--'}</p>
             </div>
             <div>
-              <p className="text-slate-500 text-xs mb-1">Altura</p>
-              <p className="text-white">{measurement.altura}cm</p>
+              <p className="text-foreground-muted text-xs mb-1">Altura</p>
+              <p className="text-foreground">{measurement.altura}cm</p>
             </div>
             <div>
-              <p className="text-slate-500 text-xs mb-1">Idade</p>
-              <p className="text-white">{measurement.idade} anos</p>
+              <p className="text-foreground-muted text-xs mb-1">Idade</p>
+              <p className="text-foreground">{measurement.idade} anos</p>
             </div>
           </div>
         </motion.div>

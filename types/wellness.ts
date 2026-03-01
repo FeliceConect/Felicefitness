@@ -30,44 +30,6 @@ export interface MoodFactor {
   icon: string
 }
 
-// Breathing pattern phases
-export interface BreathingPhases {
-  inhale: number
-  holdIn: number
-  exhale: number
-  holdOut: number
-}
-
-// Breathing pattern
-export interface BreathingPattern {
-  id: string
-  name: string
-  description: string
-  duration: number
-  icon: string
-  phases: BreathingPhases
-  cycles: number
-  benefits: string[]
-}
-
-// Breathing phase type
-export type BreathingPhase = 'inhale' | 'holdIn' | 'exhale' | 'holdOut' | 'idle'
-
-// Meditation category
-export type MeditationCategory = 'focus' | 'relax' | 'sleep' | 'morning' | 'gratitude'
-
-// Meditation
-export interface Meditation {
-  id: string
-  name: string
-  description: string
-  duration: number
-  category: MeditationCategory
-  icon: string
-  audioUrl?: string
-  steps?: string[]
-}
-
 // Wellness check-in input
 export interface WellnessCheckinInput {
   mood: number
@@ -90,37 +52,6 @@ export interface WellnessCheckin {
   fatoresPositivos: string[]
   fatoresNegativos: string[]
   notas?: string
-  createdAt: string
-}
-
-// Breathing session
-export interface BreathingSession {
-  id: string
-  userId: string
-  patternId: string
-  duracaoSegundos: number
-  ciclosCompletados: number
-  completado: boolean
-  createdAt: string
-}
-
-// Meditation session
-export interface MeditationSession {
-  id: string
-  userId: string
-  meditationId: string
-  duracaoSegundos: number
-  completado: boolean
-  createdAt: string
-}
-
-// Gratitude entry
-export interface GratitudeEntry {
-  id: string
-  userId: string
-  data: string
-  entrada: string
-  ordem: number
   createdAt: string
 }
 

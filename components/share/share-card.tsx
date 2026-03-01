@@ -41,7 +41,7 @@ export function ShareCard({ theme, format, children, className }: ShareCardProps
         className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm font-medium opacity-70"
         style={{ color: colors.secondary }}
       >
-        FeliceFit
+        Complexo Wellness
       </div>
     </div>
   )

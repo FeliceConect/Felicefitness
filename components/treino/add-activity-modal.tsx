@@ -100,24 +100,24 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 100 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full sm:max-w-md bg-[#14141F] rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col"
+          className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-[#2E2E3E]">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-border">
             {step === 'details' && (
               <button
                 onClick={handleBack}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
+                className="p-2 text-foreground-secondary hover:text-foreground transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             )}
-            <h2 className="text-lg font-bold text-white flex-1 text-center">
+            <h2 className="text-lg font-bold text-foreground flex-1 text-center">
               {step === 'type' ? 'Registrar Atividade' : activityType && activityTypeLabels[activityType].label}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white transition-colors"
+              className="p-2 text-foreground-secondary hover:text-foreground transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -127,7 +127,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
           <div className="flex-1 overflow-y-auto p-4">
             {step === 'type' ? (
               <>
-                <p className="text-slate-400 text-sm mb-4">
+                <p className="text-foreground-secondary text-sm mb-4">
                   Selecione o tipo de atividade que você realizou:
                 </p>
                 <div className="grid grid-cols-4 gap-2">
@@ -137,12 +137,12 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                       onClick={() => handleSelectType(type)}
                       className={cn(
                         'flex flex-col items-center gap-1 p-3 rounded-xl transition-colors',
-                        'bg-slate-800/50 hover:bg-slate-800 border border-transparent',
-                        'hover:border-violet-500/50'
+                        'bg-background-elevated/50 hover:bg-background-elevated border border-transparent',
+                        'hover:border-dourado/50'
                       )}
                     >
                       <span className="text-2xl">{info.icon}</span>
-                      <span className="text-[10px] text-slate-400 text-center leading-tight">
+                      <span className="text-[10px] text-foreground-secondary text-center leading-tight">
                         {info.label}
                       </span>
                     </button>
@@ -154,7 +154,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                 {/* Nome customizado (se tipo = outro) */}
                 {activityType === 'outro' && (
                   <div>
-                    <label className="text-sm text-slate-400 block mb-2">
+                    <label className="text-sm text-foreground-secondary block mb-2">
                       Nome da atividade *
                     </label>
                     <input
@@ -162,14 +162,14 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                       value={customName}
                       onChange={(e) => setCustomName(e.target.value)}
                       placeholder="Ex: Aula de dança"
-                      className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="w-full bg-background-elevated border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
                     />
                   </div>
                 )}
 
                 {/* Duração */}
                 <div>
-                  <label className="text-sm text-slate-400 block mb-2 flex items-center gap-2">
+                  <label className="text-sm text-foreground-secondary block mb-2 flex items-center gap-2">
                     <Clock className="w-4 h-4" />
                     Duração (minutos) *
                   </label>
@@ -181,8 +181,8 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                         className={cn(
                           'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
                           duration === mins.toString()
-                            ? 'bg-violet-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:text-white'
+                            ? 'bg-dourado text-white'
+                            : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
                         )}
                       >
                         {mins}
@@ -194,13 +194,13 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
                     placeholder="Ou digite o tempo"
-                    className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full bg-background-elevated border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
                   />
                 </div>
 
                 {/* Intensidade */}
                 <div>
-                  <label className="text-sm text-slate-400 block mb-2">
+                  <label className="text-sm text-foreground-secondary block mb-2">
                     Intensidade *
                   </label>
                   <div className="grid grid-cols-4 gap-2">
@@ -211,8 +211,8 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                         className={cn(
                           'py-2 rounded-lg text-sm font-medium transition-colors',
                           intensity === level
-                            ? 'bg-violet-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:text-white'
+                            ? 'bg-dourado text-white'
+                            : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
                         )}
                       >
                         {info.label}
@@ -223,7 +223,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
 
                 {/* Calorias */}
                 <div>
-                  <label className="text-sm text-slate-400 block mb-2 flex items-center gap-2">
+                  <label className="text-sm text-foreground-secondary block mb-2 flex items-center gap-2">
                     <Flame className="w-4 h-4" />
                     Calorias queimadas (opcional)
                   </label>
@@ -232,14 +232,14 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                     value={calories}
                     onChange={(e) => setCalories(e.target.value)}
                     placeholder="Ex: 350"
-                    className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full bg-background-elevated border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
                   />
                 </div>
 
                 {/* Distância (para atividades cardio) */}
                 {['corrida', 'caminhada', 'natacao', 'ciclismo'].includes(activityType || '') && (
                   <div>
-                    <label className="text-sm text-slate-400 block mb-2">
+                    <label className="text-sm text-foreground-secondary block mb-2">
                       Distância em km (opcional)
                     </label>
                     <input
@@ -248,14 +248,14 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                       value={distance}
                       onChange={(e) => setDistance(e.target.value)}
                       placeholder="Ex: 5.5"
-                      className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="w-full bg-background-elevated border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
                     />
                   </div>
                 )}
 
                 {/* Local */}
                 <div>
-                  <label className="text-sm text-slate-400 block mb-2 flex items-center gap-2">
+                  <label className="text-sm text-foreground-secondary block mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
                     Local (opcional)
                   </label>
@@ -264,13 +264,13 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Ex: Praia de Ipanema"
-                    className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full bg-background-elevated border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
                   />
                 </div>
 
                 {/* Notas */}
                 <div>
-                  <label className="text-sm text-slate-400 block mb-2 flex items-center gap-2">
+                  <label className="text-sm text-foreground-secondary block mb-2 flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Observações (opcional)
                   </label>
@@ -279,7 +279,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Como foi a atividade? Como se sentiu?"
                     rows={3}
-                    className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                    className="w-full bg-background-elevated border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado resize-none"
                   />
                 </div>
               </div>
@@ -288,7 +288,7 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
 
           {/* Footer - só mostra no step de detalhes */}
           {step === 'details' && (
-            <div className="p-4 border-t border-[#2E2E3E]">
+            <div className="p-4 border-t border-border">
               <button
                 onClick={handleSave}
                 disabled={!duration || saving || (activityType === 'outro' && !customName)}
@@ -296,8 +296,8 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
                   'w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2',
                   'transition-colors',
                   duration && !saving && (activityType !== 'outro' || customName)
-                    ? 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white'
-                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-dourado to-vinho text-white'
+                    : 'bg-background-elevated text-foreground-secondary cursor-not-allowed'
                 )}
               >
                 {saving ? (

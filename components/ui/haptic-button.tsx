@@ -15,11 +15,11 @@ interface HapticButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles = {
-  default: 'bg-[#14141F] border border-[#2E2E3E] text-white hover:bg-[#1E1E2E]',
-  primary: 'bg-gradient-to-r from-violet-600 to-violet-500 text-white hover:from-violet-500 hover:to-violet-400',
-  secondary: 'bg-[#2E2E3E] text-white hover:bg-[#3E3E4E]',
-  ghost: 'bg-transparent text-slate-400 hover:bg-[#14141F] hover:text-white',
-  danger: 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20'
+  default: 'bg-background-card border border-border text-foreground hover:bg-background-elevated',
+  primary: 'bg-dourado text-white hover:bg-primary-hover',
+  secondary: 'bg-background-elevated text-foreground hover:bg-border',
+  ghost: 'bg-transparent text-foreground-muted hover:bg-background-elevated hover:text-foreground',
+  danger: 'bg-error/10 border border-error/30 text-error hover:bg-error/20'
 }
 
 const sizeStyles = {
@@ -72,7 +72,7 @@ export const HapticButton = forwardRef<HTMLButtonElement, HapticButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'relative overflow-hidden font-medium transition-all focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-[#0A0A0F] disabled:opacity-50 disabled:cursor-not-allowed',
+          'relative overflow-hidden font-medium transition-all focus:outline-none focus:ring-2 focus:ring-dourado/50 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed',
           variantStyles[variant],
           sizeStyles[size],
           isPressed && 'scale-[0.97]',
@@ -126,7 +126,7 @@ export function FloatingActionButton({
       size="icon"
       hapticType="medium"
       className={cn(
-        'fixed bottom-24 right-4 w-14 h-14 rounded-full shadow-lg shadow-violet-500/25 z-40',
+        'fixed bottom-24 right-4 w-14 h-14 rounded-full shadow-lg shadow-dourado/25 z-40',
         className
       )}
       onClick={onClick}
@@ -154,8 +154,8 @@ export function IncrementButton({
       onClick={onClick}
       {...props}
     >
-      <span className="text-cyan-400 font-bold">+{value}</span>
-      {unit && <span className="text-xs text-slate-500">{unit}</span>}
+      <span className="text-dourado font-bold">+{value}</span>
+      {unit && <span className="text-xs text-foreground-muted">{unit}</span>}
     </HapticButton>
   )
 }
@@ -174,7 +174,7 @@ export function ToggleButton({
       hapticType={isActive ? 'success' : 'light'}
       className={cn(
         'transition-all',
-        isActive && 'ring-2 ring-violet-500/30',
+        isActive && 'ring-2 ring-dourado/30',
         className
       )}
       onClick={onClick}

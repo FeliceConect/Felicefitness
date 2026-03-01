@@ -17,6 +17,6 @@ export const config = {
      * - sw.js (service worker)
      * - workbox (workbox files)
      */
-    '/((?!_next/static|_next/image|favicon.ico|icons|manifest|sw.js|workbox-.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icons|fonts|manifest|sw.js|workbox-.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2?|ttf|otf|eot)$).*)',
   ],
 }

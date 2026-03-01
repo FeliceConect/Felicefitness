@@ -139,9 +139,9 @@ export function MealPlanCard({
               <Utensils className="w-5 h-5 text-green-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">{plan.name}</h3>
+              <h3 className="font-semibold text-foreground">{plan.name}</h3>
               {plan.professional && (
-                <p className="text-xs text-slate-400 flex items-center gap-1">
+                <p className="text-xs text-foreground-secondary flex items-center gap-1">
                   <User className="w-3 h-3" />
                   {plan.professional.display_name || 'Nutricionista'}
                 </p>
@@ -150,24 +150,24 @@ export function MealPlanCard({
           </div>
           <div className="text-right">
             <p className="text-lg font-bold text-green-400">{completedCount}/{totalCount}</p>
-            <p className="text-xs text-slate-400">refeições</p>
+            <p className="text-xs text-foreground-secondary">refeições</p>
           </div>
         </div>
 
         {/* Training Day Indicator */}
         <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg ${
           isTrainingDay
-            ? 'bg-violet-500/10 border border-violet-500/20'
-            : 'bg-slate-800/50 border border-slate-700/50'
+            ? 'bg-dourado/10 border border-dourado/20'
+            : 'bg-white/50 border border-border/50'
         }`}>
           <span className="text-lg">{isTrainingDay ? '💪' : '😴'}</span>
-          <span className={`text-sm font-medium ${isTrainingDay ? 'text-violet-400' : 'text-slate-400'}`}>
+          <span className={`text-sm font-medium ${isTrainingDay ? 'text-dourado' : 'text-foreground-secondary'}`}>
             {isTrainingDay ? 'Dia de Treino' : 'Dia de Descanso'}
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+        <div className="mt-3 h-1.5 bg-white rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
             initial={{ width: 0 }}
@@ -217,7 +217,7 @@ export function MealPlanCard({
                   </span>
                   <div className="text-left">
                     <div className="flex items-center gap-2">
-                      <span className={`font-medium ${isCompleted ? 'text-green-400 line-through' : 'text-white'}`}>
+                      <span className={`font-medium ${isCompleted ? 'text-green-400 line-through' : 'text-foreground'}`}>
                         {meal.meal_name || MEAL_TYPE_LABELS[meal.meal_type]}
                       </span>
                       {isCompleted && (
@@ -227,7 +227,7 @@ export function MealPlanCard({
                       )}
                     </div>
                     {meal.scheduled_time && (
-                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                      <p className="text-xs text-foreground-secondary flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {meal.scheduled_time}
                       </p>
@@ -242,9 +242,9 @@ export function MealPlanCard({
                     </span>
                   )}
                   {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-slate-400" />
+                    <ChevronUp className="w-5 h-5 text-foreground-secondary" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-slate-400" />
+                    <ChevronDown className="w-5 h-5 text-foreground-secondary" />
                   )}
                 </div>
               </button>
@@ -262,20 +262,20 @@ export function MealPlanCard({
                     <div className="px-4 pb-4 space-y-3">
                       {/* Foods List */}
                       <div className={`rounded-lg p-3 space-y-2 ${
-                        isCustomMeal ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-slate-800/50'
+                        isCustomMeal ? 'bg-dourado/10 border border-dourado/20' : 'bg-white/50'
                       }`}>
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-medium text-slate-400 uppercase">Alimentos</p>
+                          <p className="text-xs font-medium text-foreground-secondary uppercase">Alimentos</p>
                           {isCustomMeal && (
-                            <span className="text-xs text-violet-400 px-2 py-0.5 bg-violet-500/20 rounded">
+                            <span className="text-xs text-dourado px-2 py-0.5 bg-dourado/20 rounded">
                               Personalizada
                             </span>
                           )}
                         </div>
                         {displayFoods?.map((food, idx) => (
                           <div key={idx} className="flex items-center justify-between text-sm">
-                            <span className="text-slate-300">{food.name}</span>
-                            <span className="text-slate-400">
+                            <span className="text-foreground-secondary">{food.name}</span>
+                            <span className="text-foreground-secondary">
                               {food.quantity}{food.unit} • {food.calories || 0} kcal
                             </span>
                           </div>
@@ -293,7 +293,7 @@ export function MealPlanCard({
 
                       {/* Instructions */}
                       {meal.instructions && (
-                        <p className="text-xs text-slate-400 italic">{meal.instructions}</p>
+                        <p className="text-xs text-foreground-secondary italic">{meal.instructions}</p>
                       )}
 
                       {/* Alternatives with Option Buttons */}
@@ -302,7 +302,7 @@ export function MealPlanCard({
                           {/* Quick Option Selector */}
                           {!isCompleted && (
                             <div>
-                              <p className="text-xs text-slate-400 mb-2">Escolha uma opção:</p>
+                              <p className="text-xs text-foreground-secondary mb-2">Escolha uma opção:</p>
                               <div className="flex gap-2 flex-wrap">
                                 {/* Option A (primary) */}
                                 <button
@@ -321,9 +321,9 @@ export function MealPlanCard({
                                     <button
                                       key={altIdx}
                                       onClick={() => onCompleteMeal(meal, altIdx)}
-                                      className="flex items-center gap-2 px-3 py-2 bg-violet-500/20 border border-violet-500/30 text-violet-400 rounded-lg hover:bg-violet-500/30 transition-colors"
+                                      className="flex items-center gap-2 px-3 py-2 bg-dourado/20 border border-dourado/30 text-dourado rounded-lg hover:bg-dourado/30 transition-colors"
                                     >
-                                      <span className="w-6 h-6 rounded-full bg-violet-500 text-white text-sm font-bold flex items-center justify-center">{optionLetter}</span>
+                                      <span className="w-6 h-6 rounded-full bg-vinho text-white text-sm font-bold flex items-center justify-center">{optionLetter}</span>
                                       <span className="text-sm font-medium truncate max-w-[120px]">{optionName}</span>
                                     </button>
                                   )
@@ -335,7 +335,7 @@ export function MealPlanCard({
                           {/* Expandable Details */}
                           <button
                             onClick={() => setShowAlternatives(showAlternatives === meal.id ? null : meal.id)}
-                            className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-300"
+                            className="flex items-center gap-2 text-sm text-foreground-secondary hover:text-foreground"
                           >
                             <ArrowRightLeft className="w-4 h-4" />
                             {showAlternatives === meal.id ? 'Esconder' : 'Ver'} detalhes das opções
@@ -358,8 +358,8 @@ export function MealPlanCard({
                                   <div className="space-y-1">
                                     {meal.foods?.map((food, foodIdx) => (
                                       <div key={foodIdx} className="flex items-center justify-between text-xs">
-                                        <span className="text-slate-300">{food.name}</span>
-                                        <span className="text-slate-400">{food.quantity}{food.unit}</span>
+                                        <span className="text-foreground-secondary">{food.name}</span>
+                                        <span className="text-foreground-secondary">{food.quantity}{food.unit}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -373,16 +373,16 @@ export function MealPlanCard({
                                   const foods = isNamedAlt ? (alt as MealAlternative).foods : (alt as Food[])
 
                                   return (
-                                    <div key={altIdx} className="bg-violet-500/10 border border-violet-500/20 rounded-lg p-3">
+                                    <div key={altIdx} className="bg-dourado/10 border border-dourado/20 rounded-lg p-3">
                                       <div className="flex items-center gap-2 mb-2">
-                                        <span className="w-5 h-5 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center">{optionLetter}</span>
-                                        <span className="text-sm font-medium text-violet-400">{optionName}</span>
+                                        <span className="w-5 h-5 rounded-full bg-vinho text-white text-xs font-bold flex items-center justify-center">{optionLetter}</span>
+                                        <span className="text-sm font-medium text-dourado">{optionName}</span>
                                       </div>
                                       <div className="space-y-1">
                                         {foods.map((food, foodIdx) => (
                                           <div key={foodIdx} className="flex items-center justify-between text-xs">
-                                            <span className="text-slate-300">{food.name}</span>
-                                            <span className="text-slate-400">{food.quantity}{food.unit}</span>
+                                            <span className="text-foreground-secondary">{food.name}</span>
+                                            <span className="text-foreground-secondary">{food.quantity}{food.unit}</span>
                                           </div>
                                         ))}
                                       </div>
@@ -407,14 +407,14 @@ export function MealPlanCard({
                           </button>
                           <button
                             onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
-                            className="px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                            className="px-3 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/80 transition-colors"
                             title="Analisar foto com IA"
                           >
                             <Camera className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
-                            className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                            className="px-3 py-2 bg-background-elevated text-foreground-secondary rounded-lg hover:bg-background-elevated transition-colors"
                             title="Adicionar manualmente"
                           >
                             <Plus className="w-4 h-4" />
@@ -427,14 +427,14 @@ export function MealPlanCard({
                         <div className="flex gap-2">
                           <button
                             onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-violet-400 hover:text-white border border-dashed border-violet-500/50 rounded-lg hover:border-violet-500 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-dourado hover:text-foreground border border-dashed border-dourado/50 rounded-lg hover:border-dourado transition-colors"
                           >
                             <Camera className="w-4 h-4" />
                             Analisar foto
                           </button>
                           <button
                             onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-white border border-dashed border-slate-600 rounded-lg hover:border-slate-500 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground-muted transition-colors"
                           >
                             <Plus className="w-4 h-4" />
                             Adicionar manual
@@ -447,14 +447,14 @@ export function MealPlanCard({
                         <div className="flex gap-2 pt-2">
                           <button
                             onClick={() => router.push(`/alimentacao/refeicao/${actualMealData.id}`)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm bg-background-elevated text-foreground-secondary rounded-lg hover:bg-background-elevated transition-colors"
                           >
                             <Edit2 className="w-4 h-4" />
                             Editar
                           </button>
                           <button
                             onClick={() => router.push(`/alimentacao/analisar?mealId=${actualMealData.id}&tipo=${meal.meal_type}`)}
-                            className="px-3 py-2 text-sm bg-violet-500/20 text-violet-400 rounded-lg hover:bg-violet-500/30 transition-colors"
+                            className="px-3 py-2 text-sm bg-dourado/20 text-dourado rounded-lg hover:bg-dourado/30 transition-colors"
                             title="Adicionar foto com IA"
                           >
                             <Camera className="w-4 h-4" />
@@ -481,7 +481,7 @@ export function MealPlanCard({
       <div className="p-4 border-t border-green-500/20">
         <button
           onClick={onAddDifferentMeal}
-          className="w-full flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-white border border-dashed border-slate-600 rounded-lg hover:border-slate-500 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground-muted transition-colors"
         >
           <Plus className="w-4 h-4" />
           Adicionar refeição diferente

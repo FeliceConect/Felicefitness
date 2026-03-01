@@ -51,7 +51,7 @@ export function PRCelebration({
             recycle={false}
             numberOfPieces={200}
             gravity={0.3}
-            colors={['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444']}
+            colors={['#c29863', '#663739', '#10B981', '#F59E0B', '#EF4444']}
           />
 
           <motion.div
@@ -94,7 +94,7 @@ export function PRCelebration({
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-lg text-slate-300 mb-6"
+              className="text-lg text-foreground-secondary mb-6"
             >
               {exerciseName}
             </motion.p>
@@ -109,12 +109,12 @@ export function PRCelebration({
               <div className="flex items-center justify-center gap-6">
                 <div>
                   <p className="text-4xl font-bold text-amber-400">{weight}</p>
-                  <p className="text-sm text-slate-400">kg</p>
+                  <p className="text-sm text-foreground-secondary">kg</p>
                 </div>
-                <span className="text-2xl text-slate-500">×</span>
+                <span className="text-2xl text-foreground-muted">×</span>
                 <div>
                   <p className="text-4xl font-bold text-amber-400">{reps}</p>
-                  <p className="text-sm text-slate-400">reps</p>
+                  <p className="text-sm text-foreground-secondary">reps</p>
                 </div>
               </div>
             </motion.div>

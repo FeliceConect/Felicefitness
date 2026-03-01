@@ -196,10 +196,10 @@ export default function MealDetailPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando refeição...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando refeição...</p>
         </div>
       </div>
     )
@@ -207,9 +207,9 @@ export default function MealDetailPage() {
 
   if (!meal) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-400 mb-4">Refeição não encontrada</p>
+          <p className="text-foreground-secondary mb-4">Refeição não encontrada</p>
           <Button variant="ghost" onClick={() => router.back()}>
             Voltar
           </Button>
@@ -492,12 +492,12 @@ export default function MealDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-32">
+    <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
@@ -507,10 +507,10 @@ export default function MealDetailPage() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">{mealTypeIcons[meal.tipo]}</span>
             <div>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold text-foreground">
                 {mealTypeLabels[meal.tipo]}
               </h1>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-foreground-secondary">
                 {format(new Date(meal.data), "EEEE, d 'de' MMMM", { locale: ptBR })}
               </p>
             </div>
@@ -521,18 +521,18 @@ export default function MealDetailPage() {
               {/* Botão Adicionar Mais (principal) */}
               <button
                 onClick={handleStartAdding}
-                className="p-2 bg-violet-500/20 hover:bg-violet-500/30 rounded-lg transition-colors"
+                className="p-2 bg-dourado/20 hover:bg-dourado/30 rounded-lg transition-colors"
                 title="Adicionar mais alimentos"
               >
-                <Plus className="w-5 h-5 text-violet-400" />
+                <Plus className="w-5 h-5 text-dourado" />
               </button>
               {/* Botão Editar (substituir tudo) */}
               <button
                 onClick={handleStartEdit}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
                 title="Editar refeição"
               >
-                <Edit2 className="w-5 h-5 text-slate-400" />
+                <Edit2 className="w-5 h-5 text-foreground-secondary" />
               </button>
               <button
                 onClick={handleDelete}
@@ -549,13 +549,13 @@ export default function MealDetailPage() {
 
       {/* Time info */}
       <div className="px-4 mb-6">
-        <div className="flex items-center gap-2 text-slate-400">
+        <div className="flex items-center gap-2 text-foreground-secondary">
           <Clock className="w-4 h-4" />
           <span className="text-sm">
             {meal.horario_real || meal.horario_planejado}
           </span>
           {meal.horario_planejado && meal.horario_real && meal.horario_planejado !== meal.horario_real && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-foreground-muted">
               (planejado: {meal.horario_planejado})
             </span>
           )}
@@ -564,23 +564,23 @@ export default function MealDetailPage() {
 
       {/* Totals */}
       <div className="px-4 mb-6">
-        <div className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/20 rounded-xl p-4">
+        <div className="bg-gradient-to-r from-dourado/10 to-dourado/5 border border-dourado/20 rounded-xl p-4">
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-white">{Math.round(totals.calorias)}</p>
-              <p className="text-xs text-slate-400">kcal</p>
+              <p className="text-2xl font-bold text-foreground">{Math.round(totals.calorias)}</p>
+              <p className="text-xs text-foreground-secondary">kcal</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-violet-400">{Math.round(totals.proteinas)}g</p>
-              <p className="text-xs text-slate-400">prot</p>
+              <p className="text-2xl font-bold text-dourado">{Math.round(totals.proteinas)}g</p>
+              <p className="text-xs text-foreground-secondary">prot</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-cyan-400">{Math.round(totals.carboidratos)}g</p>
-              <p className="text-xs text-slate-400">carb</p>
+              <p className="text-2xl font-bold text-dourado">{Math.round(totals.carboidratos)}g</p>
+              <p className="text-xs text-foreground-secondary">carb</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-amber-400">{Math.round(totals.gorduras)}g</p>
-              <p className="text-xs text-slate-400">gord</p>
+              <p className="text-xs text-foreground-secondary">gord</p>
             </div>
           </div>
         </div>
@@ -589,7 +589,7 @@ export default function MealDetailPage() {
       {/* Items list */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
             Alimentos ({items.length})
             {isAdding && newItems.length > 0 && (
               <span className="text-emerald-400 ml-2">+{newItems.length} novo(s)</span>
@@ -598,7 +598,7 @@ export default function MealDetailPage() {
           {(isEditing || isAdding) && (
             <button
               onClick={() => setShowAddFood(true)}
-              className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+              className="flex items-center gap-1 text-sm text-dourado hover:text-dourado"
             >
               <Plus className="w-4 h-4" />
               Adicionar
@@ -636,20 +636,20 @@ export default function MealDetailPage() {
                 className={`flex items-center gap-3 p-3 rounded-xl ${
                   isNewItem
                     ? 'bg-emerald-500/10 border border-emerald-500/30'
-                    : 'bg-[#14141F] border border-[#2E2E3E]'
+                    : 'bg-white border border-border'
                 }`}
               >
                 <span className="text-xl">{categoryInfo.icon}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-white font-medium">{item.food.nome}</p>
+                    <p className="text-foreground font-medium">{item.food.nome}</p>
                     {isNewItem && (
                       <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
                         Novo
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-foreground-secondary">
                     {item.quantidade}{item.food.unidade} • {Math.round(item.calorias)} kcal • {Math.round(item.proteinas)}g prot
                   </p>
                 </div>
@@ -671,16 +671,16 @@ export default function MealDetailPage() {
       {/* Add food section (when editing or adding) */}
       {(isEditing || isAdding) && showAddFood && (
         <div className="px-4 mb-6">
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-slate-400">
+              <h4 className="text-sm font-medium text-foreground-secondary">
                 {isAdding ? 'Complementar Refeição' : 'Adicionar Alimento'}
               </h4>
               <button
                 onClick={() => setShowAddFood(false)}
-                className="p-1 hover:bg-slate-800 rounded-lg"
+                className="p-1 hover:bg-background-elevated rounded-lg"
               >
-                <X className="w-4 h-4 text-slate-500" />
+                <X className="w-4 h-4 text-foreground-muted" />
               </button>
             </div>
             <FoodSearch
@@ -696,7 +696,7 @@ export default function MealDetailPage() {
       {/* Photo (placeholder) */}
       {meal.foto_url && (
         <div className="px-4 mb-6">
-          <div className="aspect-video bg-slate-800 rounded-xl overflow-hidden">
+          <div className="aspect-video bg-white rounded-xl overflow-hidden">
             <img
               src={meal.foto_url}
               alt="Foto da refeição"
@@ -709,10 +709,10 @@ export default function MealDetailPage() {
       {/* Notes */}
       {meal.notas && (
         <div className="px-4 mb-6">
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">
+          <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-2">
             Notas
           </h3>
-          <p className="text-slate-300 bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <p className="text-foreground-secondary bg-white border border-border rounded-xl p-4">
             {meal.notas}
           </p>
         </div>
@@ -720,7 +720,7 @@ export default function MealDetailPage() {
 
       {/* Edit mode actions */}
       {isEditing && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-12 z-50">
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-background via-background to-transparent pt-12 z-50">
           <div className="flex gap-3">
             <Button
               variant="outline"
@@ -748,7 +748,7 @@ export default function MealDetailPage() {
 
       {/* Adding mode actions */}
       {isAdding && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-12 z-50">
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-background via-background to-transparent pt-12 z-50">
           <div className="flex gap-3">
             <Button
               variant="outline"

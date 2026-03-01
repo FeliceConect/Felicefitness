@@ -1,4 +1,4 @@
-// FeliceFit Push Notification Service Worker Handler
+// Complexo Wellness Push Notification Service Worker Handler
 // This file handles push notifications and should be imported by the main SW
 
 // Push notification received
@@ -6,7 +6,7 @@ self.addEventListener('push', (event) => {
   console.log('[SW] Push notification received:', event)
 
   let data = {
-    title: 'FeliceFit',
+    title: 'Complexo Wellness',
     body: 'Nova notificação',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',

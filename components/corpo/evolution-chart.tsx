@@ -68,8 +68,8 @@ export function EvolutionChart({ data, className }: EvolutionChartProps) {
   }, [linePath, chartData.points])
 
   return (
-    <div className={cn('bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4', className)}>
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+    <div className={cn('bg-white border border-border rounded-2xl p-4', className)}>
+      <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
         Evolução
       </h3>
 
@@ -82,8 +82,8 @@ export function EvolutionChart({ data, className }: EvolutionChartProps) {
             className={cn(
               'px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
               selectedMetric === metric.key
-                ? 'text-white'
-                : 'text-slate-400 hover:text-white bg-[#1E1E2E]'
+                ? 'text-foreground'
+                : 'text-foreground-secondary hover:text-foreground-secondary bg-background-elevated'
             )}
             style={selectedMetric === metric.key ? {
               backgroundColor: `${metric.color}20`,
@@ -98,7 +98,7 @@ export function EvolutionChart({ data, className }: EvolutionChartProps) {
       {/* Chart */}
       <div className="relative h-48">
         {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-[10px] text-slate-500">
+        <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-[10px] text-foreground-muted">
           <span>{chartData.maxVal.toFixed(1)}</span>
           <span>{((chartData.maxVal + chartData.minVal) / 2).toFixed(1)}</span>
           <span>{chartData.minVal.toFixed(1)}</span>
@@ -109,7 +109,7 @@ export function EvolutionChart({ data, className }: EvolutionChartProps) {
           {/* Grid lines */}
           <div className="absolute inset-0 flex flex-col justify-between">
             {[0, 1, 2, 3, 4].map(i => (
-              <div key={i} className="border-t border-[#2E2E3E]" />
+              <div key={i} className="border-t border-border" />
             ))}
           </div>
 
@@ -167,7 +167,7 @@ export function EvolutionChart({ data, className }: EvolutionChartProps) {
       </div>
 
       {/* X-axis labels (dates) */}
-      <div className="ml-12 mt-2 flex justify-between text-[10px] text-slate-500">
+      <div className="ml-12 mt-2 flex justify-between text-[10px] text-foreground-muted">
         {data.length > 0 && (
           <>
             <span>{format(parseISO(data[0].data), 'MMM/yy', { locale: ptBR })}</span>
@@ -180,15 +180,15 @@ export function EvolutionChart({ data, className }: EvolutionChartProps) {
       </div>
 
       {/* Summary */}
-      <div className="mt-4 pt-4 border-t border-[#2E2E3E] flex justify-between items-center">
+      <div className="mt-4 pt-4 border-t border-border flex justify-between items-center">
         <div>
-          <p className="text-xs text-slate-500">Valor inicial</p>
-          <p className="text-white font-semibold">
+          <p className="text-xs text-foreground-muted">Valor inicial</p>
+          <p className="text-foreground font-semibold">
             {data[0]?.[selectedMetric].toFixed(1)}{chartData.metric.unidade}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-slate-500">Variação</p>
+          <p className="text-xs text-foreground-muted">Variação</p>
           <p
             className="font-semibold"
             style={{ color: chartData.metric.color }}
@@ -203,8 +203,8 @@ export function EvolutionChart({ data, className }: EvolutionChartProps) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-500">Valor atual</p>
-          <p className="text-white font-semibold">
+          <p className="text-xs text-foreground-muted">Valor atual</p>
+          <p className="text-foreground font-semibold">
             {data[data.length - 1]?.[selectedMetric].toFixed(1)}{chartData.metric.unidade}
           </p>
         </div>

@@ -1,4 +1,4 @@
-// Sistema de Desafios - FeliceFit Gamification
+// Sistema de Desafios - Complexo Wellness Gamification
 
 import type { Challenge, ActiveChallenge, ChallengeType } from '@/types/gamification'
 

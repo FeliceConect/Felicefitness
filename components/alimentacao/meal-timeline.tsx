@@ -33,14 +33,14 @@ export function MealTimeline({
   })
 
   return (
-    <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
+    <div className="bg-white border border-border rounded-2xl p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
           Refeições
         </h3>
         <Link
           href="/alimentacao/refeicao/nova"
-          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+          className="flex items-center gap-1 text-sm text-dourado hover:text-dourado"
         >
           <Plus className="w-4 h-4" />
           Adicionar
@@ -72,8 +72,8 @@ export function MealTimeline({
                       isCompleted
                         ? 'bg-emerald-500/10 border border-emerald-500/20'
                         : isSkipped
-                        ? 'bg-slate-800/50 border border-slate-700'
-                        : 'bg-slate-800 border border-slate-700'
+                        ? 'bg-white/50 border border-border'
+                        : 'bg-white border border-border'
                     )}
                   >
                     {/* Status icon */}
@@ -83,8 +83,8 @@ export function MealTimeline({
                         isCompleted
                           ? 'bg-emerald-500/20'
                           : isSkipped
-                          ? 'bg-slate-700'
-                          : 'bg-slate-700'
+                          ? 'bg-background-elevated'
+                          : 'bg-background-elevated'
                       )}
                     >
                       {isCompleted ? '✅' : isSkipped ? '⏭️' : mealTypeIcons[planned.tipo]}
@@ -93,21 +93,21 @@ export function MealTimeline({
                     {/* Info */}
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-white font-medium">
+                        <span className="text-foreground font-medium">
                           {mealTypeLabels[planned.tipo]}
                         </span>
                         {actual.horario_real && (
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-foreground-muted">
                             {actual.horario_real}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-foreground-secondary">
                         {Math.round(actual.calorias_total)} kcal • {Math.round(actual.proteinas_total)}g prot
                       </p>
                     </div>
 
-                    <ChevronRight className="w-5 h-5 text-slate-500" />
+                    <ChevronRight className="w-5 h-5 text-foreground-muted" />
                   </div>
                 </Link>
               ) : (
@@ -117,15 +117,15 @@ export function MealTimeline({
                   className={cn(
                     'w-full flex items-center gap-3 p-3 rounded-xl transition-all',
                     isNext
-                      ? 'bg-violet-500/10 border-2 border-violet-500/30 animate-pulse'
-                      : 'bg-slate-800/30 border border-dashed border-slate-700 hover:border-violet-500/30'
+                      ? 'bg-dourado/10 border-2 border-dourado/30 animate-pulse'
+                      : 'bg-white/30 border border-dashed border-border hover:border-dourado/30'
                   )}
                 >
                   {/* Icon */}
                   <div
                     className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center text-lg',
-                      isNext ? 'bg-violet-500/20' : 'bg-slate-800'
+                      isNext ? 'bg-dourado/20' : 'bg-white'
                     )}
                   >
                     {isNext ? '⏳' : mealTypeIcons[planned.tipo]}
@@ -136,23 +136,23 @@ export function MealTimeline({
                     <div className="flex items-center gap-2">
                       <span className={cn(
                         'font-medium',
-                        isNext ? 'text-violet-400' : 'text-slate-400'
+                        isNext ? 'text-dourado' : 'text-foreground-secondary'
                       )}>
                         {mealTypeLabels[planned.tipo]}
                       </span>
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="text-xs text-foreground-muted flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {planned.horario}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-foreground-muted">
                       {isNext ? 'Próxima refeição' : 'Planejado'}
                     </p>
                   </div>
 
                   <Plus className={cn(
                     'w-5 h-5',
-                    isNext ? 'text-violet-400' : 'text-slate-500'
+                    isNext ? 'text-dourado' : 'text-foreground-muted'
                   )} />
                 </button>
               )}

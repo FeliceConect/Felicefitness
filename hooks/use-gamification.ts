@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getTodayISO } from '@/lib/utils/date'
 import type {
@@ -78,6 +78,7 @@ export function useGamification(): UseGamificationReturn {
   const [showLevelUp, setShowLevelUp] = useState(false)
   const [newLevel, setNewLevel] = useState<Level | null>(null)
   const [showAchievement, setShowAchievement] = useState<Achievement | null>(null)
+  const userStatsRef = useRef<UserStats | null>(null)
 
   // Calcular XP baseado em atividades reais do banco
   const calculateXPFromDatabase = useCallback(async () => {
@@ -112,8 +113,9 @@ export function useGamification(): UseGamificationReturn {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count: prsAchieved } = await (supabase as any)
         .from('fitness_exercise_sets')
-        .select('*', { count: 'exact', head: true })
+        .select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id))', { count: 'exact', head: true })
         .eq('is_pr', true)
+        .eq('workout_exercise.workout.user_id', user.id)
 
       // Buscar dias com meta de água atingida (água >= 2500ml)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,6 +147,25 @@ export function useGamification(): UseGamificationReturn {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
 
+      // Buscar bioimpedâncias
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: bioimpedances } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('impedancia_dados', 'is', null)
+
+      // Buscar fotos de progresso
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: progressPhotos } = await (supabase as any)
+        .from('fitness_progress_photos')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+
+      // Calcular total de água em litros
+      const totalWaterMl = Object.values(waterByDay).reduce((sum: number, ml: number) => sum + ml, 0)
+      const totalWaterLiters = Math.round(totalWaterMl / 1000)
+
       // Calcular XP total
       const calculatedXP =
         (workoutsCompleted || 0) * XP_VALUES.workout_completed +
@@ -154,15 +175,6 @@ export function useGamification(): UseGamificationReturn {
         (prsAchieved || 0) * XP_VALUES.pr_achieved +
         ((profile?.streak_atual || 0) * XP_VALUES.streak_bonus_per_day)
 
-      console.log('Gamification XP calculation:', {
-        workoutsCompleted,
-        waterGoalsMet,
-        mealsLogged,
-        sleepLogs,
-        prsAchieved,
-        streak: profile?.streak_atual,
-        totalXP: calculatedXP
-      })
 
       // Calcular score de hoje
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -213,15 +225,33 @@ export function useGamification(): UseGamificationReturn {
         streakHistory: []
       }
 
+      // Build full UserStats
+      const fullStats: UserStats = {
+        workoutsCompleted: workoutsCompleted || 0,
+        totalSets: 0,
+        totalReps: 0,
+        prsAchieved: prsAchieved || 0,
+        earlyWorkouts: 0,
+        mealsLogged: mealsLogged || 0,
+        aiAnalyses: 0,
+        proteinStreakDays: 0,
+        perfectMacroDays: 0,
+        waterGoalsMet: waterGoalsMet || 0,
+        waterStreakDays: 0,
+        totalWaterLiters,
+        bioimpedances: bioimpedances || 0,
+        progressPhotos: progressPhotos || 0,
+        muscleGained: 0,
+        fatLost: 0,
+        perfectDays: 0,
+        perfectDayStreak: 0,
+        checkins: sleepLogs || 0,
+        medicamentoStreak: 0
+      }
+
       return {
         xp: calculatedXP,
-        stats: {
-          workoutsCompleted: workoutsCompleted || 0,
-          prsAchieved: prsAchieved || 0,
-          waterGoalsMet: waterGoalsMet || 0,
-          mealsLogged: mealsLogged || 0,
-          sleepLogs: sleepLogs || 0
-        },
+        stats: fullStats,
         streakData,
         dailyScore
       }
@@ -248,6 +278,11 @@ export function useGamification(): UseGamificationReturn {
       setLevelProgress(getLevelProgress(xp))
       setStreak(streakData)
 
+      // Save real stats for achievement checking
+      if (stats) {
+        userStatsRef.current = stats
+      }
+
       if (dailyScore) {
         setTodayScore(dailyScore)
       }
@@ -265,7 +300,6 @@ export function useGamification(): UseGamificationReturn {
         setActiveChallenges([...dailyChallenges, ...weeklyChallenges])
       }
 
-      console.log('Gamification loaded:', { xp, level: getLevelFromXP(xp).level, progress: getLevelProgress(xp) })
     } catch (error) {
       console.error('Erro ao carregar dados de gamificação:', error)
     } finally {
@@ -309,13 +343,12 @@ export function useGamification(): UseGamificationReturn {
     setXpToNextLevel(getXPToNextLevel(newTotalXP))
     setLevelProgress(getLevelProgress(newTotalXP))
 
-    console.log(`+${amount} XP: ${reason}`)
   }, [totalXP])
 
   // Verificar conquistas
   const checkAchievements = useCallback(async (): Promise<Achievement[]> => {
-    // Montar stats baseado nos dados atuais
-    const stats: UserStats = {
+    // Use real stats from database, fallback to zeros if not yet loaded
+    const stats: UserStats = userStatsRef.current || {
       workoutsCompleted: 0,
       totalSets: 0,
       totalReps: 0,
@@ -335,7 +368,7 @@ export function useGamification(): UseGamificationReturn {
       perfectDays: 0,
       perfectDayStreak: 0,
       checkins: 0,
-      revoladeStreak: 0
+      medicamentoStreak: 0
     }
 
     const unlockedIds = unlockedAchievements.map(a => a.achievementId)

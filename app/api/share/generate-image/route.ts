@@ -39,32 +39,32 @@ export async function POST(request: NextRequest) {
         }
 
         const { data: workout } = await supabase
-          .from('workout_sessions')
+          .from('fitness_workouts')
           .select('*')
           .eq('id', contentId)
           .eq('user_id', user.id)
           .single() as { data: {
-            workout_name: string
-            duration_minutes: number
+            nome: string
+            duracao_minutos: number
             exercises_count: number
             sets_count: number
-            calories_burned: number
-            completed_at: string
+            calorias_estimadas: number
+            data: string
             prs_count: number
           } | null }
 
         if (workout) {
-          const hrs = Math.floor(workout.duration_minutes / 60)
-          const mins = workout.duration_minutes % 60
+          const hrs = Math.floor(workout.duracao_minutos / 60)
+          const mins = workout.duracao_minutos % 60
           const duration = hrs > 0 ? `${hrs}h ${mins}min` : `${mins}min`
 
           data = {
-            workoutName: workout.workout_name,
+            workoutName: workout.nome,
             duration,
             exercises: workout.exercises_count,
             sets: workout.sets_count,
-            calories: workout.calories_burned,
-            date: workout.completed_at,
+            calories: workout.calorias_estimadas,
+            date: workout.data,
             prs: workout.prs_count || 0,
             userName: user.user_metadata?.name || 'Atleta',
           }

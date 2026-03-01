@@ -65,7 +65,7 @@ export function NotificationTestPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm text-slate-400 mb-3">
+        <p className="text-sm text-foreground-secondary mb-3">
           Selecione o tipo de notificação para testar:
         </p>
 
@@ -81,8 +81,8 @@ export function NotificationTestPanel() {
                 className={cn(
                   'flex items-center gap-2 p-3 rounded-xl border transition-all text-left',
                   isSelected
-                    ? 'bg-violet-500/20 border-violet-500/50 text-white'
-                    : 'bg-[#14141F] border-[#2E2E3E] text-slate-400 hover:text-white'
+                    ? 'bg-dourado/15 border-dourado/50 text-foreground'
+                    : 'bg-background-card border-border text-foreground-muted hover:text-foreground'
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -102,8 +102,8 @@ export function NotificationTestPanel() {
         className={cn(
           'w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors',
           success
-            ? 'bg-emerald-500 text-white'
-            : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white'
+            ? 'bg-success text-white'
+            : 'bg-dourado text-white'
         )}
       >
         {isSending ? (
@@ -135,7 +135,7 @@ export function NotificationTestPanel() {
       )}
 
       {/* Info */}
-      <p className="text-xs text-slate-500 text-center">
+      <p className="text-xs text-foreground-muted text-center">
         A notificação será enviada para este dispositivo em poucos segundos.
       </p>
     </div>

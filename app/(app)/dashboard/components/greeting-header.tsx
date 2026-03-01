@@ -33,10 +33,10 @@ export function GreetingHeader({ userName, currentPhase = 'base' }: GreetingHead
     >
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             {greeting}, {firstName}!
           </h1>
-          <p className="text-slate-400 text-sm mt-1 capitalize">
+          <p className="text-foreground-secondary text-sm mt-1 capitalize">
             {formattedDate}
           </p>
         </div>

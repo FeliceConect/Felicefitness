@@ -56,15 +56,15 @@ export function FoodItemEditor({
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#14141F] rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-[#14141F] border-b border-[#2E2E3E] px-4 py-4 flex items-center justify-between">
-          <button onClick={onCancel} className="p-2 text-slate-400 hover:text-white">
+        <div className="sticky top-0 bg-white border-b border-border px-4 py-4 flex items-center justify-between">
+          <button onClick={onCancel} className="p-2 text-foreground-secondary hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
 
-          <h3 className="text-lg font-bold text-white">Editar Alimento</h3>
+          <h3 className="text-lg font-bold text-foreground">Editar Alimento</h3>
 
           <button
             onClick={handleSave}
@@ -77,24 +77,24 @@ export function FoodItemEditor({
         <div className="p-4 space-y-6">
           {/* Nome do alimento */}
           <div>
-            <label className="text-sm text-slate-400 block mb-2">Nome do alimento</label>
+            <label className="text-sm text-foreground-secondary block mb-2">Nome do alimento</label>
             <input
               type="text"
               value={editedItem.name}
               onChange={(e) => setEditedItem({ ...editedItem, name: e.target.value })}
-              className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500"
+              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-dourado"
             />
           </div>
 
           {/* Confiança original */}
-          <div className="flex items-center justify-between bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl p-3">
-            <span className="text-sm text-slate-400">Confiança da IA</span>
+          <div className="flex items-center justify-between bg-background border border-border rounded-xl p-3">
+            <span className="text-sm text-foreground-secondary">Confiança da IA</span>
             <ConfidenceIndicator level={item.confidence} showLabel />
           </div>
 
           {/* Porção */}
           <div>
-            <label className="text-sm text-slate-400 block mb-2">Porção (gramas)</label>
+            <label className="text-sm text-foreground-secondary block mb-2">Porção (gramas)</label>
             <div className="flex gap-2 mb-3 flex-wrap">
               {PORTION_PRESETS.map((preset) => (
                 <button
@@ -103,8 +103,8 @@ export function FoodItemEditor({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                     editedItem.portion_grams === preset.value
-                      ? 'bg-violet-500 text-white'
-                      : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                      ? 'bg-dourado text-white'
+                      : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
                   )}
                 >
                   {preset.label}
@@ -115,29 +115,29 @@ export function FoodItemEditor({
               type="number"
               value={editedItem.portion_grams}
               onChange={(e) => handlePortionChange(Number(e.target.value))}
-              className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500"
+              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-dourado"
             />
           </div>
 
           {/* Macros */}
           <div>
-            <label className="text-sm text-slate-400 block mb-2">Valores nutricionais</label>
+            <label className="text-sm text-foreground-secondary block mb-2">Valores nutricionais</label>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl p-3">
-                <span className="text-xs text-slate-500 block mb-1">Calorias</span>
+              <div className="bg-background border border-border rounded-xl p-3">
+                <span className="text-xs text-foreground-muted block mb-1">Calorias</span>
                 <input
                   type="number"
                   value={editedItem.calories}
                   onChange={(e) =>
                     setEditedItem({ ...editedItem, calories: Number(e.target.value) })
                   }
-                  className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                  className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                 />
-                <span className="text-xs text-slate-500">kcal</span>
+                <span className="text-xs text-foreground-muted">kcal</span>
               </div>
 
-              <div className="bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl p-3">
-                <span className="text-xs text-slate-500 block mb-1">Proteína</span>
+              <div className="bg-background border border-border rounded-xl p-3">
+                <span className="text-xs text-foreground-muted block mb-1">Proteína</span>
                 <input
                   type="number"
                   step="0.1"
@@ -145,13 +145,13 @@ export function FoodItemEditor({
                   onChange={(e) =>
                     setEditedItem({ ...editedItem, protein: Number(e.target.value) })
                   }
-                  className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                  className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                 />
-                <span className="text-xs text-slate-500">g</span>
+                <span className="text-xs text-foreground-muted">g</span>
               </div>
 
-              <div className="bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl p-3">
-                <span className="text-xs text-slate-500 block mb-1">Carboidratos</span>
+              <div className="bg-background border border-border rounded-xl p-3">
+                <span className="text-xs text-foreground-muted block mb-1">Carboidratos</span>
                 <input
                   type="number"
                   step="0.1"
@@ -159,13 +159,13 @@ export function FoodItemEditor({
                   onChange={(e) =>
                     setEditedItem({ ...editedItem, carbs: Number(e.target.value) })
                   }
-                  className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                  className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                 />
-                <span className="text-xs text-slate-500">g</span>
+                <span className="text-xs text-foreground-muted">g</span>
               </div>
 
-              <div className="bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl p-3">
-                <span className="text-xs text-slate-500 block mb-1">Gordura</span>
+              <div className="bg-background border border-border rounded-xl p-3">
+                <span className="text-xs text-foreground-muted block mb-1">Gordura</span>
                 <input
                   type="number"
                   step="0.1"
@@ -173,9 +173,9 @@ export function FoodItemEditor({
                   onChange={(e) =>
                     setEditedItem({ ...editedItem, fat: Number(e.target.value) })
                   }
-                  className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                  className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                 />
-                <span className="text-xs text-slate-500">g</span>
+                <span className="text-xs text-foreground-muted">g</span>
               </div>
             </div>
           </div>

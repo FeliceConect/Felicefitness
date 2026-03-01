@@ -28,7 +28,7 @@ export function BodyCompositionCard({
       unidade: 'L',
       percentual: (aguaTotal / total) * 100,
       cor: '#06B6D4', // cyan
-      corBg: 'bg-cyan-500/20',
+      corBg: 'bg-dourado/20',
       icon: Droplets
     },
     {
@@ -37,7 +37,7 @@ export function BodyCompositionCard({
       unidade: 'kg',
       percentual: (proteina / total) * 100,
       cor: '#8B5CF6', // violet
-      corBg: 'bg-violet-500/20',
+      corBg: 'bg-vinho/20',
       icon: Dumbbell
     },
     {
@@ -46,7 +46,7 @@ export function BodyCompositionCard({
       unidade: 'kg',
       percentual: (minerais / total) * 100,
       cor: '#64748B', // slate
-      corBg: 'bg-slate-500/20',
+      corBg: 'bg-foreground-muted/20',
       icon: Bone
     },
     {
@@ -61,8 +61,8 @@ export function BodyCompositionCard({
   ]
 
   return (
-    <div className={cn('bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4', className)}>
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+    <div className={cn('bg-white border border-border rounded-2xl p-4', className)}>
+      <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
         Composição Corporal
       </h3>
 
@@ -96,8 +96,8 @@ export function BodyCompositionCard({
                 <Icon className="w-4 h-4" style={{ color: item.cor }} />
               </div>
               <div>
-                <p className="text-xs text-slate-500">{item.label}</p>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-xs text-foreground-muted">{item.label}</p>
+                <p className="text-sm font-semibold text-foreground">
                   {item.valor.toFixed(1)}{item.unidade}
                 </p>
               </div>
@@ -107,9 +107,9 @@ export function BodyCompositionCard({
       </div>
 
       {/* Total */}
-      <div className="mt-4 pt-3 border-t border-[#2E2E3E] text-center">
-        <span className="text-slate-500 text-sm">Peso Total: </span>
-        <span className="text-white font-bold">{total.toFixed(1)}kg</span>
+      <div className="mt-4 pt-3 border-t border-border text-center">
+        <span className="text-foreground-muted text-sm">Peso Total: </span>
+        <span className="text-foreground font-bold">{total.toFixed(1)}kg</span>
       </div>
     </div>
   )

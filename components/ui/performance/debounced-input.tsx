@@ -58,13 +58,13 @@ export const DebouncedInput = forwardRef<HTMLInputElement, DebouncedInputProps>(
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {isLoading && (
-            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+            <Loader2 className="w-4 h-4 text-foreground-muted animate-spin" />
           )}
           {showClearButton && internalValue && !isLoading && (
             <button
               type="button"
               onClick={handleClear}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-foreground-muted hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -94,7 +94,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
 
     return (
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
         <DebouncedInput
           ref={ref}
           type="search"

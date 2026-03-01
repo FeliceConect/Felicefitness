@@ -9,6 +9,8 @@ export type NotificationType =
   | 'conquista'
   | 'lembrete'
   | 'sistema'
+  | 'formulario'
+  | 'consulta'
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent'
 
@@ -62,6 +64,9 @@ export interface NotificationPreferences {
     wakeupReminder: string // lembrete para acordar
   }
   conquistas: {
+    enabled: boolean
+  }
+  consulta: {
     enabled: boolean
   }
 
@@ -129,7 +134,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   },
   medicamento: {
     enabled: true,
-    times: ['09:00'] // Revolade
+    times: ['09:00']
   },
   sono: {
     enabled: true,
@@ -137,6 +142,9 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     wakeupReminder: '06:00'
   },
   conquistas: {
+    enabled: true
+  },
+  consulta: {
     enabled: true
   },
   quietHours: {

@@ -170,9 +170,9 @@ function ToastItem({
       <div className="flex items-start gap-3">
         <Icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', iconColor)} />
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-white">{toast.title}</p>
+          <p className="font-medium text-foreground">{toast.title}</p>
           {toast.description && (
-            <p className="text-sm text-slate-400 mt-0.5">{toast.description}</p>
+            <p className="text-sm text-foreground-secondary mt-0.5">{toast.description}</p>
           )}
           {toast.action && (
             <button
@@ -188,7 +188,7 @@ function ToastItem({
         </div>
         <button
           onClick={() => onRemove(toast.id)}
-          className="text-slate-500 hover:text-white transition-colors"
+          className="text-foreground-muted hover:text-foreground transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -231,12 +231,12 @@ export function ToastNotification({
           <div className="flex items-start gap-3">
             <Icon className={cn('w-5 h-5 flex-shrink-0', iconColor)} />
             <div className="flex-1">
-              <p className="font-medium text-white">{title}</p>
+              <p className="font-medium text-foreground">{title}</p>
               {description && (
-                <p className="text-sm text-slate-400 mt-0.5">{description}</p>
+                <p className="text-sm text-foreground-secondary mt-0.5">{description}</p>
               )}
             </div>
-            <button onClick={onClose} className="text-slate-500 hover:text-white">
+            <button onClick={onClose} className="text-foreground-muted hover:text-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>

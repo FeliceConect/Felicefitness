@@ -44,15 +44,15 @@ export default function CompartilharSemanalPage() {
 
     // Get completed workouts for the week
     const { data: workouts } = await supabase
-      .from('workout_sessions')
-      .select('duration_minutes, sets_count, calories_burned, prs_count')
+      .from('fitness_workouts')
+      .select('duracao_minutos, sets_count, calorias_estimadas, prs_count')
       .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .gte('completed_at', weekStart.toISOString())
-      .lte('completed_at', weekEnd.toISOString()) as { data: {
-        duration_minutes: number
+      .eq('status', 'concluido')
+      .gte('data', weekStart.toISOString())
+      .lte('data', weekEnd.toISOString()) as { data: {
+        duracao_minutos: number
         sets_count: number
-        calories_burned: number
+        calorias_estimadas: number
         prs_count: number
       }[] | null }
 
@@ -60,12 +60,12 @@ export default function CompartilharSemanalPage() {
     const workoutsPlanned = 5 // Default, could be fetched from user settings
 
     if (workouts) {
-      const totalMinutes = workouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0)
+      const totalMinutes = workouts.reduce((sum, w) => sum + (w.duracao_minutos || 0), 0)
       const hours = Math.floor(totalMinutes / 60)
       const mins = totalMinutes % 60
       const totalDuration = hours > 0 ? `${hours}h ${mins}min` : `${mins}min`
 
-      const totalCalories = workouts.reduce((sum, w) => sum + (w.calories_burned || 0), 0)
+      const totalCalories = workouts.reduce((sum, w) => sum + (w.calorias_estimadas || 0), 0)
       const totalSets = workouts.reduce((sum, w) => sum + (w.sets_count || 0), 0)
       const prsSet = workouts.reduce((sum, w) => sum + (w.prs_count || 0), 0)
 
@@ -105,7 +105,7 @@ export default function CompartilharSemanalPage() {
 
         if (canShareFiles) {
           await share({
-            title: 'FeliceFit',
+            title: 'Complexo Wellness',
             text,
             files: [file],
           })

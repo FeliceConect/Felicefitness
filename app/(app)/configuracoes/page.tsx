@@ -1,7 +1,6 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
   Bell,
@@ -9,7 +8,6 @@ import {
   Target,
   Dumbbell,
   Utensils,
-  Pill,
   Palette,
   Shield,
   UserCog,
@@ -17,16 +15,13 @@ import {
   Info,
   MessageSquare,
   LogOut,
-  ChevronRight,
-  FileUp
+  ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
 import { useNotifications } from '@/hooks/use-notifications'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
-// Email do superadmin que pode ver a opção Revolade
-const SUPERADMIN_EMAIL = 'felicemed@gmail.com'
 
 interface SettingsItemProps {
   icon: React.ReactNode
@@ -87,18 +82,6 @@ export default function SettingsPage() {
   const router = useRouter()
   const { isSubscribed, unreadCount } = useNotifications()
   const supabase = createClient()
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUserEmail(user?.email || null)
-    }
-    fetchUser()
-  }, [supabase])
-
-  const isSuperAdmin = userEmail === SUPERADMIN_EMAIL
-
   const handleLogout = async () => {
     if (confirm('Tem certeza que deseja sair?')) {
       await supabase.auth.signOut()
@@ -159,39 +142,13 @@ export default function SettingsPage() {
               description="Refeições, restrições"
               href="/configuracoes/alimentacao"
             />
-            {isSuperAdmin && (
-              <SettingsItem
-                icon={<Pill className="w-5 h-5" />}
-                label="Revolade"
-                description="Horários, jejum, alertas"
-                href="/configuracoes/revolade"
-              />
-            )}
+
+
           </div>
         </section>
 
-        {/* Superadmin */}
-        {isSuperAdmin && (
-          <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
-              Superadmin
-            </h2>
-            <div className="bg-card rounded-xl border divide-y">
-              <SettingsItem
-                icon={<FileUp className="w-5 h-5" />}
-                label="Importar Plano Alimentar"
-                description="PDF, foto ou texto"
-                href="/configuracoes/importar-plano"
-              />
-              <SettingsItem
-                icon={<Dumbbell className="w-5 h-5" />}
-                label="Importar Plano de Treinos"
-                description="PDF, foto ou texto"
-                href="/configuracoes/importar-treino"
-              />
-            </div>
-          </section>
-        )}
+
+
 
         {/* App */}
         <section>
@@ -254,7 +211,7 @@ export default function SettingsPage() {
           <div className="bg-card rounded-xl border divide-y">
             <SettingsItem
               icon={<Info className="w-5 h-5" />}
-              label="Sobre o FeliceFit"
+              label="Sobre"
               description="Versão, créditos"
               href="/configuracoes/sobre"
             />
@@ -276,7 +233,7 @@ export default function SettingsPage() {
 
         {/* Version info */}
         <div className="text-center py-4">
-          <p className="text-muted-foreground text-sm">FeliceFit v1.0.0</p>
+          <p className="text-muted-foreground text-sm">Complexo Wellness v1.0.0</p>
         </div>
       </div>
     </div>

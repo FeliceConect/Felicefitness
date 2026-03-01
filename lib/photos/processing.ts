@@ -269,7 +269,7 @@ export async function createShareCard(
     ctx.font = 'bold 28px system-ui'
     ctx.fillStyle = '#8B5CF6'
     ctx.textAlign = 'center'
-    ctx.fillText('FeliceFit', cardWidth / 2, cardHeight - 60)
+    ctx.fillText('Complexo Wellness', cardWidth / 2, cardHeight - 60)
   }
 
   return new Promise((resolve, reject) => {

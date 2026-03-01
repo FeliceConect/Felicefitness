@@ -56,19 +56,19 @@ export default function WaterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-white">Hidratação</h1>
+          <h1 className="text-2xl font-bold text-foreground">Hidratação</h1>
           <button
             onClick={() => setShowGoalEditor(true)}
-            className="p-2 hover:bg-slate-800 rounded-xl transition-colors"
+            className="p-2 hover:bg-white rounded-xl transition-colors"
           >
-            <Settings className="w-5 h-5 text-slate-400" />
+            <Settings className="w-5 h-5 text-foreground-secondary" />
           </button>
         </div>
-        <p className="text-slate-400 text-sm">
+        <p className="text-foreground-secondary text-sm">
           {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
         </p>
       </div>
@@ -79,10 +79,10 @@ export default function WaterPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className={cn(
-            'bg-[#14141F] border rounded-2xl p-6',
+            'bg-white border rounded-2xl p-6',
             isGoalReached
-              ? 'border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-transparent'
-              : 'border-[#2E2E3E]'
+              ? 'border-dourado/30 bg-gradient-to-br from-dourado/10 to-transparent'
+              : 'border-border'
           )}
         >
           <div className="flex justify-center mb-6">
@@ -101,7 +101,7 @@ export default function WaterPage() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-cyan-400 font-medium"
+                className="text-dourado font-medium"
               >
                 Parabéns! Meta atingida! 🎉
               </motion.p>
@@ -152,18 +152,18 @@ export default function WaterPage() {
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 flex items-center justify-between hover:border-violet-500/30 transition-colors"
+            className="bg-white border border-border rounded-xl p-4 flex items-center justify-between hover:border-dourado/30 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-violet-400" />
+              <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-dourado" />
               </div>
               <div>
-                <p className="text-white font-medium">Ver histórico completo</p>
-                <p className="text-sm text-slate-400">Análise semanal e mensal</p>
+                <p className="text-foreground font-medium">Ver histórico completo</p>
+                <p className="text-sm text-foreground-secondary">Análise semanal e mensal</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-500" />
+            <ChevronRight className="w-5 h-5 text-foreground-muted" />
           </motion.div>
         </Link>
       </div>
@@ -196,10 +196,10 @@ export default function WaterPage() {
               initial={{ scale: 0, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 10 }}
-              className="bg-gradient-to-r from-cyan-500 to-violet-500 text-white px-8 py-4 rounded-2xl shadow-2xl"
+              className="bg-gradient-to-r from-dourado to-vinho text-white px-8 py-4 rounded-2xl shadow-2xl"
             >
-              <p className="text-2xl font-bold text-center">
-                🎉 Meta Atingida! 🎉
+              <p className="text-2xl font-bold text-center text-white">
+                Meta Atingida!
               </p>
               <p className="text-center text-white/80 mt-1">
                 Você bebeu {(goal / 1000).toFixed(1)}L de água hoje!

@@ -86,7 +86,7 @@ export function ConversationsList({ onSelectConversation, selectedId }: Conversa
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-dourado animate-spin" />
       </div>
     )
   }
@@ -94,17 +94,17 @@ export function ConversationsList({ onSelectConversation, selectedId }: Conversa
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-violet-400" />
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-dourado" />
           Mensagens
         </h2>
         <button
           onClick={() => fetchConversations(true)}
           disabled={refreshing}
-          className="p-2 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50"
+          className="p-2 rounded-lg hover:bg-background-elevated transition-colors disabled:opacity-50"
         >
-          <RefreshCw className={`w-5 h-5 text-slate-400 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-5 h-5 text-foreground-muted ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
@@ -112,27 +112,27 @@ export function ConversationsList({ onSelectConversation, selectedId }: Conversa
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-4">
-            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
-              <MessageSquare className="w-8 h-8 text-slate-600" />
+            <div className="w-16 h-16 rounded-full bg-background-elevated flex items-center justify-center mb-4">
+              <MessageSquare className="w-8 h-8 text-border" />
             </div>
-            <p className="text-slate-400">Nenhuma conversa</p>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-foreground-muted">Nenhuma conversa</p>
+            <p className="text-sm text-foreground-muted mt-1">
               Suas conversas aparecerão aqui
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-700">
+          <div className="divide-y divide-border">
             {conversations.map((conv) => (
               <button
                 key={conv.id}
                 onClick={() => onSelectConversation(conv)}
-                className={`w-full p-4 flex items-center gap-3 hover:bg-slate-700/50 transition-colors text-left ${
-                  selectedId === conv.id ? 'bg-slate-700/50' : ''
+                className={`w-full p-4 flex items-center gap-3 hover:bg-background-elevated transition-colors text-left ${
+                  selectedId === conv.id ? 'bg-background-elevated' : ''
                 }`}
               >
                 {/* Avatar */}
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-dourado/15 flex items-center justify-center overflow-hidden">
                     {conv.participant.foto ? (
                       <img
                         src={conv.participant.foto}
@@ -140,11 +140,11 @@ export function ConversationsList({ onSelectConversation, selectedId }: Conversa
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User className="w-6 h-6 text-violet-400" />
+                      <User className="w-6 h-6 text-dourado" />
                     )}
                   </div>
                   {conv.unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-violet-500 text-white text-xs flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-dourado text-white text-xs flex items-center justify-center">
                       {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
                     </div>
                   )}
@@ -153,23 +153,23 @@ export function ConversationsList({ onSelectConversation, selectedId }: Conversa
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className={`font-medium truncate ${conv.unreadCount > 0 ? 'text-white' : 'text-slate-300'}`}>
+                    <h3 className={`font-medium truncate ${conv.unreadCount > 0 ? 'text-foreground' : 'text-foreground-secondary'}`}>
                       {conv.participant.nome}
                     </h3>
                     {conv.lastMessage && (
-                      <span className="text-xs text-slate-500 flex-shrink-0">
+                      <span className="text-xs text-foreground-muted flex-shrink-0">
                         {formatTime(conv.lastMessage.created_at)}
                       </span>
                     )}
                   </div>
                   {conv.lastMessage && (
-                    <p className={`text-sm truncate ${conv.unreadCount > 0 ? 'text-slate-300' : 'text-slate-500'}`}>
+                    <p className={`text-sm truncate ${conv.unreadCount > 0 ? 'text-foreground-secondary' : 'text-foreground-muted'}`}>
                       {conv.lastMessage.sender_type === 'professional' ? 'Você: ' : ''}
                       {truncateMessage(conv.lastMessage.content)}
                     </p>
                   )}
                   {conv.participant.specialty && (
-                    <p className="text-xs text-slate-500 truncate">
+                    <p className="text-xs text-foreground-muted truncate">
                       {conv.participant.specialty}
                     </p>
                   )}

@@ -157,25 +157,25 @@ export default function TreinoPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando treinos...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando treinos...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-white">Treinos</h1>
+          <h1 className="text-2xl font-bold text-foreground">Treinos</h1>
           <div className="flex items-center gap-3">
             <Link
               href="/treino/templates"
-              className="flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300"
+              className="flex items-center gap-1 text-sm text-dourado hover:text-dourado/80"
               title="Gerenciar treinos"
             >
               <Settings2 className="w-4 h-4" />
@@ -183,38 +183,38 @@ export default function TreinoPage() {
             </Link>
             <Link
               href="/treino/historico"
-              className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+              className="flex items-center gap-1 text-sm text-dourado hover:text-dourado/80"
             >
               Histórico
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
-        <p className="text-slate-400 text-sm">
+        <p className="text-foreground-secondary text-sm">
           {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
         </p>
       </div>
 
       {/* Week Stats */}
       <div className="px-4 mb-6">
-        <div className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/20 rounded-xl p-4">
+        <div className="bg-gradient-to-r from-dourado/10 to-vinho/10 border border-dourado/20 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-violet-400" />
+              <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-dourado" />
               </div>
               <div>
-                <p className="text-sm text-slate-400">Esta semana</p>
-                <p className="text-lg font-bold text-white">
+                <p className="text-sm text-foreground-secondary">Esta semana</p>
+                <p className="text-lg font-bold text-foreground">
                   {weekStats.completed}/{weekStats.total} treinos
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-violet-400">
+              <p className="text-2xl font-bold text-dourado">
                 {weekStats.total > 0 ? Math.round((weekStats.completed / weekStats.total) * 100) : 0}%
               </p>
-              <p className="text-xs text-slate-500">completado</p>
+              <p className="text-xs text-foreground-muted">completado</p>
             </div>
           </div>
         </div>
@@ -231,8 +231,8 @@ export default function TreinoPage() {
 
       {/* Selected Day's Workout */}
       <div className="px-4 mb-6">
-        <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-violet-400" />
+        <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-dourado" />
           {selectedIsToday ? 'Hoje' : selectedDay ? format(selectedDay.date, "EEEE, d 'de' MMMM", { locale: ptBR }) : 'Hoje'}
         </h2>
 
@@ -241,12 +241,12 @@ export default function TreinoPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#14141F] border border-red-500/30 rounded-2xl p-5"
+            className="bg-white border border-red-500/30 rounded-2xl p-5"
           >
             <div className="text-center mb-4">
               <span className="text-4xl mb-3 block">😅</span>
-              <h3 className="text-lg font-semibold text-white mb-1">Treino não realizado</h3>
-              <p className="text-sm text-slate-400">
+              <h3 className="text-lg font-semibold text-foreground mb-1">Treino não realizado</h3>
+              <p className="text-sm text-foreground-secondary">
                 {selectedDay.workout.nome} • {selectedDay.workout.exercicios?.length || 0} exercícios
               </p>
             </div>
@@ -256,7 +256,7 @@ export default function TreinoPage() {
                 Fazer agora
               </Button>
             </Link>
-            <p className="text-xs text-slate-500 text-center mt-2">
+            <p className="text-xs text-foreground-muted text-center mt-2">
               O treino será registrado com a data de hoje
             </p>
           </motion.div>
@@ -272,13 +272,13 @@ export default function TreinoPage() {
       {/* Atividades Extras do Dia */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <span className="text-xl">🎯</span>
             Atividades do dia
           </h2>
           <button
             onClick={() => setShowAddActivityModal(true)}
-            className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+            className="flex items-center gap-1 text-sm text-dourado hover:text-dourado/80"
           >
             <Plus className="w-4 h-4" />
             Adicionar
@@ -286,8 +286,8 @@ export default function TreinoPage() {
         </div>
 
         {loadingActivities ? (
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-center">
-            <Loader2 className="w-5 h-5 text-slate-400 animate-spin mx-auto" />
+          <div className="bg-white border border-border rounded-xl p-4 text-center">
+            <Loader2 className="w-5 h-5 text-foreground-secondary animate-spin mx-auto" />
           </div>
         ) : activities.length > 0 ? (
           <div className="space-y-3">
@@ -305,13 +305,13 @@ export default function TreinoPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => setShowAddActivityModal(true)}
-            className="w-full bg-[#14141F] border-2 border-dashed border-[#2E2E3E] rounded-xl p-6 text-center hover:border-violet-500/50 transition-colors"
+            className="w-full bg-white border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-dourado/50 transition-colors"
           >
             <span className="text-3xl mb-2 block">🏃</span>
-            <p className="text-slate-400 text-sm">
+            <p className="text-foreground-secondary text-sm">
               Fez alguma atividade extra hoje?
             </p>
-            <p className="text-violet-400 text-sm font-medium mt-1">
+            <p className="text-dourado text-sm font-medium mt-1">
               Beach tennis, corrida, natação...
             </p>
           </motion.button>
@@ -321,8 +321,8 @@ export default function TreinoPage() {
       {/* Upcoming Workouts */}
       {upcomingWorkouts.length > 0 && (
         <div className="px-4 mb-6">
-          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Dumbbell className="w-5 h-5 text-dourado" />
             Próximos treinos
           </h2>
           <div className="space-y-3">
@@ -334,21 +334,21 @@ export default function TreinoPage() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Link href={day.workout ? `/treino/${day.workout.id}` : '#'}>
-                  <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 flex items-center justify-between hover:border-violet-500/30 transition-colors">
+                  <div className="bg-white border border-border rounded-xl p-4 flex items-center justify-between hover:border-dourado/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">
                         {day.icon || typeIcons[day.workout?.tipo || 'tradicional']}
                       </span>
                       <div>
-                        <p className="text-white font-medium">
+                        <p className="text-foreground font-medium">
                           {day.workout?.nome || 'Treino'}
                         </p>
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-foreground-secondary">
                           {format(day.date, "EEEE, d MMM", { locale: ptBR })}
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-slate-500" />
+                    <ChevronRight className="w-5 h-5 text-foreground-muted" />
                   </div>
                 </Link>
               </motion.div>
@@ -360,7 +360,7 @@ export default function TreinoPage() {
       {/* Recent Workouts */}
       {recentWorkouts.length > 0 && (
         <div className="px-4">
-          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             <span className="text-emerald-400">✓</span>
             Concluídos recentemente
           </h2>
@@ -373,19 +373,19 @@ export default function TreinoPage() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Link href={day.workout ? `/treino/${day.workout.id}` : '#'}>
-                  <div className="bg-[#14141F] border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-colors">
+                  <div className="bg-white border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">✅</span>
                       <div>
-                        <p className="text-white font-medium">
+                        <p className="text-foreground font-medium">
                           {day.workout?.nome || 'Treino'}
                         </p>
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-foreground-secondary">
                           {format(day.date, "EEEE, d MMM", { locale: ptBR })} • {day.workout?.duracao_real || day.workout?.duracao_estimada}min
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-slate-500" />
+                    <ChevronRight className="w-5 h-5 text-foreground-muted" />
                   </div>
                 </Link>
               </motion.div>
@@ -407,20 +407,20 @@ export default function TreinoPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#14141F] rounded-2xl p-6 max-w-sm w-full border border-violet-500/30"
+              className="bg-white rounded-2xl p-6 max-w-sm w-full border border-dourado/30"
             >
               <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
-                  <Play className="w-8 h-8 text-violet-400" />
+                <div className="w-16 h-16 rounded-full bg-dourado/20 flex items-center justify-center mx-auto mb-4">
+                  <Play className="w-8 h-8 text-dourado" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Treino em Andamento</h3>
-                <p className="text-slate-400 text-sm">
+                <h3 className="text-xl font-bold text-foreground mb-2">Treino em Andamento</h3>
+                <p className="text-foreground-secondary text-sm">
                   Você tem um treino que não foi finalizado. Deseja continuar de onde parou?
                 </p>
                 {state.workout && (
-                  <div className="mt-3 bg-slate-800/50 rounded-lg p-3">
-                    <p className="text-white font-medium">{state.workout.nome}</p>
-                    <p className="text-sm text-slate-400">
+                  <div className="mt-3 bg-background-elevated/50 rounded-lg p-3">
+                    <p className="text-foreground font-medium">{state.workout.nome}</p>
+                    <p className="text-sm text-foreground-secondary">
                       {state.completedSets.length} séries concluídas • {Math.floor(state.elapsedTime / 60)}min
                     </p>
                   </div>

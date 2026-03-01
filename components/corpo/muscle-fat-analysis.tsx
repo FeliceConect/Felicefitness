@@ -66,8 +66,8 @@ export function MuscleFatAnalysis({
   ]
 
   return (
-    <div className={cn('bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4', className)}>
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+    <div className={cn('bg-white border border-border rounded-2xl p-4', className)}>
+      <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
         Análise Músculo-Gordura
       </h3>
 
@@ -110,9 +110,9 @@ export function MuscleFatAnalysis({
             >
               {/* Label and value */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">{bar.label}</span>
+                <span className="text-sm text-foreground-secondary">{bar.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-semibold">
+                  <span className="text-foreground font-semibold">
                     {bar.valor.toFixed(1)}{bar.unidade}
                   </span>
                   <span
@@ -130,7 +130,7 @@ export function MuscleFatAnalysis({
               </div>
 
               {/* Bar */}
-              <div className="relative h-3 bg-[#1E1E2E] rounded-full overflow-hidden">
+              <div className="relative h-3 bg-background-elevated rounded-full overflow-hidden">
                 {/* Ideal range indicator */}
                 <div
                   className="absolute top-0 h-full bg-emerald-500/20 rounded-full"
@@ -155,9 +155,9 @@ export function MuscleFatAnalysis({
               </div>
 
               {/* Scale labels */}
-              <div className="flex justify-between text-[10px] text-slate-600">
+              <div className="flex justify-between text-[10px] text-foreground-muted">
                 <span>{bar.faixaMin}</span>
-                <span className="text-slate-500">
+                <span className="text-foreground-muted">
                   Ideal: {bar.idealMin}-{bar.idealMax}
                 </span>
                 <span>{bar.faixaMax}</span>
@@ -168,20 +168,20 @@ export function MuscleFatAnalysis({
       </div>
 
       {/* IMC and Body Fat Summary */}
-      <div className="mt-6 pt-4 border-t border-[#2E2E3E] grid grid-cols-2 gap-4">
+      <div className="mt-6 pt-4 border-t border-border grid grid-cols-2 gap-4">
         <div className="text-center">
-          <p className="text-slate-500 text-xs mb-1">IMC</p>
-          <p className="text-xl font-bold text-white">{imc.toFixed(1)}</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-foreground-muted text-xs mb-1">IMC</p>
+          <p className="text-xl font-bold text-foreground">{imc.toFixed(1)}</p>
+          <p className="text-xs text-foreground-secondary">
             {imc < 18.5 ? 'Baixo peso' :
              imc < 25 ? 'Normal' :
              imc < 30 ? 'Sobrepeso' : 'Obesidade'}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-slate-500 text-xs mb-1">Gordura</p>
-          <p className="text-xl font-bold text-white">{percentualGordura.toFixed(1)}%</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-foreground-muted text-xs mb-1">Gordura</p>
+          <p className="text-xl font-bold text-foreground">{percentualGordura.toFixed(1)}%</p>
+          <p className="text-xs text-foreground-secondary">
             {percentualGordura < 11 ? 'Atlético' :
              percentualGordura <= 21 ? 'Normal' :
              percentualGordura <= 28 ? 'Acima' : 'Alto'}

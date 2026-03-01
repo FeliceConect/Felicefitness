@@ -43,8 +43,8 @@ const tipoLabels: Record<string, string> = {
 }
 
 const tipoColors: Record<string, string> = {
-  tradicional: 'text-violet-400',
-  circuito: 'text-cyan-400',
+  tradicional: 'text-dourado',
+  circuito: 'text-dourado',
   hiit: 'text-red-400',
   mobilidade: 'text-emerald-400'
 }
@@ -88,23 +88,23 @@ export default function WorkoutTemplatesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando templates...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando templates...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
@@ -113,8 +113,8 @@ export default function WorkoutTemplatesPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Meus Treinos</h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Meus Treinos</h1>
+            <p className="text-foreground-secondary text-sm mt-1">
               {templates.length} template{templates.length !== 1 ? 's' : ''} cadastrado{templates.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -133,13 +133,13 @@ export default function WorkoutTemplatesPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-8 text-center"
+            className="bg-white border border-border rounded-2xl p-8 text-center"
           >
-            <Dumbbell className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">
+            <Dumbbell className="w-12 h-12 text-foreground-muted mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
               Nenhum treino cadastrado
             </h3>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-foreground-secondary text-sm mb-6">
               Crie seu primeiro template de treino para começar a treinar!
             </p>
             <Link href="/treino/templates/novo">
@@ -152,7 +152,7 @@ export default function WorkoutTemplatesPage() {
         ) : (
           <div className="space-y-6">
             {/* Week overview */}
-            <div className="flex justify-between gap-1 bg-[#14141F] border border-[#2E2E3E] rounded-xl p-3">
+            <div className="flex justify-between gap-1 bg-white border border-border rounded-xl p-3">
               {diasSemana.map((dia, index) => {
                 const hasTemplate = templatesByDay[index]?.length > 0
                 return (
@@ -161,8 +161,8 @@ export default function WorkoutTemplatesPage() {
                     className={cn(
                       'flex-1 text-center py-2 rounded-lg text-sm font-medium',
                       hasTemplate
-                        ? 'bg-violet-500/20 text-violet-400'
-                        : 'text-slate-500'
+                        ? 'bg-dourado/20 text-dourado'
+                        : 'text-foreground-muted'
                     )}
                   >
                     {dia}
@@ -183,7 +183,7 @@ export default function WorkoutTemplatesPage() {
 
               return (
                 <div key={dayIndex}>
-                  <h3 className="text-sm font-medium text-slate-400 mb-3">
+                  <h3 className="text-sm font-medium text-foreground-secondary mb-3">
                     {diasSemanaFull[dayIndex]}
                   </h3>
                   <div className="space-y-3">
@@ -193,7 +193,7 @@ export default function WorkoutTemplatesPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 hover:border-violet-500/30 transition-colors"
+                        className="bg-white border border-border rounded-xl p-4 hover:border-dourado/30 transition-colors"
                       >
                         <div className="flex items-start justify-between">
                           <Link
@@ -205,19 +205,19 @@ export default function WorkoutTemplatesPage() {
                                 {tipoIcons[template.tipo] || '🏋️'}
                               </span>
                               <div>
-                                <h4 className="text-white font-medium">
+                                <h4 className="text-foreground font-medium">
                                   {template.nome}
                                 </h4>
                                 <div className="flex items-center gap-3 mt-1 text-sm">
                                   <span className={cn('uppercase text-xs font-medium', tipoColors[template.tipo])}>
                                     {tipoLabels[template.tipo]}
                                   </span>
-                                  <span className="text-slate-500">•</span>
-                                  <span className="text-slate-400">
+                                  <span className="text-foreground-muted">•</span>
+                                  <span className="text-foreground-secondary">
                                     {template.duracao_estimada} min
                                   </span>
-                                  <span className="text-slate-500">•</span>
-                                  <span className="text-slate-400">
+                                  <span className="text-foreground-muted">•</span>
+                                  <span className="text-foreground-secondary">
                                     {template.exercicios.length} exercício{template.exercicios.length !== 1 ? 's' : ''}
                                   </span>
                                 </div>
@@ -227,8 +227,8 @@ export default function WorkoutTemplatesPage() {
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
-                                <MoreVertical className="w-5 h-5 text-slate-400" />
+                              <button className="p-2 hover:bg-background-elevated rounded-lg transition-colors">
+                                <MoreVertical className="w-5 h-5 text-foreground-secondary" />
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -262,18 +262,18 @@ export default function WorkoutTemplatesPage() {
 
                         {/* Exercise preview */}
                         {template.exercicios.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-[#2E2E3E]">
+                          <div className="mt-3 pt-3 border-t border-border">
                             <div className="flex flex-wrap gap-2">
                               {template.exercicios.slice(0, 4).map((ex) => (
                                 <span
                                   key={ex.id}
-                                  className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded"
+                                  className="text-xs bg-background-elevated text-foreground-secondary px-2 py-1 rounded"
                                 >
                                   {ex.nome}
                                 </span>
                               ))}
                               {template.exercicios.length > 4 && (
-                                <span className="text-xs text-slate-500 px-2 py-1">
+                                <span className="text-xs text-foreground-muted px-2 py-1">
                                   +{template.exercicios.length - 4} mais
                                 </span>
                               )}

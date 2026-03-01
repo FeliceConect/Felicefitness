@@ -43,7 +43,7 @@ export default function SobrePage() {
                 <span className="text-4xl">🏋️‍♂️</span>
               </div>
 
-              <h2 className="text-2xl font-bold">FeliceFit</h2>
+              <h2 className="text-2xl font-bold">Complexo Wellness</h2>
               <p className="text-muted-foreground">Versão {APP_VERSION}</p>
 
               <p className="mt-4 text-sm text-muted-foreground max-w-xs">
@@ -173,7 +173,7 @@ export default function SobrePage() {
         {/* Footer */}
         <div className="text-center space-y-2 pt-4">
           <p className="text-sm text-muted-foreground">
-            © 2026 FeliceFit. Todos os direitos reservados.
+            © 2026 Complexo Wellness. Todos os direitos reservados.
           </p>
           <p className="text-xs text-muted-foreground">
             Feito com ❤️ no Brasil

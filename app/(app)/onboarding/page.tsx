@@ -59,34 +59,34 @@ export default function OnboardingPage() {
   const steps: OnboardingStep[] = [
     {
       id: 'welcome',
-      title: 'Bem-vindo ao FeliceFit!',
+      title: 'Bem-vindo ao Complexo Wellness!',
       description: 'Seu app completo de fitness e saude.',
       icon: <Logo size="lg" showText={false} />,
       content: (
         <div className="grid grid-cols-3 gap-2">
-          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
-            <Dumbbell className="w-6 h-6 text-violet-400" />
-            <span className="text-xs text-slate-300">Treinos</span>
+          <div className="flex flex-col items-center gap-1 p-3 bg-white/50 rounded-xl">
+            <Dumbbell className="w-6 h-6 text-dourado" />
+            <span className="text-xs text-foreground-secondary">Treinos</span>
           </div>
-          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+          <div className="flex flex-col items-center gap-1 p-3 bg-white/50 rounded-xl">
             <Apple className="w-6 h-6 text-green-400" />
-            <span className="text-xs text-slate-300">Nutricao</span>
+            <span className="text-xs text-foreground-secondary">Nutricao</span>
           </div>
-          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+          <div className="flex flex-col items-center gap-1 p-3 bg-white/50 rounded-xl">
             <Droplets className="w-6 h-6 text-blue-400" />
-            <span className="text-xs text-slate-300">Hidratacao</span>
+            <span className="text-xs text-foreground-secondary">Hidratacao</span>
           </div>
-          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+          <div className="flex flex-col items-center gap-1 p-3 bg-white/50 rounded-xl">
             <Moon className="w-6 h-6 text-indigo-400" />
-            <span className="text-xs text-slate-300">Sono</span>
+            <span className="text-xs text-foreground-secondary">Sono</span>
           </div>
-          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+          <div className="flex flex-col items-center gap-1 p-3 bg-white/50 rounded-xl">
             <Trophy className="w-6 h-6 text-yellow-400" />
-            <span className="text-xs text-slate-300">Conquistas</span>
+            <span className="text-xs text-foreground-secondary">Conquistas</span>
           </div>
-          <div className="flex flex-col items-center gap-1 p-3 bg-slate-800/50 rounded-xl">
+          <div className="flex flex-col items-center gap-1 p-3 bg-white/50 rounded-xl">
             <Target className="w-6 h-6 text-orange-400" />
-            <span className="text-xs text-slate-300">Metas</span>
+            <span className="text-xs text-foreground-secondary">Metas</span>
           </div>
         </div>
       )
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
       id: 'goals',
       title: 'Quais sao seus objetivos?',
       description: 'Selecione um ou mais objetivos para personalizarmos sua experiencia.',
-      icon: <Target className="w-12 h-12 text-violet-400" />,
+      icon: <Target className="w-12 h-12 text-dourado" />,
       content: (
         <div className="grid grid-cols-2 gap-3 mt-6">
           {goalOptions.map(goal => {
@@ -107,16 +107,16 @@ export default function OnboardingPage() {
                 onClick={() => toggleGoal(goal.id)}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                   isSelected
-                    ? 'border-violet-500 bg-violet-500/20'
-                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                    ? 'border-dourado bg-dourado/20'
+                    : 'border-border bg-white/50 hover:border-border'
                 }`}
               >
-                <Icon className={`w-6 h-6 ${isSelected ? 'text-violet-400' : 'text-slate-400'}`} />
-                <span className={`text-sm text-center ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                <Icon className={`w-6 h-6 ${isSelected ? 'text-dourado' : 'text-foreground-secondary'}`} />
+                <span className={`text-sm text-center ${isSelected ? 'text-white' : 'text-foreground-secondary'}`}>
                   {goal.label}
                 </span>
                 {isSelected && (
-                  <Check className="w-4 h-4 text-violet-400" />
+                  <Check className="w-4 h-4 text-dourado" />
                 )}
               </button>
             )
@@ -128,38 +128,38 @@ export default function OnboardingPage() {
       id: 'notifications',
       title: 'Notificacoes',
       description: 'Receba lembretes e motivacao para manter seu progresso.',
-      icon: <Bell className="w-12 h-12 text-violet-400" />,
+      icon: <Bell className="w-12 h-12 text-dourado" />,
       content: (
         <div className="space-y-4 mt-6">
           <div
             onClick={() => setNotificationsEnabled(true)}
             className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
               notificationsEnabled
-                ? 'border-violet-500 bg-violet-500/20'
-                : 'border-slate-700 bg-slate-800/50'
+                ? 'border-dourado bg-dourado/20'
+                : 'border-border bg-white/50'
             }`}
           >
-            <Bell className={`w-8 h-8 ${notificationsEnabled ? 'text-violet-400' : 'text-slate-400'}`} />
+            <Bell className={`w-8 h-8 ${notificationsEnabled ? 'text-dourado' : 'text-foreground-secondary'}`} />
             <div className="flex-1">
               <p className="font-medium text-white">Ativar notificacoes</p>
-              <p className="text-sm text-slate-400">Receba lembretes de treino, agua e muito mais</p>
+              <p className="text-sm text-foreground-secondary">Receba lembretes de treino, agua e muito mais</p>
             </div>
-            {notificationsEnabled && <Check className="w-5 h-5 text-violet-400" />}
+            {notificationsEnabled && <Check className="w-5 h-5 text-dourado" />}
           </div>
           <div
             onClick={() => setNotificationsEnabled(false)}
             className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
               !notificationsEnabled
-                ? 'border-violet-500 bg-violet-500/20'
-                : 'border-slate-700 bg-slate-800/50'
+                ? 'border-dourado bg-dourado/20'
+                : 'border-border bg-white/50'
             }`}
           >
-            <Bell className={`w-8 h-8 ${!notificationsEnabled ? 'text-violet-400' : 'text-slate-400'}`} />
+            <Bell className={`w-8 h-8 ${!notificationsEnabled ? 'text-dourado' : 'text-foreground-secondary'}`} />
             <div className="flex-1">
               <p className="font-medium text-white">Nao, obrigado</p>
-              <p className="text-sm text-slate-400">Voce pode ativar depois nas configuracoes</p>
+              <p className="text-sm text-foreground-secondary">Voce pode ativar depois nas configuracoes</p>
             </div>
-            {!notificationsEnabled && <Check className="w-5 h-5 text-violet-400" />}
+            {!notificationsEnabled && <Check className="w-5 h-5 text-dourado" />}
           </div>
         </div>
       )
@@ -168,30 +168,30 @@ export default function OnboardingPage() {
       id: 'terms',
       title: 'Termos e Privacidade',
       description: 'Para continuar, aceite nossos termos de uso e politica de privacidade.',
-      icon: <Shield className="w-12 h-12 text-violet-400" />,
+      icon: <Shield className="w-12 h-12 text-dourado" />,
       content: (
         <div className="space-y-4 mt-6">
           <div
             onClick={() => setAcceptedTerms(!acceptedTerms)}
             className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
               acceptedTerms
-                ? 'border-violet-500 bg-violet-500/20'
-                : 'border-slate-700 bg-slate-800/50'
+                ? 'border-dourado bg-dourado/20'
+                : 'border-border bg-white/50'
             }`}
           >
             <div className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-              acceptedTerms ? 'bg-violet-500 border-violet-500' : 'border-slate-500'
+              acceptedTerms ? 'bg-dourado border-dourado' : 'border-border'
             }`}>
               {acceptedTerms && <Check className="w-4 h-4 text-white" />}
             </div>
             <div className="flex-1">
               <p className="font-medium text-white">Termos de Uso</p>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-foreground-secondary mt-1">
                 Li e aceito os{' '}
-                <a href="/termos" target="_blank" className="text-violet-400 underline">
+                <a href="/termos" target="_blank" className="text-dourado underline">
                   Termos de Uso
                 </a>{' '}
-                do FeliceFit.
+                do Complexo Wellness.
               </p>
             </div>
           </div>
@@ -200,20 +200,20 @@ export default function OnboardingPage() {
             onClick={() => setAcceptedPrivacy(!acceptedPrivacy)}
             className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
               acceptedPrivacy
-                ? 'border-violet-500 bg-violet-500/20'
-                : 'border-slate-700 bg-slate-800/50'
+                ? 'border-dourado bg-dourado/20'
+                : 'border-border bg-white/50'
             }`}
           >
             <div className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-              acceptedPrivacy ? 'bg-violet-500 border-violet-500' : 'border-slate-500'
+              acceptedPrivacy ? 'bg-dourado border-dourado' : 'border-border'
             }`}>
               {acceptedPrivacy && <Check className="w-4 h-4 text-white" />}
             </div>
             <div className="flex-1">
               <p className="font-medium text-white">Politica de Privacidade</p>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-foreground-secondary mt-1">
                 Li e aceito a{' '}
-                <a href="/privacidade" target="_blank" className="text-violet-400 underline">
+                <a href="/privacidade" target="_blank" className="text-dourado underline">
                   Politica de Privacidade
                 </a>{' '}
                 e o tratamento dos meus dados conforme a LGPD.
@@ -221,7 +221,7 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 text-center mt-4">
+          <p className="text-xs text-foreground-muted text-center mt-4">
             Versao dos Termos: {TERMS_VERSION} | Versao da Privacidade: {PRIVACY_VERSION}
           </p>
         </div>
@@ -299,14 +299,14 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900 flex flex-col z-[100]">
+    <div className="fixed inset-0 bg-background flex flex-col z-[100]">
       {/* Safe area top spacer for iOS notch */}
-      <div className="pt-safe bg-slate-900" />
+      <div className="pt-safe bg-background" />
 
       {/* Progress bar */}
-      <div className="h-1 bg-slate-800">
+      <div className="h-1 bg-white">
         <motion.div
-          className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
+          className="h-full bg-gradient-to-r from-dourado to-dourado"
           initial={{ width: 0 }}
           animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
           transition={{ duration: 0.3 }}
@@ -322,10 +322,10 @@ export default function OnboardingPage() {
               key={index}
               className={`w-2 h-2 rounded-full transition-colors ${
                 index === currentStep
-                  ? 'bg-violet-500'
+                  ? 'bg-dourado'
                   : index < currentStep
-                  ? 'bg-violet-400'
-                  : 'bg-slate-700'
+                  ? 'bg-dourado'
+                  : 'bg-background-elevated'
               }`}
             />
           ))}
@@ -345,10 +345,10 @@ export default function OnboardingPage() {
             </div>
 
             {/* Title & Description */}
-            <h1 className="text-xl font-bold text-white text-center mb-1">
+            <h1 className="text-xl font-bold text-foreground text-center mb-1">
               {steps[currentStep].title}
             </h1>
-            <p className="text-slate-400 text-center text-sm mb-3">
+            <p className="text-foreground-secondary text-center text-sm mb-3">
               {steps[currentStep].description}
             </p>
 
@@ -361,7 +361,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Navigation - always visible at bottom */}
-      <div className="p-4 pb-safe border-t border-slate-800 bg-slate-900 flex-shrink-0">
+      <div className="p-4 pb-safe border-t border-border bg-background flex-shrink-0">
         {error && (
           <div className="mb-3 p-3 bg-red-500/20 border border-red-500 rounded-xl text-red-400 text-sm text-center">
             {error}
@@ -371,7 +371,7 @@ export default function OnboardingPage() {
           {currentStep > 0 && (
             <button
               onClick={handleBack}
-              className="flex-1 py-3 px-4 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 bg-background-elevated text-foreground rounded-xl font-medium hover:bg-background-elevated/80 transition-colors flex items-center justify-center gap-2"
             >
               <ChevronLeft className="w-5 h-5" />
               Voltar
@@ -382,8 +382,8 @@ export default function OnboardingPage() {
             disabled={!canProceed() || saving}
             className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
               canProceed() && !saving
-                ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-500 hover:to-purple-500'
-                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-dourado to-dourado text-white hover:from-dourado/90 hover:to-dourado/80'
+                : 'bg-background-elevated text-foreground-secondary cursor-not-allowed'
             }`}
           >
             {saving ? (

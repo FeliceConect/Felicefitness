@@ -111,22 +111,19 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
 
     // Buscar clientes vinculados ao profissional de duas formas:
-    // 1. Via fitness_professional_assignments (vinculo direto)
+    // 1. Via fitness_client_assignments (vinculo direto)
     // 2. Via fitness_training_programs (cliente tem programa ativo do profissional)
 
     const professionalId = (professional as { id: string }).id
-    console.log('=== DEBUG CLIENT-WORKOUTS ===')
-    console.log('Professional ID:', professionalId)
 
     // Metodo 1: Buscar via assignments
     const { data: assignments } = await supabaseAdmin
-      .from('fitness_professional_assignments')
+      .from('fitness_client_assignments')
       .select('client_id')
       .eq('professional_id', professionalId)
-      .eq('status', 'active')
+      .eq('is_active', true)
 
     const assignmentClientIds = (assignments as Assignment[] | null)?.map(a => a.client_id) || []
-    console.log('Assignment Client IDs:', assignmentClientIds)
 
     // Metodo 2: Buscar via training programs
     const { data: programs } = await supabaseAdmin
@@ -137,14 +134,11 @@ export async function GET(request: NextRequest) {
       .not('client_id', 'is', null)
 
     const programClientIds = (programs || []).map((p: { client_id: string }) => p.client_id).filter(Boolean)
-    console.log('Program Client IDs:', programClientIds)
 
     // Combinar IDs unicos
     const clientIds = Array.from(new Set([...assignmentClientIds, ...programClientIds]))
-    console.log('Combined Client IDs:', clientIds)
 
     if (clientIds.length === 0) {
-      console.log('Nenhum cliente encontrado')
       return NextResponse.json({
         success: true,
         workouts: [],
@@ -235,11 +229,6 @@ export async function GET(request: NextRequest) {
         { success: false, error: 'Erro ao buscar treinos' },
         { status: 500 }
       )
-    }
-
-    console.log('Treinos encontrados:', workouts?.length || 0)
-    if (workouts && workouts.length > 0) {
-      console.log('Primeiro treino:', JSON.stringify(workouts[0], null, 2))
     }
 
     const dbWorkouts = workouts as DBWorkout[] | null

@@ -72,17 +72,17 @@ export async function GET() {
     const [mealsResult, workoutsResult, hydrationResult] = await Promise.all([
       supabaseAdmin
         .from('fitness_meals')
-        .select('id, user_id, calorias, proteinas, carboidratos, gorduras, data')
+        .select('id, user_id, calorias_total, proteinas_total, carboidratos_total, gorduras_total, data')
         .in('user_id', clientIds)
         .gte('data', weekAgoStr),
       supabaseAdmin
         .from('fitness_workouts')
-        .select('id, user_id, duracao, calorias_queimadas, data')
+        .select('id, user_id, duracao_minutos, calorias_estimadas, data')
         .in('user_id', clientIds)
         .gte('data', weekAgoStr),
       supabaseAdmin
-        .from('fitness_hydration')
-        .select('id, user_id, quantidade, data')
+        .from('fitness_water_logs')
+        .select('id, user_id, quantidade_ml, data')
         .in('user_id', clientIds)
         .gte('data', weekAgoStr)
     ])
@@ -95,15 +95,15 @@ export async function GET() {
       const clientHydration = hydrationResult.data?.filter(h => h.user_id === profile.id) || []
 
       // Calcular médias da semana
-      const totalCalories = clientMeals.reduce((sum, m) => sum + (m.calorias || 0), 0)
-      const totalProtein = clientMeals.reduce((sum, m) => sum + (m.proteinas || 0), 0)
+      const totalCalories = clientMeals.reduce((sum, m) => sum + (m.calorias_total || 0), 0)
+      const totalProtein = clientMeals.reduce((sum, m) => sum + (m.proteinas_total || 0), 0)
       const avgDailyCalories = clientMeals.length > 0 ? Math.round(totalCalories / 7) : 0
       const avgDailyProtein = clientMeals.length > 0 ? Math.round(totalProtein / 7) : 0
 
-      const totalWorkoutMinutes = clientWorkouts.reduce((sum, w) => sum + (w.duracao || 0), 0)
+      const totalWorkoutMinutes = clientWorkouts.reduce((sum, w) => sum + (w.duracao_minutos || 0), 0)
       const workoutDays = new Set(clientWorkouts.map(w => w.data)).size
 
-      const totalWater = clientHydration.reduce((sum, h) => sum + (h.quantidade || 0), 0)
+      const totalWater = clientHydration.reduce((sum, h) => sum + (h.quantidade_ml || 0), 0)
       const avgDailyWater = clientHydration.length > 0 ? Math.round(totalWater / 7) : 0
 
       // Verificar última atividade

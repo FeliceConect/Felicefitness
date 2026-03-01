@@ -89,7 +89,8 @@ export function useSleep(days: number = 30): UseSleepReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase, days])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days])
 
   const calculateStats = (logs: SleepLog[]) => {
     if (logs.length === 0) {
@@ -233,7 +234,8 @@ export function useSleep(days: number = 30): UseSleepReturn {
       console.error('Error logging sleep:', err)
       throw err
     }
-  }, [supabase, fetchSleepLogs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchSleepLogs])
 
   const updateSleep = useCallback(async (id: string, data: Partial<SleepLog>) => {
     try {
@@ -299,7 +301,8 @@ export function useSleep(days: number = 30): UseSleepReturn {
       console.error('Error updating sleep log:', err)
       throw err
     }
-  }, [supabase, fetchSleepLogs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchSleepLogs])
 
   const deleteSleep = useCallback(async (id: string) => {
     try {
@@ -315,7 +318,8 @@ export function useSleep(days: number = 30): UseSleepReturn {
       console.error('Error deleting sleep log:', err)
       throw err
     }
-  }, [supabase, fetchSleepLogs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchSleepLogs])
 
   const refresh = useCallback(async () => {
     setLoading(true)

@@ -1,4 +1,4 @@
-// Calculador de XP - FeliceFit Gamification
+// Calculador de XP - Complexo Wellness Gamification
 
 import type { XPEventType, XPEvent } from '@/types/gamification'
 

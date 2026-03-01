@@ -64,19 +64,19 @@ export default function TimelinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Timeline de Evolução</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-2xl font-bold text-foreground">Timeline de Evolução</h1>
+        <p className="text-foreground-secondary text-sm">
           Acompanhe sua jornada ao longo do tempo
         </p>
       </div>
@@ -89,8 +89,8 @@ export default function TimelinePage() {
             className={cn(
               'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors',
               selectedType === 'all'
-                ? 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white'
-                : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-dourado to-dourado text-white'
+                : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
             )}
           >
             Todas
@@ -106,10 +106,10 @@ export default function TimelinePage() {
                 className={cn(
                   'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2',
                   selectedType === type
-                    ? 'bg-violet-500 text-white'
+                    ? 'bg-dourado text-white'
                     : count === 0
-                      ? 'bg-[#1E1E2E] text-slate-600 cursor-not-allowed'
-                      : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                      ? 'bg-background-elevated text-foreground-muted cursor-not-allowed'
+                      : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
                 )}
               >
                 {PHOTO_TYPE_LABELS[type]}
@@ -127,30 +127,30 @@ export default function TimelinePage() {
           animate={{ opacity: 1, y: 0 }}
           className="px-4 mb-6"
         >
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
-            <h3 className="text-white font-medium mb-4">Sua Evolução</h3>
+          <div className="bg-white border border-border rounded-2xl p-4">
+            <h3 className="text-foreground font-medium mb-4">Sua Evolução</h3>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               {/* Período */}
-              <div className="bg-[#0A0A0F] rounded-xl p-3">
+              <div className="bg-background rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="w-4 h-4 text-violet-400" />
-                  <span className="text-xs text-slate-400">Período</span>
+                  <Calendar className="w-4 h-4 text-dourado" />
+                  <span className="text-xs text-foreground-secondary">Período</span>
                 </div>
-                <p className="text-white font-bold">{evolutionStats.days} dias</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-foreground font-bold">{evolutionStats.days} dias</p>
+                <p className="text-xs text-foreground-muted">
                   {format(parseISO(evolutionStats.firstDate), 'dd/MM', { locale: ptBR })} - {format(parseISO(evolutionStats.lastDate), 'dd/MM/yy', { locale: ptBR })}
                 </p>
               </div>
 
               {/* Total de fotos */}
-              <div className="bg-[#0A0A0F] rounded-xl p-3">
+              <div className="bg-background rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <Scale className="w-4 h-4 text-cyan-400" />
-                  <span className="text-xs text-slate-400">Registros</span>
+                  <Scale className="w-4 h-4 text-dourado" />
+                  <span className="text-xs text-foreground-secondary">Registros</span>
                 </div>
-                <p className="text-white font-bold">{evolutionStats.totalPhotos} fotos</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-foreground font-bold">{evolutionStats.totalPhotos} fotos</p>
+                <p className="text-xs text-foreground-muted">
                   {selectedType === 'all' ? 'Todos os tipos' : PHOTO_TYPE_LABELS[selectedType]}
                 </p>
               </div>
@@ -170,7 +170,7 @@ export default function TimelinePage() {
                       ) : (
                         <TrendingUp className="w-4 h-4 text-amber-400" />
                       )}
-                      <span className="text-xs text-slate-400">Peso</span>
+                      <span className="text-xs text-foreground-secondary">Peso</span>
                     </div>
                     <p className={cn(
                       'font-bold text-lg',
@@ -178,7 +178,7 @@ export default function TimelinePage() {
                     )}>
                       {evolutionStats.weightChange > 0 ? '+' : ''}{evolutionStats.weightChange.toFixed(1)}kg
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-foreground-muted">
                       {evolutionStats.firstWeight?.toFixed(1)} → {evolutionStats.lastWeight?.toFixed(1)}kg
                     </p>
                   </div>
@@ -195,7 +195,7 @@ export default function TimelinePage() {
                       ) : (
                         <TrendingUp className="w-4 h-4 text-amber-400" />
                       )}
-                      <span className="text-xs text-slate-400">% Gordura</span>
+                      <span className="text-xs text-foreground-secondary">% Gordura</span>
                     </div>
                     <p className={cn(
                       'font-bold text-lg',
@@ -214,11 +214,11 @@ export default function TimelinePage() {
       {/* Timeline de fotos */}
       <div className="px-4">
         {filteredPhotos.length === 0 ? (
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-8 text-center">
-            <p className="text-slate-400 mb-2">
+          <div className="bg-white border border-border rounded-2xl p-8 text-center">
+            <p className="text-foreground-secondary mb-2">
               Nenhuma foto encontrada
             </p>
-            <p className="text-slate-500 text-sm">
+            <p className="text-foreground-muted text-sm">
               {selectedType === 'all'
                 ? 'Comece tirando sua primeira foto de progresso'
                 : `Nenhuma foto do tipo "${PHOTO_TYPE_LABELS[selectedType]}"`
@@ -226,11 +226,11 @@ export default function TimelinePage() {
             </p>
           </div>
         ) : filteredPhotos.length === 1 ? (
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-8 text-center">
-            <p className="text-slate-400 mb-2">
+          <div className="bg-white border border-border rounded-2xl p-8 text-center">
+            <p className="text-foreground-secondary mb-2">
               Apenas 1 foto encontrada
             </p>
-            <p className="text-slate-500 text-sm">
+            <p className="text-foreground-muted text-sm">
               Tire mais fotos para ver sua evolução ao longo do tempo
             </p>
           </div>
@@ -249,19 +249,19 @@ export default function TimelinePage() {
           animate={{ opacity: 1, y: 0 }}
           className="px-4 mt-6"
         >
-          <div className="bg-[#14141F] border border-violet-500/30 rounded-2xl p-4">
+          <div className="bg-white border border-dourado/30 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-white font-medium">Foto Selecionada</h4>
+              <h4 className="text-foreground font-medium">Foto Selecionada</h4>
               <button
                 onClick={() => router.push(`/fotos/${selectedPhoto.id}`)}
-                className="text-violet-400 text-sm hover:text-violet-300 transition-colors"
+                className="text-dourado text-sm hover:text-dourado/80 transition-colors"
               >
                 Ver detalhes
               </button>
             </div>
 
             <div className="flex gap-4">
-              <div className="w-20 aspect-[3/4] rounded-lg overflow-hidden bg-gradient-to-br from-violet-900/30 to-cyan-900/30 flex items-center justify-center">
+              <div className="w-20 aspect-[3/4] rounded-lg overflow-hidden bg-gradient-to-br from-dourado/10 to-vinho/10 flex items-center justify-center">
                 <span className="text-2xl opacity-30">
                   {selectedPhoto.tipo === 'frente' ? '🧍' :
                    selectedPhoto.tipo === 'lado_esquerdo' ? '👈' :
@@ -270,15 +270,15 @@ export default function TimelinePage() {
               </div>
 
               <div className="flex-1">
-                <p className="text-white font-medium">
+                <p className="text-foreground font-medium">
                   {PHOTO_TYPE_LABELS[selectedPhoto.tipo]}
                 </p>
-                <p className="text-slate-400 text-sm">
+                <p className="text-foreground-secondary text-sm">
                   {format(parseISO(selectedPhoto.data), "d 'de' MMMM, yyyy", { locale: ptBR })}
                 </p>
 
                 {selectedPhoto.peso && (
-                  <p className="text-cyan-400 text-sm mt-2">
+                  <p className="text-dourado text-sm mt-2">
                     Peso: {selectedPhoto.peso.toFixed(1)}kg
                   </p>
                 )}
@@ -292,9 +292,9 @@ export default function TimelinePage() {
             </div>
 
             {selectedPhoto.notas && (
-              <div className="mt-3 pt-3 border-t border-[#2E2E3E]">
-                <p className="text-slate-500 text-xs mb-1">Notas</p>
-                <p className="text-slate-300 text-sm">{selectedPhoto.notas}</p>
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-foreground-muted text-xs mb-1">Notas</p>
+                <p className="text-foreground-secondary text-sm">{selectedPhoto.notas}</p>
               </div>
             )}
           </div>
@@ -308,9 +308,9 @@ export default function TimelinePage() {
         transition={{ delay: 0.3 }}
         className="px-4 mt-6"
       >
-        <div className="bg-gradient-to-r from-violet-900/20 to-cyan-900/20 border border-violet-500/20 rounded-2xl p-4">
-          <p className="text-white font-medium mb-2">Dica para evolução</p>
-          <p className="text-slate-400 text-sm">
+        <div className="bg-gradient-to-r from-dourado/10 to-vinho/10 border border-dourado/20 rounded-2xl p-4">
+          <p className="text-foreground font-medium mb-2">Dica para evolução</p>
+          <p className="text-foreground-secondary text-sm">
             Para melhores comparações, tire fotos sempre no mesmo local,
             com a mesma iluminação e no mesmo horário (ex: manhã em jejum).
           </p>

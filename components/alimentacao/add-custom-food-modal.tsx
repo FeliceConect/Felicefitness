@@ -107,16 +107,16 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 100 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full sm:max-w-md bg-[#14141F] rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
+          className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">Adicionar Alimento</h2>
+            <h2 className="text-xl font-bold text-foreground">Adicionar Alimento</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-slate-400" />
+              <X className="w-5 h-5 text-foreground-secondary" />
             </button>
           </div>
 
@@ -124,19 +124,19 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
           <div className="space-y-4">
             {/* Nome */}
             <div>
-              <label className="text-sm text-slate-400 block mb-2">Nome do alimento *</label>
+              <label className="text-sm text-foreground-secondary block mb-2">Nome do alimento *</label>
               <input
                 type="text"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Ex: Bolo de chocolate caseiro"
-                className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
               />
             </div>
 
             {/* Categoria */}
             <div>
-              <label className="text-sm text-slate-400 block mb-2">Categoria</label>
+              <label className="text-sm text-foreground-secondary block mb-2">Categoria</label>
               <div className="grid grid-cols-4 gap-2">
                 {CATEGORIES.map((cat) => {
                   const catInfo = foodCategoryLabels[cat]
@@ -146,12 +146,12 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
                       onClick={() => setCategoria(cat)}
                       className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors ${
                         categoria === cat
-                          ? 'bg-violet-500/20 border border-violet-500'
-                          : 'bg-slate-800/50 border border-transparent hover:bg-slate-800'
+                          ? 'bg-dourado/20 border border-dourado'
+                          : 'bg-background border border-transparent hover:bg-background-elevated'
                       }`}
                     >
                       <span className="text-lg">{catInfo.icon}</span>
-                      <span className="text-[10px] text-slate-400 text-center truncate w-full">
+                      <span className="text-[10px] text-foreground-secondary text-center truncate w-full">
                         {catInfo.label}
                       </span>
                     </button>
@@ -163,21 +163,21 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
             {/* Porcao e Unidade */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm text-slate-400 block mb-2">Porcao</label>
+                <label className="text-sm text-foreground-secondary block mb-2">Porcao</label>
                 <input
                   type="number"
                   value={porcao}
                   onChange={(e) => setPorcao(e.target.value)}
                   placeholder="100"
-                  className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-2">Unidade</label>
+                <label className="text-sm text-foreground-secondary block mb-2">Unidade</label>
                 <select
                   value={unidade}
                   onChange={(e) => setUnidade(e.target.value as 'g' | 'ml' | 'unidade')}
-                  className="w-full bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-dourado"
                 >
                   <option value="g">gramas (g)</option>
                   <option value="ml">mililitros (ml)</option>
@@ -188,31 +188,31 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
 
             {/* Macros */}
             <div>
-              <label className="text-sm text-slate-400 block mb-2">
+              <label className="text-sm text-foreground-secondary block mb-2">
                 Informacoes nutricionais (por porcao)
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {/* Calorias */}
-                <div className="bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl p-3">
+                <div className="bg-background border border-border rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Flame className="w-4 h-4 text-orange-400" />
-                    <span className="text-xs text-slate-400">Calorias</span>
+                    <span className="text-xs text-foreground-secondary">Calorias</span>
                   </div>
                   <input
                     type="number"
                     value={calorias}
                     onChange={(e) => setCalorias(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                    className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                   />
-                  <span className="text-xs text-slate-500">kcal</span>
+                  <span className="text-xs text-foreground-muted">kcal</span>
                 </div>
 
                 {/* Proteinas */}
-                <div className="bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl p-3">
+                <div className="bg-background border border-border rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Beef className="w-4 h-4 text-red-400" />
-                    <span className="text-xs text-slate-400">Proteinas</span>
+                    <span className="text-xs text-foreground-secondary">Proteinas</span>
                   </div>
                   <input
                     type="number"
@@ -220,16 +220,16 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
                     value={proteinas}
                     onChange={(e) => setProteinas(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                    className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                   />
-                  <span className="text-xs text-slate-500">g</span>
+                  <span className="text-xs text-foreground-muted">g</span>
                 </div>
 
                 {/* Carboidratos */}
-                <div className="bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl p-3">
+                <div className="bg-background border border-border rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Wheat className="w-4 h-4 text-amber-400" />
-                    <span className="text-xs text-slate-400">Carboidratos</span>
+                    <span className="text-xs text-foreground-secondary">Carboidratos</span>
                   </div>
                   <input
                     type="number"
@@ -237,16 +237,16 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
                     value={carboidratos}
                     onChange={(e) => setCarboidratos(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                    className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                   />
-                  <span className="text-xs text-slate-500">g</span>
+                  <span className="text-xs text-foreground-muted">g</span>
                 </div>
 
                 {/* Gorduras */}
-                <div className="bg-[#1E1E2E] border border-[#2E2E3E] rounded-xl p-3">
+                <div className="bg-background border border-border rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Droplets className="w-4 h-4 text-blue-400" />
-                    <span className="text-xs text-slate-400">Gorduras</span>
+                    <span className="text-xs text-foreground-secondary">Gorduras</span>
                   </div>
                   <input
                     type="number"
@@ -254,14 +254,14 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
                     value={gorduras}
                     onChange={(e) => setGorduras(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-transparent text-white text-lg font-bold focus:outline-none"
+                    className="w-full bg-transparent text-foreground text-lg font-bold focus:outline-none"
                   />
-                  <span className="text-xs text-slate-500">g</span>
+                  <span className="text-xs text-foreground-muted">g</span>
                 </div>
               </div>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-foreground-muted">
               Dica: Se nao souber os valores exatos, pesquise na internet ou use valores aproximados.
             </p>
 
@@ -285,7 +285,7 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
           <div className="flex gap-3 mt-6">
             <button
               onClick={onClose}
-              className="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-medium hover:bg-slate-700 transition-colors"
+              className="flex-1 py-3 bg-background text-foreground-secondary rounded-xl font-medium hover:bg-background-elevated transition-colors"
             >
               Cancelar
             </button>
@@ -294,8 +294,8 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
               disabled={!nome.trim() || isSaving}
               className={`flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2 ${
                 nome.trim() && !isSaving
-                  ? 'bg-violet-600 text-white hover:bg-violet-700'
-                  : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  ? 'bg-dourado text-white hover:bg-dourado/80'
+                  : 'bg-background-elevated text-foreground-secondary cursor-not-allowed'
               } transition-colors`}
             >
               {isSaving ? (

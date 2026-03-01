@@ -93,19 +93,19 @@ export default function CompararFotosPage() {
   }, [filteredPhotos, beforePhoto])
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={goBack}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Comparar Fotos</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-2xl font-bold text-foreground">Comparar Fotos</h1>
+        <p className="text-foreground-secondary text-sm">
           {step === 'type' && 'Selecione o tipo de foto para comparar'}
           {step === 'before' && `Selecione a foto ANTES (${PHOTO_TYPE_LABELS[selectedType]})`}
           {step === 'after' && `Selecione a foto DEPOIS (${PHOTO_TYPE_LABELS[selectedType]})`}
@@ -135,8 +135,8 @@ export default function CompararFotosPage() {
                   className={cn(
                     'p-4 rounded-xl border text-left transition-colors',
                     disabled
-                      ? 'bg-[#14141F] border-[#2E2E3E] opacity-50 cursor-not-allowed'
-                      : 'bg-[#14141F] border-[#2E2E3E] hover:border-violet-500/50'
+                      ? 'bg-white border-border opacity-50 cursor-not-allowed'
+                      : 'bg-white border-border hover:border-dourado/50'
                   )}
                 >
                   <div className="text-3xl mb-2">
@@ -144,10 +144,10 @@ export default function CompararFotosPage() {
                      type === 'lado_esquerdo' ? '👈' :
                      type === 'lado_direito' ? '👉' : '🔙'}
                   </div>
-                  <p className="text-white font-medium">{PHOTO_TYPE_LABELS[type]}</p>
+                  <p className="text-foreground font-medium">{PHOTO_TYPE_LABELS[type]}</p>
                   <p className={cn(
                     'text-sm',
-                    disabled ? 'text-red-400' : 'text-slate-400'
+                    disabled ? 'text-red-400' : 'text-foreground-secondary'
                   )}>
                     {count} {count === 1 ? 'foto' : 'fotos'}
                     {disabled && ' (mín. 2)'}
@@ -181,9 +181,9 @@ export default function CompararFotosPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleBeforeSelect(photo.id)}
-                className="aspect-[3/4] rounded-xl overflow-hidden border-2 border-transparent hover:border-violet-500 transition-colors"
+                className="aspect-[3/4] rounded-xl overflow-hidden border-2 border-transparent hover:border-dourado transition-colors"
               >
-                <div className="w-full h-full bg-gradient-to-br from-violet-900/30 to-cyan-900/30 flex flex-col items-center justify-center relative">
+                <div className="w-full h-full bg-gradient-to-br from-dourado/10 to-vinho/10 flex flex-col items-center justify-center relative">
                   <span className="text-3xl opacity-30">
                     {photo.tipo === 'frente' ? '🧍' :
                      photo.tipo === 'lado_esquerdo' ? '👈' :
@@ -194,7 +194,7 @@ export default function CompararFotosPage() {
                       {format(parseISO(photo.data), 'dd/MM/yy', { locale: ptBR })}
                     </p>
                     {photo.peso && (
-                      <p className="text-cyan-400 text-xs">
+                      <p className="text-dourado text-xs">
                         {photo.peso.toFixed(1)}kg
                       </p>
                     )}
@@ -214,9 +214,9 @@ export default function CompararFotosPage() {
           className="px-4"
         >
           {/* Preview da foto "antes" selecionada */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-3 mb-4">
+          <div className="bg-white border border-border rounded-xl p-3 mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-16 aspect-[3/4] rounded-lg overflow-hidden bg-gradient-to-br from-violet-900/30 to-cyan-900/30 flex items-center justify-center">
+              <div className="w-16 aspect-[3/4] rounded-lg overflow-hidden bg-gradient-to-br from-dourado/10 to-vinho/10 flex items-center justify-center">
                 <span className="text-xl opacity-30">
                   {beforePhoto.tipo === 'frente' ? '🧍' :
                    beforePhoto.tipo === 'lado_esquerdo' ? '👈' :
@@ -224,18 +224,18 @@ export default function CompararFotosPage() {
                 </span>
               </div>
               <div>
-                <p className="text-xs text-violet-400 uppercase font-medium">Antes</p>
-                <p className="text-white text-sm">
+                <p className="text-xs text-dourado uppercase font-medium">Antes</p>
+                <p className="text-foreground text-sm">
                   {format(parseISO(beforePhoto.data), "d 'de' MMM, yyyy", { locale: ptBR })}
                 </p>
                 {beforePhoto.peso && (
-                  <p className="text-slate-400 text-xs">{beforePhoto.peso.toFixed(1)}kg</p>
+                  <p className="text-foreground-secondary text-xs">{beforePhoto.peso.toFixed(1)}kg</p>
                 )}
               </div>
             </div>
           </div>
 
-          <p className="text-sm text-slate-400 mb-3">Selecione a foto DEPOIS:</p>
+          <p className="text-sm text-foreground-secondary mb-3">Selecione a foto DEPOIS:</p>
 
           <div className="grid grid-cols-3 gap-2">
             {afterPhotos.map(photo => (
@@ -244,9 +244,9 @@ export default function CompararFotosPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleAfterSelect(photo.id)}
-                className="aspect-[3/4] rounded-xl overflow-hidden border-2 border-transparent hover:border-cyan-500 transition-colors"
+                className="aspect-[3/4] rounded-xl overflow-hidden border-2 border-transparent hover:border-dourado transition-colors"
               >
-                <div className="w-full h-full bg-gradient-to-br from-cyan-900/30 to-violet-900/30 flex flex-col items-center justify-center relative">
+                <div className="w-full h-full bg-gradient-to-br from-dourado/10 to-vinho/10 flex flex-col items-center justify-center relative">
                   <span className="text-3xl opacity-30">
                     {photo.tipo === 'frente' ? '🧍' :
                      photo.tipo === 'lado_esquerdo' ? '👈' :
@@ -257,7 +257,7 @@ export default function CompararFotosPage() {
                       {format(parseISO(photo.data), 'dd/MM/yy', { locale: ptBR })}
                     </p>
                     {photo.peso && (
-                      <p className="text-cyan-400 text-xs">
+                      <p className="text-dourado text-xs">
                         {photo.peso.toFixed(1)}kg
                       </p>
                     )}
@@ -283,8 +283,8 @@ export default function CompararFotosPage() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors',
                 comparisonMode === 'side-by-side'
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                  ? 'bg-dourado text-white'
+                  : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
               )}
             >
               <Layers className="w-4 h-4" />
@@ -296,8 +296,8 @@ export default function CompararFotosPage() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors',
                 comparisonMode === 'slider'
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                  ? 'bg-dourado text-white'
+                  : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
               )}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -309,8 +309,8 @@ export default function CompararFotosPage() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors',
                 comparisonMode === 'fade'
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                  ? 'bg-dourado text-white'
+                  : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
               )}
             >
               <Sparkles className="w-4 h-4" />
@@ -338,15 +338,15 @@ export default function CompararFotosPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-6 bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+              className="mt-6 bg-white border border-border rounded-xl p-4"
             >
-              <h3 className="text-white font-medium mb-3">Resumo da Evolução</h3>
+              <h3 className="text-foreground font-medium mb-3">Resumo da Evolução</h3>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-slate-400 text-xs mb-1">Peso</p>
+                  <p className="text-foreground-secondary text-xs mb-1">Peso</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-white font-bold">
+                    <span className="text-foreground font-bold">
                       {(afterPhoto.peso - beforePhoto.peso).toFixed(1)}kg
                     </span>
                     <span className={cn(
@@ -360,9 +360,9 @@ export default function CompararFotosPage() {
 
                 {(beforePhoto.percentual_gordura && afterPhoto.percentual_gordura) && (
                   <div>
-                    <p className="text-slate-400 text-xs mb-1">% Gordura</p>
+                    <p className="text-foreground-secondary text-xs mb-1">% Gordura</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-white font-bold">
+                      <span className="text-foreground font-bold">
                         {(afterPhoto.percentual_gordura - beforePhoto.percentual_gordura).toFixed(1)}%
                       </span>
                       <span className={cn(
@@ -376,8 +376,8 @@ export default function CompararFotosPage() {
                 )}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-[#2E2E3E]">
-                <p className="text-slate-400 text-xs">
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-foreground-secondary text-xs">
                   Período: {format(parseISO(beforePhoto.data), "d 'de' MMM", { locale: ptBR })} → {format(parseISO(afterPhoto.data), "d 'de' MMM, yyyy", { locale: ptBR })}
                 </p>
               </div>
@@ -395,7 +395,7 @@ export default function CompararFotosPage() {
               clearSelection()
               setStep('type')
             }}
-            className="w-full mt-6 py-3 bg-[#1E1E2E] text-white rounded-xl font-medium border border-[#2E2E3E]"
+            className="w-full mt-6 py-3 bg-background-elevated text-foreground rounded-xl font-medium border border-border"
           >
             Nova Comparação
           </motion.button>

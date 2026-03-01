@@ -17,8 +17,8 @@ interface TodayWorkoutCardProps {
 }
 
 const typeLabels: Record<string, { label: string; color: string }> = {
-  tradicional: { label: 'Tradicional', color: 'text-violet-400' },
-  circuito: { label: 'Circuito', color: 'text-cyan-400' },
+  tradicional: { label: 'Tradicional', color: 'text-dourado' },
+  circuito: { label: 'Circuito', color: 'text-dourado' },
   hiit: { label: 'HIIT', color: 'text-red-400' },
   mobilidade: { label: 'Mobilidade', color: 'text-emerald-400' }
 }
@@ -38,12 +38,12 @@ export function TodayWorkoutCard({ workout, isRest, specialActivity }: TodayWork
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl p-6"
+        className="bg-gradient-to-br from-background-elevated/50 to-background/50 border border-border/50 rounded-2xl p-6"
       >
         <div className="text-center">
           <span className="text-4xl mb-4 block">😴</span>
-          <h3 className="text-xl font-bold text-white mb-2">Dia de Descanso</h3>
-          <p className="text-slate-400 text-sm">
+          <h3 className="text-xl font-bold text-foreground mb-2">Dia de Descanso</h3>
+          <p className="text-foreground-secondary text-sm">
             Recupere-se para voltar mais forte!
           </p>
         </div>
@@ -61,8 +61,8 @@ export function TodayWorkoutCard({ workout, isRest, specialActivity }: TodayWork
       >
         <div className="text-center">
           <span className="text-4xl mb-4 block">{specialActivity.icon}</span>
-          <h3 className="text-xl font-bold text-white mb-2">{specialActivity.name}</h3>
-          <p className="text-slate-400 text-sm">
+          <h3 className="text-xl font-bold text-foreground mb-2">{specialActivity.name}</h3>
+          <p className="text-foreground-secondary text-sm">
             Aproveite sua atividade!
           </p>
         </div>
@@ -76,12 +76,12 @@ export function TodayWorkoutCard({ workout, isRest, specialActivity }: TodayWork
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-6"
+        className="bg-white border border-border rounded-2xl p-6"
       >
         <div className="text-center">
           <span className="text-4xl mb-4 block">📋</span>
-          <h3 className="text-xl font-bold text-white mb-2">Nenhum treino hoje</h3>
-          <p className="text-slate-400 text-sm mb-4">
+          <h3 className="text-xl font-bold text-foreground mb-2">Nenhum treino hoje</h3>
+          <p className="text-foreground-secondary text-sm mb-4">
             Configure seus templates de treino para ver os treinos do dia
           </p>
           <Button
@@ -107,7 +107,7 @@ export function TodayWorkoutCard({ workout, isRest, specialActivity }: TodayWork
         'border rounded-2xl p-6',
         workout.status === 'concluido'
           ? 'bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 border-emerald-500/30'
-          : 'bg-gradient-to-br from-violet-500/10 to-cyan-500/5 border-violet-500/30'
+          : 'bg-gradient-to-br from-dourado/10 to-cyan-500/5 border-dourado/30'
       )}
     >
       {/* Header */}
@@ -121,19 +121,19 @@ export function TodayWorkoutCard({ workout, isRest, specialActivity }: TodayWork
               {typeInfo.label}
             </span>
           </div>
-          <h3 className="text-xl font-bold text-white">
+          <h3 className="text-xl font-bold text-foreground">
             {workout.nome}
           </h3>
         </div>
         {workout.fase && (
-          <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded-full">
+          <span className="text-xs text-foreground-muted bg-background-elevated px-2 py-1 rounded-full">
             {phaseLabels[workout.fase]}
           </span>
         )}
       </div>
 
       {/* Info */}
-      <div className="flex items-center gap-4 text-sm text-slate-400 mb-6">
+      <div className="flex items-center gap-4 text-sm text-foreground-secondary mb-6">
         <span>⏱️ ~{formatDuration(workout.duracao_estimada)}</span>
         <span>•</span>
         <span>{exerciseCount} exercícios</span>
@@ -143,8 +143,8 @@ export function TodayWorkoutCard({ workout, isRest, specialActivity }: TodayWork
       {workout.status === 'concluido' ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">Duração real:</span>
-            <span className="text-white font-medium">
+            <span className="text-foreground-secondary">Duração real:</span>
+            <span className="text-foreground font-medium">
               {workout.duracao_real ? formatDuration(workout.duracao_real) : '-'}
             </span>
           </div>

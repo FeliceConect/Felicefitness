@@ -16,9 +16,17 @@ import {
   Calendar,
   Clock,
   Activity,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Trophy,
+  Plus,
+  Moon
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
+import { NoteCard } from '@/components/portal/notes/note-card'
+import type { Note } from '@/components/portal/notes/note-card'
+import { NoteEditor } from '@/components/portal/notes/note-editor'
+import { AwardPointsModal } from '@/components/portal/points/award-points-modal'
 
 interface ClientDetails {
   id: string
@@ -57,10 +65,15 @@ interface WeekStats {
   hydration: {
     records: number
     avgDaily: number
+    goalMl?: number
+    daysGoalMet?: number
+    dailyLog?: Array<{ date: string; ml: number }>
   }
   sleep: {
     records: number
     avgHours: number | string
+    avgQuality?: number | string
+    dailyLog?: Array<{ date: string; hours: number; quality: number; bedtime?: string; wakeup?: string }>
   }
   weight: {
     current: number | null
@@ -111,7 +124,13 @@ export default function ClientDetailPage() {
   const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([])
   const [bioimpedance, setBioimpedance] = useState<Bioimpedance | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'meals' | 'workouts'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'notes'>('overview')
+  const [notes, setNotes] = useState<Note[]>([])
+  const [loadingNotes, setLoadingNotes] = useState(false)
+  const [showNoteEditor, setShowNoteEditor] = useState(false)
+  const [editingNote, setEditingNote] = useState<{ note_type: string; content: string; id?: string } | null>(null)
+  const [savingNote, setSavingNote] = useState(false)
+  const [showPointsModal, setShowPointsModal] = useState(false)
 
   useEffect(() => {
     async function fetchClient() {
@@ -140,6 +159,73 @@ export default function ClientDetailPage() {
       fetchClient()
     }
   }, [params.id, router])
+
+  // Fetch notes when tab switches
+  useEffect(() => {
+    if (activeTab === 'notes' && params.id) {
+      setLoadingNotes(true)
+      fetch(`/api/portal/notes?patientId=${params.id}`)
+        .then(r => r.json())
+        .then(data => { if (data.success) setNotes(data.notes || []) })
+        .catch(console.error)
+        .finally(() => setLoadingNotes(false))
+    }
+  }, [activeTab, params.id])
+
+  const handleSaveNote = async (data: { note_type: string; content: string }) => {
+    setSavingNote(true)
+    try {
+      if (editingNote?.id) {
+        const res = await fetch(`/api/portal/notes/${editingNote.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+        if ((await res.json()).success) {
+          setShowNoteEditor(false)
+          setEditingNote(null)
+          // Refetch
+          const r2 = await fetch(`/api/portal/notes?patientId=${params.id}`)
+          const d2 = await r2.json()
+          if (d2.success) setNotes(d2.notes || [])
+        }
+      } else {
+        const res = await fetch('/api/portal/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patient_id: params.id, ...data }),
+        })
+        if ((await res.json()).success) {
+          setShowNoteEditor(false)
+          const r2 = await fetch(`/api/portal/notes?patientId=${params.id}`)
+          const d2 = await r2.json()
+          if (d2.success) setNotes(d2.notes || [])
+        }
+      }
+    } catch (error) { console.error('Erro ao salvar nota:', error) }
+    finally { setSavingNote(false) }
+  }
+
+  const handleDeleteNote = async (id: string) => {
+    if (!confirm('Remover esta nota?')) return
+    try {
+      await fetch(`/api/portal/notes/${id}`, { method: 'DELETE' })
+      setNotes(prev => prev.filter(n => n.id !== id))
+    } catch (error) { console.error(error) }
+  }
+
+  const handleAwardPoints = async (points: number, reason: string) => {
+    const res = await fetch('/api/portal/points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: params.id, points, reason }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      setShowPointsModal(false)
+      alert(`${points} pontos atribuidos!`)
+    }
+  }
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('pt-BR')
@@ -204,27 +290,36 @@ export default function ClientDetailPage() {
           <h1 className="text-2xl font-bold text-white">{client.nome || 'Cliente'}</h1>
           <p className="text-slate-400">{client.email}</p>
         </div>
-        <button
-          onClick={async () => {
-            try {
-              const response = await fetch('/api/chat/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clientId: client.id })
-              })
-              const data = await response.json()
-              if (data.success) {
-                router.push('/portal/messages')
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPointsModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-dourado hover:bg-dourado/90 text-white rounded-lg transition-colors"
+          >
+            <Trophy className="w-5 h-5" />
+            <span className="hidden sm:inline">Pontos</span>
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/chat/start', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ clientId: client.id })
+                })
+                const data = await response.json()
+                if (data.success) {
+                  router.push('/portal/messages')
+                }
+              } catch (error) {
+                console.error('Erro ao iniciar conversa:', error)
               }
-            } catch (error) {
-              console.error('Erro ao iniciar conversa:', error)
-            }
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors"
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span className="hidden sm:inline">Mensagem</span>
-        </button>
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-vinho hover:bg-vinho/90 text-white rounded-lg transition-colors"
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span className="hidden sm:inline">Mensagem</span>
+          </button>
+        </div>
       </div>
 
       {/* Profile Card */}
@@ -471,6 +566,36 @@ export default function ClientDetailPage() {
             Treinos
           </button>
         )}
+        <button
+          onClick={() => setActiveTab('hydration')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'hydration'
+              ? 'text-violet-400 border-b-2 border-violet-400'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Hidratação
+        </button>
+        <button
+          onClick={() => setActiveTab('sleep')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'sleep'
+              ? 'text-violet-400 border-b-2 border-violet-400'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Sono
+        </button>
+        <button
+          onClick={() => setActiveTab('notes')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'notes'
+              ? 'text-violet-400 border-b-2 border-violet-400'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Notas
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -636,6 +761,201 @@ export default function ClientDetailPage() {
           )}
         </div>
       )}
+
+      {activeTab === 'hydration' && weekStats && (
+        <div className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 text-center">
+              <Droplets className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{weekStats.hydration.avgDaily || 0}</p>
+              <p className="text-xs text-slate-400">Média diária (ml)</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 text-center">
+              <Target className="w-6 h-6 text-green-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{weekStats.hydration.goalMl || 2500}</p>
+              <p className="text-xs text-slate-400">Meta (ml)</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 text-center">
+              <Trophy className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{weekStats.hydration.daysGoalMet || 0}/7</p>
+              <p className="text-xs text-slate-400">Dias meta atingida</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 text-center">
+              <Activity className="w-6 h-6 text-violet-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{weekStats.hydration.records || 0}</p>
+              <p className="text-xs text-slate-400">Registros na semana</p>
+            </div>
+          </div>
+
+          {/* Daily Log */}
+          <div className="bg-slate-800 rounded-xl border border-slate-700">
+            <div className="p-4 border-b border-slate-700">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Droplets className="w-5 h-5 text-blue-400" />
+                Registro Diário
+              </h3>
+            </div>
+            <div className="p-4">
+              {(!weekStats.hydration.dailyLog || weekStats.hydration.dailyLog.length === 0) ? (
+                <p className="text-center text-slate-400 py-4">Nenhum registro de hidratação nos últimos 7 dias</p>
+              ) : (
+                <div className="space-y-3">
+                  {weekStats.hydration.dailyLog.map((entry) => {
+                    const goalMl = weekStats.hydration.goalMl || 2500
+                    const percentage = Math.min(Math.round((entry.ml / goalMl) * 100), 100)
+                    const metGoal = entry.ml >= goalMl
+                    return (
+                      <div key={entry.date} className="p-3 bg-slate-700/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-white font-medium">{formatDate(entry.date)}</span>
+                          <span className={`text-sm font-medium ${metGoal ? 'text-green-400' : 'text-amber-400'}`}>
+                            {entry.ml} ml {metGoal ? '✓' : ''}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-600 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${metGoal ? 'bg-green-400' : 'bg-blue-400'}`}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">{percentage}% da meta</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'sleep' && weekStats && (
+        <div className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 text-center">
+              <Moon className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{weekStats.sleep.avgHours || 0}h</p>
+              <p className="text-xs text-slate-400">Média de sono</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 text-center">
+              <Activity className="w-6 h-6 text-violet-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{weekStats.sleep.avgQuality || 0}/5</p>
+              <p className="text-xs text-slate-400">Qualidade média</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 text-center">
+              <Calendar className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{weekStats.sleep.records || 0}</p>
+              <p className="text-xs text-slate-400">Registros na semana</p>
+            </div>
+          </div>
+
+          {/* Daily Log */}
+          <div className="bg-slate-800 rounded-xl border border-slate-700">
+            <div className="p-4 border-b border-slate-700">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Moon className="w-5 h-5 text-indigo-400" />
+                Registro Diário de Sono
+              </h3>
+            </div>
+            <div className="p-4">
+              {(!weekStats.sleep.dailyLog || weekStats.sleep.dailyLog.length === 0) ? (
+                <p className="text-center text-slate-400 py-4">Nenhum registro de sono nos últimos 7 dias</p>
+              ) : (
+                <div className="space-y-3">
+                  {weekStats.sleep.dailyLog.map((entry) => {
+                    const qualityColor = entry.quality >= 4 ? 'text-green-400'
+                      : entry.quality >= 3 ? 'text-amber-400'
+                      : 'text-red-400'
+                    const hoursColor = entry.hours >= 7 ? 'text-green-400'
+                      : entry.hours >= 6 ? 'text-amber-400'
+                      : 'text-red-400'
+                    return (
+                      <div key={entry.date} className="p-3 bg-slate-700/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-white font-medium">{formatDate(entry.date)}</span>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-sm font-medium ${hoursColor}`}>
+                              {entry.hours.toFixed(1)}h
+                            </span>
+                            <span className={`text-sm font-medium ${qualityColor}`}>
+                              {'★'.repeat(Math.round(entry.quality))}{'☆'.repeat(5 - Math.round(entry.quality))}
+                            </span>
+                          </div>
+                        </div>
+                        {(entry.bedtime || entry.wakeup) && (
+                          <div className="flex gap-4 text-xs text-slate-400 mt-1">
+                            {entry.bedtime && <span>Dormiu: {entry.bedtime}</span>}
+                            {entry.wakeup && <span>Acordou: {entry.wakeup}</span>}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'notes' && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button
+              onClick={() => { setEditingNote(null); setShowNoteEditor(true) }}
+              className="flex items-center gap-2 px-4 py-2 bg-dourado hover:bg-dourado/90 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nova Nota
+            </button>
+          </div>
+          {loadingNotes ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white border border-border rounded-xl p-4 h-28 animate-pulse" />
+              ))}
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-10 h-10 text-foreground-muted mx-auto mb-2" />
+              <p className="text-foreground-secondary text-sm">Nenhuma nota para este paciente</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {notes.map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  onEdit={(n: { id: string; note_type: string; content: string }) => {
+                    setEditingNote({ id: n.id, note_type: n.note_type, content: n.content })
+                    setShowNoteEditor(true)
+                  }}
+                  onDelete={handleDeleteNote}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Note Editor Modal */}
+      <NoteEditor
+        isOpen={showNoteEditor}
+        onClose={() => { setShowNoteEditor(false); setEditingNote(null) }}
+        onSave={handleSaveNote}
+        initialData={editingNote}
+        saving={savingNote}
+      />
+
+      {/* Award Points Modal */}
+      <AwardPointsModal
+        isOpen={showPointsModal}
+        onClose={() => setShowPointsModal(false)}
+        onAward={handleAwardPoints}
+        clientName={client.nome || 'Cliente'}
+      />
     </div>
   )
 }

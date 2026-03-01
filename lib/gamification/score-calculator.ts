@@ -1,4 +1,4 @@
-// Calculador de Pontuação Diária - FeliceFit Gamification
+// Calculador de Pontuação Diária - Complexo Wellness Gamification
 
 import type { DailyScoreBreakdown, DayData } from '@/types/gamification'
 
@@ -122,11 +122,6 @@ export function calculateExtrasScore(data: DayData): number {
 
   // Sono registrado (5 pontos)
   if (data.sleepLogged) {
-    score += 5
-  }
-
-  // Revolade no horário (5 pontos)
-  if (data.revoladeOnTime) {
     score += 5
   }
 

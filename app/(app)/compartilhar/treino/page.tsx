@@ -10,12 +10,12 @@ import { ptBR } from 'date-fns/locale'
 
 interface CompletedWorkout {
   id: string
-  workout_name: string
-  duration_minutes: number
+  nome: string
+  duracao_minutos: number
   exercises_count: number
   sets_count: number
-  calories_burned: number
-  completed_at: string
+  calorias_estimadas: number
+  data: string
   prs_count: number
 }
 
@@ -39,21 +39,21 @@ export default function CompartilharTreinoPage() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     const { data } = await supabase
-      .from('workout_sessions')
+      .from('fitness_workouts')
       .select(`
         id,
-        workout_name,
-        duration_minutes,
+        nome,
+        duracao_minutos,
         exercises_count,
         sets_count,
-        calories_burned,
-        completed_at,
+        calorias_estimadas,
+        data,
         prs_count
       `)
       .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .gte('completed_at', thirtyDaysAgo.toISOString())
-      .order('completed_at', { ascending: false })
+      .eq('status', 'concluido')
+      .gte('data', thirtyDaysAgo.toISOString())
+      .order('data', { ascending: false })
       .limit(20) as { data: CompletedWorkout[] | null }
 
     if (data) {
@@ -63,7 +63,7 @@ export default function CompartilharTreinoPage() {
   }
 
   const filteredWorkouts = workouts.filter(w =>
-    w.workout_name.toLowerCase().includes(search.toLowerCase())
+    w.nome.toLowerCase().includes(search.toLowerCase())
   )
 
   const formatDuration = (minutes: number) => {
@@ -126,7 +126,7 @@ export default function CompartilharTreinoPage() {
                 )}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold">{workout.workout_name}</h3>
+                  <h3 className="font-semibold">{workout.nome}</h3>
                   {workout.prs_count > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-xs bg-amber-500/10 text-amber-500 font-medium">
                       {workout.prs_count} PR{workout.prs_count > 1 ? 's' : ''}
@@ -134,12 +134,12 @@ export default function CompartilharTreinoPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{formatDuration(workout.duration_minutes)}</span>
+                  <span>{formatDuration(workout.duracao_minutos)}</span>
                   <span>{workout.exercises_count} exercicios</span>
-                  <span>{workout.calories_burned}kcal</span>
+                  <span>{workout.calorias_estimadas}kcal</span>
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
-                  {format(parseISO(workout.completed_at), "d 'de' MMMM, HH:mm", { locale: ptBR })}
+                  {format(parseISO(workout.data), "d 'de' MMMM, HH:mm", { locale: ptBR })}
                 </div>
               </Link>
             ))}

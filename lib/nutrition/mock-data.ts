@@ -4693,7 +4693,7 @@ export function getTodayMeals(): Meal[] {
       proteinas_total: lancheTardeTotals.proteinas,
       carboidratos_total: lancheTardeTotals.carboidratos,
       gorduras_total: lancheTardeTotals.gorduras,
-      notas: 'Sem laticínios (Revolade)',
+      notas: 'Lanche da tarde',
       created_at: new Date().toISOString()
     })
   }

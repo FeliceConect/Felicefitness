@@ -12,8 +12,8 @@ import { formatDuration } from '@/lib/utils/format'
 import { cn } from '@/lib/utils'
 
 const typeLabels: Record<string, { label: string; color: string; bg: string }> = {
-  tradicional: { label: 'Tradicional', color: 'text-violet-400', bg: 'bg-violet-500/20' },
-  circuito: { label: 'Circuito', color: 'text-cyan-400', bg: 'bg-cyan-500/20' },
+  tradicional: { label: 'Tradicional', color: 'text-dourado', bg: 'bg-dourado/20' },
+  circuito: { label: 'Circuito', color: 'text-dourado', bg: 'bg-dourado/20' },
   hiit: { label: 'HIIT', color: 'text-red-400', bg: 'bg-red-500/20' },
   mobilidade: { label: 'Mobilidade', color: 'text-emerald-400', bg: 'bg-emerald-500/20' }
 }
@@ -38,10 +38,10 @@ export default function WorkoutDetailPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando treino...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando treino...</p>
         </div>
       </div>
     )
@@ -49,11 +49,11 @@ export default function WorkoutDetailPage() {
 
   if (!workout) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <span className="text-4xl mb-4 block">🤷</span>
-          <h2 className="text-xl font-bold text-white mb-2">Treino não encontrado</h2>
-          <p className="text-slate-400 mb-4">Não conseguimos encontrar este treino</p>
+          <h2 className="text-xl font-bold text-foreground mb-2">Treino não encontrado</h2>
+          <p className="text-foreground-secondary mb-4">Não conseguimos encontrar este treino</p>
           <Button onClick={() => router.back()}>Voltar</Button>
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function WorkoutDetailPage() {
   const isCompleted = workout.status === 'concluido'
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-32">
+    <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <div className="relative">
         {/* Background gradient */}
@@ -72,7 +72,7 @@ export default function WorkoutDetailPage() {
           'absolute inset-0 h-48',
           isCompleted
             ? 'bg-gradient-to-b from-emerald-500/20 to-transparent'
-            : 'bg-gradient-to-b from-violet-500/20 to-transparent'
+            : 'bg-gradient-to-b from-dourado/20 to-transparent'
         )} />
 
         {/* Content */}
@@ -80,7 +80,7 @@ export default function WorkoutDetailPage() {
           {/* Back button */}
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
@@ -98,23 +98,23 @@ export default function WorkoutDetailPage() {
               </span>
               {workout.fase && (
                 <>
-                  <span className="text-slate-600">•</span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-foreground-muted">•</span>
+                  <span className="text-xs text-foreground-muted">
                     {phaseLabels[workout.fase]}
                   </span>
                 </>
               )}
             </div>
 
-            <h1 className="text-3xl font-bold text-white mb-4">
+            <h1 className="text-3xl font-bold text-foreground mb-4">
               {workout.nome}
             </h1>
 
             {/* Stats */}
             <div className="flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-500" />
-                <span className="text-slate-400">
+                <Clock className="w-4 h-4 text-foreground-muted" />
+                <span className="text-foreground-secondary">
                   {isCompleted && workout.duracao_real
                     ? `${formatDuration(workout.duracao_real)} (${formatDuration(workout.duracao_estimada)} estimado)`
                     : `~${formatDuration(workout.duracao_estimada)}`
@@ -122,8 +122,8 @@ export default function WorkoutDetailPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Dumbbell className="w-4 h-4 text-slate-500" />
-                <span className="text-slate-400">
+                <Dumbbell className="w-4 h-4 text-foreground-muted" />
+                <span className="text-foreground-secondary">
                   {workout.exercicios.length} exercícios
                 </span>
               </div>
@@ -134,7 +134,7 @@ export default function WorkoutDetailPage() {
 
       {/* Exercises list */}
       <div className="px-4 mt-8">
-        <h2 className="text-lg font-semibold text-white mb-4">Exercícios</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Exercícios</h2>
         <div className="space-y-3">
           {workout.exercicios.map((exercise, index) => {
             const isSuperset = exercise.is_superset
@@ -157,13 +157,13 @@ export default function WorkoutDetailPage() {
       </div>
 
       {/* Action button - positioned above bottom nav */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/90 to-transparent pt-8">
+      <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-background via-background/90 to-transparent pt-8">
         <div className="max-w-lg mx-auto">
           {isCompleted ? (
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
               <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
               <p className="text-emerald-400 font-medium">Treino concluído!</p>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-foreground-secondary mt-1">
                 Duração: {workout.duracao_real ? formatDuration(workout.duracao_real) : '-'}
               </p>
             </div>

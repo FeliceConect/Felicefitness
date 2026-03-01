@@ -37,8 +37,8 @@ export function WaterProgressRing({
     if (percentage >= 100) {
       return {
         gradient: ['#06B6D4', '#22D3EE'], // cyan
-        text: 'text-cyan-400',
-        glow: 'shadow-cyan-500/50'
+        text: 'text-dourado',
+        glow: 'shadow-dourado/50'
       }
     }
     if (percentage >= 80) {
@@ -57,7 +57,7 @@ export function WaterProgressRing({
     }
     return {
       gradient: ['#8B5CF6', '#A78BFA'], // violet
-      text: 'text-violet-400',
+      text: 'text-dourado',
       glow: ''
     }
   }
@@ -137,7 +137,7 @@ export function WaterProgressRing({
 
           {/* Goal */}
           {showLabels && (
-            <span className={cn('text-slate-500', config.labelSize)}>
+            <span className={cn('text-foreground-muted', config.labelSize)}>
               de {formatWaterAmount(goal)}
             </span>
           )}
@@ -153,10 +153,10 @@ export function WaterProgressRing({
           className={cn(
             'mt-3 px-4 py-1.5 rounded-full',
             percentage >= 100
-              ? 'bg-cyan-500/20 text-cyan-400'
+              ? 'bg-dourado/20 text-dourado'
               : percentage >= 80
               ? 'bg-emerald-500/20 text-emerald-400'
-              : 'bg-slate-800 text-slate-400'
+              : 'bg-white text-foreground-secondary'
           )}
         >
           <span className="font-semibold">{percentage}%</span>

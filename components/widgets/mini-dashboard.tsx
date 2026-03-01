@@ -5,9 +5,7 @@ import { WidgetDailyProgress } from './widget-daily-progress'
 import { WidgetWater } from './widget-water'
 import { WidgetWorkout } from './widget-workout'
 import { WidgetStreak } from './widget-streak'
-import { WidgetRevolade } from './widget-revolade'
 import { WidgetMacros } from './widget-macros'
-import { WidgetRecovery } from './widget-recovery'
 import { WidgetGoals } from './widget-goals'
 import type { WidgetConfig, WidgetType } from '@/types/widgets'
 
@@ -73,33 +71,12 @@ export function MiniDashboard({
           />
         )
 
-      case 'revolade':
-        return (
-          <WidgetRevolade
-            key={config.id}
-            size={config.size}
-            data={data.revolade as never}
-            onMarkTaken={() => onAction?.('mark-revolade')}
-            onClick={handleClick}
-          />
-        )
-
       case 'macros':
         return (
           <WidgetMacros
             key={config.id}
             size={config.size}
             data={data.macros as never}
-            onClick={handleClick}
-          />
-        )
-
-      case 'recovery':
-        return (
-          <WidgetRecovery
-            key={config.id}
-            size={config.size}
-            data={data.recovery as never}
             onClick={handleClick}
           />
         )

@@ -160,22 +160,22 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
 
         {/* Content */}
         <div className="flex-1 flex flex-col items-center justify-center px-6">
-          <div className="w-24 h-24 rounded-full bg-violet-500/20 flex items-center justify-center mb-6">
-            <Camera className="w-12 h-12 text-violet-400" />
+          <div className="w-24 h-24 rounded-full bg-dourado/20 flex items-center justify-center mb-6">
+            <Camera className="w-12 h-12 text-dourado" />
           </div>
 
           <h3 className="text-xl font-bold text-white mb-2">
             Fotografe seu resultado InBody
           </h3>
-          <p className="text-slate-400 text-center mb-8 max-w-sm">
+          <p className="text-foreground-secondary text-center mb-8 max-w-sm">
             Posicione a câmera sobre o resultado impresso do InBody.
             A IA vai extrair automaticamente todos os dados.
           </p>
 
           {/* Tips */}
-          <div className="bg-slate-800/50 rounded-xl p-4 mb-8 max-w-sm">
+          <div className="bg-white/50 rounded-xl p-4 mb-8 max-w-sm">
             <p className="text-sm font-medium text-white mb-2">Dicas:</p>
-            <ul className="text-sm text-slate-400 space-y-1">
+            <ul className="text-sm text-foreground-secondary space-y-1">
               <li>- Boa iluminação ajuda na precisão</li>
               <li>- Enquadre todo o resultado na foto</li>
               <li>- Evite reflexos e sombras</li>
@@ -186,7 +186,7 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
           <div className="w-full max-w-sm space-y-3">
             <button
               onClick={() => cameraInputRef.current?.click()}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 text-white font-semibold flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-dourado to-dourado text-white font-semibold flex items-center justify-center gap-2"
             >
               <Camera className="w-5 h-5" />
               Tirar Foto
@@ -194,7 +194,7 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-4 rounded-xl bg-slate-700 text-white font-semibold flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl bg-background-elevated text-white font-semibold flex items-center justify-center gap-2"
             >
               <Upload className="w-5 h-5" />
               Selecionar da Galeria
@@ -242,14 +242,14 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
           </div>
         )}
 
-        <Loader2 className="w-12 h-12 text-violet-400 animate-spin mb-4" />
+        <Loader2 className="w-12 h-12 text-dourado animate-spin mb-4" />
         <h3 className="text-xl font-bold text-white mb-2">Analisando...</h3>
-        <p className="text-slate-400 text-center">
+        <p className="text-foreground-secondary text-center">
           Extraindo dados do seu resultado InBody
         </p>
 
-        <div className="mt-8 flex items-center gap-2 text-sm text-slate-500">
-          <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+        <div className="mt-8 flex items-center gap-2 text-sm text-foreground-muted">
+          <div className="w-2 h-2 rounded-full bg-dourado animate-pulse" />
           Processando com IA
         </div>
       </motion.div>
@@ -269,14 +269,14 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
         </div>
 
         <h3 className="text-xl font-bold text-white mb-2">Erro na análise</h3>
-        <p className="text-slate-400 text-center mb-6 max-w-sm">
+        <p className="text-foreground-secondary text-center mb-6 max-w-sm">
           {error || 'Não foi possível extrair os dados. Tente novamente com uma foto mais clara.'}
         </p>
 
         <div className="w-full max-w-sm space-y-3">
           <button
             onClick={handleRetry}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 text-white font-semibold flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-dourado to-dourado text-white font-semibold flex items-center justify-center gap-2"
           >
             <RotateCcw className="w-5 h-5" />
             Tentar Novamente
@@ -284,7 +284,7 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
 
           <button
             onClick={onCancel}
-            className="w-full py-4 rounded-xl bg-slate-700 text-white font-semibold"
+            className="w-full py-4 rounded-xl bg-background-elevated text-white font-semibold"
           >
             Cancelar
           </button>
@@ -336,7 +336,7 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
                 Confiança: {analysisResult.confidence}%
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
+            <div className="flex items-center gap-2 text-xs text-foreground-secondary">
               <Pencil className="w-3 h-3" />
               <span>Toque em qualquer valor para editar</span>
             </div>
@@ -409,7 +409,7 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
       <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-black via-black/95 to-transparent z-[60]">
         <button
           onClick={handleConfirm}
-          className="w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-violet-500/30"
+          className="w-full py-4 rounded-xl bg-gradient-to-r from-dourado to-dourado text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-dourado/30"
         >
           <Check className="w-5 h-5" />
           Usar Estes Dados
@@ -422,8 +422,8 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
 // Helper components
 function DataSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-slate-800/50 rounded-xl p-4">
-      <h4 className="text-sm font-medium text-slate-400 mb-3">{title}</h4>
+    <div className="bg-white/50 rounded-xl p-4">
+      <h4 className="text-sm font-medium text-foreground-secondary mb-3">{title}</h4>
       <div className="space-y-2">
         {children}
       </div>
@@ -470,7 +470,7 @@ function EditableDataRow({
     // Show empty editable field
     return (
       <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-300">{label}</span>
+        <span className="text-sm text-foreground-secondary">{label}</span>
         {isEditing ? (
           <input
             type="number"
@@ -480,12 +480,12 @@ function EditableDataRow({
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-24 bg-slate-700 border border-violet-500 rounded px-2 py-1 text-sm text-white text-right focus:outline-none"
+            className="w-24 bg-background-elevated border border-dourado rounded px-2 py-1 text-sm text-foreground text-right focus:outline-none"
           />
         ) : (
           <button
             onClick={() => setIsEditing(true)}
-            className="text-sm text-slate-500 hover:text-violet-400 transition-colors"
+            className="text-sm text-foreground-muted hover:text-dourado transition-colors"
           >
             + adicionar
           </button>
@@ -498,7 +498,7 @@ function EditableDataRow({
 
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-300">{label}</span>
+      <span className="text-sm text-foreground-secondary">{label}</span>
       {isEditing ? (
         <div className="flex items-center gap-1">
           <input
@@ -509,9 +509,9 @@ function EditableDataRow({
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-20 bg-slate-700 border border-violet-500 rounded px-2 py-1 text-sm text-white text-right focus:outline-none"
+            className="w-20 bg-background-elevated border border-dourado rounded px-2 py-1 text-sm text-foreground text-right focus:outline-none"
           />
-          {unit && <span className="text-xs text-slate-500">{unit}</span>}
+          {unit && <span className="text-xs text-foreground-muted">{unit}</span>}
         </div>
       ) : (
         <button
@@ -521,13 +521,13 @@ function EditableDataRow({
           }}
           className={cn(
             'text-sm font-medium flex items-center gap-1 hover:opacity-80 transition-opacity',
-            highlight ? 'bg-violet-500/20 px-2 py-0.5 rounded' : '',
+            highlight ? 'bg-dourado/20 px-2 py-0.5 rounded' : '',
             showSign && value > 0 ? 'text-green-400' :
             showSign && value < 0 ? 'text-red-400' : 'text-white'
           )}
         >
           {formattedValue}{unit ? ` ${unit}` : ''}
-          <Pencil className="w-3 h-3 text-slate-500" />
+          <Pencil className="w-3 h-3 text-foreground-muted" />
         </button>
       )}
     </div>

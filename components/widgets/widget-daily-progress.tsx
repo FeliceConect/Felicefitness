@@ -35,7 +35,6 @@ export function WidgetDailyProgress({ size, data, onClick }: WidgetDailyProgress
     { key: 'workout', label: 'Treino', icon: '🏋️' },
     { key: 'protein', label: 'Proteina', icon: '🥩' },
     { key: 'water', label: 'Agua', icon: '💧' },
-    { key: 'revolade', label: 'Revolade', icon: '💊' },
     { key: 'sleep', label: 'Sono', icon: '😴' },
     { key: 'calories', label: 'Calorias', icon: '🔥' },
   ]

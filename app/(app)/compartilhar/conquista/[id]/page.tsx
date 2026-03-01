@@ -85,7 +85,7 @@ export default function CompartilharConquistaIdPage() {
 
         if (canShareFiles) {
           await share({
-            title: 'FeliceFit',
+            title: 'Complexo Wellness',
             text,
             files: [file],
           })

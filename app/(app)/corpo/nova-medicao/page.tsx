@@ -277,24 +277,24 @@ export default function NovaMedicaoPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#0A0A0F] pb-24">
+      <div className="min-h-screen bg-background pb-24">
         {/* Header */}
         <div className="px-4 pt-12 pb-6">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
           </button>
 
-          <h1 className="text-2xl font-bold text-white">Nova Medição</h1>
-          <p className="text-slate-400 text-sm">Registre sua composição corporal</p>
+          <h1 className="text-2xl font-bold text-foreground">Nova Medição</h1>
+          <p className="text-foreground-secondary text-sm">Registre sua composição corporal</p>
         </div>
 
         {/* Fonte selector */}
         <div className="px-4 mb-6">
-          <p className="text-sm text-slate-400 mb-3">Fonte dos dados</p>
+          <p className="text-sm text-foreground-secondary mb-3">Fonte dos dados</p>
           <div className="grid grid-cols-2 gap-3">
             {fonteOptions.map(option => {
               const Icon = option.icon
@@ -306,21 +306,21 @@ export default function NovaMedicaoPage() {
                   className={cn(
                     'p-4 rounded-xl border transition-all text-center',
                     isSelected
-                      ? 'border-violet-500 bg-violet-500/10'
-                      : 'border-[#2E2E3E] bg-[#14141F] hover:border-violet-500/30'
+                      ? 'border-dourado bg-dourado/10'
+                      : 'border-border bg-white hover:border-dourado/30'
                   )}
                 >
                   <Icon className={cn(
                     'w-6 h-6 mx-auto mb-2',
-                    isSelected ? 'text-violet-400' : 'text-slate-400'
+                    isSelected ? 'text-dourado' : 'text-foreground-secondary'
                   )} />
                   <p className={cn(
                     'text-sm font-medium',
-                    isSelected ? 'text-violet-400' : 'text-slate-300'
+                    isSelected ? 'text-dourado' : 'text-foreground-secondary'
                   )}>
                     {option.label}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">{option.desc}</p>
+                  <p className="text-xs text-foreground-muted mt-1">{option.desc}</p>
                 </button>
               )
             })}
@@ -334,12 +334,12 @@ export default function NovaMedicaoPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowScanner(true)}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 text-white font-semibold flex items-center justify-center gap-3 shadow-lg shadow-violet-500/20"
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-dourado to-dourado text-white font-semibold flex items-center justify-center gap-3 shadow-lg shadow-dourado/20"
             >
               <Scan className="w-5 h-5" />
               Escanear Resultado InBody
             </motion.button>
-            <p className="text-xs text-slate-500 text-center mt-2">
+            <p className="text-xs text-foreground-muted text-center mt-2">
               Tire uma foto do seu resultado e a IA extrai os dados automaticamente
             </p>
           </div>
@@ -347,23 +347,23 @@ export default function NovaMedicaoPage() {
 
         {/* Date */}
         <div className="px-4 mb-6">
-          <label className="text-sm text-slate-400 mb-2 block">Data da medição</label>
+          <label className="text-sm text-foreground-secondary mb-2 block">Data da medição</label>
           <input
             type="date"
             value={data}
             onChange={(e) => setData(e.target.value)}
             max={format(new Date(), 'yyyy-MM-dd')}
-            className="w-full bg-[#14141F] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500"
+            className="w-full bg-white border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-dourado"
           />
         </div>
 
         {/* Basic fields */}
         <div className="px-4 mb-6">
-          <p className="text-sm text-slate-400 mb-3">Dados básicos</p>
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 space-y-4">
+          <p className="text-sm text-foreground-secondary mb-3">Dados básicos</p>
+          <div className="bg-white border border-border rounded-xl p-4 space-y-4">
             {basicFields.map(field => (
               <div key={field.key}>
-                <label className="text-sm text-slate-400 mb-1 block">
+                <label className="text-sm text-foreground-secondary mb-1 block">
                   {field.label} {field.required && <span className="text-red-400">*</span>}
                 </label>
                 <div className="relative">
@@ -376,12 +376,12 @@ export default function NovaMedicaoPage() {
                     value={formData[field.key] ?? ''}
                     onChange={(e) => handleFieldChange(field.key, e.target.value)}
                     className={cn(
-                      'w-full bg-[#0A0A0F] border rounded-xl px-4 py-3 text-white focus:outline-none',
-                      errors[field.key] ? 'border-red-500' : 'border-[#2E2E3E] focus:border-violet-500'
+                      'w-full bg-background border rounded-xl px-4 py-3 text-foreground focus:outline-none',
+                      errors[field.key] ? 'border-red-500' : 'border-border focus:border-dourado'
                     )}
                   />
                   {field.unidade && (
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground-muted">
                       {field.unidade}
                     </span>
                   )}
@@ -439,12 +439,12 @@ export default function NovaMedicaoPage() {
         <div className="px-4 mb-4">
           <button
             onClick={() => setShowCircumference(!showCircumference)}
-            className="flex items-center justify-between w-full text-sm text-slate-400 mb-3"
+            className="flex items-center justify-between w-full text-sm text-foreground-secondary mb-3"
           >
             <span className="flex items-center gap-2">
               Medidas Circunferenciais
               {Object.values(circumferenceData).some(v => v !== undefined) && (
-                <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                <span className="w-2 h-2 rounded-full bg-dourado" />
               )}
             </span>
             {showCircumference ? (
@@ -460,15 +460,15 @@ export default function NovaMedicaoPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+                className="bg-white border border-border rounded-xl p-4"
               >
-                <p className="text-xs text-slate-500 mb-4">
+                <p className="text-xs text-foreground-muted mb-4">
                   Medidas em centímetros (cm) - use uma fita métrica
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   {circumferenceFields.map(field => (
                     <div key={field.key}>
-                      <label className="text-sm text-slate-400 mb-1 block">
+                      <label className="text-sm text-foreground-secondary mb-1 block">
                         {field.label}
                       </label>
                       <div className="relative">
@@ -480,9 +480,9 @@ export default function NovaMedicaoPage() {
                           placeholder={field.placeholder}
                           value={circumferenceData[field.key] ?? ''}
                           onChange={(e) => handleCircumferenceChange(field.key, e.target.value)}
-                          className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                          className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-dourado"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted text-sm">
                           cm
                         </span>
                       </div>
@@ -496,13 +496,13 @@ export default function NovaMedicaoPage() {
 
         {/* Notes */}
         <div className="px-4 mb-6">
-          <label className="text-sm text-slate-400 mb-2 block">Observações (opcional)</label>
+          <label className="text-sm text-foreground-secondary mb-2 block">Observações (opcional)</label>
           <textarea
             placeholder="Ex: Medição após treino, em jejum..."
             value={notas}
             onChange={(e) => setNotas(e.target.value)}
             rows={3}
-            className="w-full bg-[#14141F] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 resize-none"
+            className="w-full bg-white border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-dourado resize-none"
           />
         </div>
 
@@ -516,8 +516,8 @@ export default function NovaMedicaoPage() {
             className={cn(
               'w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all',
               isSubmitting
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white'
+                ? 'bg-background-elevated text-foreground-secondary cursor-not-allowed'
+                : 'bg-gradient-to-r from-dourado to-dourado text-white'
             )}
           >
             {isSubmitting ? (
@@ -571,12 +571,12 @@ function ExpandableSection({
     <div className="px-4 mb-4">
       <button
         onClick={onToggle}
-        className="flex items-center justify-between w-full text-sm text-slate-400 mb-3"
+        className="flex items-center justify-between w-full text-sm text-foreground-secondary mb-3"
       >
         <span className="flex items-center gap-2">
           {title}
           {hasData && (
-            <span className="w-2 h-2 rounded-full bg-violet-500" />
+            <span className="w-2 h-2 rounded-full bg-dourado" />
           )}
         </span>
         {expanded ? (
@@ -592,11 +592,11 @@ function ExpandableSection({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 space-y-4"
+            className="bg-white border border-border rounded-xl p-4 space-y-4"
           >
             {fields.map(field => (
               <div key={field.key}>
-                <label className="text-sm text-slate-400 mb-1 block">
+                <label className="text-sm text-foreground-secondary mb-1 block">
                   {field.label}
                 </label>
                 <div className="relative">
@@ -608,10 +608,10 @@ function ExpandableSection({
                     placeholder={field.placeholder}
                     value={formData[field.key] ?? ''}
                     onChange={(e) => onFieldChange(field.key, e.target.value)}
-                    className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-dourado"
                   />
                   {field.unidade && (
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground-muted">
                       {field.unidade}
                     </span>
                   )}

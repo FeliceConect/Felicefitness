@@ -1,4 +1,4 @@
-// FeliceFit Development & Fallback Service Worker
+// Complexo Wellness Development & Fallback Service Worker
 // This SW handles push notifications and basic offline support
 // Production uses the next-pwa generated SW, but this is the fallback
 

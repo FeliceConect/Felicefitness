@@ -230,9 +230,6 @@ export function useDashboardData(): DashboardData {
         const nowSP = new Date(today + 'T12:00:00-03:00')
         const dayOfWeek = nowSP.getDay()
 
-        console.log('=== DASHBOARD DEBUG v2 ===')
-        console.log('Dashboard: Data de hoje:', today, 'Dia da semana:', dayOfWeek, '(0=Dom, 1=Seg, ..., 6=Sab)')
-
         // PRIORIDADE 1: Buscar programa de treino do profissional
         let foundWorkout = false
         let hasProfessionalProgram = false
@@ -279,17 +276,7 @@ export function useDashboardData(): DashboardData {
                     day => day.calculatedDiaSemana === dayOfWeek
                   )
 
-                  console.log('Dashboard: Dias com exercícios:', numDays, 'Distribuição:', distribution)
-                  console.log('Dashboard: Treinos mapeados:', daysWithCalculatedWeekday.map(d => ({
-                    name: d.name,
-                    day_of_week_original: d.day_of_week,
-                    calculatedDiaSemana: d.calculatedDiaSemana
-                  })))
-                  console.log('Dashboard: Buscando treino para dayOfWeek =', dayOfWeek)
-                  console.log('Dashboard: todayTraining encontrado?', todayTraining ? todayTraining.name : 'NENHUM (dia de descanso)')
-
                   if (todayTraining) {
-                    console.log('Dashboard: Treino do profissional encontrado:', todayTraining.name)
                     setTodayWorkout({
                       id: `template-${today}-${todayTraining.id}`,
                       nome: todayTraining.name || 'Treino do dia',
@@ -309,11 +296,6 @@ export function useDashboardData(): DashboardData {
           console.error('Dashboard: Erro ao buscar programa do profissional:', programError)
         }
 
-        // PRIORIDADE 2: Se tem programa do profissional mas não encontrou treino para hoje, é dia de descanso
-        // Só buscar template local se NÃO tiver programa do profissional
-        console.log('Dashboard: foundWorkout após programa profissional:', foundWorkout)
-        console.log('Dashboard: Tem programa do profissional?', hasProfessionalProgram)
-
         if (!foundWorkout && !hasProfessionalProgram) {
           // Só busca template local se NÃO tem programa do profissional
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -328,12 +310,7 @@ export function useDashboardData(): DashboardData {
             .eq('dia_semana', dayOfWeek)
             .maybeSingle()
 
-          if (templateError) {
-            console.log('Dashboard: Erro ao buscar template:', templateError.message)
-          }
-
           if (templateData) {
-            console.log('Dashboard: Template local encontrado:', templateData.nome)
             setTodayWorkout({
               id: `template-${today}-${templateData.id}`,
               nome: templateData.nome,
@@ -343,12 +320,9 @@ export function useDashboardData(): DashboardData {
               status: 'pendente'
             })
           } else {
-            console.log('Dashboard: Nenhum treino encontrado para dia_semana =', dayOfWeek, '- Dia de descanso')
-            setTodayWorkout(null) // Dia de descanso
+            setTodayWorkout(null)
           }
         } else if (!foundWorkout && hasProfessionalProgram) {
-          // Tem programa do profissional mas não tem treino para hoje = dia de descanso
-          console.log('Dashboard: Programa do profissional sem treino para hoje - Dia de descanso')
           setTodayWorkout(null)
         }
       }
@@ -407,8 +381,9 @@ export function useDashboardData(): DashboardData {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count: prsCount } = await (supabase as any)
         .from('fitness_exercise_sets')
-        .select('*', { count: 'exact', head: true })
+        .select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id))', { count: 'exact', head: true })
         .eq('is_pr', true)
+        .eq('workout_exercise.workout.user_id', user.id)
         .gte('created_at', startOfMonth.toISOString())
 
       setWorkoutStats({

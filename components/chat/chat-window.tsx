@@ -161,28 +161,28 @@ export function ChatWindow({
   }, {} as Record<string, Message[]>)
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 bg-slate-800 border-b border-slate-700">
+      <div className="flex items-center gap-3 p-4 bg-background-card border-b border-border">
         {onBack && (
           <button
             onClick={onBack}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-background-elevated transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
         )}
-        <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center overflow-hidden">
+        <div className="w-10 h-10 rounded-full bg-dourado/15 flex items-center justify-center overflow-hidden">
           {participant.foto ? (
             <img src={participant.foto} alt={participant.nome} className="w-full h-full object-cover" />
           ) : (
-            <User className="w-5 h-5 text-violet-400" />
+            <User className="w-5 h-5 text-dourado" />
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-medium truncate">{participant.nome}</h3>
+          <h3 className="text-foreground font-medium truncate">{participant.nome}</h3>
           {participant.specialty && (
-            <p className="text-xs text-slate-400 truncate">{participant.specialty}</p>
+            <p className="text-xs text-foreground-muted truncate">{participant.specialty}</p>
           )}
         </div>
       </div>
@@ -194,22 +194,22 @@ export function ChatWindow({
       >
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-dourado animate-spin" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
-              <Send className="w-8 h-8 text-slate-600" />
+            <div className="w-16 h-16 rounded-full bg-background-elevated flex items-center justify-center mb-4">
+              <Send className="w-8 h-8 text-border" />
             </div>
-            <p className="text-slate-400">Nenhuma mensagem ainda</p>
-            <p className="text-sm text-slate-500 mt-1">Envie a primeira mensagem!</p>
+            <p className="text-foreground-muted">Nenhuma mensagem ainda</p>
+            <p className="text-sm text-foreground-muted mt-1">Envie a primeira mensagem!</p>
           </div>
         ) : (
           <>
             {hasMore && (
               <button
                 onClick={() => fetchMessages(messages[0]?.created_at)}
-                className="w-full py-2 text-sm text-violet-400 hover:text-violet-300"
+                className="w-full py-2 text-sm text-dourado hover:text-primary-hover"
               >
                 Carregar mensagens anteriores
               </button>
@@ -217,9 +217,9 @@ export function ChatWindow({
             {Object.entries(groupedMessages).map(([date, msgs]) => (
               <div key={date}>
                 <div className="flex items-center gap-4 my-4">
-                  <div className="flex-1 h-px bg-slate-700" />
-                  <span className="text-xs text-slate-500">{date}</span>
-                  <div className="flex-1 h-px bg-slate-700" />
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-foreground-muted">{date}</span>
+                  <div className="flex-1 h-px bg-border" />
                 </div>
                 <div className="space-y-2">
                   {msgs.map((message) => {
@@ -232,12 +232,12 @@ export function ChatWindow({
                         <div
                           className={`max-w-[80%] px-4 py-2 rounded-2xl ${
                             isMine
-                              ? 'bg-violet-600 text-white rounded-br-md'
-                              : 'bg-slate-700 text-white rounded-bl-md'
+                              ? 'bg-secondary text-secondary-foreground rounded-br-md'
+                              : 'bg-background-elevated text-foreground rounded-bl-md'
                           }`}
                         >
                           <p className="whitespace-pre-wrap break-words">{message.content}</p>
-                          <p className={`text-xs mt-1 ${isMine ? 'text-violet-200' : 'text-slate-400'}`}>
+                          <p className={`text-xs mt-1 ${isMine ? 'text-seda' : 'text-foreground-muted'}`}>
                             {formatTime(message.created_at)}
                             {isMine && message.is_read && (
                               <span className="ml-2">Lida</span>
@@ -256,7 +256,7 @@ export function ChatWindow({
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-slate-800 border-t border-slate-700">
+      <div className="p-4 bg-background-card border-t border-border">
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
@@ -265,13 +265,13 @@ export function ChatWindow({
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Digite sua mensagem..."
-            className="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            className="flex-1 px-4 py-3 bg-background-input border border-border rounded-full text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado focus:border-transparent"
             disabled={sending}
           />
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}
-            className="p-3 rounded-full bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-3 rounded-full bg-dourado text-white hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {sending ? (
               <Loader2 className="w-5 h-5 animate-spin" />

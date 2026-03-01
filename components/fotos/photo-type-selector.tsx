@@ -34,8 +34,8 @@ export function PhotoTypeSelector({
             className={cn(
               'flex flex-col items-center justify-center p-3 rounded-xl border transition-all',
               isSelected
-                ? 'border-violet-500 bg-violet-500/10'
-                : 'border-[#2E2E3E] bg-[#14141F] hover:border-violet-500/30',
+                ? 'border-dourado bg-dourado/10'
+                : 'border-border bg-white hover:border-dourado/30',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -43,7 +43,7 @@ export function PhotoTypeSelector({
             <span
               className={cn(
                 'text-xs font-medium text-center',
-                isSelected ? 'text-violet-400' : 'text-slate-400'
+                isSelected ? 'text-dourado' : 'text-foreground-secondary'
               )}
             >
               {PHOTO_TYPE_LABELS[type]}

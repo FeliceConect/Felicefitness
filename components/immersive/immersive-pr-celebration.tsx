@@ -31,14 +31,14 @@ export function ImmersivePRCelebration({
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.7 },
-        colors: ['#FFD700', '#FFA500', '#FF6347'],
+        colors: ['#c29863', '#ddd5c7', '#663739'],
       })
       confetti({
         particleCount: 3,
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.7 },
-        colors: ['#FFD700', '#FFA500', '#FF6347'],
+        colors: ['#c29863', '#ddd5c7', '#663739'],
       })
 
       if (Date.now() < end) {
@@ -56,7 +56,7 @@ export function ImmersivePRCelebration({
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 bg-gradient-to-b from-amber-500/20 to-background flex flex-col items-center justify-center px-6',
+        'fixed inset-0 z-50 bg-gradient-to-b from-dourado/20 to-[#1a1615] flex flex-col items-center justify-center px-6',
         className
       )}
     >
@@ -68,18 +68,18 @@ export function ImmersivePRCelebration({
         )}
       >
         <div className="relative">
-          <div className="h-32 w-32 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30">
+          <div className="h-32 w-32 rounded-full bg-gradient-to-br from-dourado to-[#a07d4a] flex items-center justify-center mb-6 shadow-lg shadow-dourado/30">
             <Trophy className="h-16 w-16 text-white" />
           </div>
-          <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-amber-400 animate-pulse" />
-          <Sparkles className="absolute -bottom-2 -left-2 h-6 w-6 text-amber-400 animate-pulse delay-100" />
+          <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-dourado animate-pulse" />
+          <Sparkles className="absolute -bottom-2 -left-2 h-6 w-6 text-dourado animate-pulse delay-100" />
         </div>
       </div>
 
       {/* Title */}
       <h1
         className={cn(
-          'text-4xl font-bold text-amber-500 mb-2 transition-all duration-500 delay-200',
+          'text-4xl font-bold text-dourado mb-2 font-heading transition-all duration-500 delay-200',
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         )}
       >
@@ -89,7 +89,7 @@ export function ImmersivePRCelebration({
       {/* Exercise name */}
       <p
         className={cn(
-          'text-xl text-muted-foreground mb-8 transition-all duration-500 delay-300',
+          'text-xl text-white/70 mb-8 transition-all duration-500 delay-300',
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         )}
       >
@@ -103,8 +103,8 @@ export function ImmersivePRCelebration({
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         )}
       >
-        <span className="text-7xl font-bold">{pr.newRecord}</span>
-        <span className="text-3xl text-muted-foreground ml-2">kg</span>
+        <span className="text-7xl font-bold text-white">{pr.newRecord}</span>
+        <span className="text-3xl text-white/60 ml-2">kg</span>
       </div>
 
       {/* Comparison */}
@@ -114,10 +114,10 @@ export function ImmersivePRCelebration({
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         )}
       >
-        <p className="text-muted-foreground">
+        <p className="text-white/60">
           Anterior: {pr.previousRecord || 0} kg
         </p>
-        <p className="text-lg text-green-500 font-semibold">
+        <p className="text-lg text-success font-semibold">
           +{pr.improvement} kg!
         </p>
       </div>
@@ -125,11 +125,11 @@ export function ImmersivePRCelebration({
       {/* XP earned */}
       <div
         className={cn(
-          'bg-primary/10 rounded-full px-6 py-2 mb-12 transition-all duration-500 delay-600',
+          'bg-dourado/10 rounded-full px-6 py-2 mb-12 transition-all duration-500 delay-600',
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         )}
       >
-        <span className="text-primary font-semibold">+{pr.xpEarned} XP</span>
+        <span className="text-dourado font-semibold">+{pr.xpEarned} XP</span>
       </div>
 
       {/* Continue button */}

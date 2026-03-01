@@ -142,19 +142,19 @@ export default function NovoTemplatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Novo Treino</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Novo Treino</h1>
+        <p className="text-foreground-secondary text-sm mt-1">
           Configure seu template de treino
         </p>
       </div>
@@ -169,7 +169,7 @@ export default function NovoTemplatePage() {
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Ex: Treino A - Peito e Tríceps"
-            className="bg-[#14141F] border-[#2E2E3E]"
+            className="bg-white border-border"
           />
         </div>
 
@@ -184,13 +184,13 @@ export default function NovoTemplatePage() {
                 className={cn(
                   'p-4 rounded-xl border text-left transition-all',
                   tipo === t.value
-                    ? 'bg-violet-500/20 border-violet-500/50'
-                    : 'bg-[#14141F] border-[#2E2E3E] hover:border-violet-500/30'
+                    ? 'bg-dourado/20 border-dourado/50'
+                    : 'bg-white border-border hover:border-dourado/30'
                 )}
               >
                 <span className="text-2xl">{t.icon}</span>
-                <p className="font-medium text-white mt-2">{t.label}</p>
-                <p className="text-xs text-slate-400 mt-1">{t.description}</p>
+                <p className="font-medium text-foreground mt-2">{t.label}</p>
+                <p className="text-xs text-foreground-secondary mt-1">{t.description}</p>
               </button>
             ))}
           </div>
@@ -203,7 +203,7 @@ export default function NovoTemplatePage() {
             <select
               value={diaSemana}
               onChange={(e) => setDiaSemana(Number(e.target.value))}
-              className="w-full bg-[#14141F] border border-[#2E2E3E] rounded-lg px-4 py-3 text-white appearance-none cursor-pointer"
+              className="w-full bg-white border border-border rounded-lg px-4 py-3 text-foreground appearance-none cursor-pointer"
             >
               {diasSemana.map((d) => (
                 <option key={d.value} value={d.value}>
@@ -211,7 +211,7 @@ export default function NovoTemplatePage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-secondary pointer-events-none" />
           </div>
         </div>
 
@@ -223,7 +223,7 @@ export default function NovoTemplatePage() {
               <select
                 value={fase}
                 onChange={(e) => setFase(e.target.value as WorkoutPhase)}
-                className="w-full bg-[#14141F] border border-[#2E2E3E] rounded-lg px-4 py-3 text-white appearance-none cursor-pointer"
+                className="w-full bg-white border border-border rounded-lg px-4 py-3 text-foreground appearance-none cursor-pointer"
               >
                 {fases.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -231,7 +231,7 @@ export default function NovoTemplatePage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-secondary pointer-events-none" />
             </div>
           </div>
 
@@ -244,9 +244,9 @@ export default function NovoTemplatePage() {
                 onChange={(e) => setDuracaoEstimada(Number(e.target.value))}
                 min={10}
                 max={180}
-                className="bg-[#14141F] border-[#2E2E3E] pr-12"
+                className="bg-white border-border pr-12"
               />
-              <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-secondary" />
             </div>
           </div>
         </div>
@@ -265,22 +265,22 @@ export default function NovoTemplatePage() {
                   key={ex.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+                  className="bg-white border border-border rounded-xl p-4"
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex flex-col gap-1">
                       <button
                         onClick={() => moveExercise(index, 'up')}
                         disabled={index === 0}
-                        className="p-1 hover:bg-slate-800 rounded disabled:opacity-30"
+                        className="p-1 hover:bg-background-elevated rounded disabled:opacity-30"
                       >
-                        <GripVertical className="w-4 h-4 text-slate-500" />
+                        <GripVertical className="w-4 h-4 text-foreground-muted" />
                       </button>
                     </div>
 
                     <div className="flex-1">
-                      <p className="font-medium text-white">{ex.nome}</p>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
+                      <p className="font-medium text-foreground">{ex.nome}</p>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-foreground-secondary">
                         <span>{ex.series} séries</span>
                         <span>×</span>
                         <span>{ex.repeticoes} reps</span>
@@ -294,7 +294,7 @@ export default function NovoTemplatePage() {
                         )}
                       </div>
                       {ex.notas && (
-                        <p className="text-xs text-slate-500 mt-1">{ex.notas}</p>
+                        <p className="text-xs text-foreground-muted mt-1">{ex.notas}</p>
                       )}
                     </div>
 
@@ -315,7 +315,7 @@ export default function NovoTemplatePage() {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="bg-[#14141F] border border-violet-500/30 rounded-xl p-4 space-y-4"
+              className="bg-white border border-dourado/30 rounded-xl p-4 space-y-4"
             >
               <div className="space-y-2">
                 <Label>Nome do exercício</Label>
@@ -323,7 +323,7 @@ export default function NovoTemplatePage() {
                   value={novoExercicio.nome}
                   onChange={(e) => setNovoExercicio(prev => ({ ...prev, nome: e.target.value }))}
                   placeholder="Ex: Supino Reto"
-                  className="bg-[#0A0A0F] border-[#2E2E3E]"
+                  className="bg-background border-border"
                 />
               </div>
 
@@ -336,7 +336,7 @@ export default function NovoTemplatePage() {
                     onChange={(e) => setNovoExercicio(prev => ({ ...prev, series: Number(e.target.value) }))}
                     min={1}
                     max={10}
-                    className="bg-[#0A0A0F] border-[#2E2E3E]"
+                    className="bg-background border-border"
                   />
                 </div>
 
@@ -346,7 +346,7 @@ export default function NovoTemplatePage() {
                     value={novoExercicio.repeticoes}
                     onChange={(e) => setNovoExercicio(prev => ({ ...prev, repeticoes: e.target.value }))}
                     placeholder="12"
-                    className="bg-[#0A0A0F] border-[#2E2E3E]"
+                    className="bg-background border-border"
                   />
                 </div>
 
@@ -358,7 +358,7 @@ export default function NovoTemplatePage() {
                     onChange={(e) => setNovoExercicio(prev => ({ ...prev, descanso: Number(e.target.value) }))}
                     min={10}
                     max={300}
-                    className="bg-[#0A0A0F] border-[#2E2E3E]"
+                    className="bg-background border-border"
                   />
                 </div>
               </div>
@@ -374,7 +374,7 @@ export default function NovoTemplatePage() {
                       carga_sugerida: e.target.value ? Number(e.target.value) : undefined
                     }))}
                     placeholder="Opcional"
-                    className="bg-[#0A0A0F] border-[#2E2E3E]"
+                    className="bg-background border-border"
                   />
                 </div>
 
@@ -384,7 +384,7 @@ export default function NovoTemplatePage() {
                     value={novoExercicio.notas || ''}
                     onChange={(e) => setNovoExercicio(prev => ({ ...prev, notas: e.target.value }))}
                     placeholder="Opcional"
-                    className="bg-[#0A0A0F] border-[#2E2E3E]"
+                    className="bg-background border-border"
                   />
                 </div>
               </div>

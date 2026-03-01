@@ -24,7 +24,6 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
 
   const handleViewDetails = () => {
     if (workout) {
-      // Treino concluído está no histórico
       router.push(`/treino/historico/${workout.id}`)
     }
   }
@@ -36,18 +35,18 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 border border-emerald-500/20 rounded-2xl p-5"
+        className="bg-gradient-to-br from-emerald-50 to-white border border-success/20 rounded-2xl p-5 shadow-sm"
       >
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl">😴</span>
-          <h3 className="text-sm font-semibold text-emerald-400 uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-success uppercase tracking-wide">
             Dia de Descanso
           </h3>
         </div>
-        <p className="text-white text-lg font-medium mb-2">
+        <p className="text-foreground text-lg font-medium mb-2">
           Hoje é dia de recuperar!
         </p>
-        <p className="text-slate-400 text-sm">
+        <p className="text-foreground-secondary text-sm">
           Descanse bem para voltar mais forte amanhã.
         </p>
       </motion.div>
@@ -61,20 +60,20 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 border border-emerald-500/30 rounded-2xl p-5"
+        className="bg-gradient-to-br from-emerald-50 to-white border border-success/30 rounded-2xl p-5 shadow-sm"
       >
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl">✅</span>
-          <h3 className="text-sm font-semibold text-emerald-400 uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-success uppercase tracking-wide">
             Treino Concluído
           </h3>
         </div>
 
-        <h4 className="text-white text-xl font-bold mb-2">
+        <h4 className="text-foreground text-xl font-bold mb-2">
           {workout.nome}
         </h4>
 
-        <div className="flex items-center gap-4 text-sm text-slate-300 mb-4">
+        <div className="flex items-center gap-4 text-sm text-foreground-secondary mb-4">
           <span className="flex items-center gap-1">
             ✓ {workout.duracao_minutos || workout.duracao_estimada} min
           </span>
@@ -86,7 +85,7 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
           variant="ghost"
           size="sm"
           onClick={handleViewDetails}
-          className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 p-0"
+          className="text-success hover:text-success/80 hover:bg-success/10 p-0"
         >
           Ver detalhes
         </Button>
@@ -101,7 +100,7 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="bg-gradient-to-br from-violet-500/10 to-cyan-500/5 border border-violet-500/30 rounded-2xl p-5"
+        className="bg-gradient-to-br from-amber-50 to-white border border-dourado/30 rounded-2xl p-5 shadow-sm"
       >
         <div className="flex items-center gap-2 mb-3">
           <motion.span
@@ -111,16 +110,16 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
           >
             🏋️
           </motion.span>
-          <h3 className="text-sm font-semibold text-violet-400 uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-dourado uppercase tracking-wide">
             Treino em Andamento
           </h3>
         </div>
 
-        <h4 className="text-white text-xl font-bold mb-2">
+        <h4 className="text-foreground text-xl font-bold mb-2">
           {workout.nome}
         </h4>
 
-        <div className="flex items-center gap-4 text-sm text-slate-400 mb-4">
+        <div className="flex items-center gap-4 text-sm text-foreground-secondary mb-4">
           <span>⏱️ ~{formatDuration(workout.duracao_estimada)}</span>
           <span>•</span>
           <span>{workout.exercicios_count} exercícios</span>
@@ -143,20 +142,20 @@ export function WorkoutCard({ workout, onStartWorkout }: WorkoutCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
-      className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-5"
+      className="bg-white border border-border rounded-2xl p-5 shadow-sm"
     >
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xl">🏋️</span>
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
           Treino de Hoje
         </h3>
       </div>
 
-      <h4 className="text-white text-xl font-bold mb-2">
+      <h4 className="text-foreground text-xl font-bold mb-2">
         {workout.nome}
       </h4>
 
-      <div className="flex items-center gap-4 text-sm text-slate-400 mb-4">
+      <div className="flex items-center gap-4 text-sm text-foreground-secondary mb-4">
         <span>⏱️ ~{formatDuration(workout.duracao_estimada)}</span>
         <span>•</span>
         <span>{workout.exercicios_count} exercícios</span>

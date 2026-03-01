@@ -22,8 +22,8 @@ export function MacrosProgress({ totals, goals }: MacrosProgressProps) {
   }
 
   return (
-    <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-6">
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+    <div className="bg-white border border-border rounded-2xl p-6">
+      <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
         Macros do Dia
       </h3>
 
@@ -52,13 +52,13 @@ export function MacrosProgress({ totals, goals }: MacrosProgressProps) {
       {/* Calories bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">Calorias</span>
-          <span className="text-white font-medium">
+          <span className="text-foreground-secondary">Calorias</span>
+          <span className="text-foreground font-medium">
             {Math.round(totals.calorias)} / {goals.calorias} kcal
           </span>
         </div>
 
-        <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-3 bg-white rounded-full overflow-hidden">
           <motion.div
             className={cn('h-full rounded-full', getBarColor())}
             initial={{ width: 0 }}
@@ -67,7 +67,7 @@ export function MacrosProgress({ totals, goals }: MacrosProgressProps) {
           />
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex items-center justify-between text-xs text-foreground-muted">
           <span>
             {caloriesProgress < 100
               ? `Faltam ${Math.round(caloriesRemaining)} kcal`

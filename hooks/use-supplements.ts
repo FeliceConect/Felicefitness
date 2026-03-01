@@ -43,7 +43,7 @@ export function useSupplements(): UseSupplementsReturn {
 
       // Fetch supplements
       const { data: supplementsData, error: supplementsError } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .select('*')
         .eq('user_id', userData.user.id)
         .order('nome')
@@ -53,7 +53,7 @@ export function useSupplements(): UseSupplementsReturn {
       // Fetch today's logs
       const todayStr = today.toISOString().split('T')[0]
       const { data: logsData, error: logsError } = await supabase
-        .from('suplemento_logs')
+        .from('fitness_suplemento_logs')
         .select('*')
         .eq('user_id', userData.user.id)
         .eq('date', todayStr)
@@ -97,7 +97,7 @@ export function useSupplements(): UseSupplementsReturn {
       if (!userData.user) throw new Error('Usuário não autenticado')
 
       const { error } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .insert({
           ...data,
           user_id: userData.user.id,
@@ -116,7 +116,7 @@ export function useSupplements(): UseSupplementsReturn {
   const updateSupplement = async (id: string, data: Partial<Supplement>): Promise<void> => {
     try {
       const { error } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .update(data as never)
         .eq('id', id)
 
@@ -133,7 +133,7 @@ export function useSupplements(): UseSupplementsReturn {
   const deleteSupplement = async (id: string): Promise<void> => {
     try {
       const { error } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .delete()
         .eq('id', id)
 
@@ -156,7 +156,7 @@ export function useSupplements(): UseSupplementsReturn {
 
       // Check if log exists
       const { data: existingLog } = await supabase
-        .from('suplemento_logs')
+        .from('fitness_suplemento_logs')
         .select('id')
         .eq('user_id', userData.user.id)
         .eq('supplement_id', supplementId)
@@ -169,7 +169,7 @@ export function useSupplements(): UseSupplementsReturn {
       if (logData) {
         // Update existing log
         const { error } = await supabase
-          .from('suplemento_logs')
+          .from('fitness_suplemento_logs')
           .update({
             taken,
             taken_at: taken ? new Date().toISOString() : null,
@@ -180,7 +180,7 @@ export function useSupplements(): UseSupplementsReturn {
       } else {
         // Create new log
         const { error } = await supabase
-          .from('suplemento_logs')
+          .from('fitness_suplemento_logs')
           .insert({
             user_id: userData.user.id,
             supplement_id: supplementId,
@@ -198,7 +198,7 @@ export function useSupplements(): UseSupplementsReturn {
         const supplement = supplements.find(s => s.id === supplementId)
         if (supplement && supplement.quantidade_estoque > 0) {
           await supabase
-            .from('suplementos')
+            .from('fitness_suplementos')
             .update({ quantidade_estoque: supplement.quantidade_estoque - 1 } as never)
             .eq('id', supplementId)
         }

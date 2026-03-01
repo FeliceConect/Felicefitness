@@ -54,20 +54,6 @@ export interface Goals {
   horas_sono: number
 }
 
-export interface RevoladeSettings {
-  ativo: boolean
-  horario_medicamento: string // HH:mm
-  jejum_inicio: string // HH:mm
-  jejum_fim: string // HH:mm
-  restricao_laticinios_fim: string // HH:mm
-
-  // Alertas
-  alerta_jejum: boolean
-  alerta_medicamento: boolean
-  alerta_liberacao: boolean
-  alerta_laticinios: boolean
-}
-
 export interface WorkoutPreferences {
   horario_preferido: string // HH:mm
   duracao_media: number // minutos
@@ -133,9 +119,6 @@ export interface NotificationSettings {
   lembrete_sono: boolean
   lembrete_sono_horario: string
 
-  // Revolade
-  lembrete_revolade: boolean
-
   // Gamificação
   notificar_conquistas: boolean
   notificar_recordes: boolean
@@ -148,7 +131,6 @@ export interface NotificationSettings {
 
 export interface AppSettings {
   goals: Goals
-  revolade: RevoladeSettings
   workout: WorkoutPreferences
   nutrition: NutritionPreferences
   notifications: NotificationSettings
@@ -200,7 +182,6 @@ export interface UseSettingsReturn {
   error: Error | null
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>
   updateGoals: (goals: Partial<Goals>) => Promise<void>
-  updateRevoladeSettings: (revolade: Partial<RevoladeSettings>) => Promise<void>
   updateWorkoutPreferences: (prefs: Partial<WorkoutPreferences>) => Promise<void>
   updateNutritionPreferences: (prefs: Partial<NutritionPreferences>) => Promise<void>
   updateAppearance: (appearance: Partial<AppearanceSettings>) => Promise<void>

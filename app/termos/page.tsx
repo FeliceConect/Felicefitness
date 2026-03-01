@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Termos de Uso - FeliceFit',
-  description: 'Termos de Uso do aplicativo FeliceFit',
+  title: 'Termos de Uso - Complexo Wellness',
+  description: 'Termos de Uso do aplicativo Complexo Wellness',
 }
 
 export default function TermosPage() {
@@ -31,7 +31,7 @@ export default function TermosPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">1. Aceitacao dos Termos</h2>
             <p className="text-slate-300">
-              Ao acessar e usar o aplicativo FeliceFit, voce concorda em cumprir e estar vinculado
+              Ao acessar e usar o aplicativo Complexo Wellness, voce concorda em cumprir e estar vinculado
               a estes Termos de Uso. Se voce nao concordar com qualquer parte destes termos,
               nao devera usar nosso aplicativo.
             </p>
@@ -40,7 +40,7 @@ export default function TermosPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">2. Descricao do Servico</h2>
             <p className="text-slate-300">
-              O FeliceFit e um aplicativo de acompanhamento de fitness e saude que oferece:
+              O Complexo Wellness e um aplicativo de acompanhamento de fitness e saude que oferece:
             </p>
             <ul className="list-disc list-inside text-slate-300 mt-2 space-y-1">
               <li>Registro e acompanhamento de treinos</li>
@@ -57,7 +57,7 @@ export default function TermosPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">3. Cadastro e Conta</h2>
             <p className="text-slate-300">
-              Para usar o FeliceFit, voce deve criar uma conta fornecendo informacoes precisas
+              Para usar o Complexo Wellness, voce deve criar uma conta fornecendo informacoes precisas
               e completas. Voce e responsavel por manter a confidencialidade de sua senha e
               por todas as atividades que ocorrem em sua conta.
             </p>
@@ -78,7 +78,7 @@ export default function TermosPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">5. Aviso de Saude</h2>
             <p className="text-slate-300">
-              O FeliceFit fornece informacoes gerais sobre fitness e saude, mas NAO substitui
+              O Complexo Wellness fornece informacoes gerais sobre fitness e saude, mas NAO substitui
               aconselhamento medico profissional. Antes de iniciar qualquer programa de exercicios
               ou dieta, consulte um profissional de saude qualificado.
             </p>
@@ -92,8 +92,8 @@ export default function TermosPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">6. Propriedade Intelectual</h2>
             <p className="text-slate-300">
-              Todo o conteudo do FeliceFit, incluindo textos, graficos, logos, icones e software,
-              e propriedade da FeliceFit ou de seus licenciadores e esta protegido por leis de
+              Todo o conteudo do Complexo Wellness, incluindo textos, graficos, logos, icones e software,
+              e propriedade da Complexo Wellness ou de seus licenciadores e esta protegido por leis de
               propriedade intelectual.
             </p>
           </section>
@@ -101,7 +101,7 @@ export default function TermosPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">7. Limitacao de Responsabilidade</h2>
             <p className="text-slate-300">
-              O FeliceFit e fornecido &quot;como esta&quot;, sem garantias de qualquer tipo. Nao nos
+              O Complexo Wellness e fornecido &quot;como esta&quot;, sem garantias de qualquer tipo. Nao nos
               responsabilizamos por lesoes, problemas de saude ou quaisquer danos resultantes
               do uso do aplicativo.
             </p>

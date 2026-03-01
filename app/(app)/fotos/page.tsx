@@ -25,8 +25,8 @@ export default function FotosPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">Carregando...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-foreground-secondary">Carregando...</div>
       </div>
     )
   }
@@ -34,22 +34,22 @@ export default function FotosPage() {
   const displayPhotos = showFavorites ? favoritePhotos : photos
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-white">Fotos de Progresso</h1>
+          <h1 className="text-2xl font-bold text-foreground">Fotos de Progresso</h1>
           <Link href="/fotos/nova">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2 bg-gradient-to-r from-violet-600 to-cyan-500 rounded-xl"
+              className="p-2 bg-gradient-to-r from-dourado to-dourado rounded-xl"
             >
               <Plus className="w-5 h-5 text-white" />
             </motion.button>
           </Link>
         </div>
-        <p className="text-slate-400 text-sm">
+        <p className="text-foreground-secondary text-sm">
           {stats.total} fotos registradas
         </p>
       </div>
@@ -64,10 +64,10 @@ export default function FotosPage() {
           {(['frente', 'lado_esquerdo', 'lado_direito', 'costas'] as PhotoType[]).map(type => (
             <div
               key={type}
-              className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-2 text-center"
+              className="bg-white border border-border rounded-xl p-2 text-center"
             >
-              <p className="text-lg font-bold text-white">{stats.byType[type]}</p>
-              <p className="text-[10px] text-slate-500 truncate">
+              <p className="text-lg font-bold text-foreground">{stats.byType[type]}</p>
+              <p className="text-[10px] text-foreground-muted truncate">
                 {PHOTO_TYPE_LABELS[type]}
               </p>
             </div>
@@ -86,8 +86,8 @@ export default function FotosPage() {
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
               !typeFilter && !showFavorites
-                ? 'bg-violet-500 text-white'
-                : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                ? 'bg-dourado text-white'
+                : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
             )}
           >
             Todas
@@ -102,7 +102,7 @@ export default function FotosPage() {
               'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1',
               showFavorites
                 ? 'bg-red-500 text-white'
-                : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
             )}
           >
             <Heart className="w-3 h-3" />
@@ -119,8 +119,8 @@ export default function FotosPage() {
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
                 typeFilter === type && !showFavorites
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                  ? 'bg-dourado text-white'
+                  : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
               )}
             >
               {PHOTO_TYPE_LABELS[type]}
@@ -132,9 +132,9 @@ export default function FotosPage() {
       {/* Galeria */}
       <div className="px-4 mb-6">
         {displayPhotos.length === 0 ? (
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-8 text-center">
-            <Camera className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400 mb-2">
+          <div className="bg-white border border-border rounded-2xl p-8 text-center">
+            <Camera className="w-12 h-12 text-foreground-muted mx-auto mb-4" />
+            <p className="text-foreground-secondary mb-2">
               {showFavorites
                 ? 'Nenhuma foto favorita'
                 : 'Nenhuma foto registrada'}
@@ -143,7 +143,7 @@ export default function FotosPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-4 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-xl text-sm font-medium"
+                className="px-4 py-2 bg-gradient-to-r from-dourado to-dourado text-white rounded-xl text-sm font-medium"
               >
                 Tirar primeira foto
               </motion.button>
@@ -173,15 +173,15 @@ export default function FotosPage() {
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 flex items-center justify-between hover:border-violet-500/30 transition-colors"
+              className="bg-white border border-border rounded-xl p-4 flex items-center justify-between hover:border-dourado/30 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                  <Scale className="w-5 h-5 text-violet-400" />
+                <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+                  <Scale className="w-5 h-5 text-dourado" />
                 </div>
                 <div>
-                  <p className="text-white font-medium">Comparar Fotos</p>
-                  <p className="text-sm text-slate-400">Veja o antes e depois</p>
+                  <p className="text-foreground font-medium">Comparar Fotos</p>
+                  <p className="text-sm text-foreground-secondary">Veja o antes e depois</p>
                 </div>
               </div>
             </motion.div>
@@ -192,15 +192,15 @@ export default function FotosPage() {
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 flex items-center justify-between hover:border-cyan-500/30 transition-colors"
+              className="bg-white border border-border rounded-xl p-4 flex items-center justify-between hover:border-dourado/30 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-cyan-400" />
+                <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-dourado" />
                 </div>
                 <div>
-                  <p className="text-white font-medium">Timeline de Evolução</p>
-                  <p className="text-sm text-slate-400">Acompanhe sua jornada</p>
+                  <p className="text-foreground font-medium">Timeline de Evolução</p>
+                  <p className="text-sm text-foreground-secondary">Acompanhe sua jornada</p>
                 </div>
               </div>
             </motion.div>

@@ -122,10 +122,10 @@ export default function HistoryWorkoutDetailPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando treino...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando treino...</p>
         </div>
       </div>
     )
@@ -134,11 +134,11 @@ export default function HistoryWorkoutDetailPage() {
   // Error state
   if (error || !workout) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <span className="text-4xl mb-4 block">🤷</span>
-          <h2 className="text-xl font-bold text-white mb-2">Treino não encontrado</h2>
-          <p className="text-slate-400 mb-4">{error}</p>
+          <h2 className="text-xl font-bold text-foreground mb-2">Treino não encontrado</h2>
+          <p className="text-foreground-secondary mb-4">{error}</p>
           <Button onClick={() => router.back()}>Voltar</Button>
         </div>
       </div>
@@ -155,15 +155,15 @@ export default function HistoryWorkoutDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="relative">
-        <div className="absolute inset-0 h-48 bg-gradient-to-b from-violet-500/20 to-transparent" />
+        <div className="absolute inset-0 h-48 bg-gradient-to-b from-dourado/20 to-transparent" />
 
         <div className="relative px-4 pt-12">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
@@ -174,12 +174,12 @@ export default function HistoryWorkoutDetailPage() {
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-400">
+              <Calendar className="w-4 h-4 text-foreground-secondary" />
+              <span className="text-sm text-foreground-secondary">
                 {formattedDate}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-4">{workout.nome}</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-4">{workout.nome}</h1>
           </motion.div>
         </div>
       </div>
@@ -187,38 +187,38 @@ export default function HistoryWorkoutDetailPage() {
       {/* Stats */}
       <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-violet-400" />
-              <span className="text-xs text-slate-400">Duração</span>
+              <Clock className="w-4 h-4 text-dourado" />
+              <span className="text-xs text-foreground-secondary">Duração</span>
             </div>
-            <p className="text-2xl font-bold text-white">{workout.duracao_minutos || 0} min</p>
+            <p className="text-2xl font-bold text-foreground">{workout.duracao_minutos || 0} min</p>
           </div>
 
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Dumbbell className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs text-slate-400">Volume</span>
+              <Dumbbell className="w-4 h-4 text-dourado" />
+              <span className="text-xs text-foreground-secondary">Volume</span>
             </div>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-2xl font-bold text-foreground">
               {volumeTotal >= 1000 ? `${(volumeTotal / 1000).toFixed(1)}t` : `${volumeTotal}kg`}
             </p>
           </div>
 
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Flame className="w-4 h-4 text-orange-400" />
-              <span className="text-xs text-slate-400">Calorias</span>
+              <span className="text-xs text-foreground-secondary">Calorias</span>
             </div>
-            <p className="text-2xl font-bold text-white">{workout.calorias_estimadas || 0} kcal</p>
+            <p className="text-2xl font-bold text-foreground">{workout.calorias_estimadas || 0} kcal</p>
           </div>
 
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm">💪</span>
-              <span className="text-xs text-slate-400">Dificuldade</span>
+              <span className="text-xs text-foreground-secondary">Dificuldade</span>
             </div>
-            <p className="text-lg font-bold text-white">
+            <p className="text-lg font-bold text-foreground">
               {workout.nivel_dificuldade ? difficultyLabels[workout.nivel_dificuldade] : '-'}
             </p>
           </div>
@@ -228,20 +228,20 @@ export default function HistoryWorkoutDetailPage() {
       {/* Notes */}
       {workout.notas && (
         <div className="px-4 mb-6">
-          <h2 className="text-lg font-semibold text-white mb-3">Notas</h2>
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
-            <p className="text-slate-300">{workout.notas}</p>
+          <h2 className="text-lg font-semibold text-foreground mb-3">Notas</h2>
+          <div className="bg-white border border-border rounded-xl p-4">
+            <p className="text-foreground-secondary">{workout.notas}</p>
           </div>
         </div>
       )}
 
       {/* Exercises */}
       <div className="px-4">
-        <h2 className="text-lg font-semibold text-white mb-3">Exercícios</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Exercícios</h2>
         <div className="space-y-4">
           {workout.exercicios.length === 0 ? (
-            <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-center">
-              <p className="text-slate-400">Nenhum exercício registrado</p>
+            <div className="bg-white border border-border rounded-xl p-4 text-center">
+              <p className="text-foreground-secondary">Nenhum exercício registrado</p>
             </div>
           ) : (
             workout.exercicios.map((exercise, index) => (
@@ -250,10 +250,10 @@ export default function HistoryWorkoutDetailPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+                className="bg-white border border-border rounded-xl p-4"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-white font-medium">{exercise.exercicio_nome}</h3>
+                  <h3 className="text-foreground font-medium">{exercise.exercicio_nome}</h3>
                   {exercise.series.some(s => s.is_pr) && (
                     <div className="flex items-center gap-1 text-amber-400">
                       <Trophy className="w-4 h-4" />
@@ -263,7 +263,7 @@ export default function HistoryWorkoutDetailPage() {
                 </div>
 
                 {exercise.series.length === 0 ? (
-                  <p className="text-slate-500 text-sm">Sem séries registradas</p>
+                  <p className="text-foreground-muted text-sm">Sem séries registradas</p>
                 ) : (
                   <div className="flex gap-2 flex-wrap">
                     {exercise.series.map((set) => (
@@ -273,16 +273,16 @@ export default function HistoryWorkoutDetailPage() {
                           'flex-1 min-w-[70px] py-2 rounded-lg text-center',
                           set.is_pr
                             ? 'bg-amber-500/20 border border-amber-500/30'
-                            : 'bg-slate-800'
+                            : 'bg-background-elevated'
                         )}
                       >
                         <div className={cn(
                           'text-sm font-medium',
-                          set.is_pr ? 'text-amber-400' : 'text-white'
+                          set.is_pr ? 'text-amber-400' : 'text-foreground'
                         )}>
                           {set.carga || 0}kg
                         </div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-foreground-secondary">
                           {set.repeticoes_realizadas || 0} reps
                         </div>
                       </div>

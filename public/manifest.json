@@ -1,11 +1,11 @@
 {
-  "name": "FeliceFit",
-  "short_name": "FeliceFit",
-  "description": "Seu app de fitness e saude premium",
+  "name": "Complexo Wellness",
+  "short_name": "Complexo",
+  "description": "Programa de acompanhamento wellness do Complexo Felice",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0F",
-  "theme_color": "#8B5CF6",
+  "background_color": "#f7f2ed",
+  "theme_color": "#f7f2ed",
   "orientation": "portrait",
   "icons": [
     {
@@ -78,13 +78,6 @@
       "description": "Adicionar refeicao",
       "url": "/alimentacao/refeicao/nova",
       "icons": [{ "src": "/icons/shortcut-meal.png", "sizes": "96x96", "type": "image/png" }]
-    },
-    {
-      "name": "Revolade",
-      "short_name": "Revolade",
-      "description": "Marcar Revolade como tomado",
-      "url": "/suplementos?action=revolade",
-      "icons": [{ "src": "/icons/shortcut-medicine.png", "sizes": "96x96", "type": "image/png" }]
     }
   ],
   "screenshots": [

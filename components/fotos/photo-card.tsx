@@ -41,13 +41,13 @@ export function PhotoCard({
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         className={cn(
-          'relative overflow-hidden rounded-xl bg-[#1E1E2E] cursor-pointer group',
+          'relative overflow-hidden rounded-xl bg-background-elevated cursor-pointer group',
           sizeClasses[size],
           className
         )}
       >
         {/* Imagem */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 to-cyan-900/20">
+        <div className="absolute inset-0 bg-gradient-to-br from-dourado/10 to-vinho/10">
           {/* Placeholder visual já que usamos mock */}
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-4xl opacity-30">
@@ -81,14 +81,14 @@ export function PhotoCard({
             <p className="text-white text-xs font-medium">
               {PHOTO_TYPE_LABELS[photo.tipo]}
             </p>
-            <div className="flex items-center gap-1 text-slate-400 text-[10px]">
+            <div className="flex items-center gap-1 text-foreground-secondary text-[10px]">
               <Calendar className="w-3 h-3" />
               <span>
                 {format(parseISO(photo.data), 'd MMM yy', { locale: ptBR })}
               </span>
             </div>
             {photo.peso && (
-              <p className="text-cyan-400 text-[10px] font-medium mt-0.5">
+              <p className="text-dourado text-[10px] font-medium mt-0.5">
                 {photo.peso.toFixed(1)}kg
               </p>
             )}

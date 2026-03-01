@@ -29,6 +29,12 @@ interface RecentActivity {
   time: string
 }
 
+interface TopPerformer {
+  name: string
+  points: number
+  position: number
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,
@@ -39,6 +45,7 @@ export default function AdminDashboard() {
     clientsAtRisk: 0
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [topPerformers, setTopPerformers] = useState<TopPerformer[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -53,6 +60,7 @@ export default function AdminDashboard() {
       if (data.success) {
         setStats(data.stats)
         setRecentActivity(data.recentActivity || [])
+        setTopPerformers(data.topPerformers || [])
       }
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error)
@@ -120,7 +128,7 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400">Visão geral do sistema FeliceFit</p>
+          <p className="text-slate-400">Visão geral do sistema Complexo Wellness</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <Calendar className="w-4 h-4" />
@@ -206,10 +214,34 @@ export default function AdminDashboard() {
             </h2>
           </div>
           <div className="p-4">
-            <div className="text-center py-8 text-slate-400">
-              <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Dados serão exibidos quando houver clientes ativos</p>
-            </div>
+            {topPerformers.length === 0 ? (
+              <div className="text-center py-8 text-slate-400">
+                <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum ranking ativo no momento</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {topPerformers.map((performer) => (
+                  <div
+                    key={performer.position}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50"
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      performer.position === 1 ? 'bg-amber-500/20 text-amber-400' :
+                      performer.position === 2 ? 'bg-slate-400/20 text-slate-300' :
+                      performer.position === 3 ? 'bg-orange-500/20 text-orange-400' :
+                      'bg-slate-600/50 text-slate-400'
+                    }`}>
+                      {performer.position}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{performer.name}</p>
+                    </div>
+                    <span className="text-sm font-bold text-amber-400">{performer.points} pts</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

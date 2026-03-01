@@ -1,66 +1,58 @@
 /**
- * FeliceFit Design System
+ * Complexo Wellness Design System
  * Constantes e tokens de design para consistência visual
  */
 
-// Cores do tema
+// Cores do tema — Paleta Complexo Felice (warm light, base nude/fendi)
 export const colors = {
   // Backgrounds
   bg: {
-    primary: '#0A0A0F',      // Fundo principal
-    secondary: '#14141F',    // Cards e containers
-    tertiary: '#1E1E2E',     // Hover states
-    elevated: '#2E2E3E',     // Elementos elevados
+    primary: '#f7f2ed',      // Fundo principal (warm cream)
+    secondary: '#ffffff',    // Cards e containers (white)
+    tertiary: '#ede7e0',     // Hover states / elevated
+    elevated: '#f2ece5',     // Elementos elevados / inputs
   },
 
   // Bordas
   border: {
-    default: '#2E2E3E',
-    hover: '#3E3E4E',
-    focus: 'rgba(139, 92, 246, 0.5)',
+    default: '#d4cbc2',
+    hover: '#c4bab0',
+    focus: 'rgba(194, 152, 99, 0.5)', // dourado
   },
 
   // Texto
   text: {
-    primary: '#FFFFFF',
-    secondary: '#A1A1AA',    // slate-400
-    muted: '#71717A',        // slate-500
-    disabled: '#52525B',     // slate-600
+    primary: '#322b29',      // café (dark on light)
+    secondary: '#7a6e64',    // muted café
+    muted: '#ae9b89',        // nude
+    disabled: '#c4bab0',
   },
 
-  // Brand colors
+  // Brand colors — Complexo Felice
   brand: {
-    violet: {
-      50: '#f5f3ff',
-      100: '#ede9fe',
-      200: '#ddd6fe',
-      300: '#c4b5fd',
-      400: '#a78bfa',
-      500: '#8b5cf6',
-      600: '#7c3aed',
-      700: '#6d28d9',
-    },
-    cyan: {
-      400: '#22d3ee',
-      500: '#06b6d4',
-      600: '#0891b2',
-    },
+    cafe: '#322b29',
+    vinho: '#663739',
+    dourado: '#c29863',
+    nude: '#ae9b89',
+    fendi: '#cac2b9',
+    seda: '#ddd5c7',
   },
 
   // Status colors
   status: {
-    success: '#10b981',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    info: '#3b82f6',
+    success: '#7dad6a',
+    warning: '#d4850f',
+    error: '#a04045',
+    info: '#6b9bd2',
   },
 
   // Gradientes
   gradients: {
-    primary: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
-    violet: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
-    dark: 'linear-gradient(180deg, #0A0A0F 0%, #14141F 100%)',
-    card: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%)',
+    primary: 'linear-gradient(135deg, #c29863 0%, #b08850 100%)',
+    gold: 'linear-gradient(135deg, #c29863 0%, #ddd5c7 100%)',
+    vinho: 'linear-gradient(135deg, #663739 0%, #a04045 100%)',
+    subtle: 'linear-gradient(180deg, #ffffff 0%, #f7f2ed 100%)',
+    card: 'linear-gradient(135deg, rgba(194, 152, 99, 0.08) 0%, rgba(102, 55, 57, 0.03) 100%)',
   },
 } as const
 
@@ -86,13 +78,13 @@ export const radius = {
 
 // Shadows
 export const shadows = {
-  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+  sm: '0 1px 3px 0 rgba(50, 43, 41, 0.06)',
+  md: '0 4px 6px -1px rgba(50, 43, 41, 0.08)',
+  lg: '0 10px 15px -3px rgba(50, 43, 41, 0.1)',
   glow: {
-    violet: '0 0 20px rgba(139, 92, 246, 0.3)',
-    cyan: '0 0 20px rgba(6, 182, 212, 0.3)',
-    success: '0 0 20px rgba(16, 185, 129, 0.3)',
+    gold: '0 0 20px rgba(194, 152, 99, 0.2)',
+    vinho: '0 0 20px rgba(102, 55, 57, 0.15)',
+    success: '0 0 20px rgba(125, 173, 106, 0.2)',
   },
 } as const
 
@@ -129,8 +121,8 @@ export const zIndex = {
 // Typography
 export const typography = {
   fontFamily: {
-    sans: 'var(--font-geist-sans), system-ui, sans-serif',
-    mono: 'var(--font-geist-mono), monospace',
+    heading: 'Butler, serif',
+    sans: 'var(--font-sarabun), Sarabun, sans-serif',
   },
   fontSize: {
     xs: ['0.75rem', { lineHeight: '1rem' }],
@@ -195,19 +187,19 @@ export const iconSizes = {
 
 // Card styles
 export const cardStyles = {
-  default: 'bg-[#14141F] border border-[#2E2E3E] rounded-2xl',
-  elevated: 'bg-[#1E1E2E] border border-[#3E3E4E] rounded-2xl shadow-lg',
-  gradient: 'bg-gradient-to-br from-violet-500/10 to-cyan-500/5 border border-violet-500/20 rounded-2xl',
-  interactive: 'bg-[#14141F] border border-[#2E2E3E] rounded-2xl hover:border-violet-500/30 transition-colors cursor-pointer',
+  default: 'bg-white border border-border rounded-2xl shadow-sm',
+  elevated: 'bg-white border border-border rounded-2xl shadow-md',
+  gradient: 'bg-gradient-to-br from-dourado/5 to-vinho/3 border border-dourado/20 rounded-2xl',
+  interactive: 'bg-white border border-border rounded-2xl shadow-sm hover:border-dourado/40 hover:shadow-md transition-all cursor-pointer',
 } as const
 
 // Button variants
 export const buttonVariants = {
-  primary: 'bg-gradient-to-r from-violet-600 to-violet-500 text-white hover:from-violet-500 hover:to-violet-400',
-  secondary: 'bg-[#2E2E3E] text-white hover:bg-[#3E3E4E]',
-  ghost: 'bg-transparent text-slate-400 hover:bg-[#14141F] hover:text-white',
-  danger: 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20',
-  success: 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20',
+  primary: 'bg-gradient-to-r from-dourado to-[#b08850] text-white hover:from-[#b08850] hover:to-dourado',
+  secondary: 'bg-background-elevated text-foreground hover:bg-border',
+  ghost: 'bg-transparent text-foreground-secondary hover:bg-background-elevated hover:text-foreground',
+  danger: 'bg-error/10 border border-error/30 text-error hover:bg-error/20',
+  success: 'bg-success/10 border border-success/30 text-success hover:bg-success/20',
 } as const
 
 // Utility function to get CSS variable
@@ -217,6 +209,6 @@ export function getCssVar(name: string): string {
 }
 
 // Utility to create gradient text
-export function gradientText(from = colors.brand.violet[500], to = colors.brand.cyan[400]): string {
-  return `bg-gradient-to-r from-[${from}] to-[${to}] bg-clip-text text-transparent`
+export function gradientText(): string {
+  return 'bg-gradient-to-r from-dourado to-vinho bg-clip-text text-transparent'
 }

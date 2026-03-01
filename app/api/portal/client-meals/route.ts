@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 interface Assignment {
   client_id: string
@@ -8,13 +9,13 @@ interface Assignment {
 interface Meal {
   id: string
   user_id: string
-  meal_date: string
-  meal_time: string
-  meal_type: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
+  data: string
+  horario: string
+  tipo_refeicao: string
+  calorias_total: number
+  proteinas_total: number
+  carboidratos_total: number
+  gorduras_total: number
   [key: string]: unknown
 }
 
@@ -31,8 +32,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Usar admin client para bypass de RLS
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
     // Verificar se e profissional
-    const { data: professional } = await supabase
+    const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id, type')
       .eq('user_id', user.id)
@@ -54,11 +62,11 @@ export async function GET(request: NextRequest) {
     const mealType = searchParams.get('mealType')
 
     // Buscar clientes vinculados ao profissional
-    const { data: assignments } = await supabase
-      .from('fitness_professional_assignments')
+    const { data: assignments } = await supabaseAdmin
+      .from('fitness_client_assignments')
       .select('client_id')
       .eq('professional_id', (professional as { id: string }).id)
-      .eq('status', 'active')
+      .eq('is_active', true)
 
     const clientIds = (assignments as Assignment[] | null)?.map(a => a.client_id) || []
 
@@ -71,21 +79,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar informacoes dos clientes
-    const { data: clients } = await supabase
+    const { data: clients } = await supabaseAdmin
       .from('fitness_profiles')
       .select('id, nome, email')
       .in('id', clientIds)
 
     // Construir query de refeicoes
-    let query = supabase
+    let query = supabaseAdmin
       .from('fitness_meals')
       .select(`
         *,
         profile:fitness_profiles!user_id(id, nome, email)
       `)
       .in('user_id', clientIds)
-      .order('meal_date', { ascending: false })
-      .order('meal_time', { ascending: false })
+      .order('data', { ascending: false })
+      .order('horario', { ascending: false })
 
     // Filtros
     if (clientId && clientIds.includes(clientId)) {
@@ -93,18 +101,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (date) {
-      query = query.eq('meal_date', date)
+      query = query.eq('data', date)
     } else if (startDate && endDate) {
-      query = query.gte('meal_date', startDate).lte('meal_date', endDate)
+      query = query.gte('data', startDate).lte('data', endDate)
     } else {
       // Ultimos 7 dias por padrao
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      query = query.gte('meal_date', sevenDaysAgo.toISOString().split('T')[0])
+      query = query.gte('data', sevenDaysAgo.toISOString().split('T')[0])
     }
 
     if (mealType) {
-      query = query.eq('meal_type', mealType)
+      query = query.eq('tipo_refeicao', mealType)
     }
 
     // Limitar a 100 registros
@@ -125,15 +133,15 @@ export async function GET(request: NextRequest) {
     // Calcular estatisticas
     const stats = {
       totalMeals: mealsTyped?.length || 0,
-      totalCalories: mealsTyped?.reduce((sum, m) => sum + (m.calories || 0), 0) || 0,
+      totalCalories: mealsTyped?.reduce((sum, m) => sum + (m.calorias_total || 0), 0) || 0,
       avgProtein: mealsTyped?.length
-        ? Math.round(mealsTyped.reduce((sum, m) => sum + (m.protein || 0), 0) / mealsTyped.length)
+        ? Math.round(mealsTyped.reduce((sum, m) => sum + (m.proteinas_total || 0), 0) / mealsTyped.length)
         : 0,
       avgCarbs: mealsTyped?.length
-        ? Math.round(mealsTyped.reduce((sum, m) => sum + (m.carbs || 0), 0) / mealsTyped.length)
+        ? Math.round(mealsTyped.reduce((sum, m) => sum + (m.carboidratos_total || 0), 0) / mealsTyped.length)
         : 0,
       avgFat: mealsTyped?.length
-        ? Math.round(mealsTyped.reduce((sum, m) => sum + (m.fat || 0), 0) / mealsTyped.length)
+        ? Math.round(mealsTyped.reduce((sum, m) => sum + (m.gorduras_total || 0), 0) / mealsTyped.length)
         : 0,
       mealsPerClient: {} as Record<string, number>
     }

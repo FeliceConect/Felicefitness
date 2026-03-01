@@ -130,55 +130,55 @@ export default function WorkoutHistoryPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando histórico...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando histórico...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white mb-4">Histórico de Treinos</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-4">Histórico de Treinos</h1>
 
         {/* Month navigation */}
-        <div className="flex items-center justify-between bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+        <div className="flex items-center justify-between bg-white border border-border rounded-xl p-4">
           <button
             onClick={() => navigateMonth('prev')}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-400" />
+            <ChevronLeft className="w-5 h-5 text-foreground-secondary" />
           </button>
 
           <div className="text-center">
-            <p className="text-lg font-semibold text-white">
+            <p className="text-lg font-semibold text-foreground">
               {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
             </p>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-foreground-secondary">
               {monthStats.total} treinos • {monthStats.totalDuration}min total
             </p>
           </div>
 
           <button
             onClick={() => navigateMonth('next')}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
             disabled={isSameMonth(currentMonth, new Date())}
           >
             <ChevronRight className={cn(
               "w-5 h-5",
-              isSameMonth(currentMonth, new Date()) ? "text-slate-700" : "text-slate-400"
+              isSameMonth(currentMonth, new Date()) ? "text-border" : "text-foreground-secondary"
             )} />
           </button>
         </div>
@@ -187,17 +187,17 @@ export default function WorkoutHistoryPage() {
       {/* Month stats */}
       <div className="px-4 mb-6">
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-violet-400">{monthStats.total}</p>
-            <p className="text-xs text-slate-400">treinos</p>
+          <div className="bg-white border border-border rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-dourado">{monthStats.total}</p>
+            <p className="text-xs text-foreground-secondary">treinos</p>
           </div>
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-cyan-400">{Math.round(monthStats.totalDuration / 60)}h</p>
-            <p className="text-xs text-slate-400">total</p>
+          <div className="bg-white border border-border rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-dourado">{Math.round(monthStats.totalDuration / 60)}h</p>
+            <p className="text-xs text-foreground-secondary">total</p>
           </div>
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-center">
+          <div className="bg-white border border-border rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-emerald-400">{monthStats.avgDuration}min</p>
-            <p className="text-xs text-slate-400">média</p>
+            <p className="text-xs text-foreground-secondary">média</p>
           </div>
         </div>
       </div>
@@ -207,7 +207,7 @@ export default function WorkoutHistoryPage() {
         {Object.entries(groupedByWeek).length === 0 ? (
           <div className="text-center py-12">
             <span className="text-4xl block mb-4">📅</span>
-            <p className="text-slate-400">Nenhum treino neste mês</p>
+            <p className="text-foreground-secondary">Nenhum treino neste mês</p>
           </div>
         ) : (
           Object.entries(groupedByWeek).map(([weekLabel, workouts], groupIndex) => (
@@ -218,7 +218,7 @@ export default function WorkoutHistoryPage() {
               transition={{ delay: groupIndex * 0.1 }}
               className="mb-6"
             >
-              <h3 className="text-sm font-medium text-slate-400 mb-3">{weekLabel}</h3>
+              <h3 className="text-sm font-medium text-foreground-secondary mb-3">{weekLabel}</h3>
               <div className="space-y-2">
                 {workouts.map((workout, index) => (
                   <Link
@@ -229,20 +229,20 @@ export default function WorkoutHistoryPage() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 flex items-center justify-between hover:border-violet-500/30 transition-colors"
+                      className="bg-white border border-border rounded-xl p-4 flex items-center justify-between hover:border-dourado/30 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{typeIcons[workout.tipo] || '🏋️'}</span>
                         <div>
-                          <p className="text-white font-medium">{workout.nome}</p>
-                          <div className="flex items-center gap-3 text-sm text-slate-400">
+                          <p className="text-foreground font-medium">{workout.nome}</p>
+                          <div className="flex items-center gap-3 text-sm text-foreground-secondary">
                             <span>{format(new Date(workout.data), "EEE, d MMM", { locale: ptBR })}</span>
                             <span>•</span>
                             <span>{workout.duracao}min</span>
                           </div>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-slate-500" />
+                      <ChevronRight className="w-5 h-5 text-foreground-muted" />
                     </motion.div>
                   </Link>
                 ))}

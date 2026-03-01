@@ -17,10 +17,10 @@ const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom']
 const statusStyles: Record<DayWorkout['status'], string> = {
   completed: 'bg-emerald-500 text-white',
   partial: 'bg-amber-500 text-white',
-  pending: 'bg-violet-500 text-white ring-2 ring-violet-400 ring-offset-2 ring-offset-[#0A0A0F]',
-  rest: 'bg-slate-700 text-slate-400',
+  pending: 'bg-dourado text-white ring-2 ring-dourado/60 ring-offset-2 ring-offset-background',
+  rest: 'bg-background-elevated text-foreground-secondary',
   missed: 'bg-red-500/20 text-red-400 border border-red-500/30',
-  future: 'bg-[#1E1E2E] text-slate-400'
+  future: 'bg-background-elevated text-foreground-secondary'
 }
 
 const statusIcons: Record<DayWorkout['status'], string> = {
@@ -34,12 +34,12 @@ const statusIcons: Record<DayWorkout['status'], string> = {
 
 export function WeekCalendar({ days, onSelectDay, selectedDate }: WeekCalendarProps) {
   return (
-    <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
+    <div className="bg-white border border-border rounded-2xl p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
           Esta Semana
         </h3>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-foreground-muted">
           {format(days[0]?.date || new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
         </span>
       </div>
@@ -48,7 +48,7 @@ export function WeekCalendar({ days, onSelectDay, selectedDate }: WeekCalendarPr
         {/* Nomes dos dias */}
         {dayNames.map((name) => (
           <div key={name} className="text-center">
-            <span className="text-xs text-slate-500">{name}</span>
+            <span className="text-xs text-foreground-muted">{name}</span>
           </div>
         ))}
 

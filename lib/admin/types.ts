@@ -1,17 +1,17 @@
 // Tipos para o módulo administrativo
 
 // Roles disponíveis no sistema
-export type UserRole = 'super_admin' | 'admin' | 'nutritionist' | 'trainer' | 'client'
+export type UserRole = 'super_admin' | 'admin' | 'nutritionist' | 'trainer' | 'coach' | 'client'
 
 // Tipos de profissionais
-export type ProfessionalType = 'nutritionist' | 'trainer'
+export type ProfessionalType = 'nutritionist' | 'trainer' | 'coach'
 
 // Profissional
 export interface Professional {
   id: string
   user_id: string
   type: ProfessionalType
-  registration?: string // CRN ou CREF
+  registration?: string // CRN, CREF ou CRP
   specialty?: string
   bio?: string
   max_clients: number
@@ -94,6 +94,8 @@ export const rolePermissions: Record<UserRole, string[]> = {
     'view_all_clients',
     'send_feedback',
     'chat',
+    'score_bioimpedance',
+    'moderate_feed',
   ],
   admin: [
     'view_all_users',
@@ -105,6 +107,7 @@ export const rolePermissions: Record<UserRole, string[]> = {
     'view_all_clients',
     'send_feedback',
     'chat',
+    'send_broadcast',
   ],
   nutritionist: [
     'view_assigned_clients',
@@ -115,6 +118,12 @@ export const rolePermissions: Record<UserRole, string[]> = {
   trainer: [
     'view_assigned_clients',
     'manage_workout_plans',
+    'send_feedback',
+    'chat',
+  ],
+  coach: [
+    'view_assigned_clients',
+    'manage_notes',
     'send_feedback',
     'chat',
   ],
@@ -130,13 +139,15 @@ export const roleLabels: Record<UserRole, string> = {
   admin: 'Administrador',
   nutritionist: 'Nutricionista',
   trainer: 'Personal Trainer',
-  client: 'Cliente',
+  coach: 'Coach Alta Performance',
+  client: 'Paciente',
 }
 
 // Labels para tipos de profissional
 export const professionalTypeLabels: Record<ProfessionalType, string> = {
   nutritionist: 'Nutricionista',
   trainer: 'Personal Trainer',
+  coach: 'Coach Alta Performance',
 }
 
 // Versão atual dos termos de uso
@@ -148,7 +159,7 @@ export function isAdmin(role: UserRole): boolean {
 }
 
 export function isProfessional(role: UserRole): boolean {
-  return role === 'nutritionist' || role === 'trainer'
+  return role === 'nutritionist' || role === 'trainer' || role === 'coach'
 }
 
 export function hasPermission(role: UserRole, permission: string): boolean {

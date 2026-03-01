@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Zap, Droplets, Dumbbell, Utensils, Pill } from 'lucide-react'
+import { Zap, Droplets, Dumbbell, Utensils } from 'lucide-react'
 import { APP_SHORTCUTS } from '@/types/widgets'
 
 interface AppShortcutsProps {
@@ -11,9 +11,8 @@ interface AppShortcutsProps {
 
 const shortcutIcons: Record<string, React.ReactNode> = {
   'Registrar Água': <Droplets className="w-5 h-5 text-blue-400" />,
-  'Iniciar Treino': <Dumbbell className="w-5 h-5 text-purple-400" />,
+  'Iniciar Treino': <Dumbbell className="w-5 h-5 text-vinho" />,
   'Registrar Refeição': <Utensils className="w-5 h-5 text-green-400" />,
-  'Revolade': <Pill className="w-5 h-5 text-orange-400" />,
 }
 
 export function AppShortcuts({ className }: AppShortcutsProps) {
@@ -44,9 +43,9 @@ export function AppShortcuts({ className }: AppShortcutsProps) {
           </div>
         ))}
 
-        <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mt-4">
-          <p className="text-sm text-purple-300">
-            <strong>Dica:</strong> No Android, segure o icone do FeliceFit na home screen para ver estes atalhos.
+        <div className="bg-dourado/10 border border-dourado/30 rounded-lg p-3 mt-4">
+          <p className="text-sm text-foreground-secondary">
+            <strong>Dica:</strong> No Android, segure o icone do Complexo Wellness na home screen para ver estes atalhos.
             No iOS, os atalhos aparecem com 3D Touch ou Haptic Touch.
           </p>
         </div>

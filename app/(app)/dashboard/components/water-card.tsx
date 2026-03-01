@@ -65,10 +65,10 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
       className={cn(
-        'bg-[#14141F] border rounded-2xl p-4 transition-all',
+        'bg-white border rounded-2xl p-4 transition-all shadow-sm',
         isComplete
-          ? 'border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-transparent'
-          : 'border-[#2E2E3E]'
+          ? 'border-success/40 bg-gradient-to-br from-emerald-50 to-white'
+          : 'border-border'
       )}
     >
         {/* Header - Clicável para abrir página de hidratação */}
@@ -78,11 +78,11 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
         >
           <div className="flex items-center gap-2">
             <span className="text-lg">💧</span>
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
               Água
             </h3>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-500" />
+          <ChevronRight className="w-4 h-4 text-foreground-muted" />
         </button>
 
         {/* Progress Ring */}
@@ -102,12 +102,12 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <span className="text-xl font-bold text-white">
+                  <span className="text-xl font-bold text-foreground">
                     {formatWater(optimisticTotal)}
                   </span>
                 </motion.div>
               </AnimatePresence>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-foreground-muted">
                 de {formatWater(goalMl)}
               </p>
             </div>
@@ -125,15 +125,15 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
               disabled={isAdding}
               className={cn(
                 'flex-1 flex flex-col items-center justify-center',
-                'bg-[#1E1E2E] hover:bg-[#2E2E3E] rounded-xl py-2 px-1',
-                'border border-transparent hover:border-cyan-500/30',
+                'bg-background hover:bg-background-elevated rounded-xl py-2 px-1',
+                'border border-transparent hover:border-dourado/30',
                 'transition-colors duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
-                animatingAdd === option.ml && 'bg-cyan-500/20 border-cyan-500/50'
+                animatingAdd === option.ml && 'bg-dourado/10 border-dourado/40'
               )}
             >
               <span className="text-base mb-0.5">{option.icon}</span>
-              <span className="text-xs text-slate-400">+{option.label}</span>
+              <span className="text-xs text-foreground-secondary">+{option.label}</span>
             </motion.button>
           ))}
         </div>
@@ -143,7 +143,7 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-xs text-cyan-400 mt-3"
+            className="text-center text-xs text-success mt-3"
           >
             Meta atingida! 🎉
           </motion.p>

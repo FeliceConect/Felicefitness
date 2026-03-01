@@ -1,4 +1,4 @@
-// FeliceFit - Database Types
+// Complexo Wellness - Database Types
 // Tipos gerados manualmente baseados no schema do banco de dados
 
 export type Json =
@@ -1122,6 +1122,1772 @@ export interface Database {
           updated_at?: string
         }
       }
+      // ============================================
+      // TABLES ADDED IN PHASES 2-8
+      // ============================================
+      fitness_professionals: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          registration: string | null
+          specialty: string | null
+          bio: string | null
+          max_clients: number
+          is_active: boolean
+          display_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          registration?: string | null
+          specialty?: string | null
+          bio?: string | null
+          max_clients?: number
+          is_active?: boolean
+          display_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          registration?: string | null
+          specialty?: string | null
+          bio?: string | null
+          max_clients?: number
+          is_active?: boolean
+          display_name?: string | null
+          updated_at?: string
+        }
+      }
+      fitness_client_assignments: {
+        Row: {
+          id: string
+          client_id: string
+          professional_id: string
+          assigned_at: string
+          assigned_by: string | null
+          notes: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          professional_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          professional_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+          notes?: string | null
+          is_active?: boolean
+        }
+      }
+      fitness_appointments: {
+        Row: {
+          id: string
+          patient_id: string
+          professional_id: string
+          appointment_type: string
+          meeting_link: string | null
+          date: string
+          start_time: string
+          end_time: string
+          location: string | null
+          status: string
+          reschedule_reason: string | null
+          reschedule_requested_at: string | null
+          notes: string | null
+          confirmed_by_patient: boolean
+          confirmed_at: string | null
+          ics_data: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          patient_id: string
+          professional_id: string
+          appointment_type: string
+          meeting_link?: string | null
+          date: string
+          start_time: string
+          end_time: string
+          location?: string | null
+          status?: string
+          reschedule_reason?: string | null
+          reschedule_requested_at?: string | null
+          notes?: string | null
+          confirmed_by_patient?: boolean
+          confirmed_at?: string | null
+          ics_data?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          patient_id?: string
+          professional_id?: string
+          appointment_type?: string
+          meeting_link?: string | null
+          date?: string
+          start_time?: string
+          end_time?: string
+          location?: string | null
+          status?: string
+          reschedule_reason?: string | null
+          reschedule_requested_at?: string | null
+          notes?: string | null
+          confirmed_by_patient?: boolean
+          confirmed_at?: string | null
+          ics_data?: string | null
+          created_by?: string
+          updated_at?: string
+        }
+      }
+      fitness_professional_notes: {
+        Row: {
+          id: string
+          professional_id: string
+          patient_id: string
+          appointment_id: string | null
+          note_type: string
+          content: string
+          visible_to_roles: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          patient_id: string
+          appointment_id?: string | null
+          note_type: string
+          content: string
+          visible_to_roles?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          patient_id?: string
+          appointment_id?: string | null
+          note_type?: string
+          content?: string
+          visible_to_roles?: string[]
+          updated_at?: string
+        }
+      }
+      fitness_community_posts: {
+        Row: {
+          id: string
+          user_id: string
+          post_type: string
+          content: string | null
+          image_url: string | null
+          related_id: string | null
+          is_auto_generated: boolean
+          reactions_count: Json
+          comments_count: number
+          is_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          post_type: string
+          content?: string | null
+          image_url?: string | null
+          related_id?: string | null
+          is_auto_generated?: boolean
+          reactions_count?: Json
+          comments_count?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          post_type?: string
+          content?: string | null
+          image_url?: string | null
+          related_id?: string | null
+          is_auto_generated?: boolean
+          reactions_count?: Json
+          comments_count?: number
+          is_visible?: boolean
+          updated_at?: string
+        }
+      }
+      fitness_community_reactions: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          reaction_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          reaction_type: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          reaction_type?: string
+        }
+      }
+      fitness_community_comments: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          content: string
+          is_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          content: string
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          content?: string
+          is_visible?: boolean
+          updated_at?: string
+        }
+      }
+      fitness_rankings: {
+        Row: {
+          id: string
+          name: string
+          type: string
+          category: string | null
+          start_date: string | null
+          end_date: string | null
+          is_active: boolean
+          description: string | null
+          point_rules: Json
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          type: string
+          category?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_active?: boolean
+          description?: string | null
+          point_rules?: Json
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          type?: string
+          category?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_active?: boolean
+          description?: string | null
+          point_rules?: Json
+          created_by?: string | null
+          updated_at?: string
+        }
+      }
+      fitness_ranking_participants: {
+        Row: {
+          id: string
+          ranking_id: string
+          user_id: string
+          total_points: number
+          current_position: number | null
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          ranking_id: string
+          user_id: string
+          total_points?: number
+          current_position?: number | null
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          ranking_id?: string
+          user_id?: string
+          total_points?: number
+          current_position?: number | null
+        }
+      }
+      fitness_point_transactions: {
+        Row: {
+          id: string
+          user_id: string
+          points: number
+          reason: string
+          category: string
+          source: string
+          awarded_by: string | null
+          reference_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          points: number
+          reason: string
+          category: string
+          source: string
+          awarded_by?: string | null
+          reference_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          points?: number
+          reason?: string
+          category?: string
+          source?: string
+          awarded_by?: string | null
+          reference_id?: string | null
+        }
+      }
+      fitness_push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          keys_p256dh: string
+          keys_auth: string
+          user_agent: string | null
+          active: boolean
+          created_at: string
+          last_used: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          keys_p256dh: string
+          keys_auth: string
+          user_agent?: string | null
+          active?: boolean
+          created_at?: string
+          last_used?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          keys_p256dh?: string
+          keys_auth?: string
+          user_agent?: string | null
+          active?: boolean
+          last_used?: string
+        }
+      }
+      fitness_notification_history: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          body: string
+          sent_at: string
+          read_at: string | null
+          clicked_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          title: string
+          body: string
+          sent_at?: string
+          read_at?: string | null
+          clicked_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string
+          sent_at?: string
+          read_at?: string | null
+          clicked_at?: string | null
+        }
+      }
+      fitness_form_templates: {
+        Row: {
+          id: string
+          professional_id: string | null
+          name: string
+          description: string | null
+          specialty: string
+          form_type: string
+          is_system_template: boolean
+          is_active: boolean
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id?: string | null
+          name: string
+          description?: string | null
+          specialty: string
+          form_type: string
+          is_system_template?: boolean
+          is_active?: boolean
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string | null
+          name?: string
+          description?: string | null
+          specialty?: string
+          form_type?: string
+          is_system_template?: boolean
+          is_active?: boolean
+          version?: number
+          updated_at?: string
+        }
+      }
+      fitness_form_questions: {
+        Row: {
+          id: string
+          template_id: string
+          question_text: string
+          question_type: string
+          options: Json | null
+          config: Json
+          is_required: boolean
+          order_index: number
+          section: string | null
+          conditional_on: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          question_text: string
+          question_type: string
+          options?: Json | null
+          config?: Json
+          is_required?: boolean
+          order_index?: number
+          section?: string | null
+          conditional_on?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          question_text?: string
+          question_type?: string
+          options?: Json | null
+          config?: Json
+          is_required?: boolean
+          order_index?: number
+          section?: string | null
+          conditional_on?: Json | null
+        }
+      }
+      fitness_form_assignments: {
+        Row: {
+          id: string
+          template_id: string
+          template_version: number
+          professional_id: string
+          client_id: string
+          status: string
+          due_date: string | null
+          sent_at: string
+          started_at: string | null
+          completed_at: string | null
+          reminder_sent: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          template_version?: number
+          professional_id: string
+          client_id: string
+          status?: string
+          due_date?: string | null
+          sent_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+          reminder_sent?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          template_version?: number
+          professional_id?: string
+          client_id?: string
+          status?: string
+          due_date?: string | null
+          sent_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+          reminder_sent?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+      }
+      fitness_form_responses: {
+        Row: {
+          id: string
+          assignment_id: string
+          question_id: string
+          question_snapshot: Json
+          response_value: Json
+          responded_at: string
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          question_id: string
+          question_snapshot: Json
+          response_value: Json
+          responded_at?: string
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          question_id?: string
+          question_snapshot?: Json
+          response_value?: Json
+          responded_at?: string
+        }
+      }
+      fitness_form_drafts: {
+        Row: {
+          id: string
+          assignment_id: string
+          client_id: string
+          draft_data: Json
+          current_step: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          client_id: string
+          draft_data?: Json
+          current_step?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          client_id?: string
+          draft_data?: Json
+          current_step?: number
+          updated_at?: string
+        }
+      }
+      fitness_conversations: {
+        Row: {
+          id: string
+          client_id: string
+          professional_id: string
+          last_message_at: string
+          client_unread_count: number
+          professional_unread_count: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          professional_id: string
+          last_message_at?: string
+          client_unread_count?: number
+          professional_unread_count?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          professional_id?: string
+          last_message_at?: string
+          client_unread_count?: number
+          professional_unread_count?: number
+          is_active?: boolean
+          updated_at?: string
+        }
+      }
+      fitness_messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          sender_id: string
+          sender_type: string
+          content: string
+          message_type: string
+          metadata: Json | null
+          is_read: boolean
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          sender_id: string
+          sender_type: string
+          content: string
+          message_type?: string
+          metadata?: Json | null
+          is_read?: boolean
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          sender_id?: string
+          sender_type?: string
+          content?: string
+          message_type?: string
+          metadata?: Json | null
+          is_read?: boolean
+          read_at?: string | null
+        }
+      }
+      fitness_meal_plans: {
+        Row: {
+          id: string
+          professional_id: string
+          client_id: string | null
+          name: string
+          description: string | null
+          goal: string | null
+          calories_target: number | null
+          protein_target: number | null
+          carbs_target: number | null
+          fat_target: number | null
+          fiber_target: number | null
+          water_target: number | null
+          duration_weeks: number
+          is_template: boolean
+          is_active: boolean
+          starts_at: string | null
+          ends_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          client_id?: string | null
+          name: string
+          description?: string | null
+          goal?: string | null
+          calories_target?: number | null
+          protein_target?: number | null
+          carbs_target?: number | null
+          fat_target?: number | null
+          fiber_target?: number | null
+          water_target?: number | null
+          duration_weeks?: number
+          is_template?: boolean
+          is_active?: boolean
+          starts_at?: string | null
+          ends_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          client_id?: string | null
+          name?: string
+          description?: string | null
+          goal?: string | null
+          calories_target?: number | null
+          protein_target?: number | null
+          carbs_target?: number | null
+          fat_target?: number | null
+          fiber_target?: number | null
+          water_target?: number | null
+          duration_weeks?: number
+          is_template?: boolean
+          is_active?: boolean
+          starts_at?: string | null
+          ends_at?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+      }
+      fitness_meal_plan_days: {
+        Row: {
+          id: string
+          meal_plan_id: string
+          day_of_week: number
+          day_name: string | null
+          calories_target: number | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          meal_plan_id: string
+          day_of_week: number
+          day_name?: string | null
+          calories_target?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          meal_plan_id?: string
+          day_of_week?: number
+          day_name?: string | null
+          calories_target?: number | null
+          notes?: string | null
+        }
+      }
+      fitness_meal_plan_meals: {
+        Row: {
+          id: string
+          meal_plan_day_id: string
+          meal_type: string
+          meal_name: string | null
+          scheduled_time: string | null
+          foods: Json
+          total_calories: number | null
+          total_protein: number | null
+          total_carbs: number | null
+          total_fat: number | null
+          total_fiber: number | null
+          instructions: string | null
+          alternatives: Json
+          is_optional: boolean
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          meal_plan_day_id: string
+          meal_type: string
+          meal_name?: string | null
+          scheduled_time?: string | null
+          foods?: Json
+          total_calories?: number | null
+          total_protein?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          total_fiber?: number | null
+          instructions?: string | null
+          alternatives?: Json
+          is_optional?: boolean
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          meal_plan_day_id?: string
+          meal_type?: string
+          meal_name?: string | null
+          scheduled_time?: string | null
+          foods?: Json
+          total_calories?: number | null
+          total_protein?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          total_fiber?: number | null
+          instructions?: string | null
+          alternatives?: Json
+          is_optional?: boolean
+          order_index?: number
+        }
+      }
+      fitness_training_programs: {
+        Row: {
+          id: string
+          professional_id: string
+          client_id: string | null
+          name: string
+          description: string | null
+          goal: string | null
+          difficulty: string
+          duration_weeks: number
+          days_per_week: number
+          session_duration: number
+          equipment_needed: Json
+          is_template: boolean
+          is_active: boolean
+          starts_at: string | null
+          ends_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          client_id?: string | null
+          name: string
+          description?: string | null
+          goal?: string | null
+          difficulty?: string
+          duration_weeks?: number
+          days_per_week?: number
+          session_duration?: number
+          equipment_needed?: Json
+          is_template?: boolean
+          is_active?: boolean
+          starts_at?: string | null
+          ends_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          client_id?: string | null
+          name?: string
+          description?: string | null
+          goal?: string | null
+          difficulty?: string
+          duration_weeks?: number
+          days_per_week?: number
+          session_duration?: number
+          equipment_needed?: Json
+          is_template?: boolean
+          is_active?: boolean
+          starts_at?: string | null
+          ends_at?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+      }
+      fitness_training_weeks: {
+        Row: {
+          id: string
+          program_id: string
+          week_number: number
+          name: string | null
+          focus: string | null
+          intensity_modifier: number
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          week_number: number
+          name?: string | null
+          focus?: string | null
+          intensity_modifier?: number
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          week_number?: number
+          name?: string | null
+          focus?: string | null
+          intensity_modifier?: number
+          notes?: string | null
+        }
+      }
+      fitness_training_days: {
+        Row: {
+          id: string
+          week_id: string
+          day_of_week: number | null
+          day_number: number | null
+          name: string
+          muscle_groups: Json
+          estimated_duration: number | null
+          warmup_notes: string | null
+          cooldown_notes: string | null
+          notes: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          week_id: string
+          day_of_week?: number | null
+          day_number?: number | null
+          name: string
+          muscle_groups?: Json
+          estimated_duration?: number | null
+          warmup_notes?: string | null
+          cooldown_notes?: string | null
+          notes?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          week_id?: string
+          day_of_week?: number | null
+          day_number?: number | null
+          name?: string
+          muscle_groups?: Json
+          estimated_duration?: number | null
+          warmup_notes?: string | null
+          cooldown_notes?: string | null
+          notes?: string | null
+          order_index?: number
+        }
+      }
+      fitness_training_exercises: {
+        Row: {
+          id: string
+          training_day_id: string
+          exercise_name: string
+          exercise_category: string | null
+          muscle_group: string | null
+          sets: number
+          reps: string | null
+          rest_seconds: number
+          tempo: string | null
+          weight_suggestion: string | null
+          rpe_target: number | null
+          instructions: string | null
+          video_url: string | null
+          alternatives: Json
+          superset_with: string | null
+          is_dropset: boolean
+          is_warmup: boolean
+          order_index: number
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          training_day_id: string
+          exercise_name: string
+          exercise_category?: string | null
+          muscle_group?: string | null
+          sets?: number
+          reps?: string | null
+          rest_seconds?: number
+          tempo?: string | null
+          weight_suggestion?: string | null
+          rpe_target?: number | null
+          instructions?: string | null
+          video_url?: string | null
+          alternatives?: Json
+          superset_with?: string | null
+          is_dropset?: boolean
+          is_warmup?: boolean
+          order_index?: number
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          training_day_id?: string
+          exercise_name?: string
+          exercise_category?: string | null
+          muscle_group?: string | null
+          sets?: number
+          reps?: string | null
+          rest_seconds?: number
+          tempo?: string | null
+          weight_suggestion?: string | null
+          rpe_target?: number | null
+          instructions?: string | null
+          video_url?: string | null
+          alternatives?: Json
+          superset_with?: string | null
+          is_dropset?: boolean
+          is_warmup?: boolean
+          order_index?: number
+          notes?: string | null
+        }
+      }
+      fitness_api_usage: {
+        Row: {
+          id: string
+          user_id: string
+          feature: string
+          model: string | null
+          endpoint: string | null
+          tokens_input: number
+          tokens_output: number
+          cost_usd: number
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          feature: string
+          model?: string | null
+          endpoint?: string | null
+          tokens_input?: number
+          tokens_output?: number
+          cost_usd?: number
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          feature?: string
+          model?: string | null
+          endpoint?: string | null
+          tokens_input?: number
+          tokens_output?: number
+          cost_usd?: number
+          metadata?: Json | null
+        }
+      }
+      fitness_audit_log: {
+        Row: {
+          id: string
+          user_id: string | null
+          action: string
+          target_type: string | null
+          target_id: string | null
+          target_user_id: string | null
+          metadata: Json | null
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          action: string
+          target_type?: string | null
+          target_id?: string | null
+          target_user_id?: string | null
+          metadata?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          action?: string
+          target_type?: string | null
+          target_id?: string | null
+          target_user_id?: string | null
+          metadata?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+      }
+      fitness_terms_acceptance: {
+        Row: {
+          id: string
+          user_id: string
+          version: string
+          accepted_at: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          version: string
+          accepted_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          version?: string
+          accepted_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+      }
+      fitness_consent_history: {
+        Row: {
+          id: string
+          user_id: string
+          consent_type: string
+          consent_version: string
+          accepted: boolean
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          consent_type: string
+          consent_version: string
+          accepted: boolean
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          consent_type?: string
+          consent_version?: string
+          accepted?: boolean
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+      }
+      fitness_lgpd_requests: {
+        Row: {
+          id: string
+          user_id: string
+          request_type: string
+          status: string
+          requested_at: string
+          processed_at: string | null
+          processed_by: string | null
+          notes: string | null
+          data_file_url: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          request_type: string
+          status?: string
+          requested_at?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          notes?: string | null
+          data_file_url?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          request_type?: string
+          status?: string
+          requested_at?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          notes?: string | null
+          data_file_url?: string | null
+        }
+      }
+      fitness_activities: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          activity_type: string
+          custom_name: string | null
+          duration_minutes: number
+          intensity: string
+          calories_burned: number | null
+          distance_km: number | null
+          heart_rate_avg: number | null
+          notes: string | null
+          location: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          activity_type: string
+          custom_name?: string | null
+          duration_minutes: number
+          intensity: string
+          calories_burned?: number | null
+          distance_km?: number | null
+          heart_rate_avg?: number | null
+          notes?: string | null
+          location?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          activity_type?: string
+          custom_name?: string | null
+          duration_minutes?: number
+          intensity?: string
+          calories_burned?: number | null
+          distance_km?: number | null
+          heart_rate_avg?: number | null
+          notes?: string | null
+          location?: string | null
+          updated_at?: string
+        }
+      }
+      fitness_user_foods: {
+        Row: {
+          id: string
+          user_id: string
+          nome: string
+          categoria: string
+          marca: string | null
+          descricao: string | null
+          porcao_padrao: number
+          unidade: string
+          calorias: number
+          proteinas: number
+          carboidratos: number
+          gorduras: number
+          fibras: number | null
+          sodio: number | null
+          porcoes_comuns: Json | null
+          is_favorite: boolean
+          is_active: boolean
+          source: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          nome: string
+          categoria: string
+          marca?: string | null
+          descricao?: string | null
+          porcao_padrao?: number
+          unidade?: string
+          calorias?: number
+          proteinas?: number
+          carboidratos?: number
+          gorduras?: number
+          fibras?: number | null
+          sodio?: number | null
+          porcoes_comuns?: Json | null
+          is_favorite?: boolean
+          is_active?: boolean
+          source?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          nome?: string
+          categoria?: string
+          marca?: string | null
+          descricao?: string | null
+          porcao_padrao?: number
+          unidade?: string
+          calorias?: number
+          proteinas?: number
+          carboidratos?: number
+          gorduras?: number
+          fibras?: number | null
+          sodio?: number | null
+          porcoes_comuns?: Json | null
+          is_favorite?: boolean
+          is_active?: boolean
+          source?: string
+          updated_at?: string
+        }
+      }
+      fitness_insights: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          priority: string
+          category: string
+          title: string
+          description: string
+          icon: string | null
+          data: Json | null
+          action: Json | null
+          viewed: boolean
+          dismissed: boolean
+          dismissed_at: string | null
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          priority: string
+          category: string
+          title: string
+          description: string
+          icon?: string | null
+          data?: Json | null
+          action?: Json | null
+          viewed?: boolean
+          dismissed?: boolean
+          dismissed_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          priority?: string
+          category?: string
+          title?: string
+          description?: string
+          icon?: string | null
+          data?: Json | null
+          action?: Json | null
+          viewed?: boolean
+          dismissed?: boolean
+          dismissed_at?: string | null
+          expires_at?: string | null
+        }
+      }
+      fitness_ai_reports: {
+        Row: {
+          id: string
+          user_id: string
+          tipo: string
+          periodo_inicio: string
+          periodo_fim: string
+          conteudo: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          tipo: string
+          periodo_inicio: string
+          periodo_fim: string
+          conteudo: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          tipo?: string
+          periodo_inicio?: string
+          periodo_fim?: string
+          conteudo?: Json
+        }
+      }
+      fitness_xp_history: {
+        Row: {
+          id: string
+          user_id: string
+          xp_gained: number
+          xp_type: string
+          source_id: string | null
+          description: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          xp_gained: number
+          xp_type: string
+          source_id?: string | null
+          description?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          xp_gained?: number
+          xp_type?: string
+          source_id?: string | null
+          description?: string | null
+        }
+      }
+      fitness_ranking_snapshots: {
+        Row: {
+          id: string
+          user_id: string
+          periodo: string
+          data_referencia: string
+          posicao: number
+          xp_total: number
+          nivel: number
+          percentil: number | null
+          total_participantes: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          periodo: string
+          data_referencia: string
+          posicao: number
+          xp_total: number
+          nivel: number
+          percentil?: number | null
+          total_participantes?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          periodo?: string
+          data_referencia?: string
+          posicao?: number
+          xp_total?: number
+          nivel?: number
+          percentil?: number | null
+          total_participantes?: number | null
+        }
+      }
+      fitness_wellness_checkins: {
+        Row: {
+          id: string
+          user_id: string
+          data: string
+          horario: string | null
+          humor: number
+          stress: number
+          energia: number
+          fatores_positivos: string[] | null
+          fatores_negativos: string[] | null
+          notas: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          data: string
+          horario?: string | null
+          humor: number
+          stress: number
+          energia: number
+          fatores_positivos?: string[] | null
+          fatores_negativos?: string[] | null
+          notas?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          data?: string
+          horario?: string | null
+          humor?: number
+          stress?: number
+          energia?: number
+          fatores_positivos?: string[] | null
+          fatores_negativos?: string[] | null
+          notas?: string | null
+        }
+      }
+      fitness_broadcast_messages: {
+        Row: {
+          id: string
+          sender_id: string
+          title: string
+          content: string
+          message_type: string | null
+          target_filter: Json | null
+          recipient_count: number
+          channels: string[]
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          sender_id: string
+          title: string
+          content: string
+          message_type?: string | null
+          target_filter?: Json | null
+          recipient_count?: number
+          channels?: string[]
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          sender_id?: string
+          title?: string
+          content?: string
+          message_type?: string | null
+          target_filter?: Json | null
+          recipient_count?: number
+          channels?: string[]
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+      }
+      fitness_broadcast_recipients: {
+        Row: {
+          id: string
+          broadcast_id: string
+          user_id: string
+          push_sent: boolean
+          email_sent: boolean
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          broadcast_id: string
+          user_id: string
+          push_sent?: boolean
+          email_sent?: boolean
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          broadcast_id?: string
+          user_id?: string
+          push_sent?: boolean
+          email_sent?: boolean
+          read_at?: string | null
+        }
+      }
+      fitness_inbox_messages: {
+        Row: {
+          id: string
+          user_id: string
+          source: string
+          source_id: string | null
+          title: string
+          preview: string | null
+          content: string | null
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          source: string
+          source_id?: string | null
+          title: string
+          preview?: string | null
+          content?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          source?: string
+          source_id?: string | null
+          title?: string
+          preview?: string | null
+          content?: string | null
+          read_at?: string | null
+        }
+      }
+      fitness_meal_plan_adherence: {
+        Row: {
+          id: string
+          meal_plan_id: string
+          client_id: string
+          date: string
+          meals_planned: number
+          meals_completed: number
+          adherence_percentage: number | null
+          calories_consumed: number | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          meal_plan_id: string
+          client_id: string
+          date: string
+          meals_planned?: number
+          meals_completed?: number
+          adherence_percentage?: number | null
+          calories_consumed?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          meal_plan_id?: string
+          client_id?: string
+          date?: string
+          meals_planned?: number
+          meals_completed?: number
+          adherence_percentage?: number | null
+          calories_consumed?: number | null
+          notes?: string | null
+        }
+      }
+      fitness_training_adherence: {
+        Row: {
+          id: string
+          program_id: string
+          client_id: string
+          training_day_id: string | null
+          date: string
+          completed: boolean
+          exercises_planned: number
+          exercises_completed: number
+          adherence_percentage: number | null
+          workout_duration: number | null
+          notes: string | null
+          client_feedback: string | null
+          rpe_average: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          client_id: string
+          training_day_id?: string | null
+          date: string
+          completed?: boolean
+          exercises_planned?: number
+          exercises_completed?: number
+          adherence_percentage?: number | null
+          workout_duration?: number | null
+          notes?: string | null
+          client_feedback?: string | null
+          rpe_average?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          client_id?: string
+          training_day_id?: string | null
+          date?: string
+          completed?: boolean
+          exercises_planned?: number
+          exercises_completed?: number
+          adherence_percentage?: number | null
+          workout_duration?: number | null
+          notes?: string | null
+          client_feedback?: string | null
+          rpe_average?: number | null
+        }
+      }
+      fitness_weight_history: {
+        Row: {
+          id: string
+          user_id: string
+          data: string
+          peso: number
+          notas: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          data: string
+          peso: number
+          notas?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          data?: string
+          peso?: number
+          notas?: string | null
+        }
+      }
+      fitness_bioimpedance: {
+        Row: {
+          id: string
+          user_id: string
+          data: string
+          peso: number | null
+          percentual_gordura: number | null
+          massa_muscular: number | null
+          agua_corporal: number | null
+          gordura_visceral: number | null
+          taxa_metabolica_basal: number | null
+          pontuacao_inbody: number | null
+          notas: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          data: string
+          peso?: number | null
+          percentual_gordura?: number | null
+          massa_muscular?: number | null
+          agua_corporal?: number | null
+          gordura_visceral?: number | null
+          taxa_metabolica_basal?: number | null
+          pontuacao_inbody?: number | null
+          notas?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          data?: string
+          peso?: number | null
+          percentual_gordura?: number | null
+          massa_muscular?: number | null
+          agua_corporal?: number | null
+          gordura_visceral?: number | null
+          taxa_metabolica_basal?: number | null
+          pontuacao_inbody?: number | null
+          notas?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -1150,6 +2916,90 @@ export interface Database {
         }[]
       }
       get_user_stats: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      calculate_user_xp: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      get_level_from_xp: {
+        Args: { p_xp: number }
+        Returns: number
+      }
+      update_user_xp: {
+        Args: { p_user_id: string }
+        Returns: { xp_total: number; nivel: number }[]
+      }
+      get_user_ranking: {
+        Args: { p_user_id: string }
+        Returns: {
+          posicao: number
+          xp_total: number
+          nivel: number
+          percentil: number
+          total_usuarios: number
+          proximo_acima_xp: number
+          proximo_abaixo_xp: number
+        }[]
+      }
+      get_ranking_leaderboard: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          posicao: number
+          apelido: string
+          xp_total: number
+          nivel: number
+          streak_atual: number
+          total_conquistas: number
+        }[]
+      }
+      mark_messages_as_read: {
+        Args: {
+          p_conversation_id: string
+          p_user_id: string
+          p_user_type: string
+        }
+        Returns: number
+      }
+      get_or_create_conversation: {
+        Args: {
+          p_client_id: string
+          p_professional_id: string
+        }
+        Returns: string
+      }
+      is_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
+      is_professional: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
+      professional_has_client: {
+        Args: {
+          professional_user_id: string
+          client_user_id: string
+        }
+        Returns: boolean
+      }
+      register_consent: {
+        Args: {
+          p_user_id: string
+          p_consent_type: string
+          p_consent_version: string
+          p_accepted: boolean
+          p_ip_address?: string | null
+          p_user_agent?: string | null
+        }
+        Returns: string
+      }
+      complete_onboarding: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
+      export_user_data: {
         Args: { p_user_id: string }
         Returns: Json
       }
@@ -1233,3 +3083,165 @@ export type CoachConversationInsert = Database['public']['Tables']['fitness_coac
 export type NotificationSettings = Database['public']['Tables']['fitness_notification_settings']['Row']
 export type NotificationSettingsInsert = Database['public']['Tables']['fitness_notification_settings']['Insert']
 export type NotificationSettingsUpdate = Database['public']['Tables']['fitness_notification_settings']['Update']
+
+// --- Phase 2+ Type Aliases ---
+
+export type Professional = Database['public']['Tables']['fitness_professionals']['Row']
+export type ProfessionalInsert = Database['public']['Tables']['fitness_professionals']['Insert']
+export type ProfessionalUpdate = Database['public']['Tables']['fitness_professionals']['Update']
+
+export type ClientAssignment = Database['public']['Tables']['fitness_client_assignments']['Row']
+export type ClientAssignmentInsert = Database['public']['Tables']['fitness_client_assignments']['Insert']
+export type ClientAssignmentUpdate = Database['public']['Tables']['fitness_client_assignments']['Update']
+
+export type AppointmentRow = Database['public']['Tables']['fitness_appointments']['Row']
+export type AppointmentInsert = Database['public']['Tables']['fitness_appointments']['Insert']
+export type AppointmentUpdate = Database['public']['Tables']['fitness_appointments']['Update']
+
+export type ProfessionalNote = Database['public']['Tables']['fitness_professional_notes']['Row']
+export type ProfessionalNoteInsert = Database['public']['Tables']['fitness_professional_notes']['Insert']
+export type ProfessionalNoteUpdate = Database['public']['Tables']['fitness_professional_notes']['Update']
+
+export type CommunityPost = Database['public']['Tables']['fitness_community_posts']['Row']
+export type CommunityPostInsert = Database['public']['Tables']['fitness_community_posts']['Insert']
+export type CommunityPostUpdate = Database['public']['Tables']['fitness_community_posts']['Update']
+
+export type CommunityReaction = Database['public']['Tables']['fitness_community_reactions']['Row']
+export type CommunityReactionInsert = Database['public']['Tables']['fitness_community_reactions']['Insert']
+
+export type CommunityComment = Database['public']['Tables']['fitness_community_comments']['Row']
+export type CommunityCommentInsert = Database['public']['Tables']['fitness_community_comments']['Insert']
+export type CommunityCommentUpdate = Database['public']['Tables']['fitness_community_comments']['Update']
+
+export type Ranking = Database['public']['Tables']['fitness_rankings']['Row']
+export type RankingInsert = Database['public']['Tables']['fitness_rankings']['Insert']
+export type RankingUpdate = Database['public']['Tables']['fitness_rankings']['Update']
+
+export type RankingParticipant = Database['public']['Tables']['fitness_ranking_participants']['Row']
+export type RankingParticipantInsert = Database['public']['Tables']['fitness_ranking_participants']['Insert']
+export type RankingParticipantUpdate = Database['public']['Tables']['fitness_ranking_participants']['Update']
+
+export type PointTransaction = Database['public']['Tables']['fitness_point_transactions']['Row']
+export type PointTransactionInsert = Database['public']['Tables']['fitness_point_transactions']['Insert']
+
+export type PushSubscriptionRow = Database['public']['Tables']['fitness_push_subscriptions']['Row']
+export type PushSubscriptionInsert = Database['public']['Tables']['fitness_push_subscriptions']['Insert']
+export type PushSubscriptionUpdate = Database['public']['Tables']['fitness_push_subscriptions']['Update']
+
+export type NotificationHistoryRow = Database['public']['Tables']['fitness_notification_history']['Row']
+export type NotificationHistoryInsert = Database['public']['Tables']['fitness_notification_history']['Insert']
+export type NotificationHistoryUpdate = Database['public']['Tables']['fitness_notification_history']['Update']
+
+export type FormTemplateRow = Database['public']['Tables']['fitness_form_templates']['Row']
+export type FormTemplateInsert = Database['public']['Tables']['fitness_form_templates']['Insert']
+export type FormTemplateUpdate = Database['public']['Tables']['fitness_form_templates']['Update']
+
+export type FormQuestionRow = Database['public']['Tables']['fitness_form_questions']['Row']
+export type FormQuestionInsert = Database['public']['Tables']['fitness_form_questions']['Insert']
+export type FormQuestionUpdate = Database['public']['Tables']['fitness_form_questions']['Update']
+
+export type FormAssignmentRow = Database['public']['Tables']['fitness_form_assignments']['Row']
+export type FormAssignmentInsert = Database['public']['Tables']['fitness_form_assignments']['Insert']
+export type FormAssignmentUpdate = Database['public']['Tables']['fitness_form_assignments']['Update']
+
+export type FormResponseRow = Database['public']['Tables']['fitness_form_responses']['Row']
+export type FormResponseInsert = Database['public']['Tables']['fitness_form_responses']['Insert']
+
+export type FormDraftRow = Database['public']['Tables']['fitness_form_drafts']['Row']
+export type FormDraftInsert = Database['public']['Tables']['fitness_form_drafts']['Insert']
+export type FormDraftUpdate = Database['public']['Tables']['fitness_form_drafts']['Update']
+
+export type Conversation = Database['public']['Tables']['fitness_conversations']['Row']
+export type ConversationInsert = Database['public']['Tables']['fitness_conversations']['Insert']
+export type ConversationUpdate = Database['public']['Tables']['fitness_conversations']['Update']
+
+export type Message = Database['public']['Tables']['fitness_messages']['Row']
+export type MessageInsert = Database['public']['Tables']['fitness_messages']['Insert']
+export type MessageUpdate = Database['public']['Tables']['fitness_messages']['Update']
+
+export type MealPlan = Database['public']['Tables']['fitness_meal_plans']['Row']
+export type MealPlanInsert = Database['public']['Tables']['fitness_meal_plans']['Insert']
+export type MealPlanUpdate = Database['public']['Tables']['fitness_meal_plans']['Update']
+
+export type MealPlanDay = Database['public']['Tables']['fitness_meal_plan_days']['Row']
+export type MealPlanDayInsert = Database['public']['Tables']['fitness_meal_plan_days']['Insert']
+
+export type MealPlanMeal = Database['public']['Tables']['fitness_meal_plan_meals']['Row']
+export type MealPlanMealInsert = Database['public']['Tables']['fitness_meal_plan_meals']['Insert']
+
+export type TrainingProgram = Database['public']['Tables']['fitness_training_programs']['Row']
+export type TrainingProgramInsert = Database['public']['Tables']['fitness_training_programs']['Insert']
+export type TrainingProgramUpdate = Database['public']['Tables']['fitness_training_programs']['Update']
+
+export type TrainingWeek = Database['public']['Tables']['fitness_training_weeks']['Row']
+export type TrainingWeekInsert = Database['public']['Tables']['fitness_training_weeks']['Insert']
+
+export type TrainingDay = Database['public']['Tables']['fitness_training_days']['Row']
+export type TrainingDayInsert = Database['public']['Tables']['fitness_training_days']['Insert']
+
+export type TrainingExercise = Database['public']['Tables']['fitness_training_exercises']['Row']
+export type TrainingExerciseInsert = Database['public']['Tables']['fitness_training_exercises']['Insert']
+
+export type ApiUsage = Database['public']['Tables']['fitness_api_usage']['Row']
+export type ApiUsageInsert = Database['public']['Tables']['fitness_api_usage']['Insert']
+
+export type AuditLog = Database['public']['Tables']['fitness_audit_log']['Row']
+export type AuditLogInsert = Database['public']['Tables']['fitness_audit_log']['Insert']
+
+export type TermsAcceptance = Database['public']['Tables']['fitness_terms_acceptance']['Row']
+export type TermsAcceptanceInsert = Database['public']['Tables']['fitness_terms_acceptance']['Insert']
+
+export type ConsentHistory = Database['public']['Tables']['fitness_consent_history']['Row']
+export type ConsentHistoryInsert = Database['public']['Tables']['fitness_consent_history']['Insert']
+
+export type LgpdRequest = Database['public']['Tables']['fitness_lgpd_requests']['Row']
+export type LgpdRequestInsert = Database['public']['Tables']['fitness_lgpd_requests']['Insert']
+export type LgpdRequestUpdate = Database['public']['Tables']['fitness_lgpd_requests']['Update']
+
+export type Activity = Database['public']['Tables']['fitness_activities']['Row']
+export type ActivityInsert = Database['public']['Tables']['fitness_activities']['Insert']
+export type ActivityUpdate = Database['public']['Tables']['fitness_activities']['Update']
+
+export type UserFood = Database['public']['Tables']['fitness_user_foods']['Row']
+export type UserFoodInsert = Database['public']['Tables']['fitness_user_foods']['Insert']
+export type UserFoodUpdate = Database['public']['Tables']['fitness_user_foods']['Update']
+
+export type Insight = Database['public']['Tables']['fitness_insights']['Row']
+export type InsightInsert = Database['public']['Tables']['fitness_insights']['Insert']
+export type InsightUpdate = Database['public']['Tables']['fitness_insights']['Update']
+
+export type AiReport = Database['public']['Tables']['fitness_ai_reports']['Row']
+export type AiReportInsert = Database['public']['Tables']['fitness_ai_reports']['Insert']
+
+export type XpHistory = Database['public']['Tables']['fitness_xp_history']['Row']
+export type XpHistoryInsert = Database['public']['Tables']['fitness_xp_history']['Insert']
+
+export type RankingSnapshot = Database['public']['Tables']['fitness_ranking_snapshots']['Row']
+export type RankingSnapshotInsert = Database['public']['Tables']['fitness_ranking_snapshots']['Insert']
+
+export type WellnessCheckinRow = Database['public']['Tables']['fitness_wellness_checkins']['Row']
+export type WellnessCheckinInsert = Database['public']['Tables']['fitness_wellness_checkins']['Insert']
+export type WellnessCheckinUpdate = Database['public']['Tables']['fitness_wellness_checkins']['Update']
+
+export type BroadcastMessage = Database['public']['Tables']['fitness_broadcast_messages']['Row']
+export type BroadcastMessageInsert = Database['public']['Tables']['fitness_broadcast_messages']['Insert']
+export type BroadcastMessageUpdate = Database['public']['Tables']['fitness_broadcast_messages']['Update']
+
+export type BroadcastRecipient = Database['public']['Tables']['fitness_broadcast_recipients']['Row']
+export type BroadcastRecipientInsert = Database['public']['Tables']['fitness_broadcast_recipients']['Insert']
+
+export type InboxMessage = Database['public']['Tables']['fitness_inbox_messages']['Row']
+export type InboxMessageInsert = Database['public']['Tables']['fitness_inbox_messages']['Insert']
+export type InboxMessageUpdate = Database['public']['Tables']['fitness_inbox_messages']['Update']
+
+export type MealPlanAdherence = Database['public']['Tables']['fitness_meal_plan_adherence']['Row']
+export type MealPlanAdherenceInsert = Database['public']['Tables']['fitness_meal_plan_adherence']['Insert']
+
+export type TrainingAdherence = Database['public']['Tables']['fitness_training_adherence']['Row']
+export type TrainingAdherenceInsert = Database['public']['Tables']['fitness_training_adherence']['Insert']
+
+export type WeightHistory = Database['public']['Tables']['fitness_weight_history']['Row']
+export type WeightHistoryInsert = Database['public']['Tables']['fitness_weight_history']['Insert']
+
+export type Bioimpedance = Database['public']['Tables']['fitness_bioimpedance']['Row']
+export type BioimpedanceInsert = Database['public']['Tables']['fitness_bioimpedance']['Insert']

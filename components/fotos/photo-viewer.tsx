@@ -148,7 +148,7 @@ export function PhotoViewer({
           className="absolute inset-0 flex items-center justify-center"
         >
           {/* Placeholder visual */}
-          <div className="w-full max-w-md aspect-[3/4] bg-gradient-to-br from-violet-900/30 to-cyan-900/30 rounded-xl flex items-center justify-center">
+          <div className="w-full max-w-md aspect-[3/4] bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-xl flex items-center justify-center">
             <span className="text-[100px] opacity-30">
               {currentPhoto.tipo === 'frente' ? '🧍' :
                currentPhoto.tipo === 'lado_esquerdo' ? '👈' :
@@ -232,7 +232,7 @@ export function PhotoViewer({
                 <span className="text-white font-semibold">
                   {PHOTO_TYPE_LABELS[currentPhoto.tipo]}
                 </span>
-                <span className="text-slate-400 text-sm">
+                <span className="text-white/60 text-sm">
                   {format(parseISO(currentPhoto.data), "d 'de' MMMM, yyyy", { locale: ptBR })}
                 </span>
               </div>
@@ -240,12 +240,12 @@ export function PhotoViewer({
               {(currentPhoto.peso || currentPhoto.percentual_gordura) && (
                 <div className="flex items-center gap-4">
                   {currentPhoto.peso && (
-                    <span className="text-cyan-400 text-sm">
+                    <span className="text-dourado text-sm">
                       {currentPhoto.peso.toFixed(1)}kg
                     </span>
                   )}
                   {currentPhoto.percentual_gordura && (
-                    <span className="text-amber-400 text-sm">
+                    <span className="text-dourado/80 text-sm">
                       {currentPhoto.percentual_gordura.toFixed(1)}% gordura
                     </span>
                   )}
@@ -253,7 +253,7 @@ export function PhotoViewer({
               )}
 
               {currentPhoto.notas && (
-                <p className="text-slate-400 text-sm mt-2">
+                <p className="text-white/60 text-sm mt-2">
                   {currentPhoto.notas}
                 </p>
               )}

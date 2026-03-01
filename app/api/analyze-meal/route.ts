@@ -35,6 +35,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check monthly AI analysis limit (15/month)
+    const MONTHLY_LIMIT = 15
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
+
+    const { count: analysisCount } = await supabase
+      .from('fitness_meals')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('analise_ia', 'is', null)
+      .gte('created_at', startOfMonth)
+      .lte('created_at', endOfMonth)
+
+    if ((analysisCount || 0) >= MONTHLY_LIMIT) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Limite de analises IA atingido este mes (15/15)',
+          limit_reached: true,
+          used: analysisCount,
+          limit: MONTHLY_LIMIT,
+        },
+        { status: 429 }
+      )
+    }
+
     // Obter imagem do request
     const formData = await request.formData()
     const image = formData.get('image') as File | null
@@ -109,20 +136,25 @@ export async function POST(request: NextRequest) {
     const parsedResponse = parseAIResponse(content)
     const analysisResult = convertToMealAnalysisResult(parsedResponse)
 
-    // Log para debug (remover em produção)
-    console.log('=== ANÁLISE API ===')
-    console.log('Análise concluída:', {
-      success: analysisResult.success,
-      itemsCount: analysisResult.items.length,
-      totals: analysisResult.totals,
-      tokensUsed: response.usage?.total_tokens
-    })
-    console.log('Items da análise:', analysisResult.items)
-
-    // TODO: Salvar análise no histórico quando a tabela fitness_meal_analyses existir
-    // Por enquanto, apenas logar os tokens usados
-    if (response.usage?.total_tokens) {
-      console.log(`Análise usou ${response.usage.total_tokens} tokens`)
+    // Registrar uso da análise IA para contagem do rate limit
+    // Inserir registro na fitness_meals com analise_ia marcada para contabilizar
+    try {
+      const supabaseForSave = await createClient()
+      const { data: { user: currentUser } } = await supabaseForSave.auth.getUser()
+      if (currentUser) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabaseForSave as any)
+          .from('fitness_meals')
+          .insert({
+            user_id: currentUser.id,
+            data: new Date().toISOString().split('T')[0],
+            tipo_refeicao: 'analise',
+            analise_ia: JSON.stringify({ tokens: response.usage?.total_tokens }),
+            notas: 'Análise IA automática',
+          })
+      }
+    } catch {
+      // Falha silenciosa - não impedir a resposta da análise
     }
 
     return NextResponse.json(analysisResult)

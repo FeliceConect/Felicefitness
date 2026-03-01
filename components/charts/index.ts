@@ -1,4 +1,4 @@
-// FeliceFit Charts Components
+// Complexo Wellness Charts Components
 
 export * from './line-chart'
 export * from './bar-chart'

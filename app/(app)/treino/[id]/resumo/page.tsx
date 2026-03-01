@@ -192,10 +192,10 @@ export default function WorkoutSummaryPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando...</p>
         </div>
       </div>
     )
@@ -203,10 +203,10 @@ export default function WorkoutSummaryPage() {
 
   if (!workout) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <span className="text-4xl mb-4 block">🤷</span>
-          <h2 className="text-xl font-bold text-white mb-2">Treino não encontrado</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">Treino não encontrado</h2>
           <Button onClick={() => router.push('/treino')}>Voltar</Button>
         </div>
       </div>
@@ -215,21 +215,21 @@ export default function WorkoutSummaryPage() {
 
   if (saved) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="text-center"
         >
           <span className="text-6xl mb-4 block">✅</span>
-          <h2 className="text-2xl font-bold text-white">Treino salvo!</h2>
+          <h2 className="text-2xl font-bold text-foreground">Treino salvo!</h2>
         </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-32">
+    <div className="min-h-screen bg-background pb-32">
       {/* Header with celebration */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/30 via-emerald-500/10 to-transparent" />
@@ -248,7 +248,7 @@ export default function WorkoutSummaryPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-2xl font-bold text-white mb-2"
+            className="text-2xl font-bold text-foreground mb-2"
           >
             Treino Concluído!
           </motion.h1>
@@ -257,7 +257,7 @@ export default function WorkoutSummaryPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-slate-400"
+            className="text-foreground-secondary"
           >
             {workout.nome}
           </motion.p>
@@ -273,41 +273,41 @@ export default function WorkoutSummaryPage() {
           className="grid grid-cols-2 gap-3"
         >
           {/* Duration */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-violet-400" />
-              <span className="text-xs text-slate-400">Duração</span>
+              <Clock className="w-4 h-4 text-dourado" />
+              <span className="text-xs text-foreground-secondary">Duração</span>
             </div>
-            <p className="text-2xl font-bold text-white">{summary.duration} min</p>
+            <p className="text-2xl font-bold text-foreground">{summary.duration} min</p>
           </div>
 
           {/* Volume */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Dumbbell className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs text-slate-400">Volume total</span>
+              <Dumbbell className="w-4 h-4 text-dourado" />
+              <span className="text-xs text-foreground-secondary">Volume total</span>
             </div>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-2xl font-bold text-foreground">
               {(summary.totalVolume / 1000).toFixed(1)}t
             </p>
           </div>
 
           {/* Calories */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Flame className="w-4 h-4 text-orange-400" />
-              <span className="text-xs text-slate-400">Calorias</span>
+              <span className="text-xs text-foreground-secondary">Calorias</span>
             </div>
-            <p className="text-2xl font-bold text-white">{summary.caloriesBurned} kcal</p>
+            <p className="text-2xl font-bold text-foreground">{summary.caloriesBurned} kcal</p>
           </div>
 
           {/* Sets */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs">✓</span>
-              <span className="text-xs text-slate-400">Séries</span>
+              <span className="text-xs text-foreground-secondary">Séries</span>
             </div>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-2xl font-bold text-foreground">
               {summary.setsCompleted}/{summary.setsTotal}
             </p>
           </div>
@@ -322,7 +322,7 @@ export default function WorkoutSummaryPage() {
           transition={{ delay: 0.5 }}
           className="px-4 mt-6"
         >
-          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-amber-400" />
             Novos Recordes!
           </h2>
@@ -333,7 +333,7 @@ export default function WorkoutSummaryPage() {
                 className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-4"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-white font-medium">{pr.exercise}</span>
+                  <span className="text-foreground font-medium">{pr.exercise}</span>
                   <span className="text-amber-400 font-bold">
                     {pr.weight}kg × {pr.reps}
                   </span>
@@ -352,7 +352,7 @@ export default function WorkoutSummaryPage() {
           transition={{ delay: 0.55 }}
           className="px-4 mt-6"
         >
-          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             <Zap className="w-5 h-5 text-emerald-400" />
             Cardio
           </h2>
@@ -367,9 +367,9 @@ export default function WorkoutSummaryPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{cardioIcons[cardio.tipo]}</span>
                     <div>
-                      <span className="text-white font-medium block">{cardio.nome}</span>
+                      <span className="text-foreground font-medium block">{cardio.nome}</span>
                       {cardio.intensidade && (
-                        <span className="text-xs text-slate-400 capitalize">{cardio.intensidade.replace('_', ' ')}</span>
+                        <span className="text-xs text-foreground-secondary capitalize">{cardio.intensidade.replace('_', ' ')}</span>
                       )}
                     </div>
                   </div>
@@ -378,56 +378,56 @@ export default function WorkoutSummaryPage() {
                       {cardio.calorias} kcal
                     </span>
                     {cardio.met && (
-                      <span className="text-[10px] text-slate-500">MET: {cardio.met}</span>
+                      <span className="text-[10px] text-foreground-muted">MET: {cardio.met}</span>
                     )}
                   </div>
                 </div>
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-slate-800/50 rounded-lg p-2">
-                    <span className="text-xs text-slate-500 block">Duracao</span>
-                    <span className="text-white font-semibold">{cardio.duracao_minutos} min</span>
+                  <div className="bg-background-elevated/50 rounded-lg p-2">
+                    <span className="text-xs text-foreground-muted block">Duracao</span>
+                    <span className="text-foreground font-semibold">{cardio.duracao_minutos} min</span>
                   </div>
                   {cardio.distancia_km && (
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <span className="text-xs text-slate-500 block">Distancia</span>
-                      <span className="text-white font-semibold">{cardio.distancia_km.toFixed(2)} km</span>
+                    <div className="bg-background-elevated/50 rounded-lg p-2">
+                      <span className="text-xs text-foreground-muted block">Distancia</span>
+                      <span className="text-foreground font-semibold">{cardio.distancia_km.toFixed(2)} km</span>
                     </div>
                   )}
                   {cardio.velocidade_media && (
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <span className="text-xs text-slate-500 block">Vel. Media</span>
-                      <span className="text-white font-semibold">{cardio.velocidade_media} km/h</span>
+                    <div className="bg-background-elevated/50 rounded-lg p-2">
+                      <span className="text-xs text-foreground-muted block">Vel. Media</span>
+                      <span className="text-foreground font-semibold">{cardio.velocidade_media} km/h</span>
                     </div>
                   )}
                   {cardio.ritmo_medio && cardio.ritmo_medio !== '--:--' && (
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <span className="text-xs text-slate-500 block">Ritmo</span>
-                      <span className="text-white font-semibold">{cardio.ritmo_medio} /km</span>
+                    <div className="bg-background-elevated/50 rounded-lg p-2">
+                      <span className="text-xs text-foreground-muted block">Ritmo</span>
+                      <span className="text-foreground font-semibold">{cardio.ritmo_medio} /km</span>
                     </div>
                   )}
                   {cardio.inclinacao && cardio.inclinacao > 0 && (
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <span className="text-xs text-slate-500 block">Inclinacao</span>
-                      <span className="text-white font-semibold">{cardio.inclinacao}%</span>
+                    <div className="bg-background-elevated/50 rounded-lg p-2">
+                      <span className="text-xs text-foreground-muted block">Inclinacao</span>
+                      <span className="text-foreground font-semibold">{cardio.inclinacao}%</span>
                     </div>
                   )}
                   {cardio.resistencia && (
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <span className="text-xs text-slate-500 block">Resistencia</span>
-                      <span className="text-white font-semibold">{cardio.resistencia}/20</span>
+                    <div className="bg-background-elevated/50 rounded-lg p-2">
+                      <span className="text-xs text-foreground-muted block">Resistencia</span>
+                      <span className="text-foreground font-semibold">{cardio.resistencia}/20</span>
                     </div>
                   )}
                   {cardio.frequencia_cardiaca_media && (
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <span className="text-xs text-slate-500 block">FC Media</span>
+                    <div className="bg-background-elevated/50 rounded-lg p-2">
+                      <span className="text-xs text-foreground-muted block">FC Media</span>
                       <span className="text-red-400 font-semibold">{cardio.frequencia_cardiaca_media} bpm</span>
                     </div>
                   )}
                   {cardio.frequencia_cardiaca_max && (
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <span className="text-xs text-slate-500 block">FC Max</span>
+                    <div className="bg-background-elevated/50 rounded-lg p-2">
+                      <span className="text-xs text-foreground-muted block">FC Max</span>
                       <span className="text-red-400 font-semibold">{cardio.frequencia_cardiaca_max} bpm</span>
                     </div>
                   )}
@@ -445,7 +445,7 @@ export default function WorkoutSummaryPage() {
         transition={{ delay: 0.6 }}
         className="px-4 mt-6"
       >
-        <h2 className="text-lg font-semibold text-white mb-3">Como foi o treino?</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Como foi o treino?</h2>
         <div className="flex justify-between gap-2">
           {difficultyOptions.map((option) => (
             <button
@@ -454,12 +454,12 @@ export default function WorkoutSummaryPage() {
               className={cn(
                 'flex-1 py-3 rounded-xl text-center transition-all',
                 difficulty === option.value
-                  ? 'bg-violet-500 ring-2 ring-violet-400'
-                  : 'bg-[#14141F] border border-[#2E2E3E] hover:border-violet-500/30'
+                  ? 'bg-dourado ring-2 ring-dourado/70'
+                  : 'bg-white border border-border hover:border-dourado/30'
               )}
             >
               <span className="text-2xl block mb-1">{option.emoji}</span>
-              <span className="text-xs text-slate-400">{option.label}</span>
+              <span className="text-xs text-foreground-secondary">{option.label}</span>
             </button>
           ))}
         </div>
@@ -472,7 +472,7 @@ export default function WorkoutSummaryPage() {
         transition={{ delay: 0.7 }}
         className="px-4 mt-6"
       >
-        <h2 className="text-lg font-semibold text-white mb-3">Seu nível de energia</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Seu nível de energia</h2>
         <div className="flex justify-between gap-2">
           {energyOptions.map((option) => (
             <button
@@ -481,12 +481,12 @@ export default function WorkoutSummaryPage() {
               className={cn(
                 'flex-1 py-3 rounded-xl text-center transition-all',
                 energy === option.value
-                  ? 'bg-cyan-500 ring-2 ring-cyan-400'
-                  : 'bg-[#14141F] border border-[#2E2E3E] hover:border-cyan-500/30'
+                  ? 'bg-vinho ring-2 ring-vinho/70'
+                  : 'bg-white border border-border hover:border-vinho/30'
               )}
             >
               <span className="text-2xl block mb-1">{option.emoji}</span>
-              <span className="text-xs text-slate-400">{option.label}</span>
+              <span className="text-xs text-foreground-secondary">{option.label}</span>
             </button>
           ))}
         </div>
@@ -499,18 +499,18 @@ export default function WorkoutSummaryPage() {
         transition={{ delay: 0.8 }}
         className="px-4 mt-6"
       >
-        <h2 className="text-lg font-semibold text-white mb-3">Notas (opcional)</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Notas (opcional)</h2>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Como você se sentiu? Algo a melhorar?"
-          className="w-full bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+          className="w-full bg-white border border-border rounded-xl p-4 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado resize-none"
           rows={3}
         />
       </motion.div>
 
       {/* Actions - positioned above bottom nav */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-8">
+      <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-background via-background to-transparent pt-8">
         <div className="max-w-lg mx-auto space-y-3">
           {saveError && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-center">

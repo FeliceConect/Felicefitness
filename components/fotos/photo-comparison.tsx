@@ -44,7 +44,7 @@ export function PhotoComparison({
   // Renderizar foto placeholder
   const renderPhotoPlaceholder = (photo: ProgressPhoto, label: string) => (
     <div className="flex flex-col">
-      <div className="aspect-[3/4] bg-gradient-to-br from-violet-900/30 to-cyan-900/30 rounded-xl flex items-center justify-center relative overflow-hidden">
+      <div className="aspect-[3/4] bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-xl flex items-center justify-center relative overflow-hidden">
         <span className="text-6xl opacity-30">
           {photo.tipo === 'frente' ? '🧍' :
            photo.tipo === 'lado_esquerdo' ? '👈' :
@@ -57,13 +57,13 @@ export function PhotoComparison({
             <p className="text-white font-bold text-lg">{photo.peso.toFixed(1)}kg</p>
           )}
           {photo.percentual_gordura && (
-            <p className="text-cyan-400 text-sm">{photo.percentual_gordura.toFixed(1)}%</p>
+            <p className="text-dourado text-sm">{photo.percentual_gordura.toFixed(1)}%</p>
           )}
         </div>
       </div>
       <div className="mt-2 text-center">
-        <p className="text-slate-400 text-xs uppercase tracking-wide">{label}</p>
-        <p className="text-white text-sm">
+        <p className="text-foreground-secondary text-xs uppercase tracking-wide">{label}</p>
+        <p className="text-foreground text-sm">
           {format(parseISO(photo.data), "d MMM''yy", { locale: ptBR })}
         </p>
       </div>
@@ -82,8 +82,8 @@ export function PhotoComparison({
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 mode === m
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-[#1E1E2E] text-slate-400 hover:text-white'
+                  ? 'bg-dourado text-white'
+                  : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
               )}
             >
               {COMPARISON_MODE_LABELS[m]}
@@ -93,7 +93,7 @@ export function PhotoComparison({
       )}
 
       {/* Visualização baseada no modo */}
-      <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
+      <div className="bg-white border border-border rounded-2xl p-4">
         {mode === 'side-by-side' && (
           <div className="grid grid-cols-2 gap-4">
             {renderPhotoPlaceholder(before, 'Antes')}
@@ -114,7 +114,7 @@ export function PhotoComparison({
               initial={{ opacity: 1 }}
               animate={{ opacity: [1, 0, 1] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute inset-0 bg-gradient-to-br from-violet-900/30 to-cyan-900/30 rounded-xl flex items-center justify-center"
+              className="absolute inset-0 bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-xl flex items-center justify-center"
             >
               <span className="text-6xl opacity-30">
                 {before.tipo === 'frente' ? '🧍' :
@@ -122,8 +122,8 @@ export function PhotoComparison({
                  before.tipo === 'lado_direito' ? '👉' : '🔙'}
               </span>
               <div className="absolute bottom-3 left-3 right-3 text-center">
-                <p className="text-white text-sm font-medium">ANTES</p>
-                {before.peso && <p className="text-cyan-400 text-sm">{before.peso.toFixed(1)}kg</p>}
+                <p className="text-foreground text-sm font-medium">ANTES</p>
+                {before.peso && <p className="text-dourado text-sm">{before.peso.toFixed(1)}kg</p>}
               </div>
             </motion.div>
 
@@ -131,7 +131,7 @@ export function PhotoComparison({
               initial={{ opacity: 0 }}
               animate={{ opacity: [0, 1, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute inset-0 bg-gradient-to-br from-cyan-900/30 to-violet-900/30 rounded-xl flex items-center justify-center"
+              className="absolute inset-0 bg-gradient-to-br from-vinho/10 to-dourado/10 rounded-xl flex items-center justify-center"
             >
               <span className="text-6xl opacity-30">
                 {after.tipo === 'frente' ? '🧍' :
@@ -139,8 +139,8 @@ export function PhotoComparison({
                  after.tipo === 'lado_direito' ? '👉' : '🔙'}
               </span>
               <div className="absolute bottom-3 left-3 right-3 text-center">
-                <p className="text-white text-sm font-medium">DEPOIS</p>
-                {after.peso && <p className="text-cyan-400 text-sm">{after.peso.toFixed(1)}kg</p>}
+                <p className="text-foreground text-sm font-medium">DEPOIS</p>
+                {after.peso && <p className="text-dourado text-sm">{after.peso.toFixed(1)}kg</p>}
               </div>
             </motion.div>
           </div>
@@ -152,9 +152,9 @@ export function PhotoComparison({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4"
+          className="bg-white border border-border rounded-2xl p-4"
         >
-          <div className="flex items-center gap-2 text-slate-400 text-sm mb-4">
+          <div className="flex items-center gap-2 text-foreground-secondary text-sm mb-4">
             <Calendar className="w-4 h-4" />
             <span>
               {daysBetween} {daysBetween === 1 ? 'dia' : 'dias'} de diferença
@@ -165,25 +165,25 @@ export function PhotoComparison({
           <div className="grid grid-cols-2 gap-4">
             {/* Peso */}
             {weightChange !== null && (
-              <div className="bg-[#0A0A0F] rounded-xl p-3">
+              <div className="bg-background rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
                   {weightChange < 0 ? (
                     <TrendingDown className="w-4 h-4 text-emerald-400" />
                   ) : weightChange > 0 ? (
                     <TrendingUp className="w-4 h-4 text-amber-400" />
                   ) : (
-                    <Minus className="w-4 h-4 text-slate-400" />
+                    <Minus className="w-4 h-4 text-foreground-secondary" />
                   )}
-                  <span className="text-xs text-slate-500">Peso</span>
+                  <span className="text-xs text-foreground-muted">Peso</span>
                 </div>
                 <p className={cn(
                   'text-lg font-bold',
                   weightChange < 0 ? 'text-emerald-400' :
-                  weightChange > 0 ? 'text-amber-400' : 'text-white'
+                  weightChange > 0 ? 'text-amber-400' : 'text-foreground'
                 )}>
                   {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}kg
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-foreground-muted">
                   {before.peso?.toFixed(1)} <ArrowRight className="w-3 h-3 inline" /> {after.peso?.toFixed(1)}kg
                 </p>
               </div>
@@ -191,25 +191,25 @@ export function PhotoComparison({
 
             {/* Gordura */}
             {fatChange !== null && (
-              <div className="bg-[#0A0A0F] rounded-xl p-3">
+              <div className="bg-background rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
                   {fatChange < 0 ? (
                     <TrendingDown className="w-4 h-4 text-emerald-400" />
                   ) : fatChange > 0 ? (
                     <TrendingUp className="w-4 h-4 text-red-400" />
                   ) : (
-                    <Minus className="w-4 h-4 text-slate-400" />
+                    <Minus className="w-4 h-4 text-foreground-secondary" />
                   )}
-                  <span className="text-xs text-slate-500">Gordura</span>
+                  <span className="text-xs text-foreground-muted">Gordura</span>
                 </div>
                 <p className={cn(
                   'text-lg font-bold',
                   fatChange < 0 ? 'text-emerald-400' :
-                  fatChange > 0 ? 'text-red-400' : 'text-white'
+                  fatChange > 0 ? 'text-red-400' : 'text-foreground'
                 )}>
                   {fatChange >= 0 ? '+' : ''}{fatChange.toFixed(1)}%
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-foreground-muted">
                   {before.percentual_gordura?.toFixed(1)} <ArrowRight className="w-3 h-3 inline" /> {after.percentual_gordura?.toFixed(1)}%
                 </p>
               </div>

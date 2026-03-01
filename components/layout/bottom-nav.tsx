@@ -2,34 +2,34 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Dumbbell, Utensils, BarChart3, User } from "lucide-react"
+import { Home, Calendar, Globe, Trophy, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   {
     href: "/dashboard",
     icon: Home,
-    label: "Início",
+    label: "Home",
   },
   {
-    href: "/treino",
-    icon: Dumbbell,
-    label: "Treino",
+    href: "/agenda",
+    icon: Calendar,
+    label: "Agenda",
   },
   {
-    href: "/alimentacao",
-    icon: Utensils,
-    label: "Alimentação",
+    href: "/feed",
+    icon: Globe,
+    label: "Feed",
   },
   {
-    href: "/relatorios",
-    icon: BarChart3,
-    label: "Relatórios",
+    href: "/ranking",
+    icon: Trophy,
+    label: "Ranking",
   },
   {
     href: "/perfil",
     icon: User,
-    label: "Perfil",
+    label: "Eu",
   },
 ]
 
@@ -37,7 +37,7 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-border">
       {/* Container dos itens com altura fixa */}
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
@@ -51,8 +51,8 @@ export function BottomNav() {
               className={cn(
                 "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[64px]",
                 isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-dourado"
+                  : "text-foreground-muted hover:text-foreground"
               )}
             >
               <Icon
@@ -61,7 +61,7 @@ export function BottomNav() {
                   isActive && "scale-110"
                 )}
               />
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-[11px] font-medium">{item.label}</span>
             </Link>
           )
         })}

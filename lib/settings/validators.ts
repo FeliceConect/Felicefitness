@@ -1,6 +1,6 @@
 // Validadores para configurações
 
-import type { Goals, RevoladeSettings, WorkoutPreferences } from '@/types/settings'
+import type { Goals, WorkoutPreferences } from '@/types/settings'
 
 export interface ValidationResult {
   valid: boolean
@@ -107,50 +107,6 @@ export function validateGoals(goals: Partial<Goals>): ValidationResult {
   }
 }
 
-// Validar configurações do Revolade
-export function validateRevoladeSettings(settings: Partial<RevoladeSettings>): ValidationResult {
-  const errors: Record<string, string> = {}
-
-  // Validar formato de hora
-  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
-
-  if (settings.horario_medicamento && !timeRegex.test(settings.horario_medicamento)) {
-    errors.horario_medicamento = 'Formato inválido. Use HH:mm'
-  }
-
-  if (settings.jejum_inicio && !timeRegex.test(settings.jejum_inicio)) {
-    errors.jejum_inicio = 'Formato inválido. Use HH:mm'
-  }
-
-  if (settings.jejum_fim && !timeRegex.test(settings.jejum_fim)) {
-    errors.jejum_fim = 'Formato inválido. Use HH:mm'
-  }
-
-  if (settings.restricao_laticinios_fim && !timeRegex.test(settings.restricao_laticinios_fim)) {
-    errors.restricao_laticinios_fim = 'Formato inválido. Use HH:mm'
-  }
-
-  // Validar lógica de tempo
-  if (settings.jejum_inicio && settings.jejum_fim && settings.horario_medicamento) {
-    const inicio = parseTime(settings.jejum_inicio)
-    const fim = parseTime(settings.jejum_fim)
-    const medicamento = parseTime(settings.horario_medicamento)
-
-    if (inicio >= fim) {
-      errors.jejum_fim = 'Fim do jejum deve ser após o início'
-    }
-
-    if (medicamento < inicio || medicamento > fim) {
-      errors.horario_medicamento = 'Medicamento deve ser durante o jejum'
-    }
-  }
-
-  return {
-    valid: Object.keys(errors).length === 0,
-    errors
-  }
-}
-
 // Validar preferências de treino
 export function validateWorkoutPreferences(prefs: Partial<WorkoutPreferences>): ValidationResult {
   const errors: Record<string, string> = {}
@@ -184,12 +140,6 @@ export function validateWorkoutPreferences(prefs: Partial<WorkoutPreferences>): 
     valid: Object.keys(errors).length === 0,
     errors
   }
-}
-
-// Helpers
-function parseTime(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number)
-  return hours * 60 + minutes
 }
 
 // Calcular recomendações de macros baseado no peso e objetivo

@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Politica de Privacidade - FeliceFit',
-  description: 'Politica de Privacidade e LGPD do aplicativo FeliceFit',
+  title: 'Politica de Privacidade - Complexo Wellness',
+  description: 'Politica de Privacidade e LGPD do aplicativo Complexo Wellness',
 }
 
 export default function PrivacidadePage() {
@@ -38,7 +38,7 @@ export default function PrivacidadePage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">1. Introducao</h2>
             <p className="text-slate-300">
-              A FeliceFit valoriza a privacidade de seus usuarios. Esta Politica de Privacidade
+              A Complexo Wellness valoriza a privacidade de seus usuarios. Esta Politica de Privacidade
               descreve como coletamos, usamos, armazenamos e protegemos suas informacoes pessoais
               quando voce usa nosso aplicativo.
             </p>
@@ -178,7 +178,7 @@ export default function PrivacidadePage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">9. Uso de IA</h2>
             <p className="text-slate-300">
-              O FeliceFit utiliza inteligencia artificial (OpenAI GPT-4) para:
+              O Complexo Wellness utiliza inteligencia artificial (OpenAI GPT-4) para:
             </p>
             <ul className="list-disc list-inside text-slate-300 mt-2 space-y-1">
               <li>Analisar fotos de alimentos e estimar valores nutricionais</li>
@@ -203,7 +203,7 @@ export default function PrivacidadePage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">11. Menores de Idade</h2>
             <p className="text-slate-300">
-              O FeliceFit nao e destinado a menores de 18 anos. Nao coletamos intencionalmente
+              O Complexo Wellness nao e destinado a menores de 18 anos. Nao coletamos intencionalmente
               dados de menores. Se tomarmos conhecimento de dados de um menor, eles serao
               excluidos imediatamente.
             </p>

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         payload = notificationTemplates.agua.lembrete(4, 8)
         break
       case 'medicamento':
-        payload = notificationTemplates.medicamento.lembrete('Revolade', '09:00')
+        payload = notificationTemplates.medicamento.lembrete('Medicamento', '09:00')
         break
       case 'conquista':
         payload = notificationTemplates.conquista.nova('Primeira Semana', 'Completou 7 dias de treino!')

@@ -104,34 +104,34 @@ export default function NewFoodPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-32">
+    <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Novo Alimento</h1>
-        <p className="text-slate-400 text-sm">Cadastre um alimento personalizado</p>
+        <h1 className="text-2xl font-bold text-foreground">Novo Alimento</h1>
+        <p className="text-foreground-secondary text-sm">Cadastre um alimento personalizado</p>
       </div>
 
       {/* Quick scan options */}
       <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center gap-2 p-4 bg-slate-800/50 border border-dashed border-slate-700 rounded-xl text-slate-400 hover:border-violet-500/50 hover:text-violet-400 transition-all">
+          <button className="flex items-center justify-center gap-2 p-4 bg-white/50 border border-dashed border-border rounded-xl text-foreground-secondary hover:border-dourado/50 hover:text-dourado transition-all">
             <Camera className="w-5 h-5" />
             <span className="text-sm">Escanear rótulo</span>
           </button>
-          <button className="flex items-center justify-center gap-2 p-4 bg-slate-800/50 border border-dashed border-slate-700 rounded-xl text-slate-400 hover:border-violet-500/50 hover:text-violet-400 transition-all">
+          <button className="flex items-center justify-center gap-2 p-4 bg-white/50 border border-dashed border-border rounded-xl text-foreground-secondary hover:border-dourado/50 hover:text-dourado transition-all">
             <Barcode className="w-5 h-5" />
             <span className="text-sm">Código de barras</span>
           </button>
         </div>
-        <p className="text-center text-xs text-slate-600 mt-2">
+        <p className="text-center text-xs text-foreground-muted mt-2">
           Em breve: IA para preencher automaticamente!
         </p>
       </div>
@@ -142,9 +142,9 @@ export default function NewFoodPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+          <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
             Informações Básicas
           </h3>
 
@@ -184,8 +184,8 @@ export default function NewFoodPage() {
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all',
                       categoria === cat
-                        ? 'bg-violet-500 text-white'
-                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-dourado text-white'
+                        : 'bg-white text-foreground-secondary hover:bg-background-elevated'
                     )}
                   >
                     <span>{foodCategoryLabels[cat].icon}</span>
@@ -202,9 +202,9 @@ export default function NewFoodPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+          <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
             Porção de Referência
           </h3>
 
@@ -235,8 +235,8 @@ export default function NewFoodPage() {
                     className={cn(
                       'px-3 py-1.5 rounded-lg text-sm transition-all',
                       unidade === u
-                        ? 'bg-violet-500 text-white'
-                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-dourado text-white'
+                        : 'bg-white text-foreground-secondary hover:bg-background-elevated'
                     )}
                   >
                     {u}
@@ -252,13 +252,13 @@ export default function NewFoodPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
               Informação Nutricional
             </h3>
-            <div className="flex items-center gap-1 text-xs text-slate-500">
+            <div className="flex items-center gap-1 text-xs text-foreground-muted">
               <Info className="w-3 h-3" />
               <span>por porção</span>
             </div>
@@ -335,9 +335,9 @@ export default function NewFoodPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+          <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
             Informações Adicionais (opcional)
           </h3>
 
@@ -369,7 +369,7 @@ export default function NewFoodPage() {
       </div>
 
       {/* Save button */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-8 z-40">
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8 z-40">
         <Button
           variant="gradient"
           size="lg"

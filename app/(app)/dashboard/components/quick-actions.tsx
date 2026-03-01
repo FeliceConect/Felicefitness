@@ -16,14 +16,12 @@ interface QuickActionsProps {
   onAddWater?: () => void
   onAddMeal?: () => void
   onTakePhoto?: () => void
-  onOpenCoach?: () => void
 }
 
 export function QuickActions({
   onAddWater,
   onAddMeal,
   onTakePhoto,
-  onOpenCoach
 }: QuickActionsProps) {
   const router = useRouter()
 
@@ -46,11 +44,6 @@ export function QuickActions({
       href: '/sono'
     },
     {
-      icon: '💊',
-      label: 'Suplem.',
-      href: '/suplementos'
-    },
-    {
       icon: '📸',
       label: 'Foto',
       href: '/fotos/nova',
@@ -58,9 +51,8 @@ export function QuickActions({
     },
     {
       icon: '💬',
-      label: 'Coach',
-      href: '/coach',
-      onClick: onOpenCoach,
+      label: 'Chat',
+      href: '/chat',
       variant: 'primary'
     }
   ]
@@ -93,12 +85,12 @@ export function QuickActions({
             'flex flex-col items-center justify-center py-3 rounded-xl',
             'transition-colors duration-200',
             action.variant === 'primary'
-              ? 'bg-gradient-to-br from-violet-500/20 to-cyan-500/10 border border-violet-500/30 hover:border-violet-500/50'
-              : 'bg-[#14141F] border border-[#2E2E3E] hover:border-[#3E3E4E] hover:bg-[#1E1E2E]'
+              ? 'bg-gradient-to-br from-dourado/10 to-vinho/5 border border-dourado/30 hover:border-dourado/50'
+              : 'bg-white border border-border hover:border-dourado/30 hover:bg-background-elevated shadow-sm'
           )}
         >
           <span className="text-2xl mb-1">{action.icon}</span>
-          <span className="text-xs text-slate-400">{action.label}</span>
+          <span className="text-xs text-foreground-secondary">{action.label}</span>
         </motion.button>
       ))}
     </motion.div>

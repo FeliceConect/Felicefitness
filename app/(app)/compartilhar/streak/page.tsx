@@ -79,7 +79,7 @@ export default function CompartilharStreakPage() {
 
         if (canShareFiles) {
           await share({
-            title: 'FeliceFit',
+            title: 'Complexo Wellness',
             text,
             files: [file],
           })

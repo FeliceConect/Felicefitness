@@ -136,7 +136,8 @@ export function useWellnessCorrelations(): UseWellnessCorrelationsReturn {
     }
 
     loadData()
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return {
     correlations,

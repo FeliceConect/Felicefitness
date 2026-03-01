@@ -10,30 +10,29 @@ interface LogoProps {
 
 export function Logo({ className, size = "md", showText = true }: LogoProps) {
   const sizes = {
-    sm: "h-8 w-8",
-    md: "h-12 w-12",
-    lg: "h-16 w-16",
-  }
-
-  const textSizes = {
-    sm: "text-lg",
-    md: "text-2xl",
-    lg: "text-3xl",
+    sm: { complexo: "text-base", wellness: "text-[10px]" },
+    md: { complexo: "text-2xl", wellness: "text-xs" },
+    lg: { complexo: "text-4xl", wellness: "text-sm" },
   }
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <div
+    <div className={cn("flex flex-col", className)}>
+      <span
         className={cn(
-          "flex items-center justify-center rounded-xl bg-gradient-primary",
-          sizes[size]
+          "font-heading font-bold tracking-wider text-dourado leading-none",
+          sizes[size].complexo
         )}
       >
-        <span className={cn("font-bold text-white", textSizes[size])}>FF</span>
-      </div>
+        COMPLEXO
+      </span>
       {showText && (
-        <span className={cn("font-bold text-foreground", textSizes[size])}>
-          Felice<span className="text-gradient">Fit</span>
+        <span
+          className={cn(
+            "font-sans font-light tracking-[0.25em] text-vinho uppercase leading-tight",
+            sizes[size].wellness
+          )}
+        >
+          WELLNESS
         </span>
       )}
     </div>

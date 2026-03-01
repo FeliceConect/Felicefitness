@@ -63,19 +63,19 @@ export function WaterGoalEditor({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-[#14141F] rounded-t-3xl p-6 max-h-[85vh] flex flex-col"
+            className="w-full max-w-lg bg-white rounded-t-3xl p-6 max-h-[85vh] flex flex-col"
           >
             {/* Handle */}
-            <div className="w-12 h-1 bg-slate-700 rounded-full mx-auto mb-6" />
+            <div className="w-12 h-1 bg-background-elevated rounded-full mx-auto mb-6" />
 
             {/* Header */}
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
-              <h2 className="text-xl font-bold text-white">Meta Diária</h2>
+              <h2 className="text-xl font-bold text-foreground">Meta Diária</h2>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-white rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
 
@@ -87,16 +87,16 @@ export function WaterGoalEditor({
                   key={goal}
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="text-4xl font-bold text-cyan-400"
+                  className="text-4xl font-bold text-dourado"
                 >
                   {formatWaterAmount(goal)}
                 </motion.span>
-                <p className="text-slate-500 mt-1">por dia</p>
+                <p className="text-foreground-muted mt-1">por dia</p>
               </div>
 
               {/* Preset buttons */}
               <div className="mb-4">
-                <p className="text-sm text-slate-400 mb-2">Escolha uma meta</p>
+                <p className="text-sm text-foreground-secondary mb-2">Escolha uma meta</p>
                 <div className="flex flex-wrap gap-2">
                   {presetGoals.map((preset) => (
                     <button
@@ -105,8 +105,8 @@ export function WaterGoalEditor({
                       className={cn(
                         'px-3 py-1.5 rounded-xl text-sm font-medium transition-all',
                         goal === preset
-                          ? 'bg-cyan-500 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                          ? 'bg-dourado text-white'
+                          : 'bg-white text-foreground-secondary hover:bg-background-elevated'
                       )}
                     >
                       {formatWaterAmount(preset)}
@@ -117,7 +117,7 @@ export function WaterGoalEditor({
 
               {/* Custom slider */}
               <div className="mb-4">
-                <p className="text-sm text-slate-400 mb-2">Ou ajuste manualmente</p>
+                <p className="text-sm text-foreground-secondary mb-2">Ou ajuste manualmente</p>
                 <input
                   type="range"
                   min={1000}
@@ -128,25 +128,25 @@ export function WaterGoalEditor({
                     setGoal(Number(e.target.value))
                     setWeight(null)
                   }}
-                  className="w-full h-2 bg-slate-800 rounded-full appearance-none cursor-pointer
+                  className="w-full h-2 bg-white rounded-full appearance-none cursor-pointer
                              [&::-webkit-slider-thumb]:appearance-none
                              [&::-webkit-slider-thumb]:w-6
                              [&::-webkit-slider-thumb]:h-6
                              [&::-webkit-slider-thumb]:rounded-full
-                             [&::-webkit-slider-thumb]:bg-cyan-500
+                             [&::-webkit-slider-thumb]:bg-dourado
                              [&::-webkit-slider-thumb]:cursor-pointer"
                 />
-                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <div className="flex justify-between text-xs text-foreground-muted mt-1">
                   <span>1L</span>
                   <span>5L</span>
                 </div>
               </div>
 
               {/* Calculate by weight */}
-              <div className="bg-slate-800/50 rounded-xl p-3">
+              <div className="bg-white/50 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Info className="w-4 h-4 text-violet-400" />
-                  <span className="text-sm text-slate-400">Calcular por peso</span>
+                  <Info className="w-4 h-4 text-dourado" />
+                  <span className="text-sm text-foreground-secondary">Calcular por peso</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <input
@@ -154,11 +154,11 @@ export function WaterGoalEditor({
                     placeholder="Seu peso"
                     value={weight || ''}
                     onChange={(e) => handleWeightChange(e.target.value)}
-                    className="flex-1 bg-[#14141F] border border-[#2E2E3E] rounded-xl px-4 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="flex-1 bg-white border border-border rounded-xl px-4 py-2 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
                   />
-                  <span className="text-slate-500">kg</span>
+                  <span className="text-foreground-muted">kg</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-foreground-muted mt-2">
                   Recomendação: ~35ml por kg de peso corporal
                 </p>
               </div>

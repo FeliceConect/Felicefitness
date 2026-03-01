@@ -71,13 +71,13 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-4">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
@@ -86,7 +86,7 @@ export default function NotificationsPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/configuracoes/notificacoes"
-              className="p-2 rounded-xl bg-[#14141F] border border-[#2E2E3E] text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-white border border-border text-foreground-secondary hover:text-foreground transition-colors"
             >
               <Settings className="w-5 h-5" />
             </Link>
@@ -95,8 +95,8 @@ export default function NotificationsPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Notificações</h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Notificações</h1>
+            <p className="text-foreground-secondary text-sm mt-1">
               {unreadCount > 0 ? `${unreadCount} não lidas` : 'Todas lidas'}
             </p>
           </div>
@@ -107,8 +107,8 @@ export default function NotificationsPage() {
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors',
               showFilter
-                ? 'bg-violet-500 text-white'
-                : 'bg-[#14141F] border border-[#2E2E3E] text-slate-400'
+                ? 'bg-dourado text-white'
+                : 'bg-white border border-border text-foreground-secondary'
             )}
           >
             <Filter className="w-4 h-4" />
@@ -134,8 +134,8 @@ export default function NotificationsPage() {
                   className={cn(
                     'flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors',
                     filter === option.value
-                      ? 'bg-violet-500 text-white'
-                      : 'bg-[#14141F] border border-[#2E2E3E] text-slate-400 hover:text-white'
+                      ? 'bg-dourado text-white'
+                      : 'bg-white border border-border text-foreground-secondary hover:text-foreground'
                   )}
                 >
                   {option.value !== 'all' && (
@@ -155,7 +155,7 @@ export default function NotificationsPage() {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#14141F] border border-[#2E2E3E] text-slate-400 hover:text-white text-sm transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-border text-foreground-secondary hover:text-foreground text-sm transition-colors"
             >
               <CheckCheck className="w-4 h-4" />
               <span>Marcar todas como lidas</span>
@@ -164,7 +164,7 @@ export default function NotificationsPage() {
 
           <button
             onClick={handleClearAll}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#14141F] border border-[#2E2E3E] text-slate-400 hover:text-red-400 text-sm transition-colors ml-auto"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-border text-foreground-secondary hover:text-red-400 text-sm transition-colors ml-auto"
           >
             <Trash2 className="w-4 h-4" />
             <span>Limpar</span>
@@ -176,10 +176,10 @@ export default function NotificationsPage() {
       <div className="px-4">
         {/* Not subscribed message */}
         {!isSubscribed && (
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-6 text-center">
-            <BellOff className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-white font-semibold mb-2">Notificações desativadas</h3>
-            <p className="text-slate-400 text-sm mb-4">
+          <div className="bg-white border border-border rounded-xl p-6 text-center">
+            <BellOff className="w-12 h-12 text-foreground-muted mx-auto mb-4" />
+            <h3 className="text-foreground font-semibold mb-2">Notificações desativadas</h3>
+            <p className="text-foreground-secondary text-sm mb-4">
               Ative para receber lembretes de treino, refeições e mais.
             </p>
             <NotificationToggle showLabel={false} />
@@ -189,16 +189,16 @@ export default function NotificationsPage() {
         {/* Loading */}
         {isLoadingHistory && (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-dourado animate-spin" />
           </div>
         )}
 
         {/* Empty state */}
         {!isLoadingHistory && isSubscribed && filteredHistory.length === 0 && (
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-6 text-center">
-            <Bell className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-white font-semibold mb-2">Nenhuma notificação</h3>
-            <p className="text-slate-400 text-sm">
+          <div className="bg-white border border-border rounded-xl p-6 text-center">
+            <Bell className="w-12 h-12 text-foreground-muted mx-auto mb-4" />
+            <h3 className="text-foreground font-semibold mb-2">Nenhuma notificação</h3>
+            <p className="text-foreground-secondary text-sm">
               {filter !== 'all'
                 ? 'Nenhuma notificação deste tipo.'
                 : 'Você receberá notificações aqui.'}

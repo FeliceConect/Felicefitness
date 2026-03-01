@@ -35,15 +35,15 @@ export function SegmentalAnalysis({ data, className }: SegmentalAnalysisProps) {
   ]
 
   return (
-    <div className={cn('bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4', className)}>
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+    <div className={cn('bg-white border border-border rounded-2xl p-4', className)}>
+      <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
         Análise Segmentar
       </h3>
 
       <div className="relative h-80">
         {/* Body silhouette */}
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
-          <svg viewBox="0 0 100 200" className="h-full text-slate-600 fill-current">
+          <svg viewBox="0 0 100 200" className="h-full text-foreground-muted fill-current">
             {/* Head */}
             <circle cx="50" cy="15" r="12" />
             {/* Neck */}
@@ -72,14 +72,14 @@ export function SegmentalAnalysis({ data, className }: SegmentalAnalysisProps) {
             style={segment.position as React.CSSProperties}
           >
             <div
-              className="bg-[#0A0A0F] border rounded-lg p-2 min-w-[80px]"
+              className="bg-background border rounded-lg p-2 min-w-[80px]"
               style={{ borderColor: getAvaliacaoColor(segment.data.avaliacao) }}
             >
-              <p className="text-xs text-slate-400 text-center mb-1">{segment.label}</p>
-              <p className="text-white text-sm font-semibold text-center">
+              <p className="text-xs text-foreground-secondary text-center mb-1">{segment.label}</p>
+              <p className="text-foreground text-sm font-semibold text-center">
                 {segment.data.massa_magra.toFixed(1)}kg
               </p>
-              <p className="text-xs text-slate-500 text-center">
+              <p className="text-xs text-foreground-muted text-center">
                 {segment.data.percentual_gordura.toFixed(0)}% gordura
               </p>
               <div className="flex justify-center mt-1">
@@ -99,16 +99,16 @@ export function SegmentalAnalysis({ data, className }: SegmentalAnalysisProps) {
       </div>
 
       {/* Summary table */}
-      <div className="mt-4 pt-4 border-t border-[#2E2E3E]">
+      <div className="mt-4 pt-4 border-t border-border">
         <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="text-slate-500">Segmento</div>
-          <div className="text-slate-500 text-center">Massa Magra</div>
-          <div className="text-slate-500 text-center">Gordura</div>
+          <div className="text-foreground-muted">Segmento</div>
+          <div className="text-foreground-muted text-center">Massa Magra</div>
+          <div className="text-foreground-muted text-center">Gordura</div>
 
           {segments.map(segment => (
             <div key={segment.key} className="contents">
-              <div className="text-slate-300">{segment.label}</div>
-              <div className="text-white text-center font-medium">
+              <div className="text-foreground-secondary">{segment.label}</div>
+              <div className="text-foreground text-center font-medium">
                 {segment.data.massa_magra.toFixed(1)}kg
               </div>
               <div

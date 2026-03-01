@@ -60,7 +60,7 @@ export function InstallPrompt({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="font-bold text-lg">Instalar FeliceFit</h3>
+                <h3 className="font-bold text-lg">Instalar Complexo Wellness</h3>
                 <p className="text-sm text-muted-foreground">
                   Adicione a home screen para melhor experiencia
                 </p>

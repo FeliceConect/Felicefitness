@@ -67,7 +67,7 @@ export function useShare({
     const text = getShareText()
 
     return await share({
-      title: 'FeliceFit',
+      title: 'Complexo Wellness',
       text,
       files: [file],
     })

@@ -32,11 +32,11 @@ const DEFAULT_ACTIVE_WIDGETS: WidgetConfig[] = [
   { id: 'daily-progress-1', type: 'daily-progress', size: 'medium', enabled: true, order: 0 },
   { id: 'water-1', type: 'water', size: 'small', enabled: true, order: 1 },
   { id: 'streak-1', type: 'streak', size: 'small', enabled: true, order: 2 },
-  { id: 'revolade-1', type: 'revolade', size: 'medium', enabled: true, order: 3 },
-  { id: 'workout-1', type: 'workout', size: 'medium', enabled: true, order: 4 },
+  { id: 'workout-1', type: 'workout', size: 'medium', enabled: true, order: 3 },
+  { id: 'macros-1', type: 'macros', size: 'medium', enabled: true, order: 4 },
 ]
 
-const STORAGE_KEY = 'felicefit-widgets'
+const STORAGE_KEY = 'felice-wellness-widgets'
 
 export function useWidgets(): UseWidgetsReturn {
   const [activeWidgets, setActiveWidgets] = useState<WidgetConfig[]>(DEFAULT_ACTIVE_WIDGETS)
@@ -78,7 +78,8 @@ export function useWidgets(): UseWidgetsReturn {
     }
 
     loadLayout()
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Reordenar widgets
   const reorderWidgets = useCallback((widgets: WidgetConfig[]) => {
@@ -149,7 +150,8 @@ export function useWidgets(): UseWidgetsReturn {
     } catch (error) {
       console.error('Error saving widget layout:', error)
     }
-  }, [supabase, activeWidgets])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWidgets])
 
   return {
     activeWidgets,

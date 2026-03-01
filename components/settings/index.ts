@@ -4,7 +4,7 @@ export { SettingsToggle } from './settings-toggle'
 export { SettingsSelect } from './settings-select'
 export { SettingsInput } from './settings-input'
 export { GoalsForm } from './goals-form'
-export { RevoladeSettingsForm } from './revolade-settings'
+
 export { ThemeSelector } from './theme-selector'
 export { ColorPicker } from './color-picker'
 export { WorkoutPreferencesForm } from './workout-preferences'

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Check, Clock, Plus, Camera, Trash2, ChevronDown, ChevronUp, Link2, X } from 'lucide-react'
 import { format } from 'date-fns'
-import { AIMealAnalyzer } from '@/components/alimentacao/ai-meal-analyzer'
+import dynamic from 'next/dynamic'
 import type { MealAnalysisResult, AnalyzedFoodItem } from '@/types/analysis'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -14,7 +14,10 @@ import type { Meal, MealInsert } from '@/types/database'
 import type { MealType, Food } from '@/lib/nutrition/types'
 import { Suspense } from 'react'
 import { FoodSearch } from '@/components/alimentacao/food-search'
-import { AddCustomFoodModal } from '@/components/alimentacao/add-custom-food-modal'
+
+// Lazy load heavy components
+const AIMealAnalyzer = dynamic(() => import('@/components/alimentacao/ai-meal-analyzer').then(m => ({ default: m.AIMealAnalyzer })), { ssr: false })
+const AddCustomFoodModal = dynamic(() => import('@/components/alimentacao/add-custom-food-modal').then(m => ({ default: m.AddCustomFoodModal })), { ssr: false })
 
 // Interface para um prato/foto analisado
 interface AnalyzedPlate {
@@ -465,19 +468,19 @@ function AnalisarRefeicaoContent() {
 
   // Renderizar etapa de confirmação
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-48">
+    <div className="min-h-screen bg-background pb-48">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={handleBackToAnalysis}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Confirmar Refeição</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-2xl font-bold text-foreground">Confirmar Refeição</h1>
+        <p className="text-foreground-secondary text-sm">
           Revise os dados e salve sua refeição
         </p>
       </div>
@@ -489,41 +492,41 @@ function AnalisarRefeicaoContent() {
           animate={{ opacity: 1, y: 0 }}
           className="px-4 mb-6"
         >
-          <div className="bg-gradient-to-br from-violet-500/20 to-cyan-500/20 border border-violet-500/30 rounded-2xl p-4">
+          <div className="bg-gradient-to-br from-dourado/20 to-dourado/10 border border-dourado/30 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-white font-medium">
+              <p className="text-foreground font-medium">
                 Total da Refeição
               </p>
-              <span className="text-xs text-slate-400 bg-[#0A0A0F] px-2 py-1 rounded-lg">
+              <span className="text-xs text-foreground-secondary bg-background px-2 py-1 rounded-lg">
                 {plates.length} {plates.length === 1 ? 'prato' : 'pratos'}
               </span>
             </div>
 
             {/* Macros combinados */}
             <div className="grid grid-cols-4 gap-2">
-              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
-                <p className="text-xl font-bold text-white">
+              <div className="bg-background/80 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-foreground">
                   {combinedTotals.calories}
                 </p>
-                <p className="text-xs text-slate-500">kcal</p>
+                <p className="text-xs text-foreground-muted">kcal</p>
               </div>
-              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
-                <p className="text-xl font-bold text-cyan-400">
+              <div className="bg-background/80 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-dourado">
                   {combinedTotals.protein.toFixed(0)}g
                 </p>
-                <p className="text-xs text-slate-500">prot</p>
+                <p className="text-xs text-foreground-muted">prot</p>
               </div>
-              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
+              <div className="bg-background/80 rounded-xl p-3 text-center">
                 <p className="text-xl font-bold text-amber-400">
                   {combinedTotals.carbs.toFixed(0)}g
                 </p>
-                <p className="text-xs text-slate-500">carb</p>
+                <p className="text-xs text-foreground-muted">carb</p>
               </div>
-              <div className="bg-[#0A0A0F]/80 rounded-xl p-3 text-center">
+              <div className="bg-background/80 rounded-xl p-3 text-center">
                 <p className="text-xl font-bold text-rose-400">
                   {combinedTotals.fat.toFixed(0)}g
                 </p>
-                <p className="text-xs text-slate-500">gord</p>
+                <p className="text-xs text-foreground-muted">gord</p>
               </div>
             </div>
           </div>
@@ -539,10 +542,10 @@ function AnalisarRefeicaoContent() {
           className="px-4 mb-6"
         >
           <div className="flex items-center justify-between mb-3">
-            <label className="text-sm text-slate-400">Pratos analisados</label>
+            <label className="text-sm text-foreground-secondary">Pratos analisados</label>
             <button
               onClick={handleAddAnotherPlate}
-              className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+              className="flex items-center gap-1 text-xs text-dourado hover:text-dourado transition-colors"
             >
               <Plus className="w-4 h-4" />
               Adicionar prato
@@ -557,7 +560,7 @@ function AnalisarRefeicaoContent() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl overflow-hidden"
+                  className="bg-white border border-border rounded-2xl overflow-hidden"
                 >
                   {/* Header do prato */}
                   <div
@@ -565,12 +568,12 @@ function AnalisarRefeicaoContent() {
                     onClick={() => togglePlateExpand(plate.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                        <span className="text-violet-400 font-bold text-sm">{index + 1}</span>
+                      <div className="w-8 h-8 bg-dourado/20 rounded-lg flex items-center justify-center">
+                        <span className="text-dourado font-bold text-sm">{index + 1}</span>
                       </div>
                       <div>
-                        <p className="text-white font-medium text-sm">{plate.description}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-foreground font-medium text-sm">{plate.description}</p>
+                        <p className="text-xs text-foreground-muted">
                           {plate.totals.calories} kcal · {plate.items.length} itens
                         </p>
                       </div>
@@ -581,14 +584,14 @@ function AnalisarRefeicaoContent() {
                           e.stopPropagation()
                           handleRemovePlate(plate.id)
                         }}
-                        className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                        className="p-2 text-foreground-muted hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                       {expandedPlates.has(plate.id) ? (
-                        <ChevronUp className="w-5 h-5 text-slate-500" />
+                        <ChevronUp className="w-5 h-5 text-foreground-muted" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-500" />
+                        <ChevronDown className="w-5 h-5 text-foreground-muted" />
                       )}
                     </div>
                   </div>
@@ -603,24 +606,24 @@ function AnalisarRefeicaoContent() {
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-4 pb-4 pt-0 border-t border-[#2E2E3E]">
+                        <div className="px-4 pb-4 pt-0 border-t border-border">
                           {/* Macros do prato */}
                           <div className="grid grid-cols-4 gap-2 mt-3 mb-3">
-                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
-                              <p className="text-sm font-bold text-white">{plate.totals.calories}</p>
-                              <p className="text-[10px] text-slate-500">kcal</p>
+                            <div className="bg-background rounded-lg p-2 text-center">
+                              <p className="text-sm font-bold text-foreground">{plate.totals.calories}</p>
+                              <p className="text-[10px] text-foreground-muted">kcal</p>
                             </div>
-                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
-                              <p className="text-sm font-bold text-cyan-400">{plate.totals.protein.toFixed(0)}g</p>
-                              <p className="text-[10px] text-slate-500">prot</p>
+                            <div className="bg-background rounded-lg p-2 text-center">
+                              <p className="text-sm font-bold text-dourado">{plate.totals.protein.toFixed(0)}g</p>
+                              <p className="text-[10px] text-foreground-muted">prot</p>
                             </div>
-                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
+                            <div className="bg-background rounded-lg p-2 text-center">
                               <p className="text-sm font-bold text-amber-400">{plate.totals.carbs.toFixed(0)}g</p>
-                              <p className="text-[10px] text-slate-500">carb</p>
+                              <p className="text-[10px] text-foreground-muted">carb</p>
                             </div>
-                            <div className="bg-[#0A0A0F] rounded-lg p-2 text-center">
+                            <div className="bg-background rounded-lg p-2 text-center">
                               <p className="text-sm font-bold text-rose-400">{plate.totals.fat.toFixed(0)}g</p>
-                              <p className="text-[10px] text-slate-500">gord</p>
+                              <p className="text-[10px] text-foreground-muted">gord</p>
                             </div>
                           </div>
 
@@ -629,11 +632,11 @@ function AnalisarRefeicaoContent() {
                             {plate.items.map((item) => (
                               <div
                                 key={item.id}
-                                className="flex items-center justify-between p-2 bg-[#1E1E2E] rounded-lg group"
+                                className="flex items-center justify-between p-2 bg-background-elevated rounded-lg group"
                               >
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-slate-300 truncate">{item.name}</p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-sm text-foreground-secondary truncate">{item.name}</p>
+                                  <p className="text-xs text-foreground-muted">
                                     {item.portion_grams}g • {item.calories} kcal
                                   </p>
                                 </div>
@@ -642,7 +645,7 @@ function AnalisarRefeicaoContent() {
                                     e.stopPropagation()
                                     handleRemoveItem(plate.id, item.id)
                                   }}
-                                  className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors ml-2"
+                                  className="p-1.5 text-foreground-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors ml-2"
                                   title="Remover item"
                                 >
                                   <X className="w-4 h-4" />
@@ -656,7 +659,7 @@ function AnalisarRefeicaoContent() {
                                 e.stopPropagation()
                                 setAddingToPlateId(plate.id)
                               }}
-                              className="w-full p-2 border border-dashed border-[#3E3E4E] rounded-lg text-slate-400 hover:border-violet-500/50 hover:text-violet-400 transition-colors flex items-center justify-center gap-2 text-sm"
+                              className="w-full p-2 border border-dashed border-foreground-muted rounded-lg text-foreground-secondary hover:border-dourado/50 hover:text-dourado transition-colors flex items-center justify-center gap-2 text-sm"
                             >
                               <Plus className="w-4 h-4" />
                               Adicionar alimento
@@ -676,7 +679,7 @@ function AnalisarRefeicaoContent() {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={handleAddAnotherPlate}
-            className="w-full mt-3 p-4 border-2 border-dashed border-[#2E2E3E] rounded-xl flex items-center justify-center gap-2 text-slate-400 hover:border-violet-500/50 hover:text-violet-400 transition-colors"
+            className="w-full mt-3 p-4 border-2 border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-foreground-secondary hover:border-dourado/50 hover:text-dourado transition-colors"
           >
             <Camera className="w-5 h-5" />
             <span>Fotografar outro prato</span>
@@ -691,7 +694,7 @@ function AnalisarRefeicaoContent() {
         transition={{ delay: 0.1 }}
         className="px-4 mb-6"
       >
-        <label className="text-sm text-slate-400 block mb-3">Tipo de refeição</label>
+        <label className="text-sm text-foreground-secondary block mb-3">Tipo de refeição</label>
         <div className="grid grid-cols-3 gap-2">
           {MEAL_TYPES.map((type) => (
             <button
@@ -700,8 +703,8 @@ function AnalisarRefeicaoContent() {
               className={cn(
                 'p-3 rounded-xl border transition-colors text-center',
                 selectedMealType === type.id
-                  ? 'bg-violet-500/20 border-violet-500 text-white'
-                  : 'bg-[#14141F] border-[#2E2E3E] text-slate-400 hover:border-violet-500/50'
+                  ? 'bg-dourado/20 border-dourado text-dourado'
+                  : 'bg-white border-border text-foreground-secondary hover:border-dourado/50'
               )}
             >
               <span className="text-2xl block mb-1">{type.icon}</span>
@@ -718,24 +721,24 @@ function AnalisarRefeicaoContent() {
         transition={{ delay: 0.2 }}
         className="px-4 mb-6"
       >
-        <label className="text-sm text-slate-400 block mb-3">Data e horário</label>
+        <label className="text-sm text-foreground-secondary block mb-3">Data e horário</label>
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-3">
+          <div className="bg-white border border-border rounded-xl p-3">
             <input
               type="date"
               value={mealDate}
               onChange={(e) => setMealDate(e.target.value)}
               max={format(new Date(), 'yyyy-MM-dd')}
-              className="w-full bg-transparent text-white focus:outline-none"
+              className="w-full bg-transparent text-foreground focus:outline-none"
             />
           </div>
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-3 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-slate-500" />
+          <div className="bg-white border border-border rounded-xl p-3 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-foreground-muted" />
             <input
               type="time"
               value={mealTime}
               onChange={(e) => setMealTime(e.target.value)}
-              className="w-full bg-transparent text-white focus:outline-none"
+              className="w-full bg-transparent text-foreground focus:outline-none"
             />
           </div>
         </div>
@@ -752,7 +755,7 @@ function AnalisarRefeicaoContent() {
             <Link2 className="w-5 h-5 text-green-400" />
             <div>
               <p className="text-green-400 text-sm font-medium">Vinculado ao plano alimentar</p>
-              <p className="text-slate-400 text-xs">Esta refeição será salva no seu plano</p>
+              <p className="text-foreground-secondary text-xs">Esta refeição será salva no seu plano</p>
             </div>
           </div>
         </motion.div>
@@ -765,11 +768,11 @@ function AnalisarRefeicaoContent() {
           animate={{ opacity: 1, y: 0 }}
           className="px-4 mb-4"
         >
-          <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4 flex items-center gap-3">
-            <Plus className="w-5 h-5 text-violet-400" />
+          <div className="bg-dourado/10 border border-dourado/30 rounded-xl p-4 flex items-center gap-3">
+            <Plus className="w-5 h-5 text-dourado" />
             <div>
-              <p className="text-violet-400 text-sm font-medium">Adicionando à refeição existente</p>
-              <p className="text-slate-400 text-xs">Os itens serão adicionados à refeição já salva</p>
+              <p className="text-dourado text-sm font-medium">Adicionando à refeição existente</p>
+              <p className="text-foreground-secondary text-xs">Os itens serão adicionados à refeição já salva</p>
             </div>
           </div>
         </motion.div>
@@ -789,7 +792,7 @@ function AnalisarRefeicaoContent() {
       )}
 
       {/* Botão fixo de salvar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/95 to-transparent z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)] bg-gradient-to-t from-background via-background/95 to-transparent z-50">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -798,10 +801,10 @@ function AnalisarRefeicaoContent() {
           className={cn(
             'w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg',
             isSaving || plates.length === 0
-              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+              ? 'bg-background-elevated text-foreground-secondary cursor-not-allowed'
               : planMealId
                 ? 'bg-gradient-to-r from-green-600 to-emerald-500 text-white shadow-green-500/20'
-                : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-violet-500/20'
+                : 'bg-gradient-to-r from-dourado to-dourado/70 text-white shadow-dourado/20'
           )}
         >
           {isSaving ? (
@@ -833,22 +836,22 @@ function AnalisarRefeicaoContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full sm:max-w-md bg-[#14141F] rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
+              className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">Adicionar Alimento</h2>
+                <h2 className="text-xl font-bold text-foreground">Adicionar Alimento</h2>
                 <button
                   onClick={() => setAddingToPlateId(null)}
-                  className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                  className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-slate-400" />
+                  <X className="w-5 h-5 text-foreground-secondary" />
                 </button>
               </div>
 
               {/* Info sobre cálculo automático */}
-              <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-3 mb-4">
-                <p className="text-violet-300 text-sm">
+              <div className="bg-dourado/10 border border-dourado/30 rounded-xl p-3 mb-4">
+                <p className="text-dourado text-sm">
                   Selecione um alimento e os macros serão calculados automaticamente com base na porção padrão.
                 </p>
               </div>
@@ -882,8 +885,8 @@ function AnalisarRefeicaoContent() {
 export default function AnalisarRefeicaoPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-dourado/30 border-t-dourado rounded-full animate-spin" />
       </div>
     }>
       <AnalisarRefeicaoContent />

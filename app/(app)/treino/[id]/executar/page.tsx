@@ -4,18 +4,22 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { X, Pause, Loader2, Zap } from 'lucide-react'
+import { X, Pause, Loader2, Zap, Play } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
-import { RestTimerModal } from '@/components/treino/rest-timer-modal'
-import { SetInputModal } from '@/components/treino/set-input-modal'
-import { CardioInputModal } from '@/components/treino/cardio-input-modal'
-import { PRCelebration } from '@/components/treino/pr-celebration'
 import { useWorkoutExecution } from '@/hooks/use-workout-execution'
 import { useRestTimer } from '@/hooks/use-rest-timer'
 import { useWorkouts } from '@/hooks/use-workouts'
 import { useSettings } from '@/hooks/use-settings'
 import { useExerciseHistory } from '@/hooks/use-exercise-history'
 import { cn } from '@/lib/utils'
+
+// Lazy load modals — only needed when user triggers them
+const RestTimerModal = dynamic(() => import('@/components/treino/rest-timer-modal').then(m => ({ default: m.RestTimerModal })), { ssr: false })
+const SetInputModal = dynamic(() => import('@/components/treino/set-input-modal').then(m => ({ default: m.SetInputModal })), { ssr: false })
+const CardioInputModal = dynamic(() => import('@/components/treino/cardio-input-modal').then(m => ({ default: m.CardioInputModal })), { ssr: false })
+const PRCelebration = dynamic(() => import('@/components/treino/pr-celebration').then(m => ({ default: m.PRCelebration })), { ssr: false })
+const ExerciseVideoModal = dynamic(() => import('@/components/treino/exercise-video-modal').then(m => ({ default: m.ExerciseVideoModal })), { ssr: false })
 import type { CompletedCardio } from '@/lib/workout/types'
 
 function formatTime(seconds: number): string {
@@ -40,6 +44,8 @@ export default function WorkoutExecutionPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   // Estado para edição de série completada
   const [editingSet, setEditingSet] = useState<{ exerciseId: string; setNumber: number; weight: number; reps: number; exerciseName: string } | null>(null)
+  const [showVideoModal, setShowVideoModal] = useState(false)
+  const [exerciseVideoUrls, setExerciseVideoUrls] = useState<Record<string, string>>({})
 
   // Find workout from real data via useWorkouts hook
   const { getWorkoutById, loading } = useWorkouts()
@@ -74,6 +80,30 @@ export default function WorkoutExecutionPage() {
     vibrationEnabled: settings?.workout?.vibracao_timer ?? true,
     notificationsEnabled: true
   })
+
+  // Fetch video URLs for exercises from DB
+  useEffect(() => {
+    if (!workout) return
+    const exerciseNames = workout.exercicios?.map((e: { exercise_id?: string; nome: string }) => e.exercise_id || e.nome) || []
+    if (exerciseNames.length === 0) return
+
+    // Fetch exercises that have video_url
+    fetch(`/api/portal/exercises?limit=100`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.exercises) {
+          const urls: Record<string, string> = {}
+          for (const ex of data.exercises) {
+            if (ex.video_url) {
+              urls[ex.id] = ex.video_url
+              urls[ex.nome?.toLowerCase()] = ex.video_url
+            }
+          }
+          setExerciseVideoUrls(urls)
+        }
+      })
+      .catch(() => {})
+  }, [workout])
 
   // Solicitar permissão de notificações ao iniciar o treino
   useEffect(() => {
@@ -226,10 +256,10 @@ export default function WorkoutExecutionPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando treino...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando treino...</p>
         </div>
       </div>
     )
@@ -237,10 +267,10 @@ export default function WorkoutExecutionPage() {
 
   if (!workout) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <span className="text-4xl mb-4 block">🤷</span>
-          <h2 className="text-xl font-bold text-white mb-2">Treino não encontrado</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">Treino não encontrado</h2>
           <Button onClick={() => router.back()}>Voltar</Button>
         </div>
       </div>
@@ -250,15 +280,15 @@ export default function WorkoutExecutionPage() {
   // Check if workout is completed
   if (state.status === 'completed') {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="text-center"
         >
           <span className="text-6xl mb-6 block">🎉</span>
-          <h2 className="text-2xl font-bold text-white mb-2">Treino Concluído!</h2>
-          <p className="text-slate-400 mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Treino Concluído!</h2>
+          <p className="text-foreground-secondary mb-8">
             {completedSetsCount} séries em {formatTime(state.elapsedTime)}
           </p>
           <Button variant="gradient" size="lg" onClick={handleFinishWorkout}>
@@ -273,33 +303,33 @@ export default function WorkoutExecutionPage() {
   const lastWeight = currentExercise ? getLastWeight(currentExercise.nome) : null
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col pb-44">
+    <div className="min-h-screen bg-background flex flex-col pb-44">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[#2E2E3E]">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <button
           onClick={handleExit}
-          className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+          className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
         >
-          <X className="w-6 h-6 text-slate-400" />
+          <X className="w-6 h-6 text-foreground-secondary" />
         </button>
 
         <div className="text-center">
-          <p className="text-sm text-slate-400">{workout.nome}</p>
-          <p className="text-lg font-bold text-white">{formatTime(state.elapsedTime)}</p>
+          <p className="text-sm text-foreground-secondary">{workout.nome}</p>
+          <p className="text-lg font-bold text-foreground">{formatTime(state.elapsedTime)}</p>
         </div>
 
         <button
           onClick={() => setShowExitConfirm(true)}
-          className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+          className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
         >
-          <Pause className="w-6 h-6 text-slate-400" />
+          <Pause className="w-6 h-6 text-foreground-secondary" />
         </button>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-slate-800">
+      <div className="h-1 bg-background-elevated">
         <motion.div
-          className="h-full bg-gradient-to-r from-violet-500 to-cyan-500"
+          className="h-full bg-gradient-to-r from-dourado to-vinho"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.3 }}
@@ -318,14 +348,25 @@ export default function WorkoutExecutionPage() {
           >
             {/* Exercise info */}
             <div className="text-center mb-4">
-              <p className="text-sm text-violet-400 mb-1">
+              <p className="text-sm text-dourado mb-1">
                 Exercício {state.currentExerciseIndex + 1} de {workout.exercicios.length}
               </p>
-              <h2 className="text-2xl font-bold text-white mb-2">
-                {currentExercise.nome}
-              </h2>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h2 className="text-2xl font-bold text-foreground">
+                  {currentExercise.nome}
+                </h2>
+                {(exerciseVideoUrls[currentExercise.exercise_id] || exerciseVideoUrls[currentExercise.nome?.toLowerCase()]) && (
+                  <button
+                    onClick={() => setShowVideoModal(true)}
+                    className="p-2 rounded-full bg-dourado/10 hover:bg-dourado/20 transition-colors"
+                    title="Ver video"
+                  >
+                    <Play className="w-4 h-4 text-dourado" fill="currentColor" />
+                  </button>
+                )}
+              </div>
               {lastWeight && (
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-foreground-secondary">
                   Última vez: {lastWeight.weight}kg × {lastWeight.reps}
                 </p>
               )}
@@ -352,8 +393,8 @@ export default function WorkoutExecutionPage() {
                       isCompleted
                         ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-400 active:scale-95 transition-all'
                         : isCurrent
-                          ? 'bg-violet-500 text-white ring-2 ring-violet-400 ring-offset-2 ring-offset-[#0A0A0F]'
-                          : 'bg-slate-800 text-slate-500'
+                          ? 'bg-dourado text-white ring-2 ring-dourado/70 ring-offset-2 ring-offset-background'
+                          : 'bg-background-elevated text-foreground-muted'
                     )}
                   >
                     {isCompleted ? (
@@ -368,35 +409,35 @@ export default function WorkoutExecutionPage() {
             </div>
             {/* Hint para edição */}
             {state.completedSets.some(cs => cs.exerciseId === currentExercise.id) && (
-              <p className="text-center text-xs text-slate-500 mb-2">
+              <p className="text-center text-xs text-foreground-muted mb-2">
                 Toque nas séries verdes para editar
               </p>
             )}
 
             {/* Current set info */}
             {currentSet && (
-              <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
+              <div className="bg-white border border-border rounded-2xl p-4">
                 <div className="text-center">
-                  <p className="text-sm text-slate-400 mb-2">Série {state.currentSetIndex + 1}</p>
+                  <p className="text-sm text-foreground-secondary mb-2">Série {state.currentSetIndex + 1}</p>
                   <div className="flex items-center justify-center gap-4">
                     <div>
-                      <p className="text-4xl font-bold text-white">
+                      <p className="text-4xl font-bold text-foreground">
                         {/* Prioridade: último peso usado > peso do template > '-' */}
                         {lastWeight?.weight ?? currentSet.carga_planejada ?? '-'}
                       </p>
-                      <p className="text-sm text-slate-400">kg</p>
+                      <p className="text-sm text-foreground-secondary">kg</p>
                     </div>
-                    <span className="text-2xl text-slate-500">×</span>
+                    <span className="text-2xl text-foreground-muted">×</span>
                     <div>
-                      <p className="text-4xl font-bold text-white">
+                      <p className="text-4xl font-bold text-foreground">
                         {currentSet.repeticoes_planejadas}
                       </p>
-                      <p className="text-sm text-slate-400">reps</p>
+                      <p className="text-sm text-foreground-secondary">reps</p>
                     </div>
                   </div>
                   {/* Indicar se é baseado no histórico */}
                   {lastWeight && (
-                    <p className="text-xs text-violet-400 mt-2">
+                    <p className="text-xs text-dourado mt-2">
                       Baseado no seu último treino
                     </p>
                   )}
@@ -410,7 +451,7 @@ export default function WorkoutExecutionPage() {
 
       {/* Action buttons - Fixed at bottom above nav */}
       {currentExercise && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent pt-6">
+        <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-background via-background to-transparent pt-6">
           <div className="max-w-lg mx-auto space-y-3">
             <Button
               variant="gradient"
@@ -499,6 +540,16 @@ export default function WorkoutExecutionPage() {
         />
       )}
 
+      {/* Exercise video modal */}
+      {currentExercise && (
+        <ExerciseVideoModal
+          isOpen={showVideoModal}
+          onClose={() => setShowVideoModal(false)}
+          videoUrl={exerciseVideoUrls[currentExercise.exercise_id] || exerciseVideoUrls[currentExercise.nome?.toLowerCase()] || ''}
+          exerciseName={currentExercise.nome}
+        />
+      )}
+
       {/* Exit confirmation */}
       <AnimatePresence>
         {showExitConfirm && (
@@ -512,10 +563,10 @@ export default function WorkoutExecutionPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#14141F] rounded-2xl p-6 max-w-sm w-full"
+              className="bg-white rounded-2xl p-6 max-w-sm w-full"
             >
-              <h3 className="text-xl font-bold text-white mb-2">Pausar treino?</h3>
-              <p className="text-slate-400 mb-6">
+              <h3 className="text-xl font-bold text-foreground mb-2">Pausar treino?</h3>
+              <p className="text-foreground-secondary mb-6">
                 Seu progresso será salvo e você pode continuar depois.
               </p>
               <div className="space-y-3">

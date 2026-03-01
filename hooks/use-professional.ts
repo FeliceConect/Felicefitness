@@ -6,7 +6,7 @@ import { createBrowserClient } from '@supabase/ssr'
 interface Professional {
   id: string
   user_id: string
-  type: 'nutritionist' | 'trainer'
+  type: 'nutritionist' | 'trainer' | 'coach'
   registration: string | null
   specialty: string | null
   bio: string | null
@@ -61,6 +61,7 @@ export function useProfessional() {
     isProfessional: !!professional,
     isNutritionist: professional?.type === 'nutritionist',
     isTrainer: professional?.type === 'trainer',
+    isCoach: professional?.type === 'coach',
     isActive: professional?.is_active ?? false
   }
 }

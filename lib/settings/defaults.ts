@@ -2,7 +2,6 @@
 
 import type {
   Goals,
-  RevoladeSettings,
   WorkoutPreferences,
   NutritionPreferences,
   AppearanceSettings,
@@ -23,18 +22,6 @@ export const defaultGoals: Goals = {
   gordura_meta: 14,
   musculo_meta: 39.5,
   horas_sono: 7
-}
-
-export const defaultRevoladeSettings: RevoladeSettings = {
-  ativo: false, // Desativado por padrão - cada usuário deve ativar manualmente se usar
-  horario_medicamento: '14:00',
-  jejum_inicio: '12:00',
-  jejum_fim: '14:00',
-  restricao_laticinios_fim: '18:00',
-  alerta_jejum: true,
-  alerta_medicamento: true,
-  alerta_liberacao: true,
-  alerta_laticinios: true
 }
 
 export const defaultWorkoutPreferences: WorkoutPreferences = {
@@ -69,7 +56,7 @@ export const defaultNutritionPreferences: NutritionPreferences = {
 
 export const defaultAppearanceSettings: AppearanceSettings = {
   tema: 'dark',
-  cor_primaria: '#8B5CF6', // Roxo
+  cor_primaria: '#c29863', // Dourado
   tamanho_fonte: 'medio',
   animacoes: true,
   confetti: true,
@@ -91,7 +78,6 @@ export const defaultNotificationSettings: NotificationSettings = {
   lembrete_refeicao: true,
   lembrete_sono: true,
   lembrete_sono_horario: '22:00',
-  lembrete_revolade: true,
   notificar_conquistas: true,
   notificar_recordes: true,
   notificar_nivel: true,
@@ -101,7 +87,6 @@ export const defaultNotificationSettings: NotificationSettings = {
 
 export const defaultSettings: AppSettings = {
   goals: defaultGoals,
-  revolade: defaultRevoladeSettings,
   workout: defaultWorkoutPreferences,
   nutrition: defaultNutritionPreferences,
   notifications: defaultNotificationSettings,

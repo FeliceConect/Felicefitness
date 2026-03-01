@@ -25,7 +25,7 @@ export function useSupplementStock(): UseSupplementStockReturn {
       }
 
       const { data: supplementsData, error: supplementsError } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .select('*')
         .eq('user_id', userData.user.id)
         .eq('ativo', true)
@@ -55,7 +55,7 @@ export function useSupplementStock(): UseSupplementStockReturn {
   const updateStock = async (supplementId: string, quantity: number): Promise<void> => {
     try {
       const { error } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .update({ quantidade_estoque: quantity } as never)
         .eq('id', supplementId)
 
@@ -77,7 +77,7 @@ export function useSupplementStock(): UseSupplementStockReturn {
       const newQuantity = supplement.quantidade_estoque + amount
 
       const { error } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .update({ quantidade_estoque: newQuantity } as never)
         .eq('id', supplementId)
 

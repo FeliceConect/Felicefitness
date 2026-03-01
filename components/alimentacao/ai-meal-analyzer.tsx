@@ -33,6 +33,19 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const [step, setStep] = useState<AnalyzerStep>('capture')
+  const [aiUsage, setAiUsage] = useState<{ used: number; limit: number; remaining: number } | null>(null)
+
+  // Fetch AI usage counter
+  useEffect(() => {
+    fetch('/api/ai-analysis/count')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setAiUsage({ used: data.used, limit: data.limit, remaining: data.remaining })
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const {
     isAnalyzing,
@@ -137,24 +150,24 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
 
     // Captura (padrão)
     return (
-      <div className="min-h-screen bg-[#0A0A0F]">
+      <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="px-4 pt-12 pb-6">
           <button
             onClick={onCancel}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
           </button>
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-dourado to-dourado/70 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Analisar Refeição</h1>
-              <p className="text-slate-400 text-sm">IA identifica alimentos e macros</p>
+              <h1 className="text-2xl font-bold text-foreground">Analisar Refeição</h1>
+              <p className="text-foreground-secondary text-sm">IA identifica alimentos e macros</p>
             </div>
           </div>
         </div>
@@ -164,13 +177,13 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="aspect-square bg-[#14141F] border-2 border-dashed border-[#2E2E3E] rounded-2xl flex flex-col items-center justify-center"
+            className="aspect-square bg-white border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center"
           >
-            <div className="w-20 h-20 rounded-full bg-violet-500/20 flex items-center justify-center mb-4">
-              <Camera className="w-10 h-10 text-violet-400" />
+            <div className="w-20 h-20 rounded-full bg-dourado/20 flex items-center justify-center mb-4">
+              <Camera className="w-10 h-10 text-dourado" />
             </div>
-            <p className="text-white font-medium mb-1">Tire uma foto da refeição</p>
-            <p className="text-slate-500 text-sm">ou selecione da galeria</p>
+            <p className="text-foreground font-medium mb-1">Tire uma foto da refeição</p>
+            <p className="text-foreground-muted text-sm">ou selecione da galeria</p>
           </motion.div>
         </div>
 
@@ -194,6 +207,29 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
           )}
         </AnimatePresence>
 
+        {/* AI Usage Counter */}
+        {aiUsage && (
+          <div className="px-4 mb-4">
+            <div className="bg-white border border-border rounded-xl p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm text-foreground-secondary">Analises IA este mes</span>
+                <span className={`text-sm font-medium ${aiUsage.remaining <= 3 ? 'text-red-500' : 'text-foreground'}`}>
+                  {aiUsage.used}/{aiUsage.limit}
+                </span>
+              </div>
+              <div className="h-2 bg-background-elevated rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${aiUsage.remaining <= 3 ? 'bg-red-400' : 'bg-dourado'}`}
+                  style={{ width: `${Math.min(100, (aiUsage.used / aiUsage.limit) * 100)}%` }}
+                />
+              </div>
+              {aiUsage.remaining === 0 && (
+                <p className="text-xs text-red-500 mt-1.5">Limite atingido. Renova no proximo mes.</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Botões de captura */}
         <div className="px-4 mb-6">
           <div className="grid grid-cols-2 gap-3">
@@ -201,7 +237,8 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => cameraInputRef.current?.click()}
-              className="py-4 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-xl font-medium flex items-center justify-center gap-2"
+              disabled={aiUsage?.remaining === 0}
+              className="py-4 bg-gradient-to-r from-dourado to-dourado/70 text-white rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Camera className="w-5 h-5" />
               <span>Câmera</span>
@@ -211,7 +248,8 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => fileInputRef.current?.click()}
-              className="py-4 bg-[#1E1E2E] text-white rounded-xl font-medium border border-[#2E2E3E] flex items-center justify-center gap-2"
+              disabled={aiUsage?.remaining === 0}
+              className="py-4 bg-background-elevated text-foreground rounded-xl font-medium border border-border flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ImageIcon className="w-5 h-5" />
               <span>Galeria</span>
@@ -238,9 +276,9 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
 
         {/* Dicas */}
         <div className="px-4">
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
-            <h3 className="text-white font-medium mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-violet-400" />
+          <div className="bg-white border border-border rounded-xl p-4">
+            <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-dourado" />
               Dicas para melhor análise
             </h3>
             <div className="space-y-2">
@@ -253,7 +291,7 @@ export function AIMealAnalyzer({ onAnalysisComplete, onCancel }: AIMealAnalyzerP
                   className="flex items-center gap-3"
                 >
                   <span className="text-lg">{tip.icon}</span>
-                  <span className="text-slate-400 text-sm">{tip.text}</span>
+                  <span className="text-foreground-secondary text-sm">{tip.text}</span>
                 </motion.div>
               ))}
             </div>

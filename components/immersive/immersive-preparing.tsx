@@ -42,24 +42,24 @@ export function ImmersivePreparing({
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6',
+        'fixed inset-0 z-50 bg-[#1a1615] flex flex-col items-center justify-center px-6',
         className
       )}
     >
       {/* Icon */}
       <div
         className={cn(
-          'h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 transition-all duration-500',
+          'h-20 w-20 rounded-2xl bg-dourado/10 flex items-center justify-center mb-8 transition-all duration-500',
           showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
         )}
       >
-        <Dumbbell className="h-10 w-10 text-primary" />
+        <Dumbbell className="h-10 w-10 text-dourado" />
       </div>
 
       {/* Title */}
       <h2
         className={cn(
-          'text-xl text-muted-foreground mb-4 transition-all duration-500 delay-100',
+          'text-xl text-white/60 tracking-widest mb-4 transition-all duration-500 delay-100',
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         )}
       >
@@ -75,11 +75,11 @@ export function ImmersivePreparing({
       >
         <div
           className={cn(
-            'h-32 w-32 rounded-full border-4 border-primary flex items-center justify-center transition-transform',
+            'h-32 w-32 rounded-full border-4 border-dourado flex items-center justify-center transition-transform',
             countdown > 0 && 'animate-pulse'
           )}
         >
-          <span className="text-6xl font-bold tabular-nums">
+          <span className="text-6xl font-bold text-white tabular-nums">
             {countdown > 0 ? countdown : '✓'}
           </span>
         </div>
@@ -92,8 +92,8 @@ export function ImmersivePreparing({
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         )}
       >
-        <h1 className="text-2xl font-bold mb-2">{workoutName}</h1>
-        <p className="text-muted-foreground">{exerciseCount} exercícios</p>
+        <h1 className="text-2xl font-bold text-white font-heading mb-2">{workoutName}</h1>
+        <p className="text-white/50">{exerciseCount} exercícios</p>
       </div>
     </div>
   )

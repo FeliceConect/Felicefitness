@@ -38,7 +38,7 @@ export function RestTimerModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-[#0A0A0F]/95 backdrop-blur-sm flex flex-col items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center"
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -47,7 +47,7 @@ export function RestTimerModal({
             className="text-center"
           >
             {/* Timer label */}
-            <p className="text-slate-400 text-lg mb-8">Descanse</p>
+            <p className="text-foreground-secondary text-lg mb-8">Descanse</p>
 
             {/* Circular timer */}
             <div className="relative w-64 h-64 mx-auto mb-8">
@@ -57,7 +57,7 @@ export function RestTimerModal({
                   cx="128"
                   cy="128"
                   r={radius}
-                  stroke="rgba(139, 92, 246, 0.2)"
+                  stroke="rgba(194, 152, 99, 0.2)"
                   strokeWidth="8"
                   fill="none"
                 />
@@ -78,8 +78,8 @@ export function RestTimerModal({
                 />
                 <defs>
                   <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#8B5CF6" />
-                    <stop offset="100%" stopColor="#06B6D4" />
+                    <stop offset="0%" stopColor="#c29863" />
+                    <stop offset="100%" stopColor="#663739" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -94,7 +94,7 @@ export function RestTimerModal({
                 >
                   {formatTime(timeRemaining)}
                 </motion.span>
-                <span className="text-slate-500 text-sm mt-2">
+                <span className="text-foreground-muted text-sm mt-2">
                   de {formatTime(totalTime)}
                 </span>
               </div>
@@ -126,7 +126,7 @@ export function RestTimerModal({
             <Button
               variant="ghost"
               onClick={onSkip}
-              className="text-slate-400 hover:text-white gap-2"
+              className="text-foreground-secondary hover:text-foreground gap-2"
             >
               <SkipForward className="w-4 h-4" />
               Pular descanso

@@ -24,7 +24,7 @@ export function StatCard({
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        'bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4',
+        'bg-white border border-border rounded-xl p-4',
         'flex flex-col items-center justify-center text-center',
         'min-w-[100px]',
         onClick && 'cursor-pointer',
@@ -32,8 +32,8 @@ export function StatCard({
       )}
     >
       <span className="text-2xl mb-1">{icon}</span>
-      <span className="text-xl font-bold text-white">{value}</span>
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xl font-bold text-foreground">{value}</span>
+      <span className="text-xs text-foreground-secondary">{label}</span>
     </motion.div>
   )
 }

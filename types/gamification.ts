@@ -121,7 +121,7 @@ export interface DayData {
   waterGoal: number
   checkinDone: boolean
   sleepLogged: boolean
-  revoladeOnTime?: boolean
+  medicamentoOnTime?: boolean
 }
 
 export interface DailyScoreHistory {
@@ -221,7 +221,7 @@ export interface UserStats {
   checkins: number
 
   // Especial
-  revoladeStreak: number
+  medicamentoStreak: number
 }
 
 // ========== HOOK RETURN TYPE ==========

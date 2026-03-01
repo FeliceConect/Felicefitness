@@ -67,18 +67,18 @@ export default function MensagensPage() {
       <div className="flex items-center gap-4">
         <Link
           href="/"
-          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+          className="p-2 rounded-lg bg-white hover:bg-background-elevated transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 text-white" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-white">Mensagens</h1>
-          <p className="text-sm text-slate-400">Fale com seus profissionais</p>
+          <h1 className="text-xl font-bold text-foreground">Mensagens</h1>
+          <p className="text-sm text-foreground-secondary">Fale com seus profissionais</p>
         </div>
       </div>
 
       {/* Lista de Conversas */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 min-h-[60vh] overflow-hidden">
+      <div className="bg-white rounded-xl border border-border min-h-[60vh] overflow-hidden">
         <ConversationsList
           onSelectConversation={setSelectedConversation}
           selectedId={undefined}
@@ -86,8 +86,8 @@ export default function MensagensPage() {
       </div>
 
       {/* Info */}
-      <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600">
-        <p className="text-sm text-slate-400 text-center">
+      <div className="bg-background-elevated/30 rounded-xl p-4 border border-border">
+        <p className="text-sm text-foreground-secondary text-center">
           Aqui você pode conversar com seu nutricionista ou personal trainer.
           As conversas são iniciadas automaticamente quando você é atribuído a um profissional.
         </p>

@@ -46,7 +46,7 @@ function PreferenceRow({
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl overflow-hidden">
+    <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
       <button
         onClick={() => setExpanded(!expanded)}
         disabled={disabled}
@@ -54,16 +54,16 @@ function PreferenceRow({
       >
         <div className={cn(
           'w-10 h-10 rounded-xl flex items-center justify-center',
-          enabled ? 'bg-violet-500/20 text-violet-400' : 'bg-slate-800 text-slate-500'
+          enabled ? 'bg-dourado/10 text-dourado' : 'bg-background-elevated text-foreground-muted'
         )}>
           {icon}
         </div>
 
         <div className="flex-1">
-          <p className={cn('font-medium', enabled ? 'text-white' : 'text-slate-400')}>
+          <p className={cn('font-medium', enabled ? 'text-foreground' : 'text-foreground-muted')}>
             {label}
           </p>
-          <p className="text-xs text-slate-500">{description}</p>
+          <p className="text-xs text-foreground-secondary">{description}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -75,18 +75,18 @@ function PreferenceRow({
             disabled={disabled}
             className={cn(
               'w-12 h-7 rounded-full transition-colors relative',
-              enabled ? 'bg-violet-500' : 'bg-slate-700'
+              enabled ? 'bg-dourado' : 'bg-border'
             )}
           >
             <motion.div
               animate={{ x: enabled ? 22 : 2 }}
-              className="absolute top-1 w-5 h-5 bg-white rounded-full"
+              className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm"
             />
           </button>
 
           {children && (
             <ChevronRight className={cn(
-              'w-5 h-5 text-slate-500 transition-transform',
+              'w-5 h-5 text-foreground-muted transition-transform',
               expanded && 'rotate-90'
             )} />
           )}
@@ -98,7 +98,7 @@ function PreferenceRow({
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="border-t border-[#2E2E3E] p-4"
+          className="border-t border-border p-4"
         >
           {children}
         </motion.div>
@@ -117,13 +117,13 @@ interface TimeInputProps {
 function TimeInput({ label, value, onChange, disabled }: TimeInputProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-400">{label}</span>
+      <span className="text-sm text-foreground-secondary">{label}</span>
       <input
         type="time"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="bg-[#0A0A0F] border border-[#2E2E3E] rounded-lg px-3 py-1.5 text-white text-sm"
+        className="bg-background-input border border-border rounded-lg px-3 py-1.5 text-foreground text-sm"
       />
     </div>
   )
@@ -152,22 +152,22 @@ function NumberInput({
 }: NumberInputProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-400">{label}</span>
+      <span className="text-sm text-foreground-secondary">{label}</span>
       <div className="flex items-center gap-2">
         <button
           onClick={() => onChange(Math.max(min, value - step))}
           disabled={disabled || value <= min}
-          className="w-8 h-8 rounded-lg bg-[#0A0A0F] border border-[#2E2E3E] flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-50"
+          className="w-8 h-8 rounded-lg bg-background-input border border-border flex items-center justify-center text-foreground-secondary hover:text-foreground disabled:opacity-50"
         >
           <Minus className="w-4 h-4" />
         </button>
-        <span className="w-16 text-center text-white font-medium">
+        <span className="w-16 text-center text-foreground font-medium">
           {value}{suffix}
         </span>
         <button
           onClick={() => onChange(Math.min(max, value + step))}
           disabled={disabled || value >= max}
-          className="w-8 h-8 rounded-lg bg-[#0A0A0F] border border-[#2E2E3E] flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-50"
+          className="w-8 h-8 rounded-lg bg-background-input border border-border flex items-center justify-center text-foreground-secondary hover:text-foreground disabled:opacity-50"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -204,13 +204,13 @@ export function NotificationPreferencesForm({
   return (
     <div className="space-y-3">
       {/* Master toggle */}
-      <div className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/20 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-dourado/10 to-vinho/5 border border-dourado/20 rounded-xl p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bell className="w-5 h-5 text-violet-400" />
+            <Bell className="w-5 h-5 text-dourado" />
             <div>
-              <p className="text-white font-medium">Notificações</p>
-              <p className="text-xs text-slate-400">Ativar ou desativar todas</p>
+              <p className="text-foreground font-medium">Notificações</p>
+              <p className="text-xs text-foreground-secondary">Ativar ou desativar todas</p>
             </div>
           </div>
           <button
@@ -218,7 +218,7 @@ export function NotificationPreferencesForm({
             disabled={disabled}
             className={cn(
               'w-12 h-7 rounded-full transition-colors relative',
-              preferences.enabled ? 'bg-violet-500' : 'bg-slate-700'
+              preferences.enabled ? 'bg-dourado' : 'bg-border'
             )}
           >
             <motion.div
@@ -306,7 +306,7 @@ export function NotificationPreferencesForm({
         <PreferenceRow
           icon={<Pill className="w-5 h-5" />}
           label="Medicamento"
-          description="Lembrete do Revolade"
+          description="Lembrete de medicamentos"
           enabled={preferences.medicamento.enabled}
           onToggle={() => updateMedicamento({ enabled: !preferences.medicamento.enabled })}
           disabled={disabled}

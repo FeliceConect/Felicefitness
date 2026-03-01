@@ -74,7 +74,8 @@ export function useMoodTracking(): UseMoodTrackingReturn {
     }
 
     loadMoods()
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Today's mood
   const todayMood = checkins.find((c) => c.data === today)?.humor || null
@@ -218,7 +219,8 @@ export function useMoodTracking(): UseMoodTrackingReturn {
         throw error
       }
     },
-    [supabase, today]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [today]
   )
 
   return {

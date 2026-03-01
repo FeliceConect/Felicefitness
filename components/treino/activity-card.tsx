@@ -25,7 +25,7 @@ export function ActivityCard({ activity, onDelete, index = 0 }: ActivityCardProp
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+      className="bg-white border border-border rounded-xl p-4"
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
@@ -39,8 +39,8 @@ export function ActivityCard({ activity, onDelete, index = 0 }: ActivityCardProp
 
           {/* Info */}
           <div>
-            <h3 className="text-white font-medium">{displayName}</h3>
-            <div className="flex items-center gap-3 text-sm text-slate-400 mt-1">
+            <h3 className="text-foreground font-medium">{displayName}</h3>
+            <div className="flex items-center gap-3 text-sm text-foreground-secondary mt-1">
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
                 {activity.duration_minutes} min
@@ -56,7 +56,7 @@ export function ActivityCard({ activity, onDelete, index = 0 }: ActivityCardProp
         {onDelete && (
           <button
             onClick={() => onDelete(activity.id)}
-            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+            className="p-2 text-foreground-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -72,12 +72,12 @@ export function ActivityCard({ activity, onDelete, index = 0 }: ActivityCardProp
           </span>
         )}
         {activity.distance_km && (
-          <span className="text-cyan-400">
+          <span className="text-dourado">
             {activity.distance_km} km
           </span>
         )}
         {activity.location && (
-          <span className="flex items-center gap-1 text-slate-400">
+          <span className="flex items-center gap-1 text-foreground-secondary">
             <MapPin className="w-3.5 h-3.5" />
             {activity.location}
           </span>
@@ -86,7 +86,7 @@ export function ActivityCard({ activity, onDelete, index = 0 }: ActivityCardProp
 
       {/* Notes */}
       {activity.notes && (
-        <p className="mt-2 text-sm text-slate-500 italic">
+        <p className="mt-2 text-sm text-foreground-muted italic">
           {activity.notes}
         </p>
       )}

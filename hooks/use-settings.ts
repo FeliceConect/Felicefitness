@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import type {
   AppSettings,
   Goals,
-  RevoladeSettings,
   WorkoutPreferences,
   NutritionPreferences,
   AppearanceSettings,
@@ -59,7 +58,6 @@ export function useSettings(): UseSettingsReturn {
             horas_sono: profile.meta_horas_sono ?? defaultSettings.goals.horas_sono
           },
           // Use JSON fields if they exist, otherwise use defaults
-          revolade: profile.config_revolade ?? defaultSettings.revolade,
           workout: profile.config_workout ?? defaultSettings.workout,
           nutrition: profile.config_nutrition ?? defaultSettings.nutrition,
           notifications: profile.config_notifications ?? defaultSettings.notifications,
@@ -80,7 +78,8 @@ export function useSettings(): UseSettingsReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const saveSettings = useCallback(async (newSettings: Partial<AppSettings>) => {
     try {
@@ -107,7 +106,6 @@ export function useSettings(): UseSettingsReturn {
       }
 
       // Store other settings as JSON (these columns may not exist yet)
-      if (newSettings.revolade) updateData.config_revolade = newSettings.revolade
       if (newSettings.workout) updateData.config_workout = newSettings.workout
       if (newSettings.nutrition) updateData.config_nutrition = newSettings.nutrition
       if (newSettings.notifications) updateData.config_notifications = newSettings.notifications
@@ -127,7 +125,8 @@ export function useSettings(): UseSettingsReturn {
       console.error('Error saving settings:', err)
       throw err
     }
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const updateSettings = useCallback(async (newSettings: Partial<AppSettings>) => {
     await saveSettings(newSettings)
@@ -136,11 +135,6 @@ export function useSettings(): UseSettingsReturn {
   const updateGoals = useCallback(async (goals: Partial<Goals>) => {
     const updatedGoals = { ...settings?.goals, ...goals } as Goals
     await saveSettings({ goals: updatedGoals })
-  }, [settings, saveSettings])
-
-  const updateRevoladeSettings = useCallback(async (revolade: Partial<RevoladeSettings>) => {
-    const updatedRevolade = { ...settings?.revolade, ...revolade } as RevoladeSettings
-    await saveSettings({ revolade: updatedRevolade })
   }, [settings, saveSettings])
 
   const updateWorkoutPreferences = useCallback(async (workout: Partial<WorkoutPreferences>) => {
@@ -183,7 +177,6 @@ export function useSettings(): UseSettingsReturn {
     error,
     updateSettings,
     updateGoals,
-    updateRevoladeSettings,
     updateWorkoutPreferences,
     updateNutritionPreferences,
     updateAppearance,

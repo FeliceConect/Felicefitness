@@ -7,7 +7,6 @@ import {
   calculateTrend,
   getDaysInRange
 } from '@/lib/reports'
-import { generateInsightsFromSummary } from '@/lib/reports/insights-engine'
 import type {
   ReportPeriod,
   DateRange,
@@ -291,7 +290,8 @@ export function useAnalytics(): UseAnalyticsReturn {
       console.error('Error fetching summary:', err)
       return getEmptySummary(period, range)
     }
-  }, [supabase, period])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period])
 
   const getEmptySummary = (currentPeriod: ReportPeriod, range: DateRange): PeriodSummary => ({
     period: currentPeriod,
@@ -397,8 +397,7 @@ export function useAnalytics(): UseAnalyticsReturn {
         const calculatedTrends = calculateTrends(currentSummary, prevSummary)
         setTrends(calculatedTrends)
 
-        const generatedInsights = generateInsightsFromSummary(currentSummary, prevSummary)
-        setInsights(generatedInsights)
+        setInsights([])
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch analytics'))

@@ -150,7 +150,8 @@ export function useGoals(): UseGoalsReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const updateGoals = useCallback(async (newGoals: Partial<Goals>) => {
     try {
@@ -186,7 +187,8 @@ export function useGoals(): UseGoalsReturn {
       console.error('Error updating goals:', err)
       throw err
     }
-  }, [goals, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goals])
 
 // Helper function to calculate age from birth date
 function calculateAge(birthDate: string): number {

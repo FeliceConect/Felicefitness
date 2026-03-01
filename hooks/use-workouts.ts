@@ -306,7 +306,8 @@ export function useWorkouts(): UseWorkoutsReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase, today])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today])
 
   useEffect(() => {
     loadData()

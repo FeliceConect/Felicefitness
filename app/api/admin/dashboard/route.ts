@@ -123,6 +123,51 @@ export async function GET() {
     const nonAdminClients = allClients?.filter(c => !['super_admin', 'admin'].includes(c.role)) || []
     const clientsAtRisk = nonAdminClients.filter(c => !activeUserIds.has(c.id)).length
 
+    // Top performers (ranking)
+    const { data: activeRankings } = await supabaseAdmin
+      .from('fitness_rankings')
+      .select('id')
+      .eq('is_active', true)
+      .limit(1)
+
+    let topPerformers: Array<{ name: string; points: number; position: number }> = []
+    if (activeRankings && activeRankings.length > 0) {
+      const { data: topParticipants } = await supabaseAdmin
+        .from('fitness_ranking_participants')
+        .select('user_id, total_points')
+        .eq('ranking_id', activeRankings[0].id)
+        .order('total_points', { ascending: false })
+        .limit(5)
+
+      if (topParticipants && topParticipants.length > 0) {
+        const topUserIds = topParticipants.map(p => p.user_id)
+        const { data: topProfiles } = await supabaseAdmin
+          .from('fitness_profiles')
+          .select('id, nome, display_name, apelido_ranking')
+          .in('id', topUserIds)
+
+        const profileMap: Record<string, string> = {}
+        for (const p of (topProfiles || [])) {
+          profileMap[p.id] = p.display_name || p.apelido_ranking || p.nome?.split(' ')[0] || 'Anônimo'
+        }
+
+        topPerformers = topParticipants.map((p, i) => ({
+          name: profileMap[p.user_id] || 'Anônimo',
+          points: p.total_points || 0,
+          position: i + 1
+        }))
+      }
+    }
+
+    // Próximas consultas de hoje
+    const { data: todayAppointments } = await supabaseAdmin
+      .from('fitness_appointments')
+      .select('id, patient_id, professional_id, date, start_time, appointment_type, status')
+      .eq('date', today)
+      .in('status', ['scheduled', 'confirmed'])
+      .order('start_time', { ascending: true })
+      .limit(5)
+
     // Atividade recente (últimas 10)
     const { data: recentWorkouts } = await supabaseAdmin
       .from('fitness_workouts')
@@ -184,7 +229,9 @@ export async function GET() {
         apiCostMonth,
         clientsAtRisk
       },
-      recentActivity
+      recentActivity,
+      topPerformers,
+      todayAppointments: todayAppointments || []
     })
 
   } catch (error) {

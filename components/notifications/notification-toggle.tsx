@@ -114,11 +114,11 @@ export function NotificationToggle({
           {showLabel && <span className="text-sm font-medium">Verificando suporte...</span>}
         </div>
         {showLabel && (
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 space-y-2">
-            <p className="text-slate-300 text-xs font-mono">
+          <div className="bg-background-elevated border border-border rounded-lg p-3 space-y-2">
+            <p className="text-foreground-secondary text-xs font-mono">
               SW={hasServiceWorker ? '✓' : '✗'} Push={hasPushManager ? '✓' : '✗'} Notif={hasNotification ? '✓' : '✗'} iOS={iosVersion || '?'}
             </p>
-            <p className="text-slate-400 text-xs">
+            <p className="text-foreground-muted text-xs">
               {iosUnsupported
                 ? 'iOS 16.4+ é necessário para notificações push em PWA.'
                 : 'Tente: fechar completamente e reabrir o app.'}
@@ -142,7 +142,7 @@ export function NotificationToggle({
             <p className="text-amber-300 text-sm">
               Para receber notificações no iPhone:
             </p>
-            <ol className="text-slate-400 text-xs space-y-1 list-decimal pl-4">
+            <ol className="text-foreground-muted text-xs space-y-1 list-decimal pl-4">
               <li>Toque no botão <Share className="w-3 h-3 inline" /> Compartilhar do Safari</li>
               <li>Role e toque em &quot;Adicionar à Tela de Início&quot;</li>
               <li>Abra o app pela Tela de Início</li>
@@ -157,12 +157,12 @@ export function NotificationToggle({
   // Não suportado (outros navegadores)
   if (!isSupported && !canAttemptSubscription) {
     return (
-      <div className="flex items-center gap-3 text-slate-500">
+      <div className="flex items-center gap-3 text-foreground-muted">
         <BellOff className={iconSizes[size]} />
         {showLabel && (
           <div>
             <span className="text-sm block">Notificações não suportadas</span>
-            <span className="text-xs text-slate-600">
+            <span className="text-xs text-foreground-muted">
               {isIOS ? 'Abra pelo app na Tela de Início' : 'Use o Safari ou Chrome para ativar'}
             </span>
           </div>
@@ -179,9 +179,9 @@ export function NotificationToggle({
         {showLabel && (
           <div>
             <span className="text-sm block">Permissão negada</span>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-foreground-muted">
               {isIOS
-                ? 'Vá em Ajustes → FeliceFit → Notificações'
+                ? 'Vá em Ajustes → Complexo Wellness → Notificações'
                 : 'Ative nas configurações do navegador'}
             </span>
           </div>
@@ -193,7 +193,7 @@ export function NotificationToggle({
   // Loading inicial
   if (status === 'loading') {
     return (
-      <div className="flex items-center gap-3 text-slate-400">
+      <div className="flex items-center gap-3 text-foreground-muted">
         <Loader2 className={cn(iconSizes[size], 'animate-spin')} />
         {showLabel && <span className="text-sm">Verificando...</span>}
       </div>
@@ -214,8 +214,8 @@ export function NotificationToggle({
             'rounded-xl transition-all',
             sizeClasses[size],
             isSubscribed
-              ? 'bg-violet-500 text-white'
-              : 'bg-[#1E1E2E] text-slate-400 hover:text-white border border-[#2E2E3E]',
+              ? 'bg-dourado text-white'
+              : 'bg-background-elevated text-foreground-muted hover:text-foreground border border-border',
             isLoading && 'opacity-50 cursor-not-allowed'
           )}
         >
@@ -230,17 +230,17 @@ export function NotificationToggle({
 
         {showLabel && (
           <div className="flex-1">
-            <p className="text-white text-sm font-medium">
+            <p className="text-foreground text-sm font-medium">
               {isSubscribed ? 'Notificações ativas' : 'Notificações desativadas'}
             </p>
             {isSubscribed && !displayError && (
-              <p className="text-slate-500 text-xs flex items-center gap-1">
-                <CheckCircle className="w-3 h-3 text-emerald-400" />
+              <p className="text-foreground-muted text-xs flex items-center gap-1">
+                <CheckCircle className="w-3 h-3 text-success" />
                 Você receberá lembretes
               </p>
             )}
             {!isSubscribed && !displayError && (
-              <p className="text-slate-500 text-xs">
+              <p className="text-foreground-muted text-xs">
                 Toque para ativar lembretes
               </p>
             )}

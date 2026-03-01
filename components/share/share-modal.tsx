@@ -75,7 +75,7 @@ export function ShareModal({
         case 'native':
           if (navigator.share && navigator.canShare?.({ files: [file] })) {
             await navigator.share({
-              title: 'FeliceFit',
+              title: 'Complexo Wellness',
               text: shareText,
               files: [file],
             })

@@ -94,7 +94,7 @@ export default function NovaFotoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
@@ -107,14 +107,14 @@ export default function NovaFotoPage() {
               handleRetake()
             }
           }}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Nova Foto</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-2xl font-bold text-foreground">Nova Foto</h1>
+        <p className="text-foreground-secondary text-sm">
           {step === 'type' && 'Selecione o tipo de foto'}
           {step === 'capture' && `Tire uma foto: ${PHOTO_TYPE_LABELS[photoType]}`}
           {step === 'preview' && 'Revise e salve sua foto'}
@@ -132,7 +132,7 @@ export default function NovaFotoPage() {
             className="px-4"
           >
             <div className="mb-6">
-              <p className="text-sm text-slate-400 mb-3">Tipo de foto</p>
+              <p className="text-sm text-foreground-secondary mb-3">Tipo de foto</p>
               <PhotoTypeSelector
                 selected={photoType}
                 onChange={setPhotoType}
@@ -140,11 +140,11 @@ export default function NovaFotoPage() {
             </div>
 
             {/* Dica */}
-            <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 mb-6">
-              <p className="text-sm text-slate-300 mb-2">
+            <div className="bg-white border border-border rounded-xl p-4 mb-6">
+              <p className="text-sm text-foreground-secondary mb-2">
                 Dicas para {PHOTO_TYPE_LABELS[photoType]}:
               </p>
-              <ul className="text-sm text-slate-500 space-y-1">
+              <ul className="text-sm text-foreground-muted space-y-1">
                 <li>- Use roupas justas ou de praia</li>
                 <li>- Mantenha boa iluminação</li>
                 <li>- Posicione-se sempre no mesmo local</li>
@@ -158,7 +158,7 @@ export default function NovaFotoPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setStep('capture')}
-                className="flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-xl font-medium"
+                className="flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-dourado to-dourado text-white rounded-xl font-medium"
               >
                 <Camera className="w-5 h-5" />
                 <span>Usar Câmera</span>
@@ -168,7 +168,7 @@ export default function NovaFotoPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 py-4 bg-[#1E1E2E] text-white rounded-xl font-medium border border-[#2E2E3E]"
+                className="flex items-center justify-center gap-2 py-4 bg-background-elevated text-white rounded-xl font-medium border border-border"
               >
                 <ImageIcon className="w-5 h-5" />
                 <span>Da Galeria</span>
@@ -218,7 +218,7 @@ export default function NovaFotoPage() {
           >
             {/* Preview da foto */}
             <div className="relative mb-6">
-              <div className="aspect-[3/4] max-w-[300px] mx-auto rounded-2xl overflow-hidden bg-[#14141F]">
+              <div className="aspect-[3/4] max-w-[300px] mx-auto rounded-2xl overflow-hidden bg-white">
                 <img
                   src={previewUrl}
                   alt="Preview"
@@ -251,56 +251,56 @@ export default function NovaFotoPage() {
 
             {/* Dados opcionais */}
             <div className="space-y-4 mb-6">
-              <p className="text-sm text-slate-400">Dados opcionais</p>
+              <p className="text-sm text-foreground-secondary">Dados opcionais</p>
 
-              <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4 space-y-4">
+              <div className="bg-white border border-border rounded-xl p-4 space-y-4">
                 {/* Data */}
                 <div>
-                  <label className="text-xs text-slate-500 block mb-1">Data</label>
+                  <label className="text-xs text-foreground-muted block mb-1">Data</label>
                   <input
                     type="date"
                     value={data}
                     onChange={(e) => setData(e.target.value)}
                     max={format(new Date(), 'yyyy-MM-dd')}
-                    className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-500"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:border-dourado"
                   />
                 </div>
 
                 {/* Peso e Gordura */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-slate-500 block mb-1">Peso (kg)</label>
+                    <label className="text-xs text-foreground-muted block mb-1">Peso (kg)</label>
                     <input
                       type="number"
                       step="0.1"
                       placeholder="82.5"
                       value={peso}
                       onChange={(e) => setPeso(e.target.value)}
-                      className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-500"
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:border-dourado"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-500 block mb-1">% Gordura</label>
+                    <label className="text-xs text-foreground-muted block mb-1">% Gordura</label>
                     <input
                       type="number"
                       step="0.1"
                       placeholder="17.3"
                       value={percentualGordura}
                       onChange={(e) => setPercentualGordura(e.target.value)}
-                      className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-500"
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:border-dourado"
                     />
                   </div>
                 </div>
 
                 {/* Notas */}
                 <div>
-                  <label className="text-xs text-slate-500 block mb-1">Notas</label>
+                  <label className="text-xs text-foreground-muted block mb-1">Notas</label>
                   <textarea
                     placeholder="Ex: 3 meses de treino..."
                     value={notas}
                     onChange={(e) => setNotas(e.target.value)}
                     rows={2}
-                    className="w-full bg-[#0A0A0F] border border-[#2E2E3E] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-500 resize-none"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:border-dourado resize-none"
                   />
                 </div>
               </div>
@@ -316,8 +316,8 @@ export default function NovaFotoPage() {
                 className={cn(
                   'w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2',
                   isSaving
-                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white'
+                    ? 'bg-background-elevated text-foreground-secondary cursor-not-allowed'
+                    : 'bg-gradient-to-r from-dourado to-dourado text-white'
                 )}
               >
                 {isSaving ? (
@@ -337,7 +337,7 @@ export default function NovaFotoPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleRetake}
-                className="w-full py-3 bg-[#1E1E2E] text-slate-400 rounded-xl font-medium border border-[#2E2E3E]"
+                className="w-full py-3 bg-background-elevated text-foreground-secondary rounded-xl font-medium border border-border"
               >
                 Tirar outra foto
               </motion.button>

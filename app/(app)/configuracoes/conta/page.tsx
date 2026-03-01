@@ -102,7 +102,7 @@ export default function ContaPage() {
 
       // Delete all user data first
       await Promise.all([
-        supabase.from('workout_sessions').delete().eq('user_id', user.id),
+        supabase.from('fitness_workouts').delete().eq('user_id', user.id),
         supabase.from('nutrition_logs').delete().eq('user_id', user.id),
         supabase.from('water_logs').delete().eq('user_id', user.id),
         supabase.from('body_measurements').delete().eq('user_id', user.id),

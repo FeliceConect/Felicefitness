@@ -40,32 +40,32 @@ export default function CompartilharTreinoIdPage() {
     if (!user) return
 
     const { data } = await supabase
-      .from('workout_sessions')
+      .from('fitness_workouts')
       .select('*')
       .eq('id', workoutId)
       .eq('user_id', user.id)
       .single() as { data: {
-        workout_name: string
-        duration_minutes: number
+        nome: string
+        duracao_minutos: number
         exercises_count: number
         sets_count: number
-        calories_burned: number
-        completed_at: string
+        calorias_estimadas: number
+        data: string
         prs_count: number
       } | null }
 
     if (data) {
-      const hrs = Math.floor(data.duration_minutes / 60)
-      const mins = data.duration_minutes % 60
+      const hrs = Math.floor(data.duracao_minutos / 60)
+      const mins = data.duracao_minutos % 60
       const duration = hrs > 0 ? `${hrs}h ${mins}min` : `${mins}min`
 
       setWorkout({
-        workoutName: data.workout_name,
+        workoutName: data.nome,
         duration,
         exercises: data.exercises_count,
         sets: data.sets_count,
-        calories: data.calories_burned,
-        date: data.completed_at,
+        calories: data.calorias_estimadas,
+        date: data.data,
         prs: data.prs_count || 0,
         userName: user.user_metadata?.name || 'Atleta',
       })
@@ -87,7 +87,7 @@ export default function CompartilharTreinoIdPage() {
 
         if (canShareFiles) {
           await share({
-            title: 'FeliceFit',
+            title: 'Complexo Wellness',
             text,
             files: [file],
           })

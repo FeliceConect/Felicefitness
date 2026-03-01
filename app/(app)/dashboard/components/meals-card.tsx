@@ -48,12 +48,12 @@ export function MealsCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.35 }}
-      className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4"
+      className="bg-white border border-border rounded-2xl p-4 shadow-sm"
     >
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">🍽️</span>
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
           Alimentação
         </h3>
       </div>
@@ -62,8 +62,8 @@ export function MealsCard({
       <div className="space-y-3 mb-4">
         <div>
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-slate-400">Calorias</span>
-            <span className="text-white">
+            <span className="text-foreground-secondary">Calorias</span>
+            <span className="text-foreground">
               {formatCalories(totalCalorias)} / {formatCalories(metaCalorias)}
             </span>
           </div>
@@ -72,12 +72,12 @@ export function MealsCard({
 
         <div>
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-slate-400">Proteína</span>
-            <span className="text-white">
+            <span className="text-foreground-secondary">Proteína</span>
+            <span className="text-foreground">
               {formatGrams(totalProteinas)} / {formatGrams(metaProteinas)}
             </span>
           </div>
-          <ProgressBar progress={proteinasProgress} height={6} color="#8B5CF6" />
+          <ProgressBar progress={proteinasProgress} height={6} color="#663739" />
         </div>
       </div>
 
@@ -95,9 +95,9 @@ export function MealsCard({
               className={cn(
                 'w-full flex items-center justify-between py-1.5 px-2 rounded-lg',
                 'transition-colors duration-200',
-                isNext && 'bg-amber-500/10 border border-amber-500/30',
+                isNext && 'bg-warning/10 border border-warning/30',
                 isCompleted && 'opacity-70',
-                !isNext && !isCompleted && 'hover:bg-[#1E1E2E]'
+                !isNext && !isCompleted && 'hover:bg-background-elevated'
               )}
             >
               <div className="flex items-center gap-2">
@@ -109,13 +109,13 @@ export function MealsCard({
                 </span>
                 <span className={cn(
                   'text-sm',
-                  isCompleted ? 'text-slate-500' : 'text-slate-300'
+                  isCompleted ? 'text-foreground-muted' : 'text-foreground'
                 )}>
                   {mealInfo.label}
                 </span>
               </div>
               {meal.horario && (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-foreground-muted">
                   {meal.horario}
                 </span>
               )}
@@ -128,7 +128,7 @@ export function MealsCard({
       {meals.length > 4 && (
         <button
           onClick={() => router.push('/alimentacao')}
-          className="w-full text-center text-xs text-violet-400 hover:text-violet-300 mt-2 py-1"
+          className="w-full text-center text-xs text-dourado hover:text-dourado/80 mt-2 py-1"
         >
           Ver todas as refeições
         </button>

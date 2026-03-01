@@ -40,83 +40,25 @@ export function useQuickActions(): UseQuickActionsReturn {
             if (!user) return
 
             const today = getTodayDateSP()
+            const hora = getCurrentTimeSP()
 
-            // Verificar se já existe registro de hoje
-            const { data: existing } = (await supabase
-              .from('agua_registros')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('data', today)
-              .single()) as { data: { id: string; quantidade: number } | null }
-
-            if (existing) {
-              // Atualizar
-              await supabase
-                .from('agua_registros')
-                .update({ quantidade: existing.quantidade + amount } as never)
-                .eq('id', existing.id)
-            } else {
-              // Criar novo
-              await supabase
-                .from('agua_registros')
-                .insert({
-                  user_id: user.id,
-                  data: today,
-                  quantidade: amount,
-                } as never)
-            }
-
-            // Opcional: mostrar toast de sucesso
-            console.log(`Água adicionada: ${amount}ml`)
+            // Inserir novo log de água (consistente com useWaterLog)
+            await supabase
+              .from('fitness_water_logs')
+              .insert({
+                user_id: user.id,
+                data: today,
+                quantidade_ml: amount,
+                horario: hora,
+              } as never)
           } catch (error) {
             console.error('Error adding water:', error)
           }
           break
         }
 
-        case 'mark-revolade': {
-          try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            const today = getTodayDateSP()
-
-            // Buscar suplemento Revolade
-            const { data: revolade } = (await supabase
-              .from('fitness_supplements')
-              .select('id')
-              .eq('user_id', user.id)
-              .ilike('nome', '%revolade%')
-              .single()) as { data: { id: string } | null }
-
-            if (revolade) {
-              // Verificar se já tomou hoje
-              const { data: existing } = (await supabase
-                .from('fitness_supplement_logs')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('suplemento_id', revolade.id)
-                .eq('data', today)
-                .single()) as { data: { id: string } | null }
-
-              if (!existing) {
-                // Registrar tomada
-                await supabase
-                  .from('fitness_supplement_logs')
-                  .insert({
-                    user_id: user.id,
-                    suplemento_id: revolade.id,
-                    data: today,
-                    horario: getCurrentTimeSP(),
-                    tomado: true,
-                  } as never)
-
-                console.log('Revolade marcado como tomado')
-              }
-            }
-          } catch (error) {
-            console.error('Error marking revolade:', error)
-          }
+        case 'mark-supplement': {
+          router.push('/suplementos')
           break
         }
 
@@ -132,7 +74,8 @@ export function useQuickActions(): UseQuickActionsReturn {
           console.log('Unknown action:', action.action)
       }
     }
-  }, [router, supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
 
   // Executar por ID
   const executeById = useCallback(async (actionId: string, params?: Record<string, unknown>) => {

@@ -184,7 +184,7 @@ export default function AnalisarAlimentoPage() {
       case 'alto': return 'text-emerald-400'
       case 'medio': return 'text-amber-400'
       case 'baixo': return 'text-red-400'
-      default: return 'text-slate-400'
+      default: return 'text-foreground-secondary'
     }
   }
 
@@ -199,19 +199,19 @@ export default function AnalisarAlimentoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-safe-top pb-4">
         <div className="flex items-center gap-3 mb-2 pt-4">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-400" />
+            <ArrowLeft className="w-5 h-5 text-foreground-secondary" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white">Analisar Alimento</h1>
-            <p className="text-sm text-slate-400">Fotografe um alimento para análise</p>
+            <h1 className="text-xl font-bold text-foreground">Analisar Alimento</h1>
+            <p className="text-sm text-foreground-secondary">Fotografe um alimento para análise</p>
           </div>
         </div>
       </div>
@@ -230,7 +230,7 @@ export default function AnalisarAlimentoPage() {
               {/* Preview area */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="aspect-square bg-[#14141F] border-2 border-dashed border-[#2E2E3E] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-violet-500/50 transition-colors overflow-hidden"
+                className="aspect-square bg-white border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-dourado/50 transition-colors overflow-hidden"
               >
                 {imagePreview ? (
                   <img
@@ -240,11 +240,11 @@ export default function AnalisarAlimentoPage() {
                   />
                 ) : (
                   <div className="text-center p-8">
-                    <div className="w-20 h-20 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
-                      <Camera className="w-10 h-10 text-violet-400" />
+                    <div className="w-20 h-20 rounded-full bg-dourado/20 flex items-center justify-center mx-auto mb-4">
+                      <Camera className="w-10 h-10 text-dourado" />
                     </div>
-                    <p className="text-white font-medium mb-2">Toque para fotografar</p>
-                    <p className="text-sm text-slate-400">ou selecionar da galeria</p>
+                    <p className="text-foreground font-medium mb-2">Toque para fotografar</p>
+                    <p className="text-sm text-foreground-secondary">ou selecionar da galeria</p>
                   </div>
                 )}
               </div>
@@ -294,9 +294,9 @@ export default function AnalisarAlimentoPage() {
               </div>
 
               {/* Info card */}
-              <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
-                <h3 className="text-sm font-semibold text-white mb-2">Dicas para melhor resultado</h3>
-                <ul className="text-sm text-slate-400 space-y-1">
+              <div className="bg-white border border-border rounded-2xl p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-2">Dicas para melhor resultado</h3>
+                <ul className="text-sm text-foreground-secondary space-y-1">
                   <li>- Fotografe apenas UM alimento por vez</li>
                   <li>- Use boa iluminação</li>
                   <li>- Mostre o alimento claramente</li>
@@ -325,12 +325,12 @@ export default function AnalisarAlimentoPage() {
                     />
                   )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center">
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-dourado flex items-center justify-center">
                   <Loader2 className="w-5 h-5 text-white animate-spin" />
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Analisando...</h2>
-              <p className="text-slate-400 text-center">
+              <h2 className="text-xl font-bold text-foreground mb-2">Analisando...</h2>
+              <p className="text-foreground-secondary text-center">
                 A IA está identificando o alimento<br />e calculando os valores nutricionais
               </p>
             </motion.div>
@@ -346,7 +346,7 @@ export default function AnalisarAlimentoPage() {
               className="space-y-4"
             >
               {/* Food card */}
-              <div className="bg-gradient-to-br from-violet-500/10 to-cyan-500/5 border border-violet-500/20 rounded-2xl overflow-hidden">
+              <div className="bg-gradient-to-br from-dourado/10 to-dourado/5 border border-dourado/20 rounded-2xl overflow-hidden">
                 {/* Image + Name */}
                 <div className="flex items-start gap-4 p-4">
                   <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
@@ -359,12 +359,12 @@ export default function AnalisarAlimentoPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-bold text-white truncate">{result.food.nome}</h2>
+                    <h2 className="text-lg font-bold text-foreground truncate">{result.food.nome}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-lg">
                         {foodCategoryLabels[result.food.categoria]?.icon}
                       </span>
-                      <span className="text-sm text-slate-400">
+                      <span className="text-sm text-foreground-secondary">
                         {foodCategoryLabels[result.food.categoria]?.label}
                       </span>
                     </div>
@@ -376,25 +376,25 @@ export default function AnalisarAlimentoPage() {
 
                 {/* Nutrition info */}
                 <div className="bg-black/20 p-4">
-                  <p className="text-xs text-slate-500 mb-3">
+                  <p className="text-xs text-foreground-muted mb-3">
                     Valores nutricionais por {result.food.porcao_padrao}{result.food.unidade}
                   </p>
                   <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <p className="text-lg font-bold text-white">{result.food.calorias}</p>
-                      <p className="text-[10px] text-slate-400">kcal</p>
+                    <div className="bg-white/50 rounded-lg p-2">
+                      <p className="text-lg font-bold text-foreground">{result.food.calorias}</p>
+                      <p className="text-[10px] text-foreground-secondary">kcal</p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <p className="text-lg font-bold text-violet-400">{result.food.proteinas}g</p>
-                      <p className="text-[10px] text-slate-400">prot</p>
+                    <div className="bg-white/50 rounded-lg p-2">
+                      <p className="text-lg font-bold text-dourado">{result.food.proteinas}g</p>
+                      <p className="text-[10px] text-foreground-secondary">prot</p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-2">
-                      <p className="text-lg font-bold text-cyan-400">{result.food.carboidratos}g</p>
-                      <p className="text-[10px] text-slate-400">carb</p>
+                    <div className="bg-white/50 rounded-lg p-2">
+                      <p className="text-lg font-bold text-dourado">{result.food.carboidratos}g</p>
+                      <p className="text-[10px] text-foreground-secondary">carb</p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-2">
+                    <div className="bg-white/50 rounded-lg p-2">
                       <p className="text-lg font-bold text-amber-400">{result.food.gorduras}g</p>
-                      <p className="text-[10px] text-slate-400">gord</p>
+                      <p className="text-[10px] text-foreground-secondary">gord</p>
                     </div>
                   </div>
                 </div>
@@ -402,25 +402,25 @@ export default function AnalisarAlimentoPage() {
 
               {/* Estimated portion */}
               {result.porcao_estimada && (
-                <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
-                  <h3 className="text-sm font-semibold text-white mb-2">Porção estimada na foto</h3>
-                  <p className="text-slate-400 text-sm mb-3">{result.porcao_estimada.descricao}</p>
+                <div className="bg-white border border-border rounded-2xl p-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Porção estimada na foto</h3>
+                  <p className="text-foreground-secondary text-sm mb-3">{result.porcao_estimada.descricao}</p>
                   <div className="grid grid-cols-4 gap-2 text-center">
                     <div>
-                      <p className="text-sm font-bold text-white">{result.porcao_estimada.calorias}</p>
-                      <p className="text-[10px] text-slate-500">kcal</p>
+                      <p className="text-sm font-bold text-foreground">{result.porcao_estimada.calorias}</p>
+                      <p className="text-[10px] text-foreground-muted">kcal</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-violet-400">{result.porcao_estimada.proteinas}g</p>
-                      <p className="text-[10px] text-slate-500">prot</p>
+                      <p className="text-sm font-bold text-dourado">{result.porcao_estimada.proteinas}g</p>
+                      <p className="text-[10px] text-foreground-muted">prot</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-cyan-400">{result.porcao_estimada.carboidratos}g</p>
-                      <p className="text-[10px] text-slate-500">carb</p>
+                      <p className="text-sm font-bold text-dourado">{result.porcao_estimada.carboidratos}g</p>
+                      <p className="text-[10px] text-foreground-muted">carb</p>
                     </div>
                     <div>
                       <p className="text-sm font-bold text-amber-400">{result.porcao_estimada.gorduras}g</p>
-                      <p className="text-[10px] text-slate-500">gord</p>
+                      <p className="text-[10px] text-foreground-muted">gord</p>
                     </div>
                   </div>
                 </div>
@@ -428,16 +428,16 @@ export default function AnalisarAlimentoPage() {
 
               {/* Common portions */}
               {result.food.porcoes_comuns && result.food.porcoes_comuns.length > 0 && (
-                <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
-                  <h3 className="text-sm font-semibold text-white mb-3">Porções comuns</h3>
+                <div className="bg-white border border-border rounded-2xl p-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Porções comuns</h3>
                   <div className="flex flex-wrap gap-2">
                     {result.food.porcoes_comuns.map((portion, index) => (
                       <span
                         key={index}
                         className={`px-3 py-1.5 rounded-lg text-sm ${
                           portion.isDefault
-                            ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                            : 'bg-slate-800 text-slate-400'
+                            ? 'bg-dourado/20 text-dourado border border-dourado/30'
+                            : 'bg-white text-foreground-secondary'
                         }`}
                       >
                         {portion.label} ({portion.grams}{result.food?.unidade})
@@ -449,12 +449,12 @@ export default function AnalisarAlimentoPage() {
 
               {/* Tips */}
               {result.dicas && result.dicas.length > 0 && (
-                <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
-                  <h3 className="text-sm font-semibold text-white mb-2">Dicas nutricionais</h3>
-                  <ul className="text-sm text-slate-400 space-y-1">
+                <div className="bg-white border border-border rounded-2xl p-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Dicas nutricionais</h3>
+                  <ul className="text-sm text-foreground-secondary space-y-1">
                     {result.dicas.map((dica, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <ChevronRight className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+                        <ChevronRight className="w-4 h-4 text-dourado shrink-0 mt-0.5" />
                         <span>{dica}</span>
                       </li>
                     ))}
@@ -512,16 +512,16 @@ export default function AnalisarAlimentoPage() {
                   <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6">
                     <Check className="w-10 h-10 text-emerald-400" />
                   </div>
-                  <h2 className="text-xl font-bold text-white mb-2">Salvo com sucesso!</h2>
-                  <p className="text-slate-400 text-center">
+                  <h2 className="text-xl font-bold text-foreground mb-2">Salvo com sucesso!</h2>
+                  <p className="text-foreground-secondary text-center">
                     O alimento foi adicionado à sua lista pessoal
                   </p>
                 </>
               ) : (
                 <>
-                  <Loader2 className="w-12 h-12 text-violet-400 animate-spin mb-6" />
-                  <h2 className="text-xl font-bold text-white mb-2">Salvando...</h2>
-                  <p className="text-slate-400 text-center">
+                  <Loader2 className="w-12 h-12 text-dourado animate-spin mb-6" />
+                  <h2 className="text-xl font-bold text-foreground mb-2">Salvando...</h2>
+                  <p className="text-foreground-secondary text-center">
                     Adicionando à sua lista de alimentos
                   </p>
                 </>

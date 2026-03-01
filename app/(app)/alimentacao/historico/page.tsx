@@ -184,7 +184,7 @@ export default function NutritionHistoryPage() {
   const getTrendIcon = (value: number) => {
     if (value > 5) return <TrendingUp className="w-4 h-4 text-emerald-400" />
     if (value < -5) return <TrendingDown className="w-4 h-4 text-red-400" />
-    return <Minus className="w-4 h-4 text-slate-400" />
+    return <Minus className="w-4 h-4 text-foreground-secondary" />
   }
 
   const getProgressColor = (current: number, goal: number) => {
@@ -197,34 +197,34 @@ export default function NutritionHistoryPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando histórico...</p>
+          <Loader2 className="w-8 h-8 text-dourado animate-spin mx-auto mb-4" />
+          <p className="text-foreground-secondary">Carregando histórico...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white mb-2">Histórico Nutricional</h1>
-        <p className="text-slate-400">Acompanhe sua evolução</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Histórico Nutricional</h1>
+        <p className="text-foreground-secondary">Acompanhe sua evolução</p>
       </div>
 
       {/* Time range selector */}
       <div className="px-4 mb-6">
-        <div className="flex bg-[#14141F] rounded-xl p-1">
+        <div className="flex bg-white rounded-xl p-1">
           {(['7dias', '30dias', '90dias'] as TimeRange[]).map(range => (
             <button
               key={range}
@@ -232,8 +232,8 @@ export default function NutritionHistoryPage() {
               className={cn(
                 'flex-1 py-2 text-sm font-medium rounded-lg transition-all',
                 timeRange === range
-                  ? 'bg-violet-500 text-white'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-dourado text-white'
+                  : 'text-foreground-secondary hover:text-foreground'
               )}
             >
               {range === '7dias' ? '7 dias' : range === '30dias' ? '30 dias' : '90 dias'}
@@ -247,18 +247,18 @@ export default function NutritionHistoryPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/20 rounded-xl p-4"
+          className="bg-gradient-to-r from-dourado/10 to-dourado/5 border border-dourado/20 rounded-xl p-4"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-400 mb-1">Taxa de Conformidade</p>
-              <p className="text-3xl font-bold text-white">{compliance}%</p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm text-foreground-secondary mb-1">Taxa de Conformidade</p>
+              <p className="text-3xl font-bold text-foreground">{compliance}%</p>
+              <p className="text-xs text-foreground-muted mt-1">
                 Dias dentro da meta de calorias e proteína
               </p>
             </div>
-            <div className="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center">
-              <Target className="w-8 h-8 text-violet-400" />
+            <div className="w-16 h-16 rounded-full bg-dourado/20 flex items-center justify-center">
+              <Target className="w-8 h-8 text-dourado" />
             </div>
           </div>
         </motion.div>
@@ -266,7 +266,7 @@ export default function NutritionHistoryPage() {
 
       {/* Averages */}
       <div className="px-4 mb-6">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-3">
           Médias do Período
         </h3>
         <motion.div
@@ -275,64 +275,64 @@ export default function NutritionHistoryPage() {
           className="grid grid-cols-2 gap-3"
         >
           {/* Calorias */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-slate-400">Calorias</p>
+              <p className="text-sm text-foreground-secondary">Calorias</p>
               {getTrendIcon(trends.calorias)}
             </div>
             <p className={cn('text-2xl font-bold', getProgressColor(averages.calorias, leonardoGoals.calorias))}>
               {averages.calorias}
             </p>
-            <p className="text-xs text-slate-500">Meta: {leonardoGoals.calorias} kcal</p>
+            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.calorias} kcal</p>
           </div>
 
           {/* Proteína */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-slate-400">Proteína</p>
+              <p className="text-sm text-foreground-secondary">Proteína</p>
               {getTrendIcon(trends.proteinas)}
             </div>
             <p className={cn('text-2xl font-bold', getProgressColor(averages.proteinas, leonardoGoals.proteinas))}>
               {averages.proteinas}g
             </p>
-            <p className="text-xs text-slate-500">Meta: {leonardoGoals.proteinas}g</p>
+            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.proteinas}g</p>
           </div>
 
           {/* Carboidratos */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-slate-400">Carboidratos</p>
+              <p className="text-sm text-foreground-secondary">Carboidratos</p>
               {getTrendIcon(trends.carboidratos)}
             </div>
             <p className={cn('text-2xl font-bold', getProgressColor(averages.carboidratos, leonardoGoals.carboidratos))}>
               {averages.carboidratos}g
             </p>
-            <p className="text-xs text-slate-500">Meta: {leonardoGoals.carboidratos}g</p>
+            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.carboidratos}g</p>
           </div>
 
           {/* Gorduras */}
-          <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+          <div className="bg-white border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-slate-400">Gorduras</p>
+              <p className="text-sm text-foreground-secondary">Gorduras</p>
               {getTrendIcon(trends.gorduras)}
             </div>
             <p className={cn('text-2xl font-bold', getProgressColor(averages.gorduras, leonardoGoals.gorduras))}>
               {averages.gorduras}g
             </p>
-            <p className="text-xs text-slate-500">Meta: {leonardoGoals.gorduras}g</p>
+            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.gorduras}g</p>
           </div>
         </motion.div>
       </div>
 
       {/* Week view */}
       <div className="px-4 mb-6">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-3">
           Esta Semana
         </h3>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
           <div className="flex justify-between">
             {weekDays.map((day, index) => {
@@ -355,7 +355,7 @@ export default function NutritionHistoryPage() {
                 >
                   <p className={cn(
                     'text-xs mb-2',
-                    isToday ? 'text-violet-400 font-medium' : 'text-slate-500'
+                    isToday ? 'text-dourado font-medium' : 'text-foreground-muted'
                   )}>
                     {format(day, 'EEE', { locale: ptBR }).slice(0, 3)}
                   </p>
@@ -363,18 +363,18 @@ export default function NutritionHistoryPage() {
                     className={cn(
                       'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
                       isFuture
-                        ? 'bg-slate-800 text-slate-600'
+                        ? 'bg-white text-foreground-muted'
                         : calPercent >= 90 && calPercent <= 110
                         ? 'bg-emerald-500/20 text-emerald-400'
                         : calPercent > 0
                         ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-slate-800 text-slate-500'
+                        : 'bg-white text-foreground-muted'
                     )}
                   >
                     {format(day, 'd')}
                   </div>
                   {isToday && (
-                    <div className="absolute -bottom-2 w-1 h-1 bg-violet-500 rounded-full" />
+                    <div className="absolute -bottom-2 w-1 h-1 bg-dourado rounded-full" />
                   )}
                 </div>
               )
@@ -385,7 +385,7 @@ export default function NutritionHistoryPage() {
 
       {/* Daily history */}
       <div className="px-4">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-3">
           Histórico Diário
         </h3>
 
@@ -394,16 +394,16 @@ export default function NutritionHistoryPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-8 text-center"
+            className="bg-white border border-border rounded-xl p-8 text-center"
           >
             <div className="text-4xl mb-4">🍽️</div>
-            <p className="text-white font-medium mb-2">Nenhuma refeição registrada</p>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-foreground font-medium mb-2">Nenhuma refeição registrada</p>
+            <p className="text-sm text-foreground-secondary mb-4">
               Comece a registrar suas refeições para acompanhar seu histórico nutricional.
             </p>
             <button
               onClick={() => router.push('/alimentacao/refeicao/nova')}
-              className="bg-violet-500 hover:bg-violet-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="bg-dourado hover:bg-dourado/90 text-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               Registrar primeira refeição
             </button>
@@ -424,10 +424,10 @@ export default function NutritionHistoryPage() {
                 transition={{ delay: index * 0.05 }}
                 onClick={() => setSelectedDate(selectedDate === day.date ? null : day.date)}
                 className={cn(
-                  'bg-[#14141F] border rounded-xl p-4 cursor-pointer transition-all',
+                  'bg-white border rounded-xl p-4 cursor-pointer transition-all',
                   selectedDate === day.date
-                    ? 'border-violet-500/50'
-                    : 'border-[#2E2E3E] hover:border-violet-500/30'
+                    ? 'border-dourado/50'
+                    : 'border-border hover:border-dourado/30'
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -446,16 +446,16 @@ export default function NutritionHistoryPage() {
                       )} />
                     </div>
                     <div>
-                      <p className="text-white font-medium">
+                      <p className="text-foreground font-medium">
                         {format(new Date(day.date), "EEEE, d 'de' MMMM", { locale: ptBR })}
                       </p>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-foreground-secondary">
                         {day.totals.calorias} kcal • {day.totals.proteinas}g prot
                       </p>
                     </div>
                   </div>
                   <ChevronRight className={cn(
-                    'w-5 h-5 text-slate-500 transition-transform',
+                    'w-5 h-5 text-foreground-muted transition-transform',
                     selectedDate === day.date && 'rotate-90'
                   )} />
                 </div>
@@ -465,29 +465,29 @@ export default function NutritionHistoryPage() {
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-4 pt-4 border-t border-[#2E2E3E]"
+                    className="mt-4 pt-4 border-t border-border"
                   >
                     <div className="grid grid-cols-4 gap-4 text-center">
                       <div>
-                        <p className="text-lg font-bold text-white">{day.totals.calorias}</p>
-                        <p className="text-xs text-slate-500">kcal</p>
+                        <p className="text-lg font-bold text-foreground">{day.totals.calorias}</p>
+                        <p className="text-xs text-foreground-muted">kcal</p>
                         <p className="text-xs text-emerald-400 mt-1">{calPercent}%</p>
                       </div>
                       <div>
-                        <p className="text-lg font-bold text-violet-400">{day.totals.proteinas}g</p>
-                        <p className="text-xs text-slate-500">prot</p>
+                        <p className="text-lg font-bold text-dourado">{day.totals.proteinas}g</p>
+                        <p className="text-xs text-foreground-muted">prot</p>
                         <p className="text-xs text-emerald-400 mt-1">{protPercent}%</p>
                       </div>
                       <div>
-                        <p className="text-lg font-bold text-cyan-400">{day.totals.carboidratos}g</p>
-                        <p className="text-xs text-slate-500">carb</p>
+                        <p className="text-lg font-bold text-dourado">{day.totals.carboidratos}g</p>
+                        <p className="text-xs text-foreground-muted">carb</p>
                         <p className="text-xs text-emerald-400 mt-1">
                           {Math.round((day.totals.carboidratos / leonardoGoals.carboidratos) * 100)}%
                         </p>
                       </div>
                       <div>
                         <p className="text-lg font-bold text-amber-400">{day.totals.gorduras}g</p>
-                        <p className="text-xs text-slate-500">gord</p>
+                        <p className="text-xs text-foreground-muted">gord</p>
                         <p className="text-xs text-emerald-400 mt-1">
                           {Math.round((day.totals.gorduras / leonardoGoals.gorduras) * 100)}%
                         </p>

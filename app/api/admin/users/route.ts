@@ -55,9 +55,12 @@ export async function GET(request: NextRequest) {
       .from('fitness_profiles')
       .select('*', { count: 'exact' })
 
-    // Filtrar por busca
+    // Filtrar por busca (sanitize to prevent PostgREST filter injection)
     if (search) {
-      query = query.or(`nome.ilike.%${search}%,email.ilike.%${search}%`)
+      const sanitized = search.replace(/[%_,()]/g, '').trim()
+      if (sanitized) {
+        query = query.or(`nome.ilike.%${sanitized}%,email.ilike.%${sanitized}%`)
+      }
     }
 
     // Filtrar por role
@@ -196,7 +199,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar role
-    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'client']
+    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'client']
     const userRole = role || 'client'
     if (!validRoles.includes(userRole)) {
       return NextResponse.json(
@@ -336,7 +339,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validar role
-    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'client']
+    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'client']
     if (!validRoles.includes(newRole)) {
       return NextResponse.json(
         { success: false, error: 'Role inválido' },

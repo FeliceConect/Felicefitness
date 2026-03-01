@@ -1,4 +1,4 @@
-// Sistema de Níveis - FeliceFit Gamification
+// Sistema de Níveis - Complexo Wellness Gamification
 
 import type { Level } from '@/types/gamification'
 

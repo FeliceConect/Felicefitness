@@ -74,15 +74,15 @@ export function useSleepCorrelations(): UseSleepCorrelationsReturn {
 
       // Fetch workout sessions for correlation
       const { data: workoutData } = await supabase
-        .from('workout_sessions')
-        .select('completed_at, performance_score')
+        .from('fitness_workouts')
+        .select('data, status, nivel_dificuldade')
         .eq('user_id', user.id)
-        .not('completed_at', 'is', null)
-        .gte('completed_at', ninetyDaysAgo.toISOString())
+        .eq('status', 'concluido')
+        .gte('data', ninetyDaysAgo.toISOString().split('T')[0])
 
       const workoutLogs = (workoutData as SupabaseRow[])?.map(w => ({
-        date: w.completed_at?.split('T')[0],
-        performanceScore: w.performance_score || 0,
+        date: w.data,
+        performanceScore: w.nivel_dificuldade || 5,
       })) || []
 
       // Calculate correlations
@@ -101,7 +101,8 @@ export function useSleepCorrelations(): UseSleepCorrelationsReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     fetchCorrelations()

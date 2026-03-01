@@ -80,7 +80,7 @@ export function FloatingActionMenu({
                 transitionDelay: isOpen ? `${index * 50}ms` : `${(enabledActions.length - index - 1) * 30}ms`,
               }}
             >
-              <span className="text-sm font-medium text-white bg-black/70 px-3 py-1.5 rounded-full whitespace-nowrap">
+              <span className="text-sm font-medium text-foreground bg-background-card px-3 py-1.5 rounded-full whitespace-nowrap shadow-md border border-border">
                 {action.label}
               </span>
 
@@ -88,7 +88,7 @@ export function FloatingActionMenu({
                 size="icon"
                 className={cn(
                   'w-12 h-12 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95',
-                  'bg-purple-600 hover:bg-purple-700 text-white'
+                  'bg-dourado hover:bg-primary-hover text-white'
                 )}
                 onClick={() => handleAction(action)}
               >
@@ -103,7 +103,7 @@ export function FloatingActionMenu({
           size="icon"
           className={cn(
             'w-14 h-14 rounded-full shadow-lg transition-all duration-300',
-            'bg-purple-600 hover:bg-purple-700 text-white',
+            'bg-dourado hover:bg-primary-hover text-white',
             isOpen && 'rotate-45'
           )}
           onClick={() => setIsOpen(!isOpen)}

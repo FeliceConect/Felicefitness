@@ -1,4 +1,4 @@
-// Sistema de Conquistas - FeliceFit Gamification
+// Sistema de Conquistas - Complexo Wellness Gamification
 
 import type {
   Achievement,
@@ -608,24 +608,24 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   // ========== SPECIAL (5 conquistas) ==========
   {
-    id: 'revolade_7',
-    name: 'Revolade Certeiro',
-    description: 'Tome Revolade no horário por 7 dias seguidos',
+    id: 'medicamento_7',
+    name: 'Medicamento Certeiro',
+    description: 'Tome seu medicamento no horário por 7 dias seguidos',
     icon: '💊',
     category: 'special',
     tier: 'silver',
     xpReward: TIER_XP.silver,
-    criteria: { type: 'revolade_streak', value: 7 }
+    criteria: { type: 'medicamento_streak', value: 7 }
   },
   {
-    id: 'revolade_30',
+    id: 'medicamento_30',
     name: 'Mestre do Horário',
-    description: 'Tome Revolade no horário por 30 dias seguidos',
+    description: 'Tome seu medicamento no horário por 30 dias seguidos',
     icon: '⏰',
     category: 'special',
     tier: 'gold',
     xpReward: TIER_XP.gold,
-    criteria: { type: 'revolade_streak', value: 30 }
+    criteria: { type: 'medicamento_streak', value: 30 }
   },
   {
     id: 'level_5',
@@ -782,8 +782,8 @@ export function checkUnlockedAchievements(
         unlocked = stats.perfectDayStreak >= (criteria.value || 0)
         break
 
-      case 'revolade_streak':
-        unlocked = stats.revoladeStreak >= (criteria.value || 0)
+      case 'medicamento_streak':
+        unlocked = stats.medicamentoStreak >= (criteria.value || 0)
         break
 
       case 'level':
@@ -864,8 +864,8 @@ export function getAchievementProgress(
     case 'perfect_day_streak':
       current = stats.perfectDayStreak
       break
-    case 'revolade_streak':
-      current = stats.revoladeStreak
+    case 'medicamento_streak':
+      current = stats.medicamentoStreak
       break
     case 'level':
       current = currentLevel

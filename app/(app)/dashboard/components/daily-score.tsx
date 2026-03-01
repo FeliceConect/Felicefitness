@@ -13,10 +13,10 @@ export function DailyScore({ data }: DailyScoreProps) {
   const score = calculateDailyScore(data)
 
   const getScoreColor = () => {
-    if (score >= 90) return '#06B6D4'  // Cyan
-    if (score >= 70) return '#10B981'  // Verde
-    if (score >= 50) return '#F59E0B'  // Amarelo
-    return '#EF4444'                    // Vermelho
+    if (score >= 90) return '#c29863'  // Dourado
+    if (score >= 70) return '#7dad6a'  // Verde
+    if (score >= 50) return '#d4850f'  // Amber
+    return '#a04045'                    // Vermelho
   }
 
   const getScoreLabel = () => {
@@ -38,7 +38,7 @@ export function DailyScore({ data }: DailyScoreProps) {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3, delay: 0.15 }}
-      className="flex-1 bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4"
+      className="flex-1 bg-white border border-border rounded-2xl p-4 shadow-sm"
     >
       <div className="flex items-center gap-3">
         <ProgressRing
@@ -47,22 +47,22 @@ export function DailyScore({ data }: DailyScoreProps) {
           strokeWidth={5}
           color={getScoreColor()}
         >
-          <span className="text-lg font-bold text-white">{score}</span>
+          <span className="text-lg font-bold text-foreground">{score}</span>
         </ProgressRing>
         <div className="flex-1">
-          <p className="text-sm font-medium text-white">{getScoreLabel()}</p>
+          <p className="text-sm font-medium text-foreground">{getScoreLabel()}</p>
           <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1">
             {items.map((item) => (
               <span
                 key={item.key}
                 className={cn(
                   'text-xs',
-                  item.done ? 'text-emerald-400' : 'text-slate-500'
+                  item.done ? 'text-success' : 'text-foreground-muted'
                 )}
               >
                 {item.done ? '✓' : '○'} {item.label}
                 {item.percent !== undefined && !item.done && (
-                  <span className="text-amber-400 ml-0.5">
+                  <span className="text-warning ml-0.5">
                     ({Math.round(item.percent * 100)}%)
                   </span>
                 )}

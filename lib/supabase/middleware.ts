@@ -52,8 +52,8 @@ export async function updateSession(request: NextRequest) {
   // Rotas do portal (exclusivas para profissionais)
   const isPortalRoute = request.nextUrl.pathname.startsWith('/portal')
 
-  // Rotas do app (exclusivas para usuários comuns)
-  const appRoutes = ['/dashboard', '/treino', '/alimentacao', '/hidratacao', '/suplementos', '/fotos', '/bioimpedancia', '/sono', '/bem-estar', '/conquistas', '/perfil', '/coach', '/widgets', '/compartilhar', '/insights']
+  // Rotas do app (exclusivas para pacientes)
+  const appRoutes = ['/dashboard', '/treino', '/alimentacao', '/hidratacao', '/agua', '/fotos', '/bioimpedancia', '/sono', '/bem-estar', '/perfil', '/configuracoes', '/relatorios', '/agenda', '/feed', '/ranking', '/chat', '/mensagens', '/compartilhar', '/notificacoes', '/corpo', '/formularios', '/conquistas']
   const isAppRoute = appRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
@@ -65,16 +65,33 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Verificar se é profissional (personal ou nutricionista)
+  // Rotas do admin
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+
+  // Verificar se é profissional (personal, nutricionista ou coach)
   let isProfessional = false
+  let isAdminUser = false
+  let profile: { role: string; onboarding_completed: boolean } | null = null
 
   if (user) {
+    const { data: profileData } = await supabase
+      .from('fitness_profiles')
+      .select('role, onboarding_completed')
+      .eq('id', user.id)
+      .single()
+
+    profile = profileData
+
+    if (profile?.role === 'super_admin' || profile?.role === 'admin') {
+      isAdminUser = true
+    }
+
     const { data: professional } = await supabase
       .from('fitness_professionals')
       .select('id, is_active')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .maybeSingle() // Usar maybeSingle para evitar erro 406 quando não encontra
+      .maybeSingle()
 
     if (professional) {
       isProfessional = true
@@ -103,16 +120,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Se está autenticado (usuário comum), verificar se completou o onboarding
-  if (user && !isProfessional && !isOnboardingExempt) {
-    // Buscar perfil do usuário para verificar onboarding
-    const { data: profile } = await supabase
-      .from('fitness_profiles')
-      .select('onboarding_completed')
-      .eq('id', user.id)
-      .single()
+  // Se NÃO é admin tentando acessar admin, redirecionar
+  if (user && !isAdminUser && isAdminRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = isProfessional ? '/portal' : '/dashboard'
+    return NextResponse.redirect(url)
+  }
 
-    // Se não completou onboarding, redirecionar
+  // Se está autenticado (usuário comum), verificar se completou o onboarding
+  if (user && !isProfessional && !isAdminUser && !isOnboardingExempt) {
     if (profile && profile.onboarding_completed === false) {
       const url = request.nextUrl.clone()
       url.pathname = '/onboarding'

@@ -56,7 +56,7 @@ export function useSupplementHistory(days: number = 30): UseSupplementHistoryRet
 
       // Fetch supplements
       const { data: supplementsData, error: supplementsError } = await supabase
-        .from('suplementos')
+        .from('fitness_suplementos')
         .select('*')
         .eq('user_id', userData.user.id)
         .order('nome')
@@ -65,7 +65,7 @@ export function useSupplementHistory(days: number = 30): UseSupplementHistoryRet
 
       // Fetch logs for the period
       const { data: logsData, error: logsError } = await supabase
-        .from('suplemento_logs')
+        .from('fitness_suplemento_logs')
         .select('*')
         .eq('user_id', userData.user.id)
         .gte('date', startStr)

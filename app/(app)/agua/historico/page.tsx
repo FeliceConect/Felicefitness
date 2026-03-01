@@ -124,19 +124,19 @@ export default function WaterHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="px-4 pt-12 pb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground-secondary transition-colors mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
         </button>
 
-        <h1 className="text-2xl font-bold text-white">Histórico de Hidratação</h1>
-        <p className="text-slate-400 text-sm">Acompanhe sua evolução</p>
+        <h1 className="text-2xl font-bold text-foreground">Histórico de Hidratação</h1>
+        <p className="text-foreground-secondary text-sm">Acompanhe sua evolução</p>
       </div>
 
       {/* Weekly Chart */}
@@ -152,38 +152,38 @@ export default function WaterHistoryPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-cyan-500/10 to-violet-500/5 border border-cyan-500/20 rounded-2xl p-4"
+          className="bg-gradient-to-br from-dourado/10 to-dourado/5 border border-dourado/20 rounded-2xl p-4"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
               Resumo do Mês
             </h3>
-            <span className="text-white font-medium">
+            <span className="text-foreground font-medium">
               {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Média diária */}
-            <div className="bg-[#0A0A0F]/50 rounded-xl p-3">
+            <div className="bg-background/50 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs text-slate-500">Média diária</span>
+                <TrendingUp className="w-4 h-4 text-dourado" />
+                <span className="text-xs text-foreground-muted">Média diária</span>
               </div>
-              <p className="text-xl font-bold text-cyan-400">
+              <p className="text-xl font-bold text-dourado">
                 {formatWaterAmount(monthStats.avgDaily)}
               </p>
             </div>
 
             {/* Dias na meta */}
-            <div className="bg-[#0A0A0F]/50 rounded-xl p-3">
+            <div className="bg-background/50 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Target className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs text-slate-500">Meta atingida</span>
+                <span className="text-xs text-foreground-muted">Meta atingida</span>
               </div>
-              <p className="text-xl font-bold text-white">
+              <p className="text-xl font-bold text-foreground">
                 {monthStats.daysMetGoal}
-                <span className="text-slate-500 font-normal">/{monthStats.totalDays}</span>
+                <span className="text-foreground-muted font-normal">/{monthStats.totalDays}</span>
               </p>
               <p className="text-xs text-emerald-400">
                 {Math.round((monthStats.daysMetGoal / monthStats.totalDays) * 100)}%
@@ -191,21 +191,21 @@ export default function WaterHistoryPage() {
             </div>
 
             {/* Total do mês */}
-            <div className="bg-[#0A0A0F]/50 rounded-xl p-3">
+            <div className="bg-background/50 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-violet-400" />
-                <span className="text-xs text-slate-500">Total do mês</span>
+                <Calendar className="w-4 h-4 text-dourado" />
+                <span className="text-xs text-foreground-muted">Total do mês</span>
               </div>
-              <p className="text-xl font-bold text-violet-400">
+              <p className="text-xl font-bold text-dourado">
                 {(monthStats.totalMonth / 1000).toFixed(1)}L
               </p>
             </div>
 
             {/* Melhor streak */}
-            <div className="bg-[#0A0A0F]/50 rounded-xl p-3">
+            <div className="bg-background/50 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Flame className="w-4 h-4 text-orange-400" />
-                <span className="text-xs text-slate-500">Maior streak</span>
+                <span className="text-xs text-foreground-muted">Maior streak</span>
               </div>
               <p className="text-xl font-bold text-orange-400">
                 {monthStats.bestStreak} dias
@@ -220,18 +220,18 @@ export default function WaterHistoryPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4"
+          className="bg-white border border-border rounded-2xl p-4"
         >
           {/* Month navigation */}
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={handlePrevMonth}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-white rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-slate-400" />
+              <ChevronLeft className="w-5 h-5 text-foreground-secondary" />
             </button>
 
-            <h3 className="text-white font-semibold">
+            <h3 className="text-foreground font-semibold">
               {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
             </h3>
 
@@ -242,17 +242,17 @@ export default function WaterHistoryPage() {
                 'p-2 rounded-lg transition-colors',
                 isSameMonth(currentMonth, new Date())
                   ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:bg-slate-800'
+                  : 'hover:bg-white'
               )}
             >
-              <ChevronRight className="w-5 h-5 text-slate-400" />
+              <ChevronRight className="w-5 h-5 text-foreground-secondary" />
             </button>
           </div>
 
           {/* Weekday headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-              <div key={day} className="text-center text-xs text-slate-500 py-1">
+              <div key={day} className="text-center text-xs text-foreground-muted py-1">
                 {day}
               </div>
             ))}
@@ -279,16 +279,16 @@ export default function WaterHistoryPage() {
                     dayData.status === 'met' && 'bg-emerald-500/20',
                     dayData.status === 'partial' && 'bg-amber-500/20',
                     dayData.status === 'low' && 'bg-red-500/10',
-                    dayData.status === 'future' && 'bg-slate-800/30',
-                    isTodayDate && 'ring-2 ring-cyan-400 ring-offset-1 ring-offset-[#14141F]'
+                    dayData.status === 'future' && 'bg-white/30',
+                    isTodayDate && 'ring-2 ring-dourado ring-offset-1 ring-offset-white'
                   )}
                 >
                   <span className={cn(
                     'font-medium',
                     dayData.status === 'met' ? 'text-emerald-400' :
                     dayData.status === 'partial' ? 'text-amber-400' :
-                    dayData.status === 'future' ? 'text-slate-600' :
-                    'text-slate-400'
+                    dayData.status === 'future' ? 'text-foreground-muted' :
+                    'text-foreground-secondary'
                   )}>
                     {format(date, 'd')}
                   </span>
@@ -301,7 +301,7 @@ export default function WaterHistoryPage() {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-4 mt-4 text-xs text-slate-500">
+          <div className="flex items-center justify-center gap-4 mt-4 text-xs text-foreground-muted">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded bg-emerald-500/30" />
               <span>Meta</span>
@@ -323,27 +323,27 @@ export default function WaterHistoryPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4"
+          className="bg-white border border-border rounded-2xl p-4"
         >
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+          <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-3">
             Dicas de Hidratação
           </h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <span className="text-lg">💡</span>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-foreground-secondary">
                 Beba água assim que acordar para reidratar após o sono.
               </p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-lg">⏰</span>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-foreground-secondary">
                 Configure lembretes para beber água a cada 2-3 horas.
               </p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-lg">🏃</span>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-foreground-secondary">
                 Aumente a ingestão em dias de treino ou calor intenso.
               </p>
             </div>

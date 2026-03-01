@@ -364,7 +364,8 @@ export function useEvolution(): UseEvolutionReturn {
       console.error('Error fetching evolution data:', err)
       return getEmptyEvolutionData(period)
     }
-  }, [supabase, period])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period])
 
   const getEmptyEvolutionData = (period: ReportPeriod): EvolutionData => ({
     period,

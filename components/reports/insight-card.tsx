@@ -2,8 +2,25 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { getInsightColor, getInsightBgColor } from '@/lib/reports'
 import type { Insight } from '@/types/reports'
+
+function getInsightColor(type: string): string {
+  switch (type) {
+    case 'positive': return 'text-green-400'
+    case 'negative': return 'text-red-400'
+    case 'warning': return 'text-yellow-400'
+    default: return 'text-blue-400'
+  }
+}
+
+function getInsightBgColor(type: string): string {
+  switch (type) {
+    case 'positive': return 'bg-green-500/10'
+    case 'negative': return 'bg-red-500/10'
+    case 'warning': return 'bg-yellow-500/10'
+    default: return 'bg-blue-500/10'
+  }
+}
 
 interface InsightCardProps {
   insight: Insight

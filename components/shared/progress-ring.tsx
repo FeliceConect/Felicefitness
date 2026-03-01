@@ -17,8 +17,8 @@ export function ProgressRing({
   progress,
   size = 120,
   strokeWidth = 8,
-  color = '#8B5CF6',
-  bgColor = '#2E2E3E',
+  color = 'var(--dourado)',
+  bgColor = 'var(--border)',
   children,
   showPercent = false,
   className = ''
@@ -60,7 +60,7 @@ export function ProgressRing({
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         {children || (showPercent && (
-          <span className="text-lg font-bold text-white">
+          <span className="text-lg font-bold text-foreground">
             {Math.round(progress * 100)}%
           </span>
         ))}

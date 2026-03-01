@@ -67,8 +67,8 @@ export function PhotoComparisonSlider({
       className={cn(
         'absolute inset-0 flex items-center justify-center',
         isAfter
-          ? 'bg-gradient-to-br from-cyan-900/30 to-violet-900/30'
-          : 'bg-gradient-to-br from-violet-900/30 to-cyan-900/30'
+          ? 'bg-gradient-to-br from-vinho/10 to-dourado/10'
+          : 'bg-gradient-to-br from-dourado/10 to-vinho/10'
       )}
     >
       <span className="text-6xl opacity-30">
@@ -96,7 +96,7 @@ export function PhotoComparisonSlider({
           <p className="text-white font-bold">{photo.peso.toFixed(1)}kg</p>
         )}
         {photo.percentual_gordura && (
-          <p className="text-cyan-400 text-sm">{photo.percentual_gordura.toFixed(1)}%</p>
+          <p className="text-dourado text-sm">{photo.percentual_gordura.toFixed(1)}%</p>
         )}
       </div>
     </div>
@@ -139,8 +139,8 @@ export function PhotoComparisonSlider({
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-xl flex items-center justify-center"
         >
           <div className="flex items-center gap-0.5">
-            <div className="w-0.5 h-4 bg-slate-400 rounded-full" />
-            <div className="w-0.5 h-4 bg-slate-400 rounded-full" />
+            <div className="w-0.5 h-4 bg-foreground-muted rounded-full" />
+            <div className="w-0.5 h-4 bg-foreground-muted rounded-full" />
           </div>
         </motion.div>
       </div>

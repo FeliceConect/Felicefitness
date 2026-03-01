@@ -338,39 +338,6 @@ export function isTimeBetween(time: string, start: string, end: string): boolean
 }
 
 /**
- * Check for Revolade conflicts
- */
-export function checkRevoladeConflict(
-  supplement: Supplement,
-  time: string,
-  revoladeSettings: { jejum_inicio: string; restricao_laticinios_fim: string } | null
-): { conflict: boolean; reason?: string; suggestion?: string } {
-  if (!revoladeSettings) {
-    return { conflict: false }
-  }
-
-  const isInRestrictionWindow = isTimeBetween(
-    time,
-    revoladeSettings.jejum_inicio,
-    revoladeSettings.restricao_laticinios_fim
-  )
-
-  const hasDairyRestriction = supplement.restricoes?.some(r =>
-    ['laticinios', 'calcio', 'laticínios', 'cálcio', 'dairy', 'calcium'].includes(r.toLowerCase())
-  )
-
-  if (isInRestrictionWindow && hasDairyRestriction) {
-    return {
-      conflict: true,
-      reason: `${supplement.nome} contém cálcio e conflita com o Revolade`,
-      suggestion: `Tome antes das ${revoladeSettings.jejum_inicio} ou após as ${revoladeSettings.restricao_laticinios_fim}`,
-    }
-  }
-
-  return { conflict: false }
-}
-
-/**
  * Get supplement type icon
  */
 export function getSupplementTypeIcon(tipo: string): string {

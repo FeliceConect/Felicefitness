@@ -140,7 +140,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
 
       if (perm !== 'granted') {
         setStatus('denied')
-        setError('Permissão para notificações negada. Vá em Ajustes → FeliceFit → Notificações para ativar.')
+        setError('Permissão para notificações negada. Vá em Ajustes → Complexo Wellness → Notificações para ativar.')
         return false
       }
 

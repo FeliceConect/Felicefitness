@@ -50,15 +50,15 @@ export function MeasurementCard({
         transition={{ duration: 0.2, delay: index * 0.05 }}
         whileHover={{ scale: 1.02 }}
         className={cn(
-          'bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4',
-          'hover:border-violet-500/30 transition-colors cursor-pointer',
+          'bg-white border border-border rounded-xl p-4',
+          'hover:border-dourado/30 transition-colors cursor-pointer',
           className
         )}
       >
         <div className="flex items-start justify-between">
           {/* Left side - Date and metrics */}
           <div className="flex-1">
-            <div className="flex items-center gap-2 text-slate-400 text-sm mb-2">
+            <div className="flex items-center gap-2 text-foreground-secondary text-sm mb-2">
               <Calendar className="w-4 h-4" />
               <span>
                 {format(parseISO(measurement.data), "d 'de' MMMM, yyyy", { locale: ptBR })}
@@ -68,15 +68,15 @@ export function MeasurementCard({
             <div className="flex items-center gap-4">
               {/* Weight */}
               <div>
-                <p className="text-xs text-slate-500">Peso</p>
-                <p className="text-lg font-bold text-white">
+                <p className="text-xs text-foreground-muted">Peso</p>
+                <p className="text-lg font-bold text-foreground">
                   {measurement.peso.toFixed(1)}
-                  <span className="text-sm text-slate-400 ml-0.5">kg</span>
+                  <span className="text-sm text-foreground-secondary ml-0.5">kg</span>
                 </p>
                 {showCompare && diffs && (
                   <p className={cn(
                     'text-xs',
-                    diffs.peso < 0 ? 'text-emerald-400' : diffs.peso > 0 ? 'text-red-400' : 'text-slate-500'
+                    diffs.peso < 0 ? 'text-emerald-400' : diffs.peso > 0 ? 'text-red-400' : 'text-foreground-muted'
                   )}>
                     {diffs.peso >= 0 ? '+' : ''}{diffs.peso.toFixed(1)}kg
                   </p>
@@ -85,15 +85,15 @@ export function MeasurementCard({
 
               {/* Body fat */}
               <div>
-                <p className="text-xs text-slate-500">Gordura</p>
-                <p className="text-lg font-bold text-white">
+                <p className="text-xs text-foreground-muted">Gordura</p>
+                <p className="text-lg font-bold text-foreground">
                   {measurement.musculo_gordura.percentual_gordura.toFixed(1)}
-                  <span className="text-sm text-slate-400 ml-0.5">%</span>
+                  <span className="text-sm text-foreground-secondary ml-0.5">%</span>
                 </p>
                 {showCompare && diffs && (
                   <p className={cn(
                     'text-xs',
-                    diffs.gordura < 0 ? 'text-emerald-400' : diffs.gordura > 0 ? 'text-red-400' : 'text-slate-500'
+                    diffs.gordura < 0 ? 'text-emerald-400' : diffs.gordura > 0 ? 'text-red-400' : 'text-foreground-muted'
                   )}>
                     {diffs.gordura >= 0 ? '+' : ''}{diffs.gordura.toFixed(1)}%
                   </p>
@@ -102,15 +102,15 @@ export function MeasurementCard({
 
               {/* Muscle */}
               <div>
-                <p className="text-xs text-slate-500">Músculo</p>
-                <p className="text-lg font-bold text-white">
+                <p className="text-xs text-foreground-muted">Músculo</p>
+                <p className="text-lg font-bold text-foreground">
                   {measurement.musculo_gordura.massa_muscular_esqueletica.toFixed(1)}
-                  <span className="text-sm text-slate-400 ml-0.5">kg</span>
+                  <span className="text-sm text-foreground-secondary ml-0.5">kg</span>
                 </p>
                 {showCompare && diffs && (
                   <p className={cn(
                     'text-xs',
-                    diffs.musculo > 0 ? 'text-emerald-400' : diffs.musculo < 0 ? 'text-red-400' : 'text-slate-500'
+                    diffs.musculo > 0 ? 'text-emerald-400' : diffs.musculo < 0 ? 'text-red-400' : 'text-foreground-muted'
                   )}>
                     {diffs.musculo >= 0 ? '+' : ''}{diffs.musculo.toFixed(1)}kg
                   </p>
@@ -143,15 +143,15 @@ export function MeasurementCard({
         </div>
 
         {/* Source badge */}
-        <div className="mt-3 pt-3 border-t border-[#2E2E3E] flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Scale className="w-4 h-4 text-slate-500" />
-            <span className="text-xs text-slate-500 capitalize">
+            <Scale className="w-4 h-4 text-foreground-muted" />
+            <span className="text-xs text-foreground-muted capitalize">
               {measurement.fonte === 'inbody' ? 'InBody' :
                measurement.fonte === 'manual' ? 'Manual' : 'Balança Smart'}
             </span>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-500" />
+          <ChevronRight className="w-4 h-4 text-foreground-muted" />
         </div>
       </motion.div>
     </Link>

@@ -60,7 +60,8 @@ export function useProfile(): UseProfileReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const fetchStats = async (userId: string) => {
     try {
@@ -129,8 +130,6 @@ export function useProfile(): UseProfileReturn {
       if (anyData.hora_acordar !== undefined) updatePayload.hora_acordar = anyData.hora_acordar
       if (anyData.hora_dormir !== undefined) updatePayload.hora_dormir = anyData.hora_dormir
 
-      console.log('Updating profile with:', updatePayload)
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('fitness_profiles')
@@ -144,7 +143,8 @@ export function useProfile(): UseProfileReturn {
       console.error('Error updating profile:', err)
       throw err
     }
-  }, [profile, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile])
 
   const updatePhoto = useCallback(async (file: File): Promise<string> => {
     if (!profile) throw new Error('Profile not loaded')
@@ -173,7 +173,8 @@ export function useProfile(): UseProfileReturn {
       console.error('Error uploading photo:', err)
       throw err
     }
-  }, [profile, supabase, updateProfile])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, updateProfile])
 
   const refresh = useCallback(async () => {
     setLoading(true)

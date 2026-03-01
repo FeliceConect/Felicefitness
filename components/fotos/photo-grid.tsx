@@ -40,7 +40,7 @@ export function PhotoGrid({
             transition={{ duration: 0.3, delay: groupIndex * 0.1 }}
           >
             {/* Cabeçalho do mês */}
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3 capitalize">
+            <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-3 capitalize">
               {group.label}
             </h3>
 

@@ -1,4 +1,4 @@
-// PDF Generator for FeliceFit Reports
+// PDF Generator for Complexo Wellness Reports
 
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -43,7 +43,7 @@ export async function generateWeeklyReportPDF(report: WeeklyReport): Promise<Blo
 
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(24)
-  doc.text('FeliceFit', 20, 18)
+  doc.text('Complexo Wellness', 20, 18)
 
   doc.setFontSize(16)
   doc.text(`Relatório Semanal - Semana ${report.weekNumber}/${report.year}`, 20, 30)
@@ -171,7 +171,7 @@ export async function generateWeeklyReportPDF(report: WeeklyReport): Promise<Blo
   doc.setFontSize(8)
   doc.setTextColor(theme.muted)
   doc.text(
-    `Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - FeliceFit`,
+    `Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - Complexo Wellness`,
     20,
     285
   )
@@ -195,7 +195,7 @@ export async function generateMonthlyReportPDF(report: MonthlyReport): Promise<B
 
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(24)
-  doc.text('FeliceFit', 20, 18)
+  doc.text('Complexo Wellness', 20, 18)
 
   doc.setFontSize(18)
   doc.text(`Relatório Mensal - ${monthNames[report.month - 1]} ${report.year}`, 20, 32)
@@ -330,7 +330,7 @@ export async function generateMonthlyReportPDF(report: MonthlyReport): Promise<B
   doc.setFontSize(8)
   doc.setTextColor(theme.muted)
   doc.text(
-    `Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - FeliceFit`,
+    `Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - Complexo Wellness`,
     20,
     285
   )

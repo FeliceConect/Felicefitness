@@ -32,7 +32,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-white font-medium">Versão do App</p>
-                <p className="text-sm text-slate-400">Versão atual do FeliceFit</p>
+                <p className="text-sm text-slate-400">Versão atual do Complexo Wellness</p>
               </div>
               <span className="text-slate-300">v1.0.0</span>
             </div>

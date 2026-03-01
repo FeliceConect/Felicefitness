@@ -168,9 +168,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo
-    if (!['nutritionist', 'trainer'].includes(type)) {
+    if (!['nutritionist', 'trainer', 'coach'].includes(type)) {
       return NextResponse.json(
-        { success: false, error: 'Tipo inválido. Use "nutritionist" ou "trainer"' },
+        { success: false, error: 'Tipo inválido. Use "nutritionist", "trainer" ou "coach"' },
         { status: 400 }
       )
     }

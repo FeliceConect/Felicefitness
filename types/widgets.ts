@@ -7,11 +7,8 @@ export type WidgetType =
   | 'water'
   | 'workout'
   | 'streak'
-  | 'revolade'
   | 'macros'
-  | 'recovery'
   | 'goals'
-  | 'coach-tip'
 
 export interface WidgetConfig {
   id: string
@@ -40,7 +37,6 @@ export interface DailyProgressData {
     workout: boolean
     protein: boolean
     water: boolean
-    revolade: boolean
     sleep: boolean
     calories: boolean
   }
@@ -70,40 +66,11 @@ export interface StreakWidgetData {
   daysToMilestone: number
 }
 
-export type RevoladeState =
-  | 'before_fast'    // Antes do jejum - pode comer
-  | 'fasting'        // Durante jejum - não comer
-  | 'take_now'       // Hora de tomar!
-  | 'restriction'    // Período de restrição - sem laticínios
-  | 'free'           // Liberado
-
-export interface RevoladeWidgetData {
-  enabled: boolean
-  state: RevoladeState
-  takenToday: boolean
-  takenAt?: Date
-  schedule: string        // Horário de tomar (ex: "14:00")
-  fastingStart: string    // Início do jejum (ex: "12:00")
-  restrictionEnd: string  // Fim da restrição (ex: "18:00")
-  nextPhaseIn: number     // Minutos até próxima fase
-  nextPhaseLabel: string  // Ex: "Hora de tomar" ou "Liberado"
-}
-
 export interface MacrosWidgetData {
   protein: { current: number; goal: number }
   carbs: { current: number; goal: number }
   fat: { current: number; goal: number }
   calories: { current: number; goal: number }
-}
-
-export interface RecoveryWidgetData {
-  score: number
-  muscleGroups: Array<{
-    name: string
-    status: 'recovered' | 'recovering' | 'fatigued'
-    percentage: number
-  }>
-  suggestion: string
 }
 
 export interface GoalsWidgetData {
@@ -221,26 +188,10 @@ export const DEFAULT_WIDGETS: WidgetDefinition[] = [
     defaultSize: 'small',
   },
   {
-    type: 'revolade',
-    name: 'Revolade',
-    description: 'Controle do Revolade e restrições',
-    icon: '💊',
-    sizes: ['small', 'medium', 'large'],
-    defaultSize: 'medium',
-  },
-  {
     type: 'macros',
     name: 'Macros',
     description: 'Seus macronutrientes do dia',
     icon: '🍽️',
-    sizes: ['small', 'medium'],
-    defaultSize: 'medium',
-  },
-  {
-    type: 'recovery',
-    name: 'Recuperação',
-    description: 'Status de recuperação muscular',
-    icon: '💪',
     sizes: ['small', 'medium'],
     defaultSize: 'medium',
   },
@@ -250,14 +201,6 @@ export const DEFAULT_WIDGETS: WidgetDefinition[] = [
     description: 'Acompanhe suas metas',
     icon: '🎯',
     sizes: ['medium', 'large'],
-    defaultSize: 'medium',
-  },
-  {
-    type: 'coach-tip',
-    name: 'Dica do Coach',
-    description: 'Dicas personalizadas',
-    icon: '💡',
-    sizes: ['medium'],
     defaultSize: 'medium',
   },
 ]
@@ -291,28 +234,12 @@ export const DEFAULT_QUICK_ACTIONS: QuickAction[] = [
     href: '/alimentacao/refeicao/nova',
   },
   {
-    id: 'revolade',
-    icon: '💊',
-    label: 'Revolade',
-    shortLabel: 'Revolade',
-    description: 'Marcar Revolade como tomado',
-    action: 'mark-revolade',
-  },
-  {
     id: 'sleep',
     icon: '😴',
     label: 'Sono',
     shortLabel: 'Sono',
     description: 'Registrar sono',
     href: '/sono/registrar',
-  },
-  {
-    id: 'coach',
-    icon: '🤖',
-    label: 'Coach',
-    shortLabel: 'Coach',
-    description: 'Falar com o Coach',
-    href: '/coach',
   },
 ]
 
@@ -339,12 +266,5 @@ export const APP_SHORTCUTS: AppShortcut[] = [
     description: 'Adicionar refeição',
     url: '/alimentacao/refeicao/nova',
     icons: [{ src: '/shortcuts/meal.png', sizes: '96x96' }],
-  },
-  {
-    name: 'Revolade',
-    short_name: 'Revolade',
-    description: 'Marcar Revolade como tomado',
-    url: '/suplementos?action=revolade',
-    icons: [{ src: '/shortcuts/medicine.png', sizes: '96x96' }],
   },
 ]

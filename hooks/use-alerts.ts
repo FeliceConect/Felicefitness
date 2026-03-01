@@ -2,7 +2,31 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Insight, InsightPriority, AlertSettings } from '@/types/insights'
+type InsightPriority = 'critical' | 'high' | 'medium' | 'low'
+
+interface Insight {
+  id: string
+  type: string
+  priority: InsightPriority
+  category: string
+  title: string
+  description: string
+  icon: string
+  data?: Record<string, unknown>
+  action?: { label: string; href?: string; action?: string }
+  viewed: boolean
+  dismissed: boolean
+  dismissedAt?: Date
+  expiresAt?: Date
+  createdAt: Date
+}
+
+interface AlertSettings {
+  notifyCritical: boolean
+  notifyHigh: boolean
+  dailySummary: boolean
+  summaryTime: string
+}
 
 interface UseAlertsReturn {
   // Alertas
@@ -107,7 +131,8 @@ export function useAlerts(): UseAlertsReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     loadAlerts()
@@ -151,7 +176,8 @@ export function useAlerts(): UseAlertsReturn {
         console.error('Error resolving alert:', error)
       }
     },
-    [supabase]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   )
 
   // Snooze alerta
@@ -176,7 +202,8 @@ export function useAlerts(): UseAlertsReturn {
         console.error('Error snoozing alert:', error)
       }
     },
-    [supabase]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   )
 
   // Atualizar configurações
@@ -200,7 +227,8 @@ export function useAlerts(): UseAlertsReturn {
         console.error('Error updating alert settings:', error)
       }
     },
-    [supabase, settings]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [settings]
   )
 
   return {

@@ -13,7 +13,9 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  CalendarDays,
+  Trophy
 } from 'lucide-react'
 import { useUserRole } from '@/hooks/use-user-role'
 import { roleLabels } from '@/lib/admin/types'
@@ -39,7 +41,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado"></div>
       </div>
     )
   }
@@ -58,9 +60,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const menuItems = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda' },
     { href: '/admin/users', icon: Users, label: 'Usuários' },
     { href: '/admin/professionals', icon: UserCog, label: 'Profissionais' },
     { href: '/admin/assignments', icon: Link2, label: 'Atribuições' },
+    { href: '/admin/rankings', icon: Trophy, label: 'Rankings' },
     { href: '/admin/costs', icon: DollarSign, label: 'Custos API' },
     { href: '/admin/settings', icon: Settings, label: 'Configurações' },
   ]
@@ -79,7 +83,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <Menu className="w-6 h-6 text-white" />
           )}
         </button>
-        <span className="text-white font-semibold">FeliceFit Admin</span>
+        <span className="text-white font-semibold">Complexo Wellness Admin</span>
         <div className="w-10" /> {/* Spacer */}
       </div>
 
@@ -102,8 +106,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700">
           {sidebarOpen && (
             <Link href="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">FF</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">
+                <span className="text-white font-bold text-sm">CW</span>
               </div>
               <span className="text-white font-semibold">Admin</span>
             </Link>
@@ -140,8 +144,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {sidebarOpen ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                  <span className="text-violet-400 font-medium">
+                <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+                  <span className="text-dourado font-medium">
                     {email?.charAt(0).toUpperCase()}
                   </span>
                 </div>

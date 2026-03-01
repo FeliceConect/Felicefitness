@@ -102,15 +102,15 @@ export function PhotoCapture({
   // Se não tem permissão
   if (hasPermission === false) {
     return (
-      <div className={cn('bg-[#0A0A0F] rounded-2xl p-8 text-center', className)}>
-        <Camera className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-        <h3 className="text-white font-semibold mb-2">Acesso à Câmera Negado</h3>
-        <p className="text-slate-400 text-sm mb-4">
+      <div className={cn('bg-background rounded-2xl p-8 text-center', className)}>
+        <Camera className="w-16 h-16 text-foreground-muted mx-auto mb-4" />
+        <h3 className="text-foreground font-semibold mb-2">Acesso à Câmera Negado</h3>
+        <p className="text-foreground-secondary text-sm mb-4">
           Por favor, permita o acesso à câmera nas configurações do seu navegador.
         </p>
         <button
           onClick={() => startCamera('environment')}
-          className="px-4 py-2 bg-violet-600 text-white rounded-lg"
+          className="px-4 py-2 bg-dourado text-white rounded-lg"
         >
           Tentar Novamente
         </button>
@@ -138,7 +138,7 @@ export function PhotoCapture({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleRetake}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-xl"
+              className="flex items-center gap-2 px-4 py-2 bg-background-elevated text-white rounded-xl"
             >
               <X className="w-4 h-4" />
               <span>Tirar outra</span>
@@ -148,7 +148,7 @@ export function PhotoCapture({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleConfirm}
-              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-xl font-medium"
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-dourado to-dourado text-white rounded-xl font-medium"
             >
               <Check className="w-4 h-4" />
               <span>Usar Foto</span>

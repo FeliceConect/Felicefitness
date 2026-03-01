@@ -74,12 +74,12 @@ export default function PhotoDetailPage() {
 
   if (!photo) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-400 mb-4">Foto não encontrada</p>
+          <p className="text-foreground-secondary mb-4">Foto não encontrada</p>
           <button
             onClick={() => router.push('/fotos')}
-            className="px-4 py-2 bg-violet-600 text-white rounded-xl"
+            className="px-4 py-2 bg-dourado text-white rounded-xl"
           >
             Voltar para galeria
           </button>
@@ -89,12 +89,12 @@ export default function PhotoDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="px-4 pt-12 pb-4 flex items-center justify-between">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Voltar</span>
@@ -105,12 +105,12 @@ export default function PhotoDetailPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => toggleFavorite(photo.id)}
-            className="p-2 bg-[#1E1E2E] rounded-xl"
+            className="p-2 bg-background-elevated rounded-xl"
           >
             <Star
               className={cn(
                 'w-5 h-5',
-                photo.favorita ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'
+                photo.favorita ? 'fill-yellow-400 text-yellow-400' : 'text-foreground-secondary'
               )}
             />
           </motion.button>
@@ -119,16 +119,16 @@ export default function PhotoDetailPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={handleShare}
-            className="p-2 bg-[#1E1E2E] rounded-xl"
+            className="p-2 bg-background-elevated rounded-xl"
           >
-            <Share2 className="w-5 h-5 text-slate-400" />
+            <Share2 className="w-5 h-5 text-foreground-secondary" />
           </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 bg-[#1E1E2E] rounded-xl"
+            className="p-2 bg-background-elevated rounded-xl"
           >
             <Trash2 className="w-5 h-5 text-red-400" />
           </motion.button>
@@ -144,10 +144,10 @@ export default function PhotoDetailPage() {
         >
           <div
             onClick={() => setShowViewer(true)}
-            className="aspect-[3/4] max-w-[350px] mx-auto rounded-2xl overflow-hidden bg-[#14141F] cursor-pointer"
+            className="aspect-[3/4] max-w-[350px] mx-auto rounded-2xl overflow-hidden bg-white cursor-pointer"
           >
             {/* Placeholder visual */}
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-900/30 to-cyan-900/30 flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-dourado/10 to-vinho/10 flex items-center justify-center">
               <span className="text-[100px] opacity-30">
                 {photo.tipo === 'frente' ? '🧍' :
                  photo.tipo === 'lado_esquerdo' ? '👈' :
@@ -198,15 +198,15 @@ export default function PhotoDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+          className="bg-white border border-border rounded-xl p-4"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-violet-400" />
+            <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-dourado" />
             </div>
             <div>
-              <p className="text-slate-400 text-xs">Data</p>
-              <p className="text-white font-medium">
+              <p className="text-foreground-secondary text-xs">Data</p>
+              <p className="text-foreground font-medium">
                 {format(parseISO(photo.data), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </p>
             </div>
@@ -222,14 +222,14 @@ export default function PhotoDetailPage() {
             className="grid grid-cols-2 gap-3"
           >
             {photo.peso && (
-              <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+              <div className="bg-white border border-border rounded-xl p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                    <Scale className="w-5 h-5 text-cyan-400" />
+                  <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+                    <Scale className="w-5 h-5 text-dourado" />
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs">Peso</p>
-                    <p className="text-white font-bold text-lg">
+                    <p className="text-foreground-secondary text-xs">Peso</p>
+                    <p className="text-foreground font-bold text-lg">
                       {photo.peso.toFixed(1)}kg
                     </p>
                   </div>
@@ -238,14 +238,14 @@ export default function PhotoDetailPage() {
             )}
 
             {photo.percentual_gordura && (
-              <div className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4">
+              <div className="bg-white border border-border rounded-xl p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
                     <Percent className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs">Gordura</p>
-                    <p className="text-white font-bold text-lg">
+                    <p className="text-foreground-secondary text-xs">Gordura</p>
+                    <p className="text-foreground font-bold text-lg">
                       {photo.percentual_gordura.toFixed(1)}%
                     </p>
                   </div>
@@ -261,15 +261,15 @@ export default function PhotoDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-[#14141F] border border-[#2E2E3E] rounded-xl p-4"
+            className="bg-white border border-border rounded-xl p-4"
           >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                 <FileText className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="text-slate-400 text-xs mb-1">Notas</p>
-                <p className="text-white text-sm">{photo.notas}</p>
+                <p className="text-foreground-secondary text-xs mb-1">Notas</p>
+                <p className="text-foreground text-sm">{photo.notas}</p>
               </div>
             </div>
           </motion.div>
@@ -280,7 +280,7 @@ export default function PhotoDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="text-center text-sm text-slate-500 py-4"
+          className="text-center text-sm text-foreground-muted py-4"
         >
           Foto {currentIndex + 1} de {photos.length}
         </motion.div>
@@ -311,14 +311,14 @@ export default function PhotoDetailPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-6 max-w-sm w-full"
+              className="bg-white border border-border rounded-2xl p-6 max-w-sm w-full"
             >
               <div className="text-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
                   <Trash2 className="w-8 h-8 text-red-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Excluir foto?</h3>
-                <p className="text-slate-400 text-sm">
+                <h3 className="text-xl font-bold text-foreground mb-2">Excluir foto?</h3>
+                <p className="text-foreground-secondary text-sm">
                   Esta ação não pode ser desfeita. A foto será removida permanentemente.
                 </p>
               </div>
@@ -328,7 +328,7 @@ export default function PhotoDetailPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="py-3 bg-[#1E1E2E] text-white rounded-xl font-medium border border-[#2E2E3E]"
+                  className="py-3 bg-background-elevated text-foreground rounded-xl font-medium border border-border"
                 >
                   Cancelar
                 </motion.button>
@@ -341,7 +341,7 @@ export default function PhotoDetailPage() {
                   className={cn(
                     'py-3 rounded-xl font-medium flex items-center justify-center gap-2',
                     isDeleting
-                      ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                      ? 'bg-background-elevated text-foreground-secondary cursor-not-allowed'
                       : 'bg-red-600 text-white hover:bg-red-700'
                   )}
                 >

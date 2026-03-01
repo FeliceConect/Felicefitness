@@ -18,12 +18,9 @@ export default async function AppLayout({
     redirect("/login")
   }
 
-  const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuário"
-  const userAvatar = user.user_metadata?.avatar_url
-
   return (
     <div className="min-h-screen bg-background">
-      <Header userName={userName} userAvatar={userAvatar} />
+      <Header />
       <main className="content-safe-top content-safe-bottom">
         {children}
       </main>

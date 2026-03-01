@@ -20,18 +20,18 @@ export function WaterWeeklyChart({ data, goal }: WaterWeeklyChartProps) {
   }, [data, goal])
 
   return (
-    <div className="bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4">
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+    <div className="bg-white border border-border rounded-2xl p-4">
+      <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
         Últimos 7 dias
       </h3>
 
       <div className="relative">
         {/* Meta line */}
         <div
-          className="absolute left-0 right-0 border-t border-dashed border-cyan-500/30 z-10"
+          className="absolute left-0 right-0 border-t border-dashed border-dourado/30 z-10"
           style={{ bottom: `${(goal / maxAmount) * 100}%` }}
         >
-          <span className="absolute right-0 -top-3 text-xs text-cyan-400 bg-[#14141F] px-1">
+          <span className="absolute right-0 -top-3 text-xs text-dourado bg-white px-1">
             {(goal / 1000).toFixed(1)}L
           </span>
         </div>
@@ -61,13 +61,13 @@ export function WaterWeeklyChart({ data, goal }: WaterWeeklyChartProps) {
                         ? 'bg-gradient-to-t from-emerald-600 to-emerald-400'
                         : percentage >= 80
                         ? 'bg-gradient-to-t from-amber-600 to-amber-400'
-                        : 'bg-gradient-to-t from-violet-600 to-violet-400',
-                      isTodayDate && 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-[#14141F]'
+                        : 'bg-gradient-to-t from-vinho to-vinho',
+                      isTodayDate && 'ring-2 ring-dourado ring-offset-2 ring-offset-white'
                     )}
                   >
                     {/* Amount tooltip */}
                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 hover:opacity-100 transition-opacity">
-                      <div className="bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                      <div className="bg-white text-foreground text-xs px-2 py-1 rounded whitespace-nowrap">
                         {day.total >= 1000
                           ? `${(day.total / 1000).toFixed(1)}L`
                           : `${day.total}ml`}
@@ -79,7 +79,7 @@ export function WaterWeeklyChart({ data, goal }: WaterWeeklyChartProps) {
                 {/* Day label */}
                 <span className={cn(
                   'text-xs mt-2',
-                  isTodayDate ? 'text-cyan-400 font-bold' : 'text-slate-500'
+                  isTodayDate ? 'text-dourado font-bold' : 'text-foreground-muted'
                 )}>
                   {format(date, 'EEE', { locale: ptBR }).slice(0, 3)}
                 </span>
@@ -95,7 +95,7 @@ export function WaterWeeklyChart({ data, goal }: WaterWeeklyChartProps) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-4 text-xs text-slate-500">
+      <div className="flex items-center justify-center gap-4 mt-4 text-xs text-foreground-muted">
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded bg-emerald-500" />
           <span>Meta atingida</span>
@@ -105,7 +105,7 @@ export function WaterWeeklyChart({ data, goal }: WaterWeeklyChartProps) {
           <span>&gt;80%</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-violet-500" />
+          <div className="w-3 h-3 rounded bg-vinho" />
           <span>&lt;80%</span>
         </div>
       </div>

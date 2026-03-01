@@ -8,7 +8,6 @@ import {
   generateExecutiveSummary,
   calculateMonthRanking
 } from '@/lib/reports'
-import { generateInsightsFromSummary } from '@/lib/reports/insights-engine'
 import type { MonthlyReport, UseMonthlyReportReturn, PeriodSummary, Trend } from '@/types/reports'
 import { format, getMonth, getYear, getWeek, endOfWeek, eachWeekOfInterval, eachDayOfInterval } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -298,7 +297,7 @@ export function useMonthlyReport(): UseMonthlyReportReturn {
       const executiveSummary = generateExecutiveSummary(avgScore, trends)
       const ranking = calculateMonthRanking(avgScore, [])
 
-      const insights = generateInsightsFromSummary(summary, null)
+      const insights: never[] = []
 
       return {
         month,
@@ -325,7 +324,8 @@ export function useMonthlyReport(): UseMonthlyReportReturn {
       console.error('Error fetching monthly report:', err)
       return getEmptyMonthlyReport(month, year, dateRange)
     }
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const getEmptyMonthlyReport = (month: number, year: number, dateRange: { start: Date; end: Date }): MonthlyReport => {
     const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end })
@@ -420,7 +420,7 @@ export function useMonthlyReport(): UseMonthlyReportReturn {
       doc.text(`Média: ${report.summary.hydration.avgDaily}L/dia`, 20, 125)
 
       doc.setFontSize(8)
-      doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - FeliceFit`, 20, 280)
+      doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} - Complexo Wellness`, 20, 280)
     }
 
     return doc.output('blob')

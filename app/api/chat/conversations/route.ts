@@ -209,6 +209,23 @@ export async function POST(request: NextRequest) {
       }
     )
 
+    // Verificar se o usuário é uma das partes da conversa
+    const { data: professional } = await supabaseAdmin
+      .from('fitness_professionals')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    const isClient = user.id === clientId
+    const isProfessional = professional?.id === professionalId
+
+    if (!isClient && !isProfessional) {
+      return NextResponse.json(
+        { success: false, error: 'Você só pode criar conversas onde é participante' },
+        { status: 403 }
+      )
+    }
+
     // Verificar se a conversa já existe
     const { data: existing } = await supabaseAdmin
       .from('fitness_conversations')

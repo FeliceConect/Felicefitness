@@ -150,13 +150,13 @@ interface StatComparisonProps {
 
 function StatComparison({ label, before, after, change, unit, colors, positive }: StatComparisonProps) {
   const isPositive = positive ? change > 0 : change < 0
-  const changeColor = isPositive ? '#22c55e' : '#ef4444'
+  const changeColor = isPositive ? '#7dad6a' : '#a04045'
   const changeSign = change > 0 ? '+' : ''
 
   return (
     <div
       className="flex flex-col items-center px-4 py-2 rounded-lg"
-      style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+      style={{ backgroundColor: `${colors.primary}10` }}
     >
       <span className="text-xs" style={{ color: colors.secondary }}>{label}</span>
       <div className="flex items-center gap-2">

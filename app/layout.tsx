@@ -1,25 +1,27 @@
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+import { Sarabun } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "sonner"
 import { SkipLink } from "@/components/ui/accessibility/skip-link"
 import { AnnouncerProvider } from "@/components/ui/accessibility/announcer"
+import { Providers } from "./providers"
 
-const inter = Inter({
+const sarabun = Sarabun({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-sarabun",
 })
 
 export const metadata: Metadata = {
-  title: "FeliceFit - Seu App de Fitness Premium",
-  description: "O app de fitness e saúde mais completo do mercado. Transforme seu corpo e mente com FeliceFit.",
+  title: "Complexo Wellness - Programa de Acompanhamento",
+  description: "Plataforma digital do programa de acompanhamento wellness do Complexo Felice.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "FeliceFit",
+    title: "Complexo Wellness",
   },
   formatDetection: {
     telephone: false,
@@ -36,7 +38,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#8B5CF6",
+  themeColor: "#f7f2ed",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -50,19 +52,21 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${sarabun.variable} font-sans antialiased`}>
         <SkipLink />
-        <AnnouncerProvider>
-          <main id="main-content">
-            {children}
-          </main>
-        </AnnouncerProvider>
+        <Providers>
+          <AnnouncerProvider>
+            <main id="main-content">
+              {children}
+            </main>
+          </AnnouncerProvider>
+        </Providers>
         <Toaster />
         <SonnerToaster
           position="top-center"

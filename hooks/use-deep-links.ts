@@ -35,8 +35,8 @@ export function useDeepLinks(): UseDeepLinksReturn {
         case 'start':
           executeById('workout')
           break
-        case 'revolade':
-          executeById('revolade')
+        case 'suplemento':
+          router.push('/suplementos')
           break
       }
     }
@@ -73,20 +73,12 @@ export function useDeepLinks(): UseDeepLinksReturn {
           break
 
         case '/suplementos':
-          if (action === 'revolade') {
-            executeById('revolade')
-          } else {
-            router.push('/suplementos')
-          }
+          router.push('/suplementos')
           break
 
         case '/alimentacao/registrar':
         case '/alimentacao/refeicao/nova':
           router.push('/alimentacao/refeicao/nova')
-          break
-
-        case '/coach':
-          router.push('/coach')
           break
 
         case '/dashboard':
@@ -116,7 +108,7 @@ export function useDeepLinks(): UseDeepLinksReturn {
   }, [])
 
   // Compartilhar link
-  const shareLink = useCallback(async (link: string, title = 'FeliceFit') => {
+  const shareLink = useCallback(async (link: string, title = 'Complexo Wellness') => {
     if (navigator.share) {
       try {
         await navigator.share({

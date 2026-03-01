@@ -17,8 +17,8 @@ interface ExerciseChartProps {
 }
 
 const metricLabels: Record<string, { label: string; color: string; unit: string }> = {
-  weight: { label: 'Carga Máxima', color: '#8B5CF6', unit: 'kg' },
-  volume: { label: 'Volume Total', color: '#06B6D4', unit: 'kg' },
+  weight: { label: 'Carga Máxima', color: '#c29863', unit: 'kg' },
+  volume: { label: 'Volume Total', color: '#663739', unit: 'kg' },
   reps: { label: 'Repetições', color: '#10B981', unit: '' }
 }
 
@@ -38,11 +38,11 @@ export function ExerciseChart({ data, metric }: ExerciseChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
-        <div className="bg-[#1E1E2E] border border-[#2E2E3E] rounded-lg p-3 shadow-lg">
-          <p className="text-xs text-slate-400 mb-1">
+        <div className="bg-white border border-border rounded-lg p-3 shadow-lg">
+          <p className="text-xs text-foreground-secondary mb-1">
             {format(new Date(data.date), "d 'de' MMM", { locale: ptBR })}
           </p>
-          <p className="text-lg font-bold text-white">
+          <p className="text-lg font-bold text-foreground">
             {data.value}{metricInfo.unit}
           </p>
           {data.isPR && (
@@ -76,13 +76,13 @@ export function ExerciseChart({ data, metric }: ExerciseChartProps) {
             dataKey="dateLabel"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#64748B', fontSize: 12 }}
+            tick={{ fill: '#ae9b89', fontSize: 12 }}
             dy={10}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#64748B', fontSize: 12 }}
+            tick={{ fill: '#ae9b89', fontSize: 12 }}
             dx={-10}
             domain={['dataMin - 5', 'dataMax + 5']}
           />

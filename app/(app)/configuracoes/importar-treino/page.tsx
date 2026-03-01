@@ -357,7 +357,7 @@ export default function ImportarTreinoPage() {
                   </div>
                   <div className="p-2 bg-muted rounded-lg">
                     <div className="flex items-center justify-center gap-1 mb-1">
-                      <Dumbbell className="h-4 w-4 text-violet-500" />
+                      <Dumbbell className="h-4 w-4 text-dourado" />
                     </div>
                     <p className="text-lg font-bold">{parsedPlan.days_per_week}x</p>
                     <p className="text-xs text-muted-foreground">por semana</p>
@@ -381,7 +381,7 @@ export default function ImportarTreinoPage() {
                 {/* Difficulty & Equipment */}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {parsedPlan.difficulty && (
-                    <span className="px-2 py-1 bg-violet-500/10 text-violet-500 rounded-lg text-xs font-medium">
+                    <span className="px-2 py-1 bg-dourado/10 text-dourado rounded-lg text-xs font-medium">
                       {DIFFICULTY_LABELS[parsedPlan.difficulty] || parsedPlan.difficulty}
                     </span>
                   )}

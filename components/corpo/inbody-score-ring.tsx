@@ -85,7 +85,7 @@ export function InBodyScoreRing({
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className={cn('font-bold text-white', config.fontSize)}
+          className={cn('font-bold text-foreground', config.fontSize)}
         >
           {score}
         </motion.span>
@@ -94,7 +94,7 @@ export function InBodyScoreRing({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.7 }}
-            className="text-xs text-slate-400 uppercase tracking-wide"
+            className="text-xs text-foreground-secondary uppercase tracking-wide"
           >
             pontos
           </motion.span>

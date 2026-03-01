@@ -17,7 +17,7 @@ interface ProgressBarProps {
 export function ProgressBar({
   progress,
   color,
-  bgColor = '#2E2E3E',
+  bgColor = 'var(--border)',
   height = 8,
   showLabel = false,
   label,
@@ -39,9 +39,9 @@ export function ProgressBar({
     <div className={cn('w-full', className)}>
       {(showLabel || label) && (
         <div className="flex justify-between mb-1 text-sm">
-          <span className="text-slate-400">{label}</span>
+          <span className="text-foreground-secondary">{label}</span>
           {showLabel && (
-            <span className="text-white font-medium">
+            <span className="text-foreground font-medium">
               {Math.round(percent * 100)}%
             </span>
           )}

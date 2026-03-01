@@ -1,4 +1,4 @@
-// FeliceFit Report Components
+// Complexo Wellness Report Components
 
 export * from './stat-card'
 export * from './trend-indicator'

@@ -5,9 +5,7 @@ import type {
   Meal,
   NutritionTotals,
   NutritionProgress,
-  NutritionGoals,
-  RevoladeWindow,
-  RevoladeConfig
+  NutritionGoals
 } from './types'
 
 // Calcular macros de um alimento para uma quantidade específica
@@ -98,118 +96,6 @@ export function getProgressBgColor(progress: number): string {
     case 'over':
       return 'bg-red-500'
   }
-}
-
-// Calcular janela do Revolade
-export function calculateRevoladeWindow(config: RevoladeConfig): RevoladeWindow {
-  const now = new Date()
-  const currentHour = now.getHours()
-  const currentMinute = now.getMinutes()
-  const currentTimeInMinutes = currentHour * 60 + currentMinute
-
-  // Parse horário do medicamento
-  const [medHour, medMinute] = config.horario_medicamento.split(':').map(Number)
-  const medTimeInMinutes = medHour * 60 + medMinute
-
-  // Calcular janelas
-  const jejumStartMinutes = medTimeInMinutes - config.horas_jejum_antes * 60
-  const restricaoEndMinutes = medTimeInMinutes + config.horas_restricao_depois * 60
-
-  // 1 hora antes do jejum: pré-jejum (alerta)
-  const preJejumStartMinutes = jejumStartMinutes - 60
-
-  // Verificar status atual
-  if (currentTimeInMinutes >= preJejumStartMinutes && currentTimeInMinutes < jejumStartMinutes) {
-    // Pré-jejum: alerta para terminar de comer
-    const minutesRemaining = jejumStartMinutes - currentTimeInMinutes
-    return {
-      status: 'pre_jejum',
-      message: `Termine de comer até ${formatTime(jejumStartMinutes)}`,
-      alertType: 'warning',
-      timeRemaining: minutesRemaining,
-      nextPhase: 'Início do jejum',
-      canEat: true,
-      canHaveDairy: true
-    }
-  }
-
-  if (currentTimeInMinutes >= jejumStartMinutes && currentTimeInMinutes < medTimeInMinutes) {
-    // Jejum
-    const minutesRemaining = medTimeInMinutes - currentTimeInMinutes
-    return {
-      status: 'jejum',
-      message: 'Período de jejum para o Revolade',
-      alertType: 'danger',
-      timeRemaining: minutesRemaining,
-      nextPhase: 'Tomar Revolade',
-      canEat: false,
-      canHaveDairy: false
-    }
-  }
-
-  if (currentTimeInMinutes >= medTimeInMinutes && currentTimeInMinutes < restricaoEndMinutes) {
-    // Restrição de laticínios
-    const minutesRemaining = restricaoEndMinutes - currentTimeInMinutes
-    const endTime = formatTime(restricaoEndMinutes)
-    return {
-      status: 'restricao',
-      message: `Sem ${config.restricao_tipo} até ${endTime}`,
-      alertType: 'warning',
-      timeRemaining: minutesRemaining,
-      nextPhase: `${config.restricao_tipo} liberados`,
-      canEat: true,
-      canHaveDairy: false
-    }
-  }
-
-  // Liberado (1 hora após fim da restrição - mostrar celebração temporária)
-  if (currentTimeInMinutes >= restricaoEndMinutes && currentTimeInMinutes < restricaoEndMinutes + 60) {
-    return {
-      status: 'liberado',
-      message: `${config.restricao_tipo} liberados!`,
-      alertType: 'success',
-      canEat: true,
-      canHaveDairy: true
-    }
-  }
-
-  // Normal
-  return {
-    status: 'normal',
-    message: '',
-    alertType: 'none',
-    canEat: true,
-    canHaveDairy: true
-  }
-}
-
-// Helper para formatar tempo em minutos para HH:MM
-function formatTime(totalMinutes: number): string {
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-}
-
-// Verificar se alimento é permitido na janela atual
-export function isFoodAllowedNow(
-  food: Food,
-  revoladeWindow: RevoladeWindow
-): { allowed: boolean; reason?: string } {
-  if (!revoladeWindow.canEat) {
-    return {
-      allowed: false,
-      reason: 'Período de jejum para o Revolade'
-    }
-  }
-
-  if (!revoladeWindow.canHaveDairy && food.categoria === 'laticinio') {
-    return {
-      allowed: false,
-      reason: 'Laticínios restritos após Revolade'
-    }
-  }
-
-  return { allowed: true }
 }
 
 // Formatar quantidade para exibição

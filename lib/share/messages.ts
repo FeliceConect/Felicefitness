@@ -2,7 +2,7 @@
 
 export const SHARE_MESSAGES = {
   workout: {
-    default: 'Treino concluido! #{workoutName} no @FeliceFit',
+    default: 'Treino concluido! #{workoutName} no @Complexo Wellness',
     with_prs: 'Treino concluido com {prs} PRs! #{workoutName}',
     morning: 'Comecando o dia com treino! #{workoutName}',
   },

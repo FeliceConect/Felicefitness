@@ -53,8 +53,8 @@ export function AdditionalMetricsCard({ data, className }: AdditionalMetricsCard
   ]
 
   return (
-    <div className={cn('bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4', className)}>
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+    <div className={cn('bg-white border border-border rounded-2xl p-4', className)}>
+      <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-4">
         Métricas Adicionais
       </h3>
 
@@ -67,7 +67,7 @@ export function AdditionalMetricsCard({ data, className }: AdditionalMetricsCard
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="bg-[#0A0A0F] rounded-xl p-3"
+              className="bg-background rounded-xl p-3"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div
@@ -88,12 +88,12 @@ export function AdditionalMetricsCard({ data, className }: AdditionalMetricsCard
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mb-0.5">{metric.label}</p>
-              <p className="text-lg font-bold text-white">
+              <p className="text-xs text-foreground-muted mb-0.5">{metric.label}</p>
+              <p className="text-lg font-bold text-foreground">
                 {metric.valor.toFixed(metric.unidade === '' ? 0 : 1)}
-                <span className="text-sm text-slate-400 ml-0.5">{metric.unidade}</span>
+                <span className="text-sm text-foreground-secondary ml-0.5">{metric.unidade}</span>
               </p>
-              <p className="text-[10px] text-slate-600 mt-1">{metric.descricao}</p>
+              <p className="text-[10px] text-foreground-muted mt-1">{metric.descricao}</p>
             </motion.div>
           )
         })}
@@ -104,11 +104,11 @@ export function AdditionalMetricsCard({ data, className }: AdditionalMetricsCard
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.5 }}
-        className="mt-4 pt-4 border-t border-[#2E2E3E] flex items-center justify-between"
+        className="mt-4 pt-4 border-t border-border flex items-center justify-between"
       >
         <div>
-          <p className="text-xs text-slate-500">Idade Metabólica Estimada</p>
-          <p className="text-xl font-bold text-white">
+          <p className="text-xs text-foreground-muted">Idade Metabólica Estimada</p>
+          <p className="text-xl font-bold text-foreground">
             {idadeMetabolica.idadeMetabolica} anos
           </p>
         </div>
@@ -136,7 +136,7 @@ export function AdditionalMetricsCard({ data, className }: AdditionalMetricsCard
         transition={{ duration: 0.3, delay: 0.6 }}
         className="mt-3 flex items-center justify-between text-sm"
       >
-        <span className="text-slate-500">Relação Cintura-Quadril</span>
+        <span className="text-foreground-muted">Relação Cintura-Quadril</span>
         <span className={cn(
           'font-medium',
           data.relacao_cintura_quadril <= 0.90 ? 'text-emerald-400' :

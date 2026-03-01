@@ -1,5 +1,5 @@
 /**
- * FeliceFit UI Components
+ * Complexo Wellness UI Components
  * Exporta todos os componentes de UI do design system
  */
 

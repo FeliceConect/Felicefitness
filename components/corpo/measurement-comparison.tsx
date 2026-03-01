@@ -55,19 +55,19 @@ export function MeasurementComparison({
   }
 
   return (
-    <div className={cn('bg-[#14141F] border border-[#2E2E3E] rounded-2xl p-4', className)}>
+    <div className={cn('bg-white border border-border rounded-2xl p-4', className)}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
           {title}
         </h3>
-        <div className="flex items-center gap-1 text-xs text-slate-500">
+        <div className="flex items-center gap-1 text-xs text-foreground-muted">
           <Calendar className="w-3 h-3" />
           <span>{diferencas.dias_entre} dias</span>
         </div>
       </div>
 
       {/* Date headers */}
-      <div className="grid grid-cols-3 gap-2 mb-3 text-xs text-slate-500">
+      <div className="grid grid-cols-3 gap-2 mb-3 text-xs text-foreground-muted">
         <div className="text-left">
           {format(parseISO(medicao_anterior.data), "d MMM''yy", { locale: ptBR })}
         </div>
@@ -120,12 +120,12 @@ export function MeasurementComparison({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.2, delay: index * 0.05 }}
-              className="grid grid-cols-3 gap-2 items-center py-2 border-b border-[#2E2E3E] last:border-0"
+              className="grid grid-cols-3 gap-2 items-center py-2 border-b border-border last:border-0"
             >
               {/* Previous value */}
               <div className="text-left">
-                <p className="text-xs text-slate-500">{row.label}</p>
-                <p className="text-sm text-white font-medium">
+                <p className="text-xs text-foreground-muted">{row.label}</p>
+                <p className="text-sm text-foreground font-medium">
                   {valorAnterior.toFixed(row.unidade === 'pts' ? 0 : 1)}
                 </p>
               </div>
@@ -148,8 +148,8 @@ export function MeasurementComparison({
 
               {/* Current value */}
               <div className="text-right">
-                <p className="text-xs text-slate-500">{row.label}</p>
-                <p className="text-sm text-white font-medium">
+                <p className="text-xs text-foreground-muted">{row.label}</p>
+                <p className="text-sm text-foreground font-medium">
                   {valorAtual.toFixed(row.unidade === 'pts' ? 0 : 1)}
                 </p>
               </div>

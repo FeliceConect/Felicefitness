@@ -82,9 +82,9 @@ export function MacrosRing({
         </div>
       </div>
       {/* Label */}
-      <span className={cn('text-slate-400 mt-2', config.labelSize)}>{label}</span>
+      <span className={cn('text-foreground-secondary mt-2', config.labelSize)}>{label}</span>
       {/* Values */}
-      <span className={cn('text-white font-medium', config.labelSize)}>
+      <span className={cn('text-foreground font-medium', config.labelSize)}>
         {Math.round(current)}/{goal}g
       </span>
     </div>

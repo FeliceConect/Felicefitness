@@ -56,19 +56,19 @@ export function CustomAmountModal({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-[#14141F] rounded-t-3xl p-6 max-h-[85vh] flex flex-col"
+            className="w-full max-w-lg bg-white rounded-t-3xl p-6 max-h-[85vh] flex flex-col"
           >
             {/* Handle */}
-            <div className="w-12 h-1 bg-slate-700 rounded-full mx-auto mb-6" />
+            <div className="w-12 h-1 bg-background-elevated rounded-full mx-auto mb-6" />
 
             {/* Header */}
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
-              <h2 className="text-xl font-bold text-white">Adicionar Água</h2>
+              <h2 className="text-xl font-bold text-foreground">Adicionar Água</h2>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-white rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
 
@@ -80,9 +80,9 @@ export function CustomAmountModal({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleDecrement(50)}
-                  className="p-3 bg-slate-800 hover:bg-slate-700 rounded-full transition-colors"
+                  className="p-3 bg-white hover:bg-background-elevated rounded-full transition-colors"
                 >
-                  <Minus className="w-6 h-6 text-slate-400" />
+                  <Minus className="w-6 h-6 text-foreground-secondary" />
                 </motion.button>
 
                 <div className="text-center min-w-[120px]">
@@ -90,20 +90,20 @@ export function CustomAmountModal({
                     key={amount}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="text-4xl font-bold text-cyan-400"
+                    className="text-4xl font-bold text-dourado"
                   >
                     {amount}
                   </motion.span>
-                  <span className="text-xl text-cyan-400 ml-1">ml</span>
+                  <span className="text-xl text-dourado ml-1">ml</span>
                 </div>
 
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleIncrement(50)}
-                  className="p-3 bg-slate-800 hover:bg-slate-700 rounded-full transition-colors"
+                  className="p-3 bg-white hover:bg-background-elevated rounded-full transition-colors"
                 >
-                  <Plus className="w-6 h-6 text-slate-400" />
+                  <Plus className="w-6 h-6 text-foreground-secondary" />
                 </motion.button>
               </div>
 
@@ -116,17 +116,17 @@ export function CustomAmountModal({
                   step={50}
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-full appearance-none cursor-pointer
+                  className="w-full h-2 bg-white rounded-full appearance-none cursor-pointer
                              [&::-webkit-slider-thumb]:appearance-none
                              [&::-webkit-slider-thumb]:w-6
                              [&::-webkit-slider-thumb]:h-6
                              [&::-webkit-slider-thumb]:rounded-full
-                             [&::-webkit-slider-thumb]:bg-cyan-500
+                             [&::-webkit-slider-thumb]:bg-dourado
                              [&::-webkit-slider-thumb]:cursor-pointer
                              [&::-webkit-slider-thumb]:shadow-lg
-                             [&::-webkit-slider-thumb]:shadow-cyan-500/50"
+                             [&::-webkit-slider-thumb]:shadow-dourado/50"
                 />
-                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <div className="flex justify-between text-xs text-foreground-muted mt-1">
                   <span>50ml</span>
                   <span>2L</span>
                 </div>
@@ -134,7 +134,7 @@ export function CustomAmountModal({
 
               {/* Presets */}
               <div>
-                <p className="text-sm text-slate-400 mb-2">Quantidades comuns</p>
+                <p className="text-sm text-foreground-secondary mb-2">Quantidades comuns</p>
                 <div className="flex flex-wrap gap-2">
                   {WATER_PRESETS.map((preset) => (
                     <button
@@ -143,8 +143,8 @@ export function CustomAmountModal({
                       className={cn(
                         'px-3 py-1.5 rounded-xl text-sm font-medium transition-all',
                         amount === preset
-                          ? 'bg-cyan-500 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                          ? 'bg-dourado text-white'
+                          : 'bg-white text-foreground-secondary hover:bg-background-elevated'
                       )}
                     >
                       {preset >= 1000 ? `${preset / 1000}L` : `${preset}ml`}

@@ -53,7 +53,7 @@ export function ConfidenceIndicator({
             className={cn(
               'rounded-full transition-colors',
               dotSizes[size],
-              i < config.dots ? config.color : 'bg-slate-700'
+              i < config.dots ? config.color : 'bg-background-elevated'
             )}
           />
         ))}

@@ -14,11 +14,7 @@ const LEONARDO_MEAL_PLAN = {
     carbs: 190,
     fat: 70
   },
-  special_rules: [
-    { time: "12:00-14:00", rule: "Jejum - apenas água" },
-    { time: "14:00", rule: "Revolade" },
-    { time: "14:00-18:00", rule: "Sem laticínios" }
-  ],
+  special_rules: [] as Array<{ time?: string; rule: string }>,
   meals: [
     {
       type: "wake_up",

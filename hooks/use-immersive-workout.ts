@@ -173,6 +173,7 @@ export function useImmersiveWorkout({
     }
 
     loadWorkout()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workoutId, settings.defaultRestTime])
 
   // Elapsed time tracking
@@ -305,8 +306,8 @@ export function useImmersiveWorkout({
       audio,
       settings.autoStartTimer,
       restTimer,
-      supabase,
     ]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   )
 
   const finishWorkout = useCallback(async () => {
@@ -373,8 +374,9 @@ export function useImmersiveWorkout({
     wakeLock,
     onComplete,
     restTimer,
-    supabase,
-  ])
+  ]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  )
 
   const skipRest = useCallback(() => {
     restTimer.skip()

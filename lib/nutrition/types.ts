@@ -123,26 +123,6 @@ export interface DailyNutrition {
   agua_consumida: number
 }
 
-export type RevoladeStatus = 'normal' | 'pre_jejum' | 'jejum' | 'restricao' | 'liberado'
-export type RevoladeAlertType = 'none' | 'warning' | 'danger' | 'success'
-
-export interface RevoladeWindow {
-  status: RevoladeStatus
-  message: string
-  alertType: RevoladeAlertType
-  timeRemaining?: number // minutos
-  nextPhase?: string
-  canEat: boolean
-  canHaveDairy: boolean
-}
-
-export interface RevoladeConfig {
-  horario_medicamento: string // "14:00"
-  horas_jejum_antes: number // 2
-  horas_restricao_depois: number // 4
-  restricao_tipo: string // 'laticínios'
-}
-
 export interface MealTemplate {
   tipo: MealType
   nome: string
@@ -209,10 +189,3 @@ export const leonardoMealPlan: PlannedMeal[] = [
   { tipo: 'ceia', label: 'Ceia', horario: '22:00', opcional: true }
 ]
 
-// Configuração do Revolade do Leonardo
-export const leonardoRevoladeConfig: RevoladeConfig = {
-  horario_medicamento: '14:00',
-  horas_jejum_antes: 2,
-  horas_restricao_depois: 4,
-  restricao_tipo: 'laticínios'
-}

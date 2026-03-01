@@ -15,7 +15,12 @@ import {
   X,
   ChevronDown,
   Apple,
-  Activity
+  Activity,
+  ClipboardList,
+  Brain,
+  FileText,
+  CalendarDays,
+  Library
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -25,7 +30,7 @@ interface ProfessionalLayoutProps {
 
 export default function ProfessionalLayout({ children }: ProfessionalLayoutProps) {
   const router = useRouter()
-  const { professional, loading, isProfessional, isNutritionist, isTrainer, isActive } = useProfessional()
+  const { professional, loading, isProfessional, isNutritionist, isTrainer, isCoach, isActive } = useProfessional()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -39,8 +44,8 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado"></div>
       </div>
     )
   }
@@ -48,11 +53,11 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
   // Não autorizado
   if (!isProfessional) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Acesso Negado</h1>
-          <p className="text-slate-400">Você não tem permissão para acessar esta área.</p>
-          <Link href="/login" className="mt-4 inline-block text-violet-400 hover:text-violet-300">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Acesso Negado</h1>
+          <p className="text-foreground-secondary">Você não tem permissão para acessar esta área.</p>
+          <Link href="/login" className="mt-4 inline-block text-dourado hover:text-dourado/80">
             Ir para Login
           </Link>
         </div>
@@ -63,11 +68,11 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
   // Profissional inativo
   if (!isActive) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Conta Inativa</h1>
-          <p className="text-slate-400">Sua conta de profissional está inativa. Entre em contato com o administrador.</p>
-          <Link href="/login" className="mt-4 inline-block text-violet-400 hover:text-violet-300">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Conta Inativa</h1>
+          <p className="text-foreground-secondary">Sua conta de profissional está inativa. Entre em contato com o administrador.</p>
+          <Link href="/login" className="mt-4 inline-block text-dourado hover:text-dourado/80">
             Ir para Login
           </Link>
         </div>
@@ -77,32 +82,41 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
 
   const menuItems = [
     { href: '/portal', icon: LayoutDashboard, label: 'Dashboard', show: true },
-    { href: '/portal/clients', icon: Users, label: 'Meus Clientes', show: true },
+    { href: '/portal/clients', icon: Users, label: 'Meus Pacientes', show: true },
     { href: '/portal/meals', icon: Utensils, label: 'Refeições', show: isNutritionist },
     { href: '/portal/workouts', icon: Dumbbell, label: 'Treinos', show: isTrainer },
     { href: '/portal/nutrition', icon: Apple, label: 'Planos Alimentares', show: isNutritionist },
     { href: '/portal/training', icon: Activity, label: 'Planos de Treino', show: isTrainer },
+    { href: '/portal/coach', icon: Brain, label: 'Dashboard Coach', show: isCoach },
+    { href: '/portal/notes', icon: FileText, label: 'Prontuário', show: true },
+    { href: '/portal/exercises', icon: Library, label: 'Exercícios', show: isTrainer },
+    { href: '/portal/agenda', icon: CalendarDays, label: 'Agenda', show: true },
+    { href: '/portal/forms', icon: ClipboardList, label: 'Formulários', show: true },
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
     { href: '/portal/settings', icon: Settings, label: 'Configurações', show: true },
   ].filter(item => item.show)
 
-  const professionalTypeLabel = isNutritionist ? 'Nutricionista' : 'Personal Trainer'
+  const professionalTypeLabel = isNutritionist
+    ? 'Nutricionista'
+    : isCoach
+      ? 'Coach Alta Performance'
+      : 'Personal Trainer'
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-slate-800 border-b border-slate-700 z-50 flex items-center justify-between px-4">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-cafe border-b border-cafe/80 z-50 flex items-center justify-between px-4">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-slate-700"
+          className="p-2 rounded-lg hover:bg-vinho/30"
         >
           {mobileMenuOpen ? (
-            <X className="w-6 h-6 text-white" />
+            <X className="w-6 h-6 text-seda" />
           ) : (
-            <Menu className="w-6 h-6 text-white" />
+            <Menu className="w-6 h-6 text-seda" />
           )}
         </button>
-        <span className="text-white font-semibold">Portal Profissional</span>
+        <span className="text-seda font-semibold">Portal Profissional</span>
         <div className="w-10" />
       </div>
 
@@ -114,36 +128,34 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — dark café premium */}
       <aside className={`
-        fixed top-0 left-0 h-full bg-slate-800 border-r border-slate-700 z-50
+        fixed top-0 left-0 h-full bg-cafe border-r border-vinho/20 z-50
         transition-all duration-300 ease-in-out
         ${sidebarOpen ? 'w-64' : 'w-20'}
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-vinho/20">
           {sidebarOpen && (
             <Link href="/portal" className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                isNutritionist
-                  ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                  : 'bg-gradient-to-br from-orange-500 to-red-600'
-              }`}>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">
                 {isNutritionist ? (
                   <Apple className="w-4 h-4 text-white" />
+                ) : isCoach ? (
+                  <Brain className="w-4 h-4 text-white" />
                 ) : (
                   <Dumbbell className="w-4 h-4 text-white" />
                 )}
               </div>
-              <span className="text-white font-semibold">Portal</span>
+              <span className="text-seda font-semibold">Portal</span>
             </Link>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex p-2 rounded-lg hover:bg-slate-700"
+            className="hidden lg:flex p-2 rounded-lg hover:bg-vinho/30"
           >
-            <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${sidebarOpen ? 'rotate-90' : '-rotate-90'}`} />
+            <ChevronDown className={`w-5 h-5 text-nude transition-transform ${sidebarOpen ? 'rotate-90' : '-rotate-90'}`} />
           </button>
         </div>
 
@@ -156,7 +168,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
               onClick={() => setMobileMenuOpen(false)}
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg
-                text-slate-300 hover:text-white hover:bg-slate-700
+                text-fendi hover:text-seda hover:bg-vinho/30
                 transition-colors
               `}
             >
@@ -167,7 +179,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
         </nav>
 
         {/* User Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-vinho/20">
           {sidebarOpen ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -175,22 +187,22 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   <img
                     src={professional.avatar_url}
                     alt={professional.display_name || professionalTypeLabel}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-violet-500"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-dourado"
                   />
                 ) : (
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isNutritionist ? 'bg-green-500/20' : 'bg-orange-500/20'
-                  }`}>
+                  <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
                     {isNutritionist ? (
-                      <Apple className={`w-5 h-5 text-green-400`} />
+                      <Apple className="w-5 h-5 text-dourado" />
+                    ) : isCoach ? (
+                      <Brain className="w-5 h-5 text-dourado" />
                     ) : (
-                      <Dumbbell className={`w-5 h-5 text-orange-400`} />
+                      <Dumbbell className="w-5 h-5 text-dourado" />
                     )}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{professional?.display_name || professional?.specialty || professionalTypeLabel}</p>
-                  <p className="text-xs text-slate-400">{professional?.registration || 'Sem registro'}</p>
+                  <p className="text-sm text-seda truncate">{professional?.display_name || professional?.specialty || professionalTypeLabel}</p>
+                  <p className="text-xs text-nude">{professional?.registration || 'Sem registro'}</p>
                 </div>
               </div>
               <button
@@ -200,7 +212,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 transition-colors w-full"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-error hover:text-error/80 hover:bg-error/10 transition-colors w-full"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Sair</span>
@@ -215,7 +227,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
-                className="flex items-center justify-center p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 w-full"
+                className="flex items-center justify-center p-2 rounded-lg text-error hover:text-error/80 hover:bg-error/10 w-full"
                 title="Sair"
               >
                 <LogOut className="w-5 h-5" />
@@ -225,7 +237,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content — light warm background */}
       <main className={`
         min-h-screen transition-all duration-300
         pt-16 lg:pt-0

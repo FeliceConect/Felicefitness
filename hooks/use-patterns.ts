@@ -2,7 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { CorrelationResult, TrendAnalysis } from '@/types/insights'
+interface CorrelationResult {
+  metric1: string
+  metric2: string
+  coefficient: number
+  interpretation: string
+}
+
+interface TrendAnalysis {
+  direction: 'up' | 'down' | 'stable'
+  percentage: number
+  confidence: number
+}
 
 interface PatternData {
   bestWorkoutDays: string[]
@@ -71,7 +82,7 @@ export function usePatterns(): UsePatternsReturn {
       // Buscar dados
       const [workoutsResult, wellnessResult, sleepResult] = await Promise.all([
         supabase
-          .from('treino_logs')
+          .from('fitness_workouts')
           .select('*')
           .eq('user_id', user.id)
           .gte('data', thirtyDaysAgoStr)
@@ -85,7 +96,7 @@ export function usePatterns(): UsePatternsReturn {
           .order('data', { ascending: false }),
 
         supabase
-          .from('sono_registros')
+          .from('fitness_sleep_logs')
           .select('*')
           .eq('user_id', user.id)
           .gte('data', thirtyDaysAgoStr)
@@ -242,7 +253,8 @@ export function usePatterns(): UsePatternsReturn {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     loadPatterns()

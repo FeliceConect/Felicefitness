@@ -236,7 +236,7 @@ export function generateDailyNotifications(
       if (scheduledFor > new Date()) {
         notifications.push(createScheduledNotification(
           userId,
-          notificationTemplates.medicamento.lembrete('Revolade', time),
+          notificationTemplates.medicamento.lembrete('Medicamento', time),
           scheduledFor
         ))
       }

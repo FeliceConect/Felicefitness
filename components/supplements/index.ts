@@ -9,5 +9,5 @@ export * from './daily-supplements'
 export * from './next-dose-card'
 export * from './stock-alert'
 export * from './stock-list'
-export * from './revolade-warning'
+
 export * from './progress-ring'
