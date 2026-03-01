@@ -5,6 +5,7 @@ import { ConversationsList } from '@/components/chat/conversations-list'
 import { ChatWindow } from '@/components/chat/chat-window'
 import { useProfessional } from '@/hooks/use-professional'
 import { createBrowserClient } from '@supabase/ssr'
+import { MessageSquare } from 'lucide-react'
 
 interface Conversation {
   id: string
@@ -67,7 +68,7 @@ export default function MessagesPage() {
             onBack={handleBack}
           />
         ) : (
-          <div className="bg-slate-800 rounded-xl border border-slate-700 h-full overflow-hidden">
+          <div className="bg-white rounded-xl border border-border h-full overflow-hidden">
             <ConversationsList
               onSelectConversation={setSelectedConversation}
               selectedId={undefined}
@@ -83,14 +84,14 @@ export default function MessagesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Mensagens</h1>
-        <p className="text-slate-400">Comunique-se com seus clientes</p>
+        <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+        <p className="text-foreground-secondary">Comunique-se com seus clientes</p>
       </div>
 
       {/* Chat Layout */}
       <div className="grid grid-cols-3 gap-6 h-[calc(100vh-14rem)]">
         {/* Lista de Conversas */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
           <ConversationsList
             onSelectConversation={setSelectedConversation}
             selectedId={selectedConversation?.id}
@@ -98,7 +99,7 @@ export default function MessagesPage() {
         </div>
 
         {/* Chat Window */}
-        <div className="col-span-2 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="col-span-2 bg-white rounded-xl border border-border overflow-hidden">
           {selectedConversation ? (
             <ChatWindow
               conversationId={selectedConversation.id}
@@ -108,13 +109,11 @@ export default function MessagesPage() {
             />
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <div className="w-20 h-20 rounded-full bg-slate-700 flex items-center justify-center mb-4">
-                <svg className="w-10 h-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+              <div className="w-20 h-20 rounded-full bg-background-elevated flex items-center justify-center mb-4">
+                <MessageSquare className="w-10 h-10 text-foreground-muted" />
               </div>
-              <h3 className="text-lg font-medium text-white mb-2">Selecione uma conversa</h3>
-              <p className="text-slate-400 max-w-sm">
+              <h3 className="text-lg font-medium text-foreground mb-2">Selecione uma conversa</h3>
+              <p className="text-foreground-secondary max-w-sm">
                 Escolha uma conversa da lista ao lado para ver as mensagens e responder seus clientes.
               </p>
             </div>

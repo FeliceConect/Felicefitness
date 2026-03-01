@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-// GET - Buscar clientes do profissional
-export async function GET() {
+// GET - Buscar clientes do profissional (ou todos se admin com ?all=true)
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -26,6 +26,34 @@ export async function GET() {
         }
       }
     )
+
+    // Se admin pediu todos os clientes (?all=true)
+    const { searchParams } = new URL(request.url)
+    const allClients = searchParams.get('all') === 'true'
+
+    if (allClients) {
+      const { data: profile } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile && ['super_admin', 'admin'].includes(profile.role)) {
+        const { data: clients } = await supabaseAdmin
+          .from('fitness_profiles')
+          .select('id, nome, email')
+          .order('nome', { ascending: true })
+
+        return NextResponse.json({
+          success: true,
+          data: clients?.map(c => ({
+            client_id: c.id,
+            client_name: c.nome,
+            client_email: c.email,
+          })) || []
+        })
+      }
+    }
 
     // Verificar se é profissional
     const { data: professional, error: profError } = await supabaseAdmin

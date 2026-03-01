@@ -1,0 +1,5 @@
+export { TabProntuario } from './tab-prontuario'
+export { TabBioimpedancia } from './tab-bioimpedancia'
+export { TabAntropometria } from './tab-antropometria'
+export { TabPlanoAlimentar } from './tab-plano-alimentar'
+export { TabFormularios } from './tab-formularios'

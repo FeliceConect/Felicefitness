@@ -215,8 +215,8 @@ export default function PortalMealsPage() {
 
   if (profLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500"></div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dourado"></div>
       </div>
     )
   }
@@ -224,333 +224,308 @@ export default function PortalMealsPage() {
   if (!professional) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-500">Acesso restrito a profissionais</p>
+        <p className="text-error">Acesso restrito a profissionais</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white pb-20">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
-        <div className="px-4 py-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/portal')}
-              className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                <Utensils className="w-5 h-5 text-green-500" />
-                Refeicoes dos Clientes
-              </h1>
-              <p className="text-sm text-gray-400">
-                {filteredMeals.length} refeicoes encontradas
-              </p>
-            </div>
-          </div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => router.push('/portal')}
+          className="p-2 rounded-lg bg-white border border-border hover:bg-background-elevated transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
+        <div>
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Utensils className="w-5 h-5 text-green-500" />
+            Refeições dos Clientes
+          </h1>
+          <p className="text-sm text-foreground-secondary">
+            {filteredMeals.length} refeições encontradas
+          </p>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="space-y-3">
+        {/* Busca */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-muted" />
+          <input
+            type="text"
+            placeholder="Buscar por descricao ou cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-border text-foreground placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado/50"
+          />
         </div>
 
-        {/* Filtros */}
-        <div className="px-4 pb-4 space-y-3">
-          {/* Busca */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+        {/* Filtros em linha */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <select
+            value={selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-white border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 min-w-[140px]"
+          >
+            <option value="">Todos os clientes</option>
+            {clients.map(client => (
+              <option key={client.id} value={client.id}>
+                {client.nome}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedMealType}
+            onChange={(e) => setSelectedMealType(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-white border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 min-w-[140px]"
+          >
+            <option value="">Todas refeições</option>
+            {Object.entries(mealTypeLabels).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value as '7d' | '14d' | '30d' | 'custom')}
+            className="px-3 py-2 rounded-lg bg-white border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 min-w-[120px]"
+          >
+            <option value="7d">7 dias</option>
+            <option value="14d">14 dias</option>
+            <option value="30d">30 dias</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+
+        {dateRange === 'custom' && (
+          <div className="flex gap-2">
             <input
-              type="text"
-              placeholder="Buscar por descricao ou cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-lg bg-white border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-lg bg-white border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
             />
           </div>
-
-          {/* Filtros em linha */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {/* Cliente */}
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-violet-500 min-w-[140px]"
-            >
-              <option value="">Todos os clientes</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id}>
-                  {client.nome}
-                </option>
-              ))}
-            </select>
-
-            {/* Tipo de refeicao */}
-            <select
-              value={selectedMealType}
-              onChange={(e) => setSelectedMealType(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-violet-500 min-w-[140px]"
-            >
-              <option value="">Todas refeicoes</option>
-              {Object.entries(mealTypeLabels).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-
-            {/* Periodo */}
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as '7d' | '14d' | '30d' | 'custom')}
-              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-violet-500 min-w-[120px]"
-            >
-              <option value="7d">7 dias</option>
-              <option value="14d">14 dias</option>
-              <option value="30d">30 dias</option>
-              <option value="custom">Personalizado</option>
-            </select>
-          </div>
-
-          {/* Datas personalizadas */}
-          {dateRange === 'custom' && (
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-violet-500"
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-violet-500"
-              />
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Stats */}
       {stats && (
-        <div className="px-4 py-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl p-4 border border-orange-500/30">
-              <div className="flex items-center gap-2 text-orange-400 mb-1">
-                <Flame className="w-4 h-4" />
-                <span className="text-xs">Total Calorias</span>
-              </div>
-              <p className="text-2xl font-bold">{stats.totalCalories.toLocaleString()}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white rounded-xl p-4 border border-border">
+            <div className="flex items-center gap-2 text-orange-500 mb-1">
+              <Flame className="w-4 h-4" />
+              <span className="text-xs font-medium">Total Calorias</span>
             </div>
+            <p className="text-2xl font-bold text-foreground">{stats.totalCalories.toLocaleString()}</p>
+          </div>
 
-            <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-500/30">
-              <div className="flex items-center gap-2 text-blue-400 mb-1">
-                <TrendingUp className="w-4 h-4" />
-                <span className="text-xs">Media Proteina</span>
-              </div>
-              <p className="text-2xl font-bold">{stats.avgProtein}g</p>
+          <div className="bg-white rounded-xl p-4 border border-border">
+            <div className="flex items-center gap-2 text-blue-500 mb-1">
+              <TrendingUp className="w-4 h-4" />
+              <span className="text-xs font-medium">Média Proteína</span>
             </div>
+            <p className="text-2xl font-bold text-foreground">{stats.avgProtein}g</p>
+          </div>
 
-            <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-500/30">
-              <div className="flex items-center gap-2 text-yellow-400 mb-1">
-                <Apple className="w-4 h-4" />
-                <span className="text-xs">Media Carbs</span>
-              </div>
-              <p className="text-2xl font-bold">{stats.avgCarbs}g</p>
+          <div className="bg-white rounded-xl p-4 border border-border">
+            <div className="flex items-center gap-2 text-amber-500 mb-1">
+              <Apple className="w-4 h-4" />
+              <span className="text-xs font-medium">Média Carbs</span>
             </div>
+            <p className="text-2xl font-bold text-foreground">{stats.avgCarbs}g</p>
+          </div>
 
-            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <Utensils className="w-4 h-4" />
-                <span className="text-xs">Total Refeicoes</span>
-              </div>
-              <p className="text-2xl font-bold">{stats.totalMeals}</p>
+          <div className="bg-white rounded-xl p-4 border border-border">
+            <div className="flex items-center gap-2 text-green-500 mb-1">
+              <Utensils className="w-4 h-4" />
+              <span className="text-xs font-medium">Total Refeições</span>
             </div>
+            <p className="text-2xl font-bold text-foreground">{stats.totalMeals}</p>
           </div>
         </div>
       )}
 
       {/* Content */}
-      <div className="px-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-red-400">{error}</p>
-            <button
-              onClick={fetchMeals}
-              className="mt-4 px-4 py-2 bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        ) : filteredMeals.length === 0 ? (
-          <div className="text-center py-12">
-            <Utensils className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-400">Nenhuma refeicao encontrada</h3>
-            <p className="text-gray-500 mt-2">
-              Ajuste os filtros ou aguarde seus clientes registrarem refeicoes
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {sortedDates.map(date => (
-              <div key={date}>
-                {/* Header do dia */}
-                <div className="sticky top-[140px] bg-gray-950/95 backdrop-blur-sm py-2 z-5">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-violet-400" />
-                    <span className="font-semibold text-violet-400">{formatDate(date)}</span>
-                    <span className="text-gray-500 text-sm">
-                      ({groupedMeals[date].length} refeicoes)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Refeicoes do dia */}
-                <div className="space-y-3 mt-2">
-                  {groupedMeals[date].map(meal => (
-                    <div
-                      key={meal.id}
-                      className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden"
-                    >
-                      {/* Header da refeicao */}
-                      <button
-                        onClick={() => toggleMealExpanded(meal.id)}
-                        className="w-full p-4 flex items-center gap-3 hover:bg-gray-800/50 transition-colors"
-                      >
-                        {/* Avatar do cliente */}
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold shrink-0">
-                          {meal.profile?.nome?.charAt(0) || 'C'}
-                        </div>
-
-                        <div className="flex-1 text-left">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{meal.profile?.nome || 'Cliente'}</span>
-                            <span className="text-gray-500">-</span>
-                            <span className="flex items-center gap-1 text-sm text-gray-400">
-                              {mealTypeIcons[meal.meal_type]}
-                              {mealTypeLabels[meal.meal_type] || meal.meal_type}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {formatTime(meal.meal_time)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Flame className="w-3 h-3 text-orange-400" />
-                              {meal.calories || 0} kcal
-                            </span>
-                            {meal.photo_url && (
-                              <span className="flex items-center gap-1 text-green-400">
-                                <ImageIcon className="w-3 h-3" />
-                                Com foto
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {expandedMeals.has(meal.id) ? (
-                          <ChevronDown className="w-5 h-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="w-5 h-5 text-gray-500" />
-                        )}
-                      </button>
-
-                      {/* Detalhes expandidos */}
-                      {expandedMeals.has(meal.id) && (
-                        <div className="px-4 pb-4 border-t border-gray-800">
-                          {/* Descricao */}
-                          {meal.description && (
-                            <div className="mt-4">
-                              <p className="text-gray-300">{meal.description}</p>
-                            </div>
-                          )}
-
-                          {/* Foto */}
-                          {meal.photo_url && (
-                            <div className="mt-4">
-                              <img
-                                src={meal.photo_url}
-                                alt="Foto da refeicao"
-                                className="w-full max-w-md rounded-lg"
-                              />
-                            </div>
-                          )}
-
-                          {/* Macros */}
-                          <div className="mt-4 grid grid-cols-4 gap-2">
-                            <div className="bg-gray-800 rounded-lg p-3 text-center">
-                              <p className="text-xs text-gray-500">Calorias</p>
-                              <p className="text-lg font-bold text-orange-400">{meal.calories || 0}</p>
-                            </div>
-                            <div className="bg-gray-800 rounded-lg p-3 text-center">
-                              <p className="text-xs text-gray-500">Proteina</p>
-                              <p className="text-lg font-bold text-blue-400">{meal.protein || 0}g</p>
-                            </div>
-                            <div className="bg-gray-800 rounded-lg p-3 text-center">
-                              <p className="text-xs text-gray-500">Carbs</p>
-                              <p className="text-lg font-bold text-yellow-400">{meal.carbs || 0}g</p>
-                            </div>
-                            <div className="bg-gray-800 rounded-lg p-3 text-center">
-                              <p className="text-xs text-gray-500">Gordura</p>
-                              <p className="text-lg font-bold text-purple-400">{meal.fat || 0}g</p>
-                            </div>
-                          </div>
-
-                          {/* Alimentos */}
-                          {meal.foods && meal.foods.length > 0 && (
-                            <div className="mt-4">
-                              <h4 className="text-sm font-semibold text-gray-400 mb-2">Alimentos</h4>
-                              <div className="space-y-2">
-                                {meal.foods.map((food, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2"
-                                  >
-                                    <div>
-                                      <p className="font-medium">{food.name}</p>
-                                      <p className="text-xs text-gray-500">
-                                        {food.quantity} {food.unit}
-                                      </p>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="text-sm text-orange-400">{food.calories} kcal</p>
-                                      <p className="text-xs text-gray-500">
-                                        P:{food.protein}g C:{food.carbs}g G:{food.fat}g
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Analise da IA */}
-                          {meal.ai_analysis && (
-                            <div className="mt-4 p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg">
-                              <h4 className="text-sm font-semibold text-violet-400 mb-2">Analise da IA</h4>
-                              <p className="text-sm text-gray-300">{meal.ai_analysis}</p>
-                            </div>
-                          )}
-
-                          {/* Notas */}
-                          {meal.notes && (
-                            <div className="mt-4 p-3 bg-gray-800 rounded-lg">
-                              <h4 className="text-sm font-semibold text-gray-400 mb-1">Observacoes</h4>
-                              <p className="text-sm text-gray-300">{meal.notes}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dourado"></div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-error">{error}</p>
+          <button
+            onClick={fetchMeals}
+            className="mt-4 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-colors"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      ) : filteredMeals.length === 0 ? (
+        <div className="text-center py-12">
+          <Utensils className="w-16 h-16 mx-auto text-foreground-muted mb-4" />
+          <h3 className="text-lg font-semibold text-foreground">Nenhuma refeição encontrada</h3>
+          <p className="text-foreground-secondary mt-2">
+            Ajuste os filtros ou aguarde seus clientes registrarem refeições
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {sortedDates.map(date => (
+            <div key={date}>
+              {/* Header do dia */}
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-dourado" />
+                <span className="font-semibold text-dourado">{formatDate(date)}</span>
+                <span className="text-foreground-muted text-sm">
+                  ({groupedMeals[date].length} refeições)
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {/* Refeições do dia */}
+              <div className="space-y-3">
+                {groupedMeals[date].map(meal => (
+                  <div
+                    key={meal.id}
+                    className="bg-white rounded-xl border border-border overflow-hidden"
+                  >
+                    {/* Header da refeição */}
+                    <button
+                      onClick={() => toggleMealExpanded(meal.id)}
+                      className="w-full p-4 flex items-center gap-3 hover:bg-background-elevated/50 transition-colors"
+                    >
+                      {/* Avatar do cliente */}
+                      <div className="w-10 h-10 rounded-full bg-dourado/10 flex items-center justify-center text-dourado font-bold shrink-0">
+                        {meal.profile?.nome?.charAt(0) || 'C'}
+                      </div>
+
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{meal.profile?.nome || 'Cliente'}</span>
+                          <span className="text-foreground-muted">-</span>
+                          <span className="flex items-center gap-1 text-sm text-foreground-secondary">
+                            {mealTypeIcons[meal.meal_type]}
+                            {mealTypeLabels[meal.meal_type] || meal.meal_type}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-foreground-muted mt-1">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatTime(meal.meal_time)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Flame className="w-3 h-3 text-orange-400" />
+                            {meal.calories || 0} kcal
+                          </span>
+                          {meal.photo_url && (
+                            <span className="flex items-center gap-1 text-green-500">
+                              <ImageIcon className="w-3 h-3" />
+                              Com foto
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {expandedMeals.has(meal.id) ? (
+                        <ChevronDown className="w-5 h-5 text-foreground-muted" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-foreground-muted" />
+                      )}
+                    </button>
+
+                    {/* Detalhes expandidos */}
+                    {expandedMeals.has(meal.id) && (
+                      <div className="px-4 pb-4 border-t border-border">
+                        {meal.description && (
+                          <div className="mt-4">
+                            <p className="text-foreground-secondary">{meal.description}</p>
+                          </div>
+                        )}
+
+                        {meal.photo_url && (
+                          <div className="mt-4">
+                            <img
+                              src={meal.photo_url}
+                              alt="Foto da refeição"
+                              className="w-full max-w-md rounded-lg"
+                            />
+                          </div>
+                        )}
+
+                        {/* Macros */}
+                        <div className="mt-4 grid grid-cols-4 gap-2">
+                          <div className="bg-background-elevated rounded-lg p-3 text-center">
+                            <p className="text-xs text-foreground-muted">Calorias</p>
+                            <p className="text-lg font-bold text-orange-500">{meal.calories || 0}</p>
+                          </div>
+                          <div className="bg-background-elevated rounded-lg p-3 text-center">
+                            <p className="text-xs text-foreground-muted">Proteína</p>
+                            <p className="text-lg font-bold text-blue-500">{meal.protein || 0}g</p>
+                          </div>
+                          <div className="bg-background-elevated rounded-lg p-3 text-center">
+                            <p className="text-xs text-foreground-muted">Carbs</p>
+                            <p className="text-lg font-bold text-amber-500">{meal.carbs || 0}g</p>
+                          </div>
+                          <div className="bg-background-elevated rounded-lg p-3 text-center">
+                            <p className="text-xs text-foreground-muted">Gordura</p>
+                            <p className="text-lg font-bold text-purple-500">{meal.fat || 0}g</p>
+                          </div>
+                        </div>
+
+                        {/* Alimentos */}
+                        {meal.foods && meal.foods.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-semibold text-foreground-secondary mb-2">Alimentos</h4>
+                            <div className="space-y-2">
+                              {meal.foods.map((food, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between bg-background-elevated rounded-lg px-3 py-2"
+                                >
+                                  <div>
+                                    <p className="font-medium text-foreground">{food.name}</p>
+                                    <p className="text-xs text-foreground-muted">
+                                      {food.quantity} {food.unit}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm text-orange-500">{food.calories} kcal</p>
+                                    <p className="text-xs text-foreground-muted">
+                                      P:{food.protein}g C:{food.carbs}g G:{food.fat}g
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {meal.notes && (
+                          <div className="mt-4 p-3 bg-background-elevated rounded-lg">
+                            <h4 className="text-sm font-semibold text-foreground-secondary mb-1">Observações</h4>
+                            <p className="text-sm text-foreground-secondary">{meal.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -9,7 +9,6 @@ import {
   Utensils,
   Dumbbell,
   MessageSquare,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -18,9 +17,9 @@ import {
   Activity,
   ClipboardList,
   Brain,
-  FileText,
   CalendarDays,
-  Library
+  Library,
+  Stethoscope
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -30,7 +29,7 @@ interface ProfessionalLayoutProps {
 
 export default function ProfessionalLayout({ children }: ProfessionalLayoutProps) {
   const router = useRouter()
-  const { professional, loading, isProfessional, isNutritionist, isTrainer, isCoach, isActive } = useProfessional()
+  const { professional, loading, isProfessional, isSuperAdmin, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isActive } = useProfessional()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -83,24 +82,26 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
   const menuItems = [
     { href: '/portal', icon: LayoutDashboard, label: 'Dashboard', show: true },
     { href: '/portal/clients', icon: Users, label: 'Meus Pacientes', show: true },
-    { href: '/portal/meals', icon: Utensils, label: 'Refeições', show: isNutritionist },
-    { href: '/portal/workouts', icon: Dumbbell, label: 'Treinos', show: isTrainer },
-    { href: '/portal/nutrition', icon: Apple, label: 'Planos Alimentares', show: isNutritionist },
-    { href: '/portal/training', icon: Activity, label: 'Planos de Treino', show: isTrainer },
-    { href: '/portal/coach', icon: Brain, label: 'Dashboard Coach', show: isCoach },
-    { href: '/portal/notes', icon: FileText, label: 'Prontuário', show: true },
-    { href: '/portal/exercises', icon: Library, label: 'Exercícios', show: isTrainer },
+    { href: '/portal/meals', icon: Utensils, label: 'Refeições', show: isNutritionist || isSuperAdmin },
+    { href: '/portal/workouts', icon: Dumbbell, label: 'Treinos', show: isTrainer || isSuperAdmin },
+    { href: '/portal/nutrition', icon: Apple, label: 'Planos Alimentares', show: isNutritionist || isSuperAdmin },
+    { href: '/portal/training', icon: Activity, label: 'Planos de Treino', show: isTrainer || isSuperAdmin },
+    { href: '/portal/coach', icon: Brain, label: 'Dashboard Coach', show: isCoach || isSuperAdmin },
+    { href: '/portal/exercises', icon: Library, label: 'Exercícios', show: isTrainer || isSuperAdmin },
     { href: '/portal/agenda', icon: CalendarDays, label: 'Agenda', show: true },
     { href: '/portal/forms', icon: ClipboardList, label: 'Formulários', show: true },
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
-    { href: '/portal/settings', icon: Settings, label: 'Configurações', show: true },
   ].filter(item => item.show)
 
-  const professionalTypeLabel = isNutritionist
-    ? 'Nutricionista'
-    : isCoach
-      ? 'Coach Alta Performance'
-      : 'Personal Trainer'
+  const professionalTypeLabel = isSuperAdmin
+    ? 'Super Admin'
+    : isNutritionist
+      ? 'Nutricionista'
+      : isCoach
+        ? 'Coach Alta Performance'
+        : isPhysiotherapist
+          ? 'Fisioterapeuta'
+          : 'Personal Trainer'
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,7 +117,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
             <Menu className="w-6 h-6 text-seda" />
           )}
         </button>
-        <span className="text-seda font-semibold">Portal Profissional</span>
+        <span className="text-seda font-semibold truncate">{professional?.display_name || professionalTypeLabel}</span>
         <div className="w-10" />
       </div>
 
@@ -131,12 +132,12 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
       {/* Sidebar — dark café premium */}
       <aside className={`
         fixed top-0 left-0 h-full bg-cafe border-r border-vinho/20 z-50
-        transition-all duration-300 ease-in-out
+        transition-all duration-300 ease-in-out flex flex-col
         ${sidebarOpen ? 'w-64' : 'w-20'}
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-vinho/20">
+        <div className="h-16 flex-shrink-0 flex items-center justify-between px-4 border-b border-vinho/20">
           {sidebarOpen && (
             <Link href="/portal" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">
@@ -144,11 +145,13 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                   <Apple className="w-4 h-4 text-white" />
                 ) : isCoach ? (
                   <Brain className="w-4 h-4 text-white" />
+                ) : isPhysiotherapist ? (
+                  <Stethoscope className="w-4 h-4 text-white" />
                 ) : (
                   <Dumbbell className="w-4 h-4 text-white" />
                 )}
               </div>
-              <span className="text-seda font-semibold">Portal</span>
+              <span className="text-seda font-semibold">{professional?.display_name || professionalTypeLabel}</span>
             </Link>
           )}
           <button
@@ -160,7 +163,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
         </div>
 
         {/* Menu */}
-        <nav className="p-4 space-y-2">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {menuItems.map((item) => (
             <Link
               key={item.href}
@@ -179,7 +182,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
         </nav>
 
         {/* User Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-vinho/20">
+        <div className="flex-shrink-0 p-4 border-t border-vinho/20">
           {sidebarOpen ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -195,6 +198,8 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
                       <Apple className="w-5 h-5 text-dourado" />
                     ) : isCoach ? (
                       <Brain className="w-5 h-5 text-dourado" />
+                    ) : isPhysiotherapist ? (
+                      <Stethoscope className="w-5 h-5 text-dourado" />
                     ) : (
                       <Dumbbell className="w-5 h-5 text-dourado" />
                     )}

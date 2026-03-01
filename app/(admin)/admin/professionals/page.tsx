@@ -18,7 +18,7 @@ import {
 interface Professional {
   id: string
   user_id: string
-  type: 'nutritionist' | 'trainer'
+  type: 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist'
   registration: string | null
   specialty: string | null
   bio: string | null
@@ -60,7 +60,7 @@ export default function ProfessionalsPage() {
   // Form state
   const [formData, setFormData] = useState({
     userId: '',
-    type: 'trainer' as 'nutritionist' | 'trainer',
+    type: 'trainer' as 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist',
     registration: '',
     specialty: '',
     bio: '',
@@ -265,13 +265,57 @@ export default function ProfessionalsPage() {
   )
 
   const getTypeLabel = (type: string) => {
-    return type === 'nutritionist' ? 'Nutricionista' : 'Personal Trainer'
+    switch (type) {
+      case 'nutritionist': return 'Nutricionista'
+      case 'coach': return 'Coach'
+      case 'physiotherapist': return 'Fisioterapeuta'
+      default: return 'Personal Trainer'
+    }
   }
 
   const getTypeBadgeColor = (type: string) => {
-    return type === 'nutritionist'
-      ? 'bg-green-500/20 text-green-400 border-green-500/30'
-      : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    switch (type) {
+      case 'nutritionist': return 'bg-green-500/20 text-green-400 border-green-500/30'
+      case 'coach': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+      case 'physiotherapist': return 'bg-teal-500/20 text-teal-400 border-teal-500/30'
+      default: return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    }
+  }
+
+  const getTypeEmoji = (type: string) => {
+    switch (type) {
+      case 'nutritionist': return '🥗'
+      case 'coach': return '🧠'
+      case 'physiotherapist': return '🦴'
+      default: return '💪'
+    }
+  }
+
+  const getTypeBgColor = (type: string) => {
+    switch (type) {
+      case 'nutritionist': return 'bg-green-500/20'
+      case 'coach': return 'bg-yellow-500/20'
+      case 'physiotherapist': return 'bg-teal-500/20'
+      default: return 'bg-blue-500/20'
+    }
+  }
+
+  const getTypeTextColor = (type: string) => {
+    switch (type) {
+      case 'nutritionist': return 'text-green-400'
+      case 'coach': return 'text-yellow-400'
+      case 'physiotherapist': return 'text-teal-400'
+      default: return 'text-blue-400'
+    }
+  }
+
+  const getRegistrationLabel = (type: string) => {
+    switch (type) {
+      case 'nutritionist': return 'CRN'
+      case 'coach': return 'CRP'
+      case 'physiotherapist': return 'CREFITO'
+      default: return 'CREF'
+    }
   }
 
   const handlePhotoUpload = async (file: File) => {
@@ -334,7 +378,7 @@ export default function ProfessionalsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Profissionais</h1>
-          <p className="text-slate-400">Gerenciar nutricionistas e personal trainers</p>
+          <p className="text-slate-400">Gerenciar nutricionistas, personal trainers e coaches</p>
         </div>
         <button
           onClick={openAddModal}
@@ -357,6 +401,8 @@ export default function ProfessionalsPage() {
             <option value="">Todos os tipos</option>
             <option value="trainer">Personal Trainers</option>
             <option value="nutritionist">Nutricionistas</option>
+            <option value="coach">Coaches</option>
+            <option value="physiotherapist">Fisioterapeutas</option>
           </select>
         </div>
       </div>
@@ -385,11 +431,7 @@ export default function ProfessionalsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   {/* Info */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      professional.type === 'nutritionist'
-                        ? 'bg-green-500/20'
-                        : 'bg-blue-500/20'
-                    }`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getTypeBgColor(professional.type)}`}>
                       {(professional.avatar_url || professional.fitness_profiles?.avatar_url) ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -398,9 +440,7 @@ export default function ProfessionalsPage() {
                           className="w-12 h-12 rounded-full object-cover"
                         />
                       ) : (
-                        <span className={`text-lg font-medium ${
-                          professional.type === 'nutritionist' ? 'text-green-400' : 'text-blue-400'
-                        }`}>
+                        <span className={`text-lg font-medium ${getTypeTextColor(professional.type)}`}>
                           {(professional.display_name || professional.fitness_profiles?.nome || '?').charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -421,12 +461,12 @@ export default function ProfessionalsPage() {
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${getTypeBadgeColor(professional.type)}`}>
-                          {professional.type === 'nutritionist' ? '🥗' : '💪'}
+                          {getTypeEmoji(professional.type)}
                           {getTypeLabel(professional.type)}
                         </span>
                         {professional.registration && (
                           <span className="text-xs text-slate-500">
-                            {professional.type === 'nutritionist' ? 'CRN' : 'CREF'}: {professional.registration}
+                            {getRegistrationLabel(professional.type)}: {professional.registration}
                           </span>
                         )}
                         {professional.specialty && (
@@ -497,33 +537,28 @@ export default function ProfessionalsPage() {
               {/* Tipo */}
               <div>
                 <label className="block text-sm text-slate-400 mb-2">Tipo de Profissional</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setFormData(prev => ({ ...prev, type: 'trainer' }))}
-                    className={`p-3 rounded-lg border transition-colors ${
-                      formData.type === 'trainer'
-                        ? 'border-blue-500 bg-blue-500/10'
-                        : 'border-slate-600 hover:border-slate-500'
-                    }`}
-                  >
-                    <span className="text-2xl">💪</span>
-                    <p className={`mt-1 font-medium ${formData.type === 'trainer' ? 'text-blue-400' : 'text-white'}`}>
-                      Personal Trainer
-                    </p>
-                  </button>
-                  <button
-                    onClick={() => setFormData(prev => ({ ...prev, type: 'nutritionist' }))}
-                    className={`p-3 rounded-lg border transition-colors ${
-                      formData.type === 'nutritionist'
-                        ? 'border-green-500 bg-green-500/10'
-                        : 'border-slate-600 hover:border-slate-500'
-                    }`}
-                  >
-                    <span className="text-2xl">🥗</span>
-                    <p className={`mt-1 font-medium ${formData.type === 'nutritionist' ? 'text-green-400' : 'text-white'}`}>
-                      Nutricionista
-                    </p>
-                  </button>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {([
+                    { value: 'trainer' as const, label: 'Personal Trainer', emoji: '💪', borderColor: 'border-blue-500', bgColor: 'bg-blue-500/10', textColor: 'text-blue-400' },
+                    { value: 'nutritionist' as const, label: 'Nutricionista', emoji: '🥗', borderColor: 'border-green-500', bgColor: 'bg-green-500/10', textColor: 'text-green-400' },
+                    { value: 'coach' as const, label: 'Coach', emoji: '🧠', borderColor: 'border-yellow-500', bgColor: 'bg-yellow-500/10', textColor: 'text-yellow-400' },
+                    { value: 'physiotherapist' as const, label: 'Fisioterapeuta', emoji: '🦴', borderColor: 'border-teal-500', bgColor: 'bg-teal-500/10', textColor: 'text-teal-400' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setFormData(prev => ({ ...prev, type: opt.value }))}
+                      className={`p-3 rounded-lg border transition-colors ${
+                        formData.type === opt.value
+                          ? `${opt.borderColor} ${opt.bgColor}`
+                          : 'border-slate-600 hover:border-slate-500'
+                      }`}
+                    >
+                      <span className="text-2xl">{opt.emoji}</span>
+                      <p className={`mt-1 font-medium text-sm ${formData.type === opt.value ? opt.textColor : 'text-white'}`}>
+                        {opt.label}
+                      </p>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -555,7 +590,9 @@ export default function ProfessionalsPage() {
                             userId: user.id,
                             // Se o usuário já tem role de profissional, pré-selecionar o tipo
                             type: user.role === 'nutritionist' ? 'nutritionist' :
-                                  user.role === 'trainer' ? 'trainer' : prev.type
+                                  user.role === 'trainer' ? 'trainer' :
+                                  user.role === 'coach' ? 'coach' :
+                                  user.role === 'physiotherapist' ? 'physiotherapist' : prev.type
                           }))
                         }}
                         className={`w-full flex items-center gap-3 p-3 hover:bg-slate-700 transition-colors ${
@@ -573,6 +610,12 @@ export default function ProfessionalsPage() {
                             )}
                             {user.role === 'trainer' && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Personal</span>
+                            )}
+                            {user.role === 'coach' && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">Coach</span>
+                            )}
+                            {user.role === 'physiotherapist' && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400">Fisio</span>
                             )}
                           </div>
                           <p className="text-xs text-slate-400">{user.email}</p>
@@ -671,13 +714,13 @@ export default function ProfessionalsPage() {
               {/* Registro */}
               <div>
                 <label className="block text-sm text-slate-400 mb-2">
-                  {formData.type === 'nutritionist' ? 'CRN' : 'CREF'} (opcional)
+                  {getRegistrationLabel(formData.type)} (opcional)
                 </label>
                 <input
                   type="text"
                   value={formData.registration}
                   onChange={(e) => setFormData(prev => ({ ...prev, registration: e.target.value }))}
-                  placeholder={formData.type === 'nutritionist' ? 'Ex: CRN-1 12345' : 'Ex: CREF 012345-G/SP'}
+                  placeholder={formData.type === 'nutritionist' ? 'Ex: CRN-1 12345' : formData.type === 'coach' ? 'Ex: CRP 06/12345' : formData.type === 'physiotherapist' ? 'Ex: CREFITO-4 123456-F' : 'Ex: CREF 012345-G/SP'}
                   className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
@@ -689,7 +732,7 @@ export default function ProfessionalsPage() {
                   type="text"
                   value={formData.specialty}
                   onChange={(e) => setFormData(prev => ({ ...prev, specialty: e.target.value }))}
-                  placeholder={formData.type === 'nutritionist' ? 'Ex: Nutrição Esportiva' : 'Ex: Musculação e Funcional'}
+                  placeholder={formData.type === 'nutritionist' ? 'Ex: Nutrição Esportiva' : formData.type === 'coach' ? 'Ex: Alta Performance, Psicologia Esportiva' : formData.type === 'physiotherapist' ? 'Ex: Ortopédica, Esportiva' : 'Ex: Musculação e Funcional'}
                   className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
@@ -747,9 +790,7 @@ export default function ProfessionalsPage() {
             <div className="p-4 space-y-4">
               {/* Info do profissional */}
               <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  selectedProfessional.type === 'nutritionist' ? 'bg-green-500/20' : 'bg-blue-500/20'
-                }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getTypeBgColor(selectedProfessional.type)}`}>
                   {formData.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -758,9 +799,7 @@ export default function ProfessionalsPage() {
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <span className={`font-medium ${
-                      selectedProfessional.type === 'nutritionist' ? 'text-green-400' : 'text-blue-400'
-                    }`}>
+                    <span className={`font-medium ${getTypeTextColor(selectedProfessional.type)}`}>
                       {(formData.displayName || selectedProfessional.fitness_profiles?.nome || '?').charAt(0).toUpperCase()}
                     </span>
                   )}
@@ -849,7 +888,7 @@ export default function ProfessionalsPage() {
               {/* Registro */}
               <div>
                 <label className="block text-sm text-slate-400 mb-2">
-                  {selectedProfessional.type === 'nutritionist' ? 'CRN' : 'CREF'}
+                  {getRegistrationLabel(selectedProfessional.type)}
                 </label>
                 <input
                   type="text"

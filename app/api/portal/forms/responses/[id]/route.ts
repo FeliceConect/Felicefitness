@@ -39,20 +39,26 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Acesso restrito a profissionais' }, { status: 403 })
     }
 
-    // Buscar assignment com dados do template e verificar propriedade
-    const { data: assignment, error: assignError } = await supabaseAdmin
+    // Buscar assignment e verificar propriedade
+    const { data: assignmentRaw, error: assignError } = await supabaseAdmin
       .from('fitness_form_assignments')
-      .select(`
-        *,
-        template:fitness_form_templates(id, name, description, specialty, form_type)
-      `)
+      .select('*')
       .eq('id', assignmentId)
       .eq('professional_id', professional.id)
       .single()
 
-    if (assignError || !assignment) {
+    if (assignError || !assignmentRaw) {
       return NextResponse.json({ success: false, error: 'Formulário não encontrado' }, { status: 404 })
     }
+
+    // Buscar template separadamente (evita ambiguidade de FK no PostgREST)
+    const { data: templateData } = await supabaseAdmin
+      .from('fitness_form_templates')
+      .select('id, name, description, specialty, form_type')
+      .eq('id', assignmentRaw.template_id)
+      .single()
+
+    const assignment = { ...assignmentRaw, template: templateData || null }
 
     // Buscar dados do cliente
     const { data: client } = await supabaseAdmin

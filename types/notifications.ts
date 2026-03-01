@@ -11,6 +11,7 @@ export type NotificationType =
   | 'sistema'
   | 'formulario'
   | 'consulta'
+  | 'chat_message'
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent'
 

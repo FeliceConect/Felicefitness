@@ -126,7 +126,7 @@ export default function FormResponsesPage() {
 
   function renderResponseValue(qr: QuestionResponse): React.ReactNode {
     if (!qr.response) {
-      return <span className="text-slate-500 italic">Não respondida</span>
+      return <span className="text-foreground-muted italic">Não respondida</span>
     }
 
     const value = qr.response.response_value
@@ -158,7 +158,7 @@ export default function FormResponsesPage() {
         const percentage = (scaleValue / max) * 100
         return (
           <div className="flex items-center gap-3">
-            <div className="flex-1 max-w-[200px] bg-slate-700 rounded-full h-3">
+            <div className="flex-1 max-w-[200px] bg-background-elevated rounded-full h-3">
               <div
                 className={`h-3 rounded-full ${
                   percentage <= 30 ? 'bg-green-500' :
@@ -168,11 +168,11 @@ export default function FormResponsesPage() {
                 style={{ width: `${percentage}%` }}
               />
             </div>
-            <span className="text-white font-medium">
+            <span className="text-foreground font-medium">
               {scaleValue}/{max}
             </span>
             {config.minLabel && config.maxLabel ? (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-foreground-muted">
                 ({String(config.minLabel)} → {String(config.maxLabel)})
               </span>
             ) : null}
@@ -184,7 +184,7 @@ export default function FormResponsesPage() {
       case 'dropdown': {
         const selectedOption = qr.question.options?.find(o => o.value === value.value)
         return (
-          <span className="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-sm">
+          <span className="px-3 py-1 bg-dourado/20 text-dourado rounded-full text-sm">
             {selectedOption?.label || String(value.value)}
           </span>
         )
@@ -197,7 +197,7 @@ export default function FormResponsesPage() {
             {selectedValues.map((v: string, i: number) => {
               const option = qr.question.options?.find(o => o.value === v)
               return (
-                <span key={i} className="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-sm">
+                <span key={i} className="px-3 py-1 bg-dourado/20 text-dourado rounded-full text-sm">
                   {option?.label || v}
                 </span>
               )
@@ -209,32 +209,32 @@ export default function FormResponsesPage() {
       case 'number': {
         const config = qr.question.config || {}
         return (
-          <span className="text-white font-medium">
+          <span className="text-foreground font-medium">
             {String(value.value)}
-            {config.unit ? <span className="text-slate-400 ml-1">{String(config.unit)}</span> : null}
+            {config.unit ? <span className="text-foreground-muted ml-1">{String(config.unit)}</span> : null}
           </span>
         )
       }
 
       case 'date':
-        return <span className="text-white">{formatDate(String(value.value))}</span>
+        return <span className="text-foreground">{formatDate(String(value.value))}</span>
 
       case 'long_text':
         return (
-          <p className="text-slate-300 bg-slate-700/50 rounded-lg p-3 whitespace-pre-wrap">
+          <p className="text-foreground-secondary bg-background-elevated rounded-lg p-3 whitespace-pre-wrap">
             {String(value.value)}
           </p>
         )
 
       default:
-        return <span className="text-white">{String(value.value)}</span>
+        return <span className="text-foreground">{String(value.value)}</span>
     }
   }
 
   if (professionalLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado"></div>
       </div>
     )
   }
@@ -244,15 +244,15 @@ export default function FormResponsesPage() {
       <div className="space-y-6">
         <button
           onClick={() => router.push('/portal/forms')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar para Formulários
         </button>
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-12 text-center">
+        <div className="bg-white rounded-xl border border-border p-12 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Erro</h3>
-          <p className="text-slate-400">{error}</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Erro</h3>
+          <p className="text-foreground-secondary">{error}</p>
         </div>
       </div>
     )
@@ -281,7 +281,7 @@ export default function FormResponsesPage() {
       <div>
         <button
           onClick={() => router.push('/portal/forms')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+          className="flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar para Formulários
@@ -289,8 +289,8 @@ export default function FormResponsesPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">{assignment.template?.name || 'Formulário'}</h1>
-            <p className="text-slate-400">{assignment.template?.description}</p>
+            <h1 className="text-2xl font-bold text-foreground">{assignment.template?.name || 'Formulário'}</h1>
+            <p className="text-foreground-secondary">{assignment.template?.description}</p>
           </div>
           <span className={`px-3 py-1 text-sm rounded-full self-start ${FORM_STATUS_COLORS[assignment.status]}`}>
             {FORM_STATUS_LABELS[assignment.status]}
@@ -300,34 +300,34 @@ export default function FormResponsesPage() {
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <div className="bg-white rounded-xl p-4 border border-border">
           <div className="flex items-center gap-3">
-            <User className="w-5 h-5 text-violet-400" />
+            <User className="w-5 h-5 text-dourado" />
             <div>
-              <p className="text-sm text-slate-400">Paciente</p>
-              <p className="text-white font-medium">{assignment.client.nome}</p>
+              <p className="text-sm text-foreground-secondary">Paciente</p>
+              <p className="text-foreground font-medium">{assignment.client.nome}</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <div className="bg-white rounded-xl p-4 border border-border">
           <div className="flex items-center gap-3">
             <Send className="w-5 h-5 text-blue-400" />
             <div>
-              <p className="text-sm text-slate-400">Enviado em</p>
-              <p className="text-white font-medium">{formatDate(assignment.sent_at)}</p>
+              <p className="text-sm text-foreground-secondary">Enviado em</p>
+              <p className="text-foreground font-medium">{formatDate(assignment.sent_at)}</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <div className="bg-white rounded-xl p-4 border border-border">
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5 text-yellow-400" />
             <div>
-              <p className="text-sm text-slate-400">Respostas</p>
-              <p className="text-white font-medium">{summary.answeredQuestions}/{summary.totalQuestions}</p>
+              <p className="text-sm text-foreground-secondary">Respostas</p>
+              <p className="text-foreground font-medium">{summary.answeredQuestions}/{summary.totalQuestions}</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <div className="bg-white rounded-xl p-4 border border-border">
           <div className="flex items-center gap-3">
             {assignment.completed_at ? (
               <CheckCircle className="w-5 h-5 text-green-400" />
@@ -335,10 +335,10 @@ export default function FormResponsesPage() {
               <Clock className="w-5 h-5 text-yellow-400" />
             )}
             <div>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-foreground-secondary">
                 {assignment.completed_at ? 'Preenchido em' : 'Status'}
               </p>
-              <p className="text-white font-medium">
+              <p className="text-foreground font-medium">
                 {assignment.completed_at
                   ? formatDateTime(assignment.completed_at)
                   : 'Aguardando preenchimento'}
@@ -350,9 +350,9 @@ export default function FormResponsesPage() {
 
       {/* Notes */}
       {assignment.notes && (
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <p className="text-sm text-slate-400 mb-1">Mensagem enviada ao paciente:</p>
-          <p className="text-slate-300 italic">&quot;{assignment.notes}&quot;</p>
+        <div className="bg-white rounded-xl p-4 border border-border">
+          <p className="text-sm text-foreground-secondary mb-1">Mensagem enviada ao paciente:</p>
+          <p className="text-foreground-secondary italic">&quot;{assignment.notes}&quot;</p>
         </div>
       )}
 
@@ -360,15 +360,15 @@ export default function FormResponsesPage() {
       {assignment.status === 'completed' ? (
         <div className="space-y-6">
           {groupedQuestions.map((group, groupIndex) => (
-            <div key={groupIndex} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-              <div className="px-6 py-4 bg-slate-700/30 border-b border-slate-700">
-                <h2 className="text-lg font-semibold text-white">{group.section}</h2>
+            <div key={groupIndex} className="bg-white rounded-xl border border-border overflow-hidden">
+              <div className="px-6 py-4 bg-background-elevated border-b border-border">
+                <h2 className="text-lg font-semibold text-foreground">{group.section}</h2>
               </div>
-              <div className="divide-y divide-slate-700">
+              <div className="divide-y divide-border">
                 {group.items.map((qr, index) => (
                   <div key={index} className="px-6 py-4">
                     <div className="flex items-start gap-2 mb-2">
-                      <p className="text-sm font-medium text-slate-300">
+                      <p className="text-sm font-medium text-foreground-secondary">
                         {qr.question.text}
                       </p>
                       {qr.question.is_required && (
@@ -385,10 +385,10 @@ export default function FormResponsesPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-12 text-center">
+        <div className="bg-white rounded-xl border border-border p-12 text-center">
           <Clock className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Aguardando Preenchimento</h3>
-          <p className="text-slate-400">
+          <h3 className="text-lg font-semibold text-foreground mb-2">Aguardando Preenchimento</h3>
+          <p className="text-foreground-secondary">
             O paciente ainda não completou este formulário.
             {data.draft && (
               <span className="block mt-2 text-blue-400">

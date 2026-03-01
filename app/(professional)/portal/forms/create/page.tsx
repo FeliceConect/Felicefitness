@@ -140,24 +140,24 @@ function SortableQuestion({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-3 bg-slate-700/50 border border-slate-600 rounded-lg group ${
+      className={`flex items-center gap-3 p-3 bg-background-elevated border border-border rounded-lg group ${
         isDragging ? 'opacity-50 z-50' : ''
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="touch-none cursor-grab active:cursor-grabbing p-1 rounded hover:bg-slate-600/50"
+        className="touch-none cursor-grab active:cursor-grabbing p-1 rounded hover:bg-border"
       >
-        <GripVertical className="w-4 h-4 text-slate-400" />
+        <GripVertical className="w-4 h-4 text-foreground-secondary" />
       </button>
 
-      <span className="text-sm text-slate-500 font-mono w-6">{index + 1}.</span>
+      <span className="text-sm text-foreground-muted font-mono w-6">{index + 1}.</span>
 
       <button onClick={onEdit} className="flex-1 min-w-0 text-left">
-        <p className="text-sm text-white truncate">{question.question_text}</p>
+        <p className="text-sm text-foreground truncate">{question.question_text}</p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="flex items-center gap-1 text-xs text-slate-400">
+          <span className="flex items-center gap-1 text-xs text-foreground-secondary">
             <Icon className="w-3 h-3" />
             {QUESTION_TYPE_LABELS[question.question_type]}
           </span>
@@ -165,14 +165,14 @@ function SortableQuestion({
             <span className="text-xs text-amber-400">Obrigatório</span>
           )}
           {question.options.length > 0 && (
-            <span className="text-xs text-slate-500">{question.options.length} opções</span>
+            <span className="text-xs text-foreground-muted">{question.options.length} opções</span>
           )}
         </div>
       </button>
 
       <button
         onClick={onRemove}
-        className="p-1.5 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="p-1.5 rounded hover:bg-red-500/20 text-foreground-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <Trash2 className="w-4 h-4" />
       </button>
@@ -252,20 +252,20 @@ function QuestionEditorModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-slate-800 rounded-xl max-w-lg w-full p-6 my-8 border border-slate-700">
+      <div className="bg-white rounded-xl max-w-lg w-full p-6 my-8 border border-border">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-white">
+          <h2 className="text-lg font-bold text-foreground">
             {isNew ? 'Adicionar Pergunta' : 'Editar Pergunta'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded">
-            <X className="w-5 h-5 text-slate-400" />
+          <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
+            <X className="w-5 h-5 text-foreground-secondary" />
           </button>
         </div>
 
         <div className="space-y-4">
           {/* Question text */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-foreground-secondary mb-1">
               Texto da pergunta *
             </label>
             <input
@@ -273,19 +273,19 @@ function QuestionEditorModal({
               value={form.question_text}
               onChange={(e) => setForm(prev => ({ ...prev, question_text: e.target.value }))}
               placeholder="Ex: Qual é o seu objetivo principal?"
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
             />
           </div>
 
           {/* Question type */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-foreground-secondary mb-1">
               Tipo de resposta
             </label>
             <select
               value={form.question_type}
               onChange={(e) => handleTypeChange(e.target.value as QuestionType)}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
             >
               {QUESTION_TYPES_FOR_PICKER.map((type) => (
                 <option key={type} value={type}>
@@ -297,11 +297,11 @@ function QuestionEditorModal({
 
           {/* Required toggle */}
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-slate-300">Obrigatório?</label>
+            <label className="text-sm font-medium text-foreground-secondary">Obrigatório?</label>
             <button
               onClick={() => setForm(prev => ({ ...prev, is_required: !prev.is_required }))}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                form.is_required ? 'bg-violet-500' : 'bg-slate-600'
+                form.is_required ? 'bg-dourado' : 'bg-border'
               }`}
             >
               <span
@@ -315,21 +315,21 @@ function QuestionEditorModal({
           {/* Options (for choice types) */}
           {hasOptions && (
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Opções</label>
+              <label className="block text-sm font-medium text-foreground-secondary mb-2">Opções</label>
               <div className="space-y-2">
                 {form.options.map((opt, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 w-6">{i + 1}.</span>
+                    <span className="text-xs text-foreground-muted w-6">{i + 1}.</span>
                     <input
                       type="text"
                       value={opt.label}
                       onChange={(e) => updateOption(i, e.target.value)}
                       placeholder={`Opção ${i + 1}`}
-                      className="flex-1 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 text-sm"
+                      className="flex-1 px-3 py-1.5 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado text-sm"
                     />
                     <button
                       onClick={() => removeOption(i)}
-                      className="p-1 hover:bg-red-500/20 text-slate-500 hover:text-red-400 rounded"
+                      className="p-1 hover:bg-red-500/20 text-foreground-muted hover:text-red-400 rounded"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -338,7 +338,7 @@ function QuestionEditorModal({
               </div>
               <button
                 onClick={addOption}
-                className="mt-2 text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1"
+                className="mt-2 text-sm text-dourado hover:text-dourado/80 flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" /> Adicionar opção
               </button>
@@ -349,40 +349,40 @@ function QuestionEditorModal({
           {hasNumberConfig && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Mínimo</label>
+                <label className="block text-xs text-foreground-muted mb-1">Mínimo</label>
                 <input
                   type="number"
                   value={form.config.min ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, min: e.target.value ? Number(e.target.value) : undefined } }))}
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Máximo</label>
+                <label className="block text-xs text-foreground-muted mb-1">Máximo</label>
                 <input
                   type="number"
                   value={form.config.max ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, max: e.target.value ? Number(e.target.value) : undefined } }))}
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Passo</label>
+                <label className="block text-xs text-foreground-muted mb-1">Passo</label>
                 <input
                   type="number"
                   value={form.config.step ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, step: e.target.value ? Number(e.target.value) : undefined } }))}
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Unidade</label>
+                <label className="block text-xs text-foreground-muted mb-1">Unidade</label>
                 <input
                   type="text"
                   value={form.config.unit ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, unit: e.target.value || undefined } }))}
                   placeholder="kg, cm..."
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
             </div>
@@ -392,41 +392,41 @@ function QuestionEditorModal({
           {hasScaleConfig && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Valor mínimo</label>
+                <label className="block text-xs text-foreground-muted mb-1">Valor mínimo</label>
                 <input
                   type="number"
                   value={form.config.min ?? 1}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, min: Number(e.target.value) } }))}
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Valor máximo</label>
+                <label className="block text-xs text-foreground-muted mb-1">Valor máximo</label>
                 <input
                   type="number"
                   value={form.config.max ?? 10}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, max: Number(e.target.value) } }))}
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Label mínimo</label>
+                <label className="block text-xs text-foreground-muted mb-1">Label mínimo</label>
                 <input
                   type="text"
                   value={form.config.minLabel ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, minLabel: e.target.value || undefined } }))}
                   placeholder="Ex: Nada"
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Label máximo</label>
+                <label className="block text-xs text-foreground-muted mb-1">Label máximo</label>
                 <input
                   type="text"
                   value={form.config.maxLabel ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, maxLabel: e.target.value || undefined } }))}
                   placeholder="Ex: Muito"
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
             </div>
@@ -436,22 +436,22 @@ function QuestionEditorModal({
           {hasTextConfig && (
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="block text-xs text-slate-400 mb-1">Placeholder</label>
+                <label className="block text-xs text-foreground-muted mb-1">Placeholder</label>
                 <input
                   type="text"
                   value={form.config.placeholder ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, placeholder: e.target.value || undefined } }))}
                   placeholder="Texto de ajuda..."
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Máx. caracteres</label>
+                <label className="block text-xs text-foreground-muted mb-1">Máx. caracteres</label>
                 <input
                   type="number"
                   value={form.config.maxLength ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, maxLength: e.target.value ? Number(e.target.value) : undefined } }))}
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 bg-white border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-dourado"
                 />
               </div>
             </div>
@@ -460,13 +460,13 @@ function QuestionEditorModal({
           {/* Consent config */}
           {hasConsentConfig && (
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Texto do consentimento</label>
+              <label className="block text-xs text-foreground-muted mb-1">Texto do consentimento</label>
               <textarea
                 value={form.config.consentText ?? ''}
                 onChange={(e) => setForm(prev => ({ ...prev, config: { ...prev.config, consentText: e.target.value || undefined } }))}
                 placeholder="Texto legal do consentimento..."
                 rows={3}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:border-violet-500 resize-none"
+                className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted text-sm focus:outline-none focus:border-dourado resize-none"
               />
             </div>
           )}
@@ -476,14 +476,14 @@ function QuestionEditorModal({
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+            className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
             disabled={!form.question_text.trim()}
-            className="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isNew ? 'Adicionar' : 'Salvar'}
           </button>
@@ -678,7 +678,7 @@ export default function CreateTemplatePage() {
   if (professionalLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado" />
       </div>
     )
   }
@@ -695,13 +695,13 @@ export default function CreateTemplatePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/portal/forms')}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-400" />
+            <ArrowLeft className="w-5 h-5 text-foreground-muted" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white">Novo Template</h1>
-            <p className="text-sm text-slate-400">Crie um formulário personalizado</p>
+            <h1 className="text-xl font-bold text-foreground">Novo Template</h1>
+            <p className="text-sm text-foreground-secondary">Crie um formulário personalizado</p>
           </div>
         </div>
         <button
@@ -724,9 +724,9 @@ export default function CreateTemplatePage() {
       </div>
 
       {/* Template Info */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 p-5 space-y-4">
+      <div className="bg-white rounded-xl border border-border p-5 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
+          <label className="block text-sm font-medium text-foreground-secondary mb-1">
             Nome do Template *
           </label>
           <input
@@ -734,12 +734,12 @@ export default function CreateTemplatePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ex: Avaliação Inicial Personalizada"
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+            className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
+          <label className="block text-sm font-medium text-foreground-secondary mb-1">
             Descrição
           </label>
           <input
@@ -747,18 +747,18 @@ export default function CreateTemplatePage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Breve descrição do formulário..."
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+            className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
+          <label className="block text-sm font-medium text-foreground-secondary mb-1">
             Tipo do Formulário
           </label>
           <select
             value={formType}
             onChange={(e) => setFormType(e.target.value as FormType)}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+            className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
           >
             {FORM_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -771,24 +771,24 @@ export default function CreateTemplatePage() {
 
       {/* Sections + Questions */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Perguntas</h2>
+        <h2 className="text-lg font-semibold text-foreground">Perguntas</h2>
 
         {sections.map((section) => {
           const sectionQuestions = questions.filter(q => q.section === section.name)
           const isExpanded = expandedSections.includes(section.id) || expandedSections.includes('all')
 
           return (
-            <div key={section.id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <div key={section.id} className="bg-white rounded-xl border border-border overflow-hidden">
               {/* Section header */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
                 <button
                   onClick={() => toggleSection(section.id)}
-                  className="p-0.5 hover:bg-slate-700 rounded"
+                  className="p-0.5 hover:bg-background-elevated rounded"
                 >
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                    <ChevronUp className="w-4 h-4 text-foreground-muted" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-4 h-4 text-foreground-muted" />
                   )}
                 </button>
 
@@ -800,30 +800,30 @@ export default function CreateTemplatePage() {
                       onChange={(e) => setEditingSectionName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') saveEditSection(); if (e.key === 'Escape') setEditingSectionId(null) }}
                       autoFocus
-                      className="flex-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-violet-500"
+                      className="flex-1 px-2 py-1 bg-white border border-border rounded text-sm text-foreground focus:outline-none focus:border-dourado"
                     />
-                    <button onClick={saveEditSection} className="text-xs text-violet-400 hover:text-violet-300">
+                    <button onClick={saveEditSection} className="text-xs text-dourado hover:text-dourado/80">
                       OK
                     </button>
                   </div>
                 ) : (
                   <>
-                    <h3 className="text-sm font-semibold text-white flex-1">
+                    <h3 className="text-sm font-semibold text-foreground flex-1">
                       {section.name}
-                      <span className="ml-2 text-xs text-slate-500 font-normal">
+                      <span className="ml-2 text-xs text-foreground-muted font-normal">
                         {sectionQuestions.length} pergunta{sectionQuestions.length !== 1 ? 's' : ''}
                       </span>
                     </h3>
                     <button
                       onClick={() => startEditSection(section.id)}
-                      className="text-xs text-slate-400 hover:text-slate-300 px-2 py-1"
+                      className="text-xs text-foreground-muted hover:text-foreground px-2 py-1"
                     >
                       Renomear
                     </button>
                     {sections.length > 1 && (
                       <button
                         onClick={() => removeSection(section.id)}
-                        className="p-1 hover:bg-red-500/20 text-slate-500 hover:text-red-400 rounded"
+                        className="p-1 hover:bg-red-500/20 text-foreground-muted hover:text-red-400 rounded"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -857,7 +857,7 @@ export default function CreateTemplatePage() {
                       </SortableContext>
                     </DndContext>
                   ) : (
-                    <p className="text-sm text-slate-500 text-center py-4">
+                    <p className="text-sm text-foreground-muted text-center py-4">
                       Nenhuma pergunta nesta seção
                     </p>
                   )}
@@ -865,7 +865,7 @@ export default function CreateTemplatePage() {
                   {/* Add question button */}
                   <button
                     onClick={() => openAddQuestion(section.name)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-slate-600 rounded-lg text-slate-400 hover:border-violet-500 hover:text-violet-400 transition-colors text-sm"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-border rounded-lg text-foreground-muted hover:border-dourado hover:text-dourado transition-colors text-sm"
                   >
                     <Plus className="w-4 h-4" />
                     Adicionar Pergunta
@@ -879,7 +879,7 @@ export default function CreateTemplatePage() {
         {/* Add section button */}
         <button
           onClick={addSection}
-          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-700 rounded-xl text-slate-500 hover:border-slate-600 hover:text-slate-400 transition-colors text-sm"
+          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border rounded-xl text-foreground-muted hover:border-dourado hover:text-dourado transition-colors text-sm"
         >
           <Plus className="w-4 h-4" />
           Adicionar Seção
@@ -888,20 +888,20 @@ export default function CreateTemplatePage() {
 
       {/* Preview summary */}
       {questions.length > 0 && (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3">Resumo</h3>
+        <div className="bg-white rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-foreground-secondary mb-3">Resumo</h3>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-white">{sections.length}</p>
-              <p className="text-xs text-slate-400">Seções</p>
+              <p className="text-2xl font-bold text-foreground">{sections.length}</p>
+              <p className="text-xs text-foreground-muted">Seções</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{questions.length}</p>
-              <p className="text-xs text-slate-400">Perguntas</p>
+              <p className="text-2xl font-bold text-foreground">{questions.length}</p>
+              <p className="text-xs text-foreground-muted">Perguntas</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{questions.filter(q => q.is_required).length}</p>
-              <p className="text-xs text-slate-400">Obrigatórias</p>
+              <p className="text-2xl font-bold text-foreground">{questions.filter(q => q.is_required).length}</p>
+              <p className="text-xs text-foreground-muted">Obrigatórias</p>
             </div>
           </div>
         </div>

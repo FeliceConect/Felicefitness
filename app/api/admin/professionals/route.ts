@@ -168,9 +168,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo
-    if (!['nutritionist', 'trainer', 'coach'].includes(type)) {
+    if (!['nutritionist', 'trainer', 'coach', 'physiotherapist'].includes(type)) {
       return NextResponse.json(
-        { success: false, error: 'Tipo inválido. Use "nutritionist", "trainer" ou "coach"' },
+        { success: false, error: 'Tipo inválido. Use "nutritionist", "trainer", "coach" ou "physiotherapist"' },
         { status: 400 }
       )
     }
@@ -239,10 +239,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualizar role do usuário
-    const roleToSet = type === 'nutritionist' ? 'nutritionist' : 'trainer'
     await supabaseAdmin
       .from('fitness_profiles')
-      .update({ role: roleToSet })
+      .update({ role: type })
       .eq('id', userId)
 
     return NextResponse.json({

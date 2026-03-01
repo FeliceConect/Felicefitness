@@ -1,10 +1,10 @@
 // Tipos para o módulo administrativo
 
 // Roles disponíveis no sistema
-export type UserRole = 'super_admin' | 'admin' | 'nutritionist' | 'trainer' | 'coach' | 'client'
+export type UserRole = 'super_admin' | 'admin' | 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist' | 'client'
 
 // Tipos de profissionais
-export type ProfessionalType = 'nutritionist' | 'trainer' | 'coach'
+export type ProfessionalType = 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist'
 
 // Profissional
 export interface Professional {
@@ -127,6 +127,12 @@ export const rolePermissions: Record<UserRole, string[]> = {
     'send_feedback',
     'chat',
   ],
+  physiotherapist: [
+    'view_assigned_clients',
+    'manage_notes',
+    'send_feedback',
+    'chat',
+  ],
   client: [
     'view_own_data',
     'chat',
@@ -140,6 +146,7 @@ export const roleLabels: Record<UserRole, string> = {
   nutritionist: 'Nutricionista',
   trainer: 'Personal Trainer',
   coach: 'Coach Alta Performance',
+  physiotherapist: 'Fisioterapeuta',
   client: 'Paciente',
 }
 
@@ -148,6 +155,7 @@ export const professionalTypeLabels: Record<ProfessionalType, string> = {
   nutritionist: 'Nutricionista',
   trainer: 'Personal Trainer',
   coach: 'Coach Alta Performance',
+  physiotherapist: 'Fisioterapeuta',
 }
 
 // Versão atual dos termos de uso
@@ -159,7 +167,7 @@ export function isAdmin(role: UserRole): boolean {
 }
 
 export function isProfessional(role: UserRole): boolean {
-  return role === 'nutritionist' || role === 'trainer' || role === 'coach'
+  return role === 'nutritionist' || role === 'trainer' || role === 'coach' || role === 'physiotherapist'
 }
 
 export function hasPermission(role: UserRole, permission: string): boolean {

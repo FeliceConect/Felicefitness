@@ -93,19 +93,19 @@ export default function ClientsPage() {
     switch (status) {
       case 'active':
         return (
-          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">
+          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-600">
             <CheckCircle className="w-3 h-3" /> Ativo
           </span>
         )
       case 'warning':
         return (
-          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-amber-500/20 text-amber-400">
+          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-amber-500/20 text-amber-600">
             <Clock className="w-3 h-3" /> Atenção
           </span>
         )
       case 'inactive':
         return (
-          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-400">
+          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-600">
             <AlertCircle className="w-3 h-3" /> Inativo
           </span>
         )
@@ -121,7 +121,7 @@ export default function ClientsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado"></div>
       </div>
     )
   }
@@ -130,21 +130,21 @@ export default function ClientsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Meus Clientes</h1>
-        <p className="text-slate-400">Gerencie e acompanhe seus clientes</p>
+        <h1 className="text-2xl font-bold text-foreground">Meus Clientes</h1>
+        <p className="text-foreground-secondary">Gerencie e acompanhe seus clientes</p>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-muted" />
           <input
             type="text"
             placeholder="Buscar por nome ou email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado/50"
           />
         </div>
 
@@ -152,7 +152,7 @@ export default function ClientsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="px-4 py-2.5 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
         >
           <option value="all">Todos os status</option>
           <option value="active">Ativos</option>
@@ -163,37 +163,37 @@ export default function ClientsPage() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
+        <div className="bg-white rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 text-foreground-secondary text-sm">
             <Users className="w-4 h-4" />
             Total
           </div>
-          <p className="text-2xl font-bold text-white mt-1">{clients.length}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{clients.length}</p>
         </div>
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <div className="flex items-center gap-2 text-green-400 text-sm">
+        <div className="bg-white rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 text-green-600 text-sm">
             <CheckCircle className="w-4 h-4" />
             Ativos
           </div>
-          <p className="text-2xl font-bold text-white mt-1">
+          <p className="text-2xl font-bold text-foreground mt-1">
             {clients.filter(c => c.status === 'active').length}
           </p>
         </div>
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <div className="flex items-center gap-2 text-amber-400 text-sm">
+        <div className="bg-white rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 text-amber-600 text-sm">
             <Clock className="w-4 h-4" />
             Atenção
           </div>
-          <p className="text-2xl font-bold text-white mt-1">
+          <p className="text-2xl font-bold text-foreground mt-1">
             {clients.filter(c => c.status === 'warning').length}
           </p>
         </div>
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <div className="flex items-center gap-2 text-red-400 text-sm">
+        <div className="bg-white rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-2 text-red-600 text-sm">
             <AlertCircle className="w-4 h-4" />
             Inativos
           </div>
-          <p className="text-2xl font-bold text-white mt-1">
+          <p className="text-2xl font-bold text-foreground mt-1">
             {clients.filter(c => c.status === 'inactive').length}
           </p>
         </div>
@@ -201,12 +201,12 @@ export default function ClientsPage() {
 
       {/* Clients List */}
       {filteredClients.length === 0 ? (
-        <div className="bg-slate-800 rounded-xl p-8 border border-slate-700 text-center">
-          <Users className="w-16 h-16 mx-auto text-slate-600 mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">
+        <div className="bg-white rounded-xl p-8 border border-border text-center">
+          <Users className="w-16 h-16 mx-auto text-foreground-muted mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">
             {clients.length === 0 ? 'Nenhum cliente atribuído' : 'Nenhum cliente encontrado'}
           </h3>
-          <p className="text-slate-400">
+          <p className="text-foreground-secondary">
             {clients.length === 0
               ? 'Quando você tiver clientes atribuídos, eles aparecerão aqui.'
               : 'Tente ajustar os filtros de busca.'}
@@ -218,15 +218,15 @@ export default function ClientsPage() {
             <Link
               key={client.id}
               href={`/portal/clients/${client.id}`}
-              className="block bg-slate-800 rounded-xl border border-slate-700 p-4 hover:border-violet-500/50 transition-colors"
+              className="block bg-white rounded-xl border border-border p-4 hover:border-dourado/50 transition-colors"
             >
               <div className="flex items-start gap-4">
                 {/* Avatar */}
-                <div className="w-14 h-14 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-14 h-14 rounded-full bg-dourado/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {client.foto ? (
                     <img src={client.foto} alt={client.nome || ''} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-violet-400 text-xl font-medium">
+                    <span className="text-dourado text-xl font-medium">
                       {(client.nome || 'C').charAt(0).toUpperCase()}
                     </span>
                   )}
@@ -235,34 +235,34 @@ export default function ClientsPage() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-semibold text-white truncate">
+                    <h3 className="text-lg font-semibold text-foreground truncate">
                       {client.nome || 'Cliente'}
                     </h3>
                     {getStatusBadge(client.status)}
                   </div>
-                  <p className="text-sm text-slate-400 truncate mb-2">{client.email}</p>
+                  <p className="text-sm text-foreground-secondary truncate mb-2">{client.email}</p>
 
                   {/* Quick Stats */}
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     {client.objetivo && (
-                      <div className="flex items-center gap-1 text-slate-300">
-                        <Target className="w-4 h-4 text-violet-400" />
+                      <div className="flex items-center gap-1 text-foreground">
+                        <Target className="w-4 h-4 text-dourado" />
                         {client.objetivo}
                       </div>
                     )}
                     {isNutritionist && (
-                      <div className="flex items-center gap-1 text-slate-300">
+                      <div className="flex items-center gap-1 text-foreground">
                         <Utensils className="w-4 h-4 text-green-400" />
                         {client.weekStats.meals} refeições
                       </div>
                     )}
                     {isTrainer && (
-                      <div className="flex items-center gap-1 text-slate-300">
+                      <div className="flex items-center gap-1 text-foreground">
                         <Dumbbell className="w-4 h-4 text-orange-400" />
                         {client.weekStats.workouts} treinos
                       </div>
                     )}
-                    <div className="flex items-center gap-1 text-slate-300">
+                    <div className="flex items-center gap-1 text-foreground">
                       <Droplets className="w-4 h-4 text-blue-400" />
                       {client.weekStats.avgDailyWater}ml/dia
                     </div>
@@ -272,32 +272,32 @@ export default function ClientsPage() {
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     {isNutritionist && (
                       <>
-                        <span className="px-2 py-1 bg-slate-700 rounded text-slate-300">
+                        <span className="px-2 py-1 bg-background-elevated rounded text-foreground-secondary">
                           ~{client.weekStats.avgDailyCalories} kcal/dia
                         </span>
-                        <span className="px-2 py-1 bg-slate-700 rounded text-slate-300">
+                        <span className="px-2 py-1 bg-background-elevated rounded text-foreground-secondary">
                           ~{client.weekStats.avgDailyProtein}g proteína/dia
                         </span>
                       </>
                     )}
                     {isTrainer && (
                       <>
-                        <span className="px-2 py-1 bg-slate-700 rounded text-slate-300">
+                        <span className="px-2 py-1 bg-background-elevated rounded text-foreground-secondary">
                           {client.weekStats.workoutDays} dias treinando
                         </span>
-                        <span className="px-2 py-1 bg-slate-700 rounded text-slate-300">
+                        <span className="px-2 py-1 bg-background-elevated rounded text-foreground-secondary">
                           {client.weekStats.totalWorkoutMinutes}min total
                         </span>
                       </>
                     )}
-                    <span className="px-2 py-1 bg-slate-700 rounded text-slate-400">
+                    <span className="px-2 py-1 bg-background-elevated rounded text-foreground-muted">
                       Última atividade: {formatLastActivity(client.lastActivity)}
                     </span>
                   </div>
                 </div>
 
                 {/* Arrow */}
-                <ChevronRight className="w-5 h-5 text-slate-500 flex-shrink-0 mt-4" />
+                <ChevronRight className="w-5 h-5 text-foreground-muted flex-shrink-0 mt-4" />
               </div>
             </Link>
           ))}

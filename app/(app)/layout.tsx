@@ -18,6 +18,18 @@ export default async function AppLayout({
     redirect("/login")
   }
 
+  // Profissionais (exceto super_admin) só podem acessar o portal
+  const { data: profile } = await supabase
+    .from('fitness_profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single() as { data: { role: string } | null }
+
+  const professionalRoles = ['nutritionist', 'trainer', 'coach', 'physiotherapist']
+  if (profile && professionalRoles.includes(profile.role)) {
+    redirect('/portal')
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />

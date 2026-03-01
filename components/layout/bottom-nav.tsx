@@ -36,6 +36,12 @@ const navItems = [
 export function BottomNav() {
   const pathname = usePathname()
 
+  // Esconder bottom nav em telas com navegação própria (ex: form wizard)
+  const hideOnRoutes = ['/formularios/']
+  if (hideOnRoutes.some(route => pathname.startsWith(route) && pathname !== '/formularios')) {
+    return null
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-border">
       {/* Container dos itens com altura fixa */}

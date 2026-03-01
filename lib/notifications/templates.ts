@@ -401,7 +401,8 @@ export function getNotificationTypeIcon(type: NotificationType): string {
     lembrete: '⏰',
     formulario: '📋',
     consulta: '📅',
-    sistema: '📱'
+    sistema: '📱',
+    chat_message: '💬'
   }
   return icons[type] || '📱'
 }
@@ -420,7 +421,8 @@ export function getNotificationTypeColor(type: NotificationType): string {
     lembrete: '#F97316', // orange
     formulario: '#8B5CF6', // violet
     consulta: '#c29863', // dourado
-    sistema: '#6B7280' // gray
+    sistema: '#6B7280', // gray
+    chat_message: '#c29863' // dourado
   }
   return colors[type] || '#6B7280'
 }

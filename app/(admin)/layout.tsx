@@ -15,7 +15,10 @@ import {
   X,
   ChevronDown,
   CalendarDays,
-  Trophy
+  Trophy,
+  ClipboardList,
+  FileText,
+  UserSearch
 } from 'lucide-react'
 import { useUserRole } from '@/hooks/use-user-role'
 import { roleLabels } from '@/lib/admin/types'
@@ -58,13 +61,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
+  // Nome do superadmin baseado no email
+  const adminName = email === 'felicemed@gmail.com' ? 'Leonardo'
+    : email === 'marinella.guimaraes@gmail.com' ? 'Marinella'
+    : email?.split('@')[0] || 'Admin'
+
   const menuItems = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda' },
+    { href: '/admin/pacientes', icon: UserSearch, label: 'Pacientes' },
     { href: '/admin/users', icon: Users, label: 'Usuários' },
     { href: '/admin/professionals', icon: UserCog, label: 'Profissionais' },
     { href: '/admin/assignments', icon: Link2, label: 'Atribuições' },
     { href: '/admin/rankings', icon: Trophy, label: 'Rankings' },
+    { href: '/admin/formularios', icon: ClipboardList, label: 'Formulários' },
+    { href: '/admin/prontuario', icon: FileText, label: 'Prontuário' },
     { href: '/admin/costs', icon: DollarSign, label: 'Custos API' },
     { href: '/admin/settings', icon: Settings, label: 'Configurações' },
   ]
@@ -83,7 +94,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <Menu className="w-6 h-6 text-white" />
           )}
         </button>
-        <span className="text-white font-semibold">Complexo Wellness Admin</span>
+        <span className="text-white font-semibold">Complexo Wellness — {adminName}</span>
         <div className="w-10" /> {/* Spacer */}
       </div>
 
@@ -98,18 +109,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside className={`
         fixed top-0 left-0 h-full bg-slate-800 border-r border-slate-700 z-50
-        transition-all duration-300 ease-in-out
+        transition-all duration-300 ease-in-out flex flex-col
         ${sidebarOpen ? 'w-64' : 'w-20'}
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700 flex-shrink-0">
           {sidebarOpen && (
             <Link href="/admin" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CW</span>
+                <span className="text-white font-bold text-sm">{adminName.charAt(0)}</span>
               </div>
-              <span className="text-white font-semibold">Admin</span>
+              <span className="text-white font-semibold">{adminName}</span>
             </Link>
           )}
           <button
@@ -121,7 +132,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Menu */}
-        <nav className="p-4 space-y-2">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {menuItems.map((item) => (
             <Link
               key={item.href}
@@ -140,17 +151,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
 
         {/* User Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
+        <div className="flex-shrink-0 p-4 border-t border-slate-700">
           {sidebarOpen ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
                   <span className="text-dourado font-medium">
-                    {email?.charAt(0).toUpperCase()}
+                    {adminName.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{email}</p>
+                  <p className="text-sm text-white truncate">{adminName}</p>
                   <p className="text-xs text-slate-400">{roleLabels[role]}</p>
                 </div>
               </div>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { sendPushNotification, validatePushConfig } from '@/lib/notifications/push'
+import type { PushSubscription } from '@/types/notifications'
 
 // GET - Buscar mensagens de uma conversa
 export async function GET(request: NextRequest) {
@@ -189,6 +191,51 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Fire-and-forget: send push notification to recipient
+    if (validatePushConfig()) {
+      const recipientId = isClient ? conversation.professional_id : conversation.client_id
+      // Resolve the recipient user_id (professional_id is from fitness_professionals, not auth)
+      let recipientUserId = recipientId
+      if (isClient) {
+        // The professional_id in conversation is the fitness_professionals.id, need user_id
+        const { data: prof } = await supabaseAdmin
+          .from('fitness_professionals')
+          .select('user_id')
+          .eq('id', conversation.professional_id)
+          .single()
+        if (prof) recipientUserId = prof.user_id
+      }
+
+      // Send push in background (don't await)
+      Promise.resolve(
+        supabaseAdmin
+          .from('fitness_push_subscriptions')
+          .select('*')
+          .eq('user_id', recipientUserId)
+          .eq('active', true)
+      ).then(({ data: subs }) => {
+        if (!subs || subs.length === 0) return
+        const senderName = isClient ? 'Paciente' : 'Profissional'
+        const payload = {
+          title: `Nova mensagem de ${senderName}`,
+          body: content.trim().substring(0, 100),
+          type: 'chat_message' as const,
+          url: isClient ? '/portal/messages' : '/chat',
+        }
+        subs.forEach((sub: Record<string, string>) => {
+          const subscription: PushSubscription = {
+            id: sub.id,
+            userId: sub.user_id,
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth },
+            createdAt: new Date(sub.created_at),
+            active: true,
+          }
+          sendPushNotification(subscription, payload).catch(() => {})
+        })
+      }).catch(() => {})
+    }
 
     return NextResponse.json({
       success: true,

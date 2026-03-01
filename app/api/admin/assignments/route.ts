@@ -193,11 +193,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { clientId, professionalId, notes } = body
+    const { clientId, professionalId, professionalIds, notes } = body
 
-    if (!clientId || !professionalId) {
+    // Suporta single (professionalId) ou múltiplos (professionalIds)
+    const profIds: string[] = professionalIds || (professionalId ? [professionalId] : [])
+
+    if (!clientId || profIds.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'clientId e professionalId são obrigatórios' },
+        { success: false, error: 'clientId e pelo menos um professionalId são obrigatórios' },
         { status: 400 }
       )
     }
@@ -214,115 +217,98 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Verificar se atribuição já existe
-    const { data: existing } = await supabaseAdmin
-      .from('fitness_client_assignments')
-      .select('id, is_active')
-      .eq('client_id', clientId)
-      .eq('professional_id', professionalId)
-      .single()
+    const results: { professionalId: string; success: boolean; message: string }[] = []
 
-    if (existing) {
-      if (existing.is_active) {
-        return NextResponse.json(
-          { success: false, error: 'Este cliente já está atribuído a este profissional' },
-          { status: 400 }
-        )
-      } else {
-        // Reativar atribuição existente
-        const { error: updateError } = await supabaseAdmin
-          .from('fitness_client_assignments')
-          .update({ is_active: true, notes: notes || null })
-          .eq('id', existing.id)
+    for (const pId of profIds) {
+      // Verificar se atribuição já existe
+      const { data: existing } = await supabaseAdmin
+        .from('fitness_client_assignments')
+        .select('id, is_active')
+        .eq('client_id', clientId)
+        .eq('professional_id', pId)
+        .single()
 
-        if (updateError) {
-          console.error('Erro ao reativar atribuição:', updateError)
-          return NextResponse.json(
-            { success: false, error: 'Erro ao reativar atribuição' },
-            { status: 500 }
-          )
+      if (existing) {
+        if (existing.is_active) {
+          results.push({ professionalId: pId, success: false, message: 'Já atribuído' })
+          continue
+        } else {
+          // Reativar atribuição existente
+          await supabaseAdmin
+            .from('fitness_client_assignments')
+            .update({ is_active: true, notes: notes || null })
+            .eq('id', existing.id)
+
+          try {
+            await supabaseAdmin.rpc('get_or_create_conversation', {
+              p_client_id: clientId,
+              p_professional_id: pId
+            })
+          } catch (convError) {
+            console.error('Erro ao criar conversa na reativação:', convError)
+          }
+
+          results.push({ professionalId: pId, success: true, message: 'Reativado' })
+          continue
         }
-
-        // Criar conversa automaticamente ao reativar
-        try {
-          await supabaseAdmin.rpc('get_or_create_conversation', {
-            p_client_id: clientId,
-            p_professional_id: professionalId
-          })
-        } catch (convError) {
-          console.error('Erro ao criar conversa na reativação:', convError)
-        }
-
-        return NextResponse.json({
-          success: true,
-          message: 'Atribuição reativada com sucesso'
-        })
       }
-    }
 
-    // Verificar limite de clientes do profissional
-    const { data: professional } = await supabaseAdmin
-      .from('fitness_professionals')
-      .select('max_clients')
-      .eq('id', professionalId)
-      .single()
+      // Verificar limite de clientes do profissional
+      const { data: professional } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('max_clients')
+        .eq('id', pId)
+        .single()
 
-    const { count: currentClients } = await supabaseAdmin
-      .from('fitness_client_assignments')
-      .select('*', { count: 'exact', head: true })
-      .eq('professional_id', professionalId)
-      .eq('is_active', true)
+      const { count: currentClients } = await supabaseAdmin
+        .from('fitness_client_assignments')
+        .select('*', { count: 'exact', head: true })
+        .eq('professional_id', pId)
+        .eq('is_active', true)
 
-    if (professional && currentClients !== null && currentClients >= professional.max_clients) {
-      return NextResponse.json(
-        { success: false, error: `Este profissional já atingiu o limite de ${professional.max_clients} clientes` },
-        { status: 400 }
-      )
-    }
+      if (professional && currentClients !== null && currentClients >= professional.max_clients) {
+        results.push({ professionalId: pId, success: false, message: `Limite de ${professional.max_clients} clientes atingido` })
+        continue
+      }
 
-    // Criar atribuição
-    const { data: newAssignment, error: insertError } = await supabaseAdmin
-      .from('fitness_client_assignments')
-      .insert({
-        client_id: clientId,
-        professional_id: professionalId,
-        assigned_by: user.id,
-        notes: notes || null,
-        is_active: true
-      })
-      .select()
-      .single()
+      // Criar atribuição
+      const { error: insertError } = await supabaseAdmin
+        .from('fitness_client_assignments')
+        .insert({
+          client_id: clientId,
+          professional_id: pId,
+          assigned_by: user.id,
+          notes: notes || null,
+          is_active: true
+        })
+        .select()
+        .single()
 
-    if (insertError) {
-      console.error('Erro ao criar atribuição:', insertError)
-      return NextResponse.json(
-        { success: false, error: 'Erro ao criar atribuição' },
-        { status: 500 }
-      )
-    }
+      if (insertError) {
+        console.error('Erro ao criar atribuição:', insertError)
+        results.push({ professionalId: pId, success: false, message: 'Erro ao criar' })
+        continue
+      }
 
-    // Criar conversa automaticamente entre cliente e profissional
-    try {
-      const { data: conversationResult, error: conversationError } = await supabaseAdmin
-        .rpc('get_or_create_conversation', {
+      // Criar conversa automaticamente
+      try {
+        await supabaseAdmin.rpc('get_or_create_conversation', {
           p_client_id: clientId,
-          p_professional_id: professionalId
+          p_professional_id: pId
         })
-
-      if (conversationError) {
-        console.error('Erro ao criar conversa:', conversationError)
-        // Não falhar a atribuição por causa da conversa
-      } else {
-        console.log('Conversa criada/obtida:', conversationResult)
+      } catch (convError) {
+        console.error('Erro ao criar conversa:', convError)
       }
-    } catch (convError) {
-      console.error('Erro ao criar conversa (catch):', convError)
+
+      results.push({ professionalId: pId, success: true, message: 'Criado' })
     }
+
+    const successCount = results.filter(r => r.success).length
 
     return NextResponse.json({
-      success: true,
-      assignment: newAssignment,
-      message: 'Cliente atribuído com sucesso'
+      success: successCount > 0,
+      results,
+      message: `${successCount} de ${profIds.length} atribuição(ões) criada(s) com sucesso`
     })
 
   } catch (error) {

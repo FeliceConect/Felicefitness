@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trophy, Ruler, Target, Camera, X, Check, ImageIcon, History } from 'lucide-react'
+import { ArrowLeft, Edit, Trophy, Ruler, Target, Camera, X, Check, ImageIcon, History, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -341,6 +341,14 @@ export default function PerfilPage() {
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
                 <History className="h-5 w-5" />
                 <span>Evolução</span>
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/formularios">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                <ClipboardList className="h-5 w-5" />
+                <span>Formulários</span>
               </Button>
             </Link>
           </div>

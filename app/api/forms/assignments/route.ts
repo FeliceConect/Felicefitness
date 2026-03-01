@@ -26,13 +26,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
-    // Buscar assignments do paciente com dados do template e profissional
+    // Buscar assignments do paciente (sem join — evita ambiguidade de FK no PostgREST)
     let query = supabaseAdmin
       .from('fitness_form_assignments')
-      .select(`
-        *,
-        template:fitness_form_templates(id, name, description, specialty, form_type)
-      `)
+      .select('*')
       .eq('client_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -50,28 +47,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao buscar formulários' }, { status: 500 })
     }
 
-    // Enriquecer com dados dos profissionais
+    // Enriquecer com dados dos templates, profissionais e rascunhos
     if (assignments && assignments.length > 0) {
+      const templateIds = [...new Set(assignments.map(a => a.template_id))]
       const professionalIds = [...new Set(assignments.map(a => a.professional_id))]
-      const { data: professionals } = await supabaseAdmin
-        .from('fitness_professionals')
-        .select('id, display_name, type')
-        .in('id', professionalIds)
-
-      const profMap = new Map((professionals || []).map(p => [p.id, p]))
-
-      // Buscar rascunhos do paciente para cada assignment
       const assignmentIds = assignments.map(a => a.id)
-      const { data: drafts } = await supabaseAdmin
-        .from('fitness_form_drafts')
-        .select('assignment_id, current_step, updated_at')
-        .eq('client_id', user.id)
-        .in('assignment_id', assignmentIds)
 
-      const draftMap = new Map((drafts || []).map(d => [d.assignment_id, d]))
+      const [templatesResult, professionalsResult, draftsResult] = await Promise.all([
+        supabaseAdmin
+          .from('fitness_form_templates')
+          .select('id, name, description, specialty, form_type')
+          .in('id', templateIds),
+        supabaseAdmin
+          .from('fitness_professionals')
+          .select('id, display_name, type')
+          .in('id', professionalIds),
+        supabaseAdmin
+          .from('fitness_form_drafts')
+          .select('assignment_id, current_step, updated_at')
+          .eq('client_id', user.id)
+          .in('assignment_id', assignmentIds),
+      ])
+
+      const templateMap = new Map((templatesResult.data || []).map(t => [t.id, t]))
+      const profMap = new Map((professionalsResult.data || []).map(p => [p.id, p]))
+      const draftMap = new Map((draftsResult.data || []).map(d => [d.assignment_id, d]))
 
       const enriched = assignments.map(a => ({
         ...a,
+        template: templateMap.get(a.template_id) || null,
         professional: profMap.get(a.professional_id) || null,
         draft: draftMap.get(a.id) || null,
       }))

@@ -67,9 +67,12 @@ export async function GET(request: NextRequest) {
     if (role) {
       if (role === 'client') {
         query = query.or('role.eq.client,role.is.null')
+      } else if (role === 'assignable') {
+        // Clientes + superadmins que também participam do programa
+        query = query.or('role.eq.client,role.eq.super_admin,role.is.null')
       } else if (role === 'not_admin') {
         // Todos que não são admin/super_admin (para adicionar como profissional)
-        query = query.or('role.eq.client,role.eq.nutritionist,role.eq.trainer,role.is.null')
+        query = query.or('role.eq.client,role.eq.nutritionist,role.eq.trainer,role.eq.coach,role.eq.physiotherapist,role.is.null')
       } else {
         query = query.eq('role', role)
       }
@@ -199,7 +202,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar role
-    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'client']
+    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'physiotherapist', 'client']
     const userRole = role || 'client'
     if (!validRoles.includes(userRole)) {
       return NextResponse.json(
@@ -339,7 +342,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validar role
-    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'client']
+    const validRoles = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'physiotherapist', 'client']
     if (!validRoles.includes(newRole)) {
       return NextResponse.json(
         { success: false, error: 'Role inválido' },

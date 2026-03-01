@@ -2,10 +2,18 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Bell, MessageSquare } from "lucide-react"
 import { Logo } from "@/components/shared/logo"
 
 export function Header() {
+  const pathname = usePathname()
+
+  // Esconder header em telas com navegação própria (ex: form wizard)
+  const hideOnRoutes = ['/formularios/']
+  if (hideOnRoutes.some(route => pathname.startsWith(route) && pathname !== '/formularios')) {
+    return null
+  }
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 

@@ -39,13 +39,10 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const clientId = searchParams.get('clientId')
 
-    // Buscar assignments com dados do template e cliente
+    // Buscar assignments (sem join — evita ambiguidade de FK no PostgREST)
     let query = supabaseAdmin
       .from('fitness_form_assignments')
-      .select(`
-        *,
-        template:fitness_form_templates(id, name, description, specialty, form_type)
-      `)
+      .select('*')
       .eq('professional_id', professional.id)
       .order('created_at', { ascending: false })
 
@@ -64,18 +61,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao buscar formulários enviados' }, { status: 500 })
     }
 
-    // Enriquecer com dados dos clientes
+    // Enriquecer com dados dos templates e clientes
     if (assignments && assignments.length > 0) {
+      const templateIds = [...new Set(assignments.map(a => a.template_id))]
       const clientIds = [...new Set(assignments.map(a => a.client_id))]
-      const { data: clients } = await supabaseAdmin
-        .from('fitness_profiles')
-        .select('id, nome, email')
-        .in('id', clientIds)
 
-      const clientMap = new Map((clients || []).map(c => [c.id, c]))
+      const [templatesResult, clientsResult] = await Promise.all([
+        supabaseAdmin
+          .from('fitness_form_templates')
+          .select('id, name, description, specialty, form_type')
+          .in('id', templateIds),
+        supabaseAdmin
+          .from('fitness_profiles')
+          .select('id, nome, email')
+          .in('id', clientIds),
+      ])
+
+      const templateMap = new Map((templatesResult.data || []).map(t => [t.id, t]))
+      const clientMap = new Map((clientsResult.data || []).map(c => [c.id, c]))
 
       const enriched = assignments.map(a => ({
         ...a,
+        template: templateMap.get(a.template_id) || null,
         client: clientMap.get(a.client_id) || { id: a.client_id, nome: 'Cliente', email: '' },
       }))
 

@@ -29,17 +29,27 @@ export async function GET(
     const assignmentId = params.id
 
     // Buscar assignment verificando que pertence ao paciente
-    const { data: assignment, error: assignError } = await supabaseAdmin
+    const { data: assignmentRaw, error: assignError } = await supabaseAdmin
       .from('fitness_form_assignments')
-      .select(`
-        *,
-        template:fitness_form_templates(id, name, description, specialty, form_type)
-      `)
+      .select('*')
       .eq('id', assignmentId)
       .eq('client_id', user.id)
       .single()
 
-    if (assignError || !assignment) {
+    if (assignError || !assignmentRaw) {
+      return NextResponse.json({ success: false, error: 'Formulário não encontrado' }, { status: 404 })
+    }
+
+    // Buscar template separadamente (evita ambiguidade de FK no PostgREST)
+    const { data: templateData } = await supabaseAdmin
+      .from('fitness_form_templates')
+      .select('id, name, description, specialty, form_type')
+      .eq('id', assignmentRaw.template_id)
+      .single()
+
+    const assignment = { ...assignmentRaw, template: templateData || null }
+
+    if (!assignment) {
       return NextResponse.json({ success: false, error: 'Formulário não encontrado' }, { status: 404 })
     }
 

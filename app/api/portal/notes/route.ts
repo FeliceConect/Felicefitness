@@ -8,6 +8,7 @@ const ROLE_VISIBILITY: Record<string, string[]> = {
   coach: ['coach', 'super_admin'],
   nutritionist: ['nutritionist', 'super_admin'],
   trainer: ['trainer', 'super_admin'],
+  physiotherapist: ['physiotherapist', 'super_admin'],
 }
 
 function getAdminClient() {
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validTypes = ['observation', 'evolution', 'action_plan', 'alert']
+    const validTypes = ['observation', 'evolution', 'action_plan', 'alert', 'consultation']
     if (!validTypes.includes(note_type)) {
       return NextResponse.json({ success: false, error: 'note_type invalido' }, { status: 400 })
     }

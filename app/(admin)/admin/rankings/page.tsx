@@ -12,6 +12,10 @@ import {
   Zap,
   X,
   Search,
+  Users,
+  Filter,
+  UserCheck,
+  CheckSquare,
 } from 'lucide-react'
 
 interface Ranking {
@@ -44,6 +48,14 @@ interface Client {
   nome: string
   email: string
 }
+
+interface Professional {
+  id: string
+  display_name: string
+  type: string
+}
+
+type SelectionMode = 'all' | 'filter' | 'manual'
 
 const RANKING_TYPES = [
   { value: 'general', label: 'Geral' },
@@ -92,6 +104,16 @@ export default function AdminRankingsPage() {
     add_all_clients: true,
   })
 
+  // Patient selection for new ranking
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>('all')
+  const [allClients, setAllClients] = useState<Client[]>([])
+  const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set())
+  const [clientSearch, setClientSearch] = useState('')
+  const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [filterProfessionalId, setFilterProfessionalId] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
+  const [loadingClients, setLoadingClients] = useState(false)
+
   const fetchRankings = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/rankings')
@@ -125,10 +147,16 @@ export default function AdminRankingsPage() {
           fetchRankings()
         }
       } else {
+        // Build payload with patient selection
+        const payload = {
+          ...form,
+          add_all_clients: selectionMode === 'all',
+          selected_client_ids: selectionMode !== 'all' ? Array.from(selectedClientIds) : undefined,
+        }
         const res = await fetch('/api/rankings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         })
         if ((await res.json()).success) {
           setShowForm(false)
@@ -169,6 +197,38 @@ export default function AdminRankingsPage() {
     setShowForm(true)
   }
 
+  const loadClientsAndProfessionals = async () => {
+    setLoadingClients(true)
+    try {
+      const [clientsRes, profsRes] = await Promise.all([
+        fetch('/api/professional/clients?all=true').catch(() => null),
+        fetch('/api/professional/list').catch(() => null),
+      ])
+
+      if (clientsRes) {
+        const data = await clientsRes.json()
+        if (data.success && data.data) {
+          setAllClients(data.data.map((c: { client_id: string; client_name: string; client_email: string }) => ({
+            id: c.client_id,
+            nome: c.client_name,
+            email: c.client_email,
+          })))
+        }
+      }
+
+      if (profsRes) {
+        const data = await profsRes.json()
+        if (data.success && data.data) {
+          setProfessionals(data.data)
+        }
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setLoadingClients(false)
+    }
+  }
+
   const openNew = () => {
     setEditingRanking(null)
     setForm({
@@ -180,7 +240,13 @@ export default function AdminRankingsPage() {
       description: '',
       add_all_clients: true,
     })
+    setSelectionMode('all')
+    setSelectedClientIds(new Set())
+    setClientSearch('')
+    setFilterProfessionalId('')
+    setFilterStatus('all')
     setShowForm(true)
+    loadClientsAndProfessionals()
   }
 
   // Bioimpedance points
@@ -452,15 +518,186 @@ export default function AdminRankingsPage() {
               </div>
 
               {!editingRanking && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.add_all_clients}
-                    onChange={e => setForm(f => ({ ...f, add_all_clients: e.target.checked }))}
-                    className="rounded border-slate-600 text-dourado focus:ring-dourado"
-                  />
-                  <span className="text-sm text-slate-300">Adicionar todos os pacientes automaticamente</span>
-                </label>
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-300">Participantes</label>
+
+                  {/* Selection Mode Tabs */}
+                  <div className="flex gap-1 bg-slate-700/50 rounded-lg p-1">
+                    {([
+                      { mode: 'all' as SelectionMode, label: 'Todos', icon: Users },
+                      { mode: 'filter' as SelectionMode, label: 'Filtros', icon: Filter },
+                      { mode: 'manual' as SelectionMode, label: 'Manual', icon: UserCheck },
+                    ]).map(({ mode, label, icon: Icon }) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => {
+                          setSelectionMode(mode)
+                          if (mode === 'all') {
+                            setSelectedClientIds(new Set())
+                          }
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                          selectionMode === mode
+                            ? 'bg-dourado text-white'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-600'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* All Mode */}
+                  {selectionMode === 'all' && (
+                    <div className="bg-slate-700/30 rounded-lg p-3 text-center">
+                      <Users className="w-8 h-8 text-dourado mx-auto mb-1" />
+                      <p className="text-sm text-slate-300">Todos os pacientes serao adicionados automaticamente</p>
+                      <p className="text-xs text-slate-500 mt-1">{allClients.length} pacientes cadastrados</p>
+                    </div>
+                  )}
+
+                  {/* Filter Mode */}
+                  {selectionMode === 'filter' && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">Profissional</label>
+                          <select
+                            value={filterProfessionalId}
+                            onChange={e => setFilterProfessionalId(e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg border border-slate-600 bg-slate-700 text-white text-xs"
+                          >
+                            <option value="">Todos</option>
+                            {professionals.map(p => (
+                              <option key={p.id} value={p.id}>{p.display_name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">Status</label>
+                          <select
+                            value={filterStatus}
+                            onChange={e => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
+                            className="w-full px-2 py-1.5 rounded-lg border border-slate-600 bg-slate-700 text-white text-xs"
+                          >
+                            <option value="all">Todos</option>
+                            <option value="active">Ativos (ultimos 7 dias)</option>
+                            <option value="inactive">Inativos</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Filtered client list with checkboxes */}
+                      <div className="bg-slate-700/30 rounded-lg max-h-40 overflow-y-auto">
+                        {loadingClients ? (
+                          <div className="p-3 text-center text-sm text-slate-500">Carregando...</div>
+                        ) : allClients.length === 0 ? (
+                          <div className="p-3 text-center text-sm text-slate-500">Nenhum paciente encontrado</div>
+                        ) : (
+                          <div className="divide-y divide-slate-700/50">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedClientIds.size === allClients.length) {
+                                  setSelectedClientIds(new Set())
+                                } else {
+                                  setSelectedClientIds(new Set(allClients.map(c => c.id)))
+                                }
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dourado hover:bg-slate-700/50 font-medium"
+                            >
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              {selectedClientIds.size === allClients.length ? 'Desmarcar todos' : 'Selecionar todos filtrados'}
+                            </button>
+                            {allClients.map(c => (
+                              <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-700/50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedClientIds.has(c.id)}
+                                  onChange={e => {
+                                    const next = new Set(selectedClientIds)
+                                    if (e.target.checked) next.add(c.id)
+                                    else next.delete(c.id)
+                                    setSelectedClientIds(next)
+                                  }}
+                                  className="rounded border-slate-600 text-dourado focus:ring-dourado w-3.5 h-3.5"
+                                />
+                                <span className="text-sm text-white truncate">{c.nome || 'Sem nome'}</span>
+                                <span className="text-xs text-slate-500 truncate ml-auto">{c.email}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 text-right">
+                        {selectedClientIds.size} de {allClients.length} selecionados
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Manual Mode */}
+                  {selectionMode === 'manual' && (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                        <input
+                          type="text"
+                          value={clientSearch}
+                          onChange={e => setClientSearch(e.target.value)}
+                          placeholder="Buscar paciente por nome ou email..."
+                          className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm"
+                        />
+                      </div>
+
+                      <div className="bg-slate-700/30 rounded-lg max-h-48 overflow-y-auto">
+                        {loadingClients ? (
+                          <div className="p-3 text-center text-sm text-slate-500">Carregando...</div>
+                        ) : (
+                          <div className="divide-y divide-slate-700/50">
+                            {allClients
+                              .filter(c =>
+                                !clientSearch ||
+                                c.nome?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                c.email?.toLowerCase().includes(clientSearch.toLowerCase())
+                              )
+                              .map(c => (
+                                <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-700/50 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedClientIds.has(c.id)}
+                                    onChange={e => {
+                                      const next = new Set(selectedClientIds)
+                                      if (e.target.checked) next.add(c.id)
+                                      else next.delete(c.id)
+                                      setSelectedClientIds(next)
+                                    }}
+                                    className="rounded border-slate-600 text-dourado focus:ring-dourado w-3.5 h-3.5"
+                                  />
+                                  <span className="text-sm text-white truncate">{c.nome || 'Sem nome'}</span>
+                                  <span className="text-xs text-slate-500 truncate ml-auto">{c.email}</span>
+                                </label>
+                              ))
+                            }
+                            {allClients.filter(c =>
+                              !clientSearch ||
+                              c.nome?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                              c.email?.toLowerCase().includes(clientSearch.toLowerCase())
+                            ).length === 0 && (
+                              <div className="p-3 text-center text-sm text-slate-500">
+                                {clientSearch ? 'Nenhum resultado para a busca' : 'Nenhum paciente cadastrado'}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 text-right">
+                        {selectedClientIds.size} paciente{selectedClientIds.size !== 1 ? 's' : ''} selecionado{selectedClientIds.size !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="flex gap-3 pt-2">

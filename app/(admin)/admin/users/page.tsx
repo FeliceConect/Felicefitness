@@ -253,6 +253,10 @@ export default function UsersPage() {
         return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'trainer':
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+      case 'coach':
+        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+      case 'physiotherapist':
+        return 'bg-teal-500/20 text-teal-400 border-teal-500/30'
       default:
         return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
     }
@@ -318,6 +322,7 @@ export default function UsersPage() {
               <option value="client">Clientes</option>
               <option value="trainer">Personal Trainers</option>
               <option value="nutritionist">Nutricionistas</option>
+              <option value="physiotherapist">Fisioterapeutas</option>
               <option value="admin">Administradores</option>
               <option value="super_admin">Super Admins</option>
             </select>
@@ -418,10 +423,14 @@ export default function UsersPage() {
                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${
                                   prof.type === 'nutritionist'
                                     ? 'bg-green-500/10 text-green-400'
-                                    : 'bg-blue-500/10 text-blue-400'
+                                    : prof.type === 'coach'
+                                      ? 'bg-yellow-500/10 text-yellow-400'
+                                      : prof.type === 'physiotherapist'
+                                        ? 'bg-teal-500/10 text-teal-400'
+                                        : 'bg-blue-500/10 text-blue-400'
                                 }`}
                               >
-                                {prof.type === 'nutritionist' ? '🥗' : '💪'}
+                                {prof.type === 'nutritionist' ? '🥗' : prof.type === 'coach' ? '🧠' : prof.type === 'physiotherapist' ? '🦴' : '💪'}
                                 {prof.name}
                               </span>
                             ))}
@@ -533,7 +542,7 @@ export default function UsersPage() {
       {/* Role Change Modal */}
       {showRoleModal && selectedUser && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md">
+          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
               <h3 className="text-lg font-semibold text-white">Gerenciar Usuário</h3>
               <button
@@ -575,6 +584,8 @@ export default function UsersPage() {
                   { value: 'client', label: 'Cliente', icon: Activity, desc: 'Usuário padrão do app' },
                   { value: 'trainer', label: 'Personal Trainer', icon: Activity, desc: 'Acesso aos clientes atribuídos' },
                   { value: 'nutritionist', label: 'Nutricionista', icon: Activity, desc: 'Acesso aos clientes atribuídos' },
+                  { value: 'coach', label: 'Coach Alta Performance', icon: Activity, desc: 'Prontuário privado, acompanhamento' },
+                  { value: 'physiotherapist', label: 'Fisioterapeuta', icon: Activity, desc: 'Reabilitação e fisioterapia' },
                   { value: 'admin', label: 'Administrador', icon: Shield, desc: 'Acesso total ao painel admin' },
                   { value: 'super_admin', label: 'Super Admin', icon: Shield, desc: 'Pode criar outros admins' },
                 ].map((role) => (
@@ -806,6 +817,8 @@ export default function UsersPage() {
                   <option value="client">Cliente</option>
                   <option value="trainer">Personal Trainer</option>
                   <option value="nutritionist">Nutricionista</option>
+                  <option value="coach">Coach de Alta Performance</option>
+                  <option value="physiotherapist">Fisioterapeuta</option>
                   <option value="admin">Administrador</option>
                   <option value="super_admin">Super Admin</option>
                 </select>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
-import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight } from 'lucide-react'
+import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList } from 'lucide-react'
 import Link from 'next/link'
 import {
   GreetingHeader,
@@ -90,6 +90,9 @@ export function DashboardContent() {
     status: string
   } | null>(null)
 
+  // Pending forms
+  const [pendingFormsCount, setPendingFormsCount] = useState(0)
+
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
     fetch(`/api/appointments?status=scheduled,confirmed&dateFrom=${today}&limit=1`)
@@ -97,6 +100,16 @@ export function DashboardContent() {
       .then(data => {
         if (data.success && data.data && data.data.length > 0) {
           setNextAppointment(data.data[0])
+        }
+      })
+      .catch(() => {})
+
+    // Check pending forms
+    fetch('/api/forms/assignments?status=pending')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setPendingFormsCount(data.data.length)
         }
       })
       .catch(() => {})
@@ -143,6 +156,28 @@ export function DashboardContent() {
       <main className="px-4 space-y-4">
         {/* Gamification Widget */}
         <GamificationWidgetCompact gamification={gamification} />
+
+        {/* Formulários pendentes */}
+        {pendingFormsCount > 0 && (
+          <Link href="/formularios">
+            <div className="bg-dourado/10 border border-dourado/30 rounded-2xl p-4 hover:bg-dourado/15 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-dourado/20 flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-dourado" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {pendingFormsCount === 1
+                      ? 'Voce tem 1 formulario pendente'
+                      : `Voce tem ${pendingFormsCount} formularios pendentes`}
+                  </p>
+                  <p className="text-xs text-foreground-secondary">Toque para preencher</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-dourado flex-shrink-0" />
+              </div>
+            </div>
+          </Link>
+        )}
 
         {/* Streak e Score lado a lado */}
         <div className="flex gap-3">

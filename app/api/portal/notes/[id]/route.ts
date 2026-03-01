@@ -82,7 +82,7 @@ export async function PATCH(
     const updateFields: Record<string, unknown> = {}
     if (body.content !== undefined) updateFields.content = body.content
     if (body.note_type !== undefined) {
-      const validTypes = ['observation', 'evolution', 'action_plan', 'alert']
+      const validTypes = ['observation', 'evolution', 'action_plan', 'alert', 'consultation']
       if (!validTypes.includes(body.note_type)) {
         return NextResponse.json(
           { success: false, error: 'Tipo de nota invalido. Use: observation, evolution, action_plan, alert' },

@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, type, category, start_date, end_date, description, point_rules, add_all_clients } = body
+    const { name, type, category, start_date, end_date, description, point_rules, add_all_clients, selected_client_ids } = body
 
     if (!name || !type) {
       return NextResponse.json({ success: false, error: 'Nome e tipo sao obrigatorios' }, { status: 400 })
@@ -170,8 +170,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao criar ranking' }, { status: 500 })
     }
 
-    // Optionally add all active clients as participants
+    // Add participants based on selection mode
     if (add_all_clients) {
+      // Add ALL clients
       const { data: clients } = await supabaseAdmin
         .from('fitness_profiles')
         .select('id')
@@ -188,6 +189,17 @@ export async function POST(request: NextRequest) {
           .from('fitness_ranking_participants')
           .insert(participants)
       }
+    } else if (selected_client_ids && Array.isArray(selected_client_ids) && selected_client_ids.length > 0) {
+      // Add only selected clients
+      const participants = selected_client_ids.map((clientId: string) => ({
+        ranking_id: ranking.id,
+        user_id: clientId,
+        total_points: 0,
+      }))
+
+      await supabaseAdmin
+        .from('fitness_ranking_participants')
+        .insert(participants)
     }
 
     return NextResponse.json({ success: true, ranking })

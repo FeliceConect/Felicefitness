@@ -392,7 +392,7 @@ export default function TrainingProgramDetailPage() {
   if (professionalLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado"></div>
       </div>
     )
   }
@@ -400,8 +400,8 @@ export default function TrainingProgramDetailPage() {
   if (!program) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Programa não encontrado</p>
-        <Link href="/portal/training" className="text-violet-400 hover:text-violet-300 mt-4 inline-block">
+        <p className="text-foreground-secondary">Programa não encontrado</p>
+        <Link href="/portal/training" className="text-dourado hover:text-dourado/80 mt-4 inline-block">
           Voltar para lista
         </Link>
       </div>
@@ -415,9 +415,9 @@ export default function TrainingProgramDetailPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/portal/training"
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-400" />
+            <ArrowLeft className="w-5 h-5 text-foreground-secondary" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
@@ -427,7 +427,7 @@ export default function TrainingProgramDetailPage() {
                     type="text"
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
-                    className="text-2xl font-bold text-white bg-slate-700 border border-slate-600 rounded-lg px-3 py-1 focus:outline-none focus:border-violet-500"
+                    className="text-2xl font-bold text-foreground bg-white border border-border rounded-lg px-3 py-1 focus:outline-none focus:border-dourado"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -468,13 +468,13 @@ export default function TrainingProgramDetailPage() {
                 </div>
               ) : (
                 <>
-                  <h1 className="text-2xl font-bold text-white">{program.name}</h1>
+                  <h1 className="text-2xl font-bold text-foreground">{program.name}</h1>
                   <button
                     onClick={() => {
                       setEditedName(program.name)
                       setIsEditingName(true)
                     }}
-                    className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                    className="p-1.5 hover:bg-background-elevated rounded text-foreground-secondary hover:text-foreground transition-colors"
                     title="Editar nome"
                   >
                     <Pencil className="w-4 h-4" />
@@ -482,9 +482,9 @@ export default function TrainingProgramDetailPage() {
                 </>
               )}
             </div>
-            <div className="flex items-center gap-3 text-sm text-slate-400">
+            <div className="flex items-center gap-3 text-sm text-foreground-secondary">
               {program.is_template && (
-                <span className="px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded-full text-xs">
+                <span className="px-2 py-0.5 bg-dourado/20 text-dourado rounded-full text-xs">
                   Template
                 </span>
               )}
@@ -506,7 +506,7 @@ export default function TrainingProgramDetailPage() {
         <button
           onClick={saveProgram}
           disabled={saving || !hasChanges}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? (
             <>
@@ -523,35 +523,35 @@ export default function TrainingProgramDetailPage() {
       </div>
 
       {/* Program Info */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-white rounded-xl p-4 border border-border">
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-300">{program.duration_weeks} semanas</span>
+            <Calendar className="w-4 h-4 text-foreground-secondary" />
+            <span className="text-foreground">{program.duration_weeks} semanas</span>
           </div>
           <div className="flex items-center gap-2">
-            <Dumbbell className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-300">{program.days_per_week}x por semana</span>
+            <Dumbbell className="w-4 h-4 text-foreground-secondary" />
+            <span className="text-foreground">{program.days_per_week}x por semana</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-300">{program.session_duration} min/sessão</span>
+            <Clock className="w-4 h-4 text-foreground-secondary" />
+            <span className="text-foreground">{program.session_duration} min/sessão</span>
           </div>
         </div>
       </div>
 
       {/* Client Assignment */}
       {!program.is_template && (
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <div className="bg-white rounded-xl p-4 border border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                 <Users className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-slate-300">Cliente Atribuído</h3>
+                <h3 className="text-sm font-medium text-foreground">Cliente Atribuído</h3>
                 {program.client ? (
-                  <p className="text-white font-medium">{program.client.nome}</p>
+                  <p className="text-foreground font-medium">{program.client.nome}</p>
                 ) : (
                   <p className="text-orange-400">Nenhum cliente atribuído</p>
                 )}
@@ -559,7 +559,7 @@ export default function TrainingProgramDetailPage() {
             </div>
             <button
               onClick={() => setShowClientModal(true)}
-              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors text-sm"
+              className="px-3 py-1.5 bg-background-elevated text-foreground-secondary rounded-lg hover:bg-border transition-colors text-sm"
             >
               {program.client ? 'Trocar Cliente' : 'Atribuir Cliente'}
             </button>
@@ -570,19 +570,19 @@ export default function TrainingProgramDetailPage() {
       {/* Weeks */}
       <div className="space-y-4">
         {program.weeks.map((week, weekIndex) => (
-          <div key={weekIndex} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+          <div key={weekIndex} className="bg-white rounded-xl border border-border overflow-hidden">
             {/* Week Header */}
             <div
-              className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/50"
+              className="flex items-center justify-between p-4 cursor-pointer hover:bg-background-elevated"
               onClick={() => toggleWeek(weekIndex)}
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                  <span className="text-orange-400 font-bold">{weekIndex + 1}</span>
+                <div className="w-10 h-10 rounded-lg bg-dourado/20 flex items-center justify-center">
+                  <span className="text-dourado font-bold">{weekIndex + 1}</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">{week.name || `Semana ${weekIndex + 1}`}</h3>
-                  <p className="text-sm text-slate-400">
+                  <h3 className="font-semibold text-foreground">{week.name || `Semana ${weekIndex + 1}`}</h3>
+                  <p className="text-sm text-foreground-secondary">
                     {week.days.length} {week.days.length === 1 ? 'treino' : 'treinos'}
                   </p>
                 </div>
@@ -594,7 +594,7 @@ export default function TrainingProgramDetailPage() {
                       e.stopPropagation()
                       copyWeekToAll(weekIndex)
                     }}
-                    className="px-2 py-1 text-xs bg-slate-700 text-slate-300 rounded hover:bg-slate-600"
+                    className="px-2 py-1 text-xs bg-background-elevated text-foreground-secondary rounded hover:bg-border"
                   >
                     Copiar para todas
                   </button>
@@ -611,19 +611,19 @@ export default function TrainingProgramDetailPage() {
                   </button>
                 )}
                 {expandedWeeks.includes(weekIndex) ? (
-                  <ChevronUp className="w-5 h-5 text-slate-400" />
+                  <ChevronUp className="w-5 h-5 text-foreground-secondary" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-400" />
+                  <ChevronDown className="w-5 h-5 text-foreground-secondary" />
                 )}
               </div>
             </div>
 
             {/* Week Content */}
             {expandedWeeks.includes(weekIndex) && (
-              <div className="border-t border-slate-700 p-4 space-y-4">
+              <div className="border-t border-border p-4 space-y-4">
                 {/* Days */}
                 {week.days.length === 0 ? (
-                  <p className="text-center text-slate-400 py-4">
+                  <p className="text-center text-foreground-secondary py-4">
                     Nenhum dia de treino adicionado
                   </p>
                 ) : (
@@ -631,10 +631,10 @@ export default function TrainingProgramDetailPage() {
                     {week.days.map((day, dayIndex) => {
                       const dayKey = `${weekIndex}-${dayIndex}`
                       return (
-                        <div key={dayIndex} className="bg-slate-700/50 rounded-lg overflow-hidden">
+                        <div key={dayIndex} className="bg-background-elevated rounded-lg overflow-hidden">
                           {/* Day Header */}
                           <div
-                            className="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-700"
+                            className="flex items-center justify-between p-3 cursor-pointer hover:bg-border/50"
                             onClick={() => toggleDay(dayKey)}
                           >
                             <div className="flex items-center gap-2">
@@ -643,9 +643,9 @@ export default function TrainingProgramDetailPage() {
                                 value={day.name}
                                 onChange={(e) => updateDayName(weekIndex, dayIndex, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-transparent text-white font-medium focus:outline-none focus:bg-slate-600 px-2 py-1 rounded"
+                                className="bg-transparent text-foreground font-medium focus:outline-none focus:bg-white px-2 py-1 rounded"
                               />
-                              <span className="text-xs text-slate-400">
+                              <span className="text-xs text-foreground-secondary">
                                 {day.exercises.length} exercícios
                               </span>
                             </div>
@@ -660,29 +660,29 @@ export default function TrainingProgramDetailPage() {
                                 <Trash2 className="w-4 h-4" />
                               </button>
                               {expandedDays.includes(dayKey) ? (
-                                <ChevronUp className="w-4 h-4 text-slate-400" />
+                                <ChevronUp className="w-4 h-4 text-foreground-secondary" />
                               ) : (
-                                <ChevronDown className="w-4 h-4 text-slate-400" />
+                                <ChevronDown className="w-4 h-4 text-foreground-secondary" />
                               )}
                             </div>
                           </div>
 
                           {/* Day Content */}
                           {expandedDays.includes(dayKey) && (
-                            <div className="border-t border-slate-600 p-3 space-y-3">
+                            <div className="border-t border-border p-3 space-y-3">
                               {/* Exercises */}
                               {day.exercises.length > 0 && (
                                 <div className="space-y-2">
                                   {day.exercises.map((exercise, exIndex) => (
                                     <div
                                       key={exIndex}
-                                      className="flex items-center justify-between bg-slate-800 rounded px-3 py-2"
+                                      className="flex items-center justify-between bg-white border border-border rounded px-3 py-2"
                                     >
                                       <div className="flex items-center gap-3">
-                                        <GripVertical className="w-4 h-4 text-slate-500" />
+                                        <GripVertical className="w-4 h-4 text-foreground-muted" />
                                         <div>
-                                          <p className="text-white text-sm">{exercise.exercise_name}</p>
-                                          <p className="text-xs text-slate-400">
+                                          <p className="text-foreground text-sm">{exercise.exercise_name}</p>
+                                          <p className="text-xs text-foreground-secondary">
                                             {exercise.sets} x {exercise.reps} | {exercise.rest_seconds}s descanso
                                           </p>
                                         </div>
@@ -700,7 +700,7 @@ export default function TrainingProgramDetailPage() {
 
                               <button
                                 onClick={() => setShowAddExerciseModal({ weekIndex, dayIndex })}
-                                className="w-full flex items-center justify-center gap-1 py-2 border border-dashed border-slate-500 rounded text-slate-400 hover:border-orange-500 hover:text-orange-400"
+                                className="w-full flex items-center justify-center gap-1 py-2 border border-dashed border-border rounded text-foreground-muted hover:border-dourado hover:text-dourado"
                               >
                                 <Plus className="w-4 h-4" />
                                 Adicionar Exercício
@@ -716,7 +716,7 @@ export default function TrainingProgramDetailPage() {
                 {/* Add Day Button */}
                 <button
                   onClick={() => addDay(weekIndex)}
-                  className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-600 rounded-lg text-slate-400 hover:border-orange-500 hover:text-orange-400 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border rounded-lg text-foreground-muted hover:border-dourado hover:text-dourado transition-colors"
                 >
                   <Plus className="w-5 h-5" />
                   Adicionar Dia de Treino
@@ -729,7 +729,7 @@ export default function TrainingProgramDetailPage() {
         {/* Add Week Button */}
         <button
           onClick={addWeek}
-          className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-600 rounded-xl text-slate-400 hover:border-orange-500 hover:text-orange-400 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-border rounded-xl text-foreground-muted hover:border-dourado hover:text-dourado transition-colors"
         >
           <Plus className="w-5 h-5" />
           Adicionar Semana
@@ -751,13 +751,13 @@ export default function TrainingProgramDetailPage() {
       {/* Client Selection Modal */}
       {showClientModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-slate-800 rounded-xl max-w-md w-full p-6 my-8">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 my-8 border border-border">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-foreground">
                 {program.client ? 'Trocar Cliente' : 'Atribuir Cliente'}
               </h3>
-              <button onClick={() => setShowClientModal(false)} className="p-1 hover:bg-slate-700 rounded">
-                <X className="w-5 h-5 text-slate-400" />
+              <button onClick={() => setShowClientModal(false)} className="p-1 hover:bg-background-elevated rounded">
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
 
@@ -773,14 +773,14 @@ export default function TrainingProgramDetailPage() {
                   </div>
                   <div>
                     <p className="text-red-400 font-medium">Remover atribuição</p>
-                    <p className="text-xs text-slate-400">Este treino ficará sem cliente</p>
+                    <p className="text-xs text-foreground-secondary">Este treino ficará sem cliente</p>
                   </div>
                 </button>
               )}
 
               {/* Lista de clientes */}
               {clients.length === 0 ? (
-                <p className="text-center text-slate-400 py-4">
+                <p className="text-center text-foreground-secondary py-4">
                   Nenhum cliente encontrado
                 </p>
               ) : (
@@ -790,8 +790,8 @@ export default function TrainingProgramDetailPage() {
                     onClick={() => assignClient(client.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
                       program.client_id === client.id
-                        ? 'border-blue-500 bg-blue-500/10'
-                        : 'border-slate-600 hover:border-slate-500 hover:bg-slate-700/50'
+                        ? 'border-dourado bg-dourado/10'
+                        : 'border-border hover:border-foreground-muted hover:bg-background-elevated'
                     }`}
                   >
                     {client.avatar_url ? (
@@ -801,28 +801,28 @@ export default function TrainingProgramDetailPage() {
                         className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center">
-                        <span className="text-slate-300 font-medium">
+                      <div className="w-10 h-10 rounded-full bg-background-elevated flex items-center justify-center">
+                        <span className="text-foreground font-medium">
                           {client.nome.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
                     <div>
-                      <p className="text-white font-medium">{client.nome}</p>
-                      <p className="text-xs text-slate-400">{client.email}</p>
+                      <p className="text-foreground font-medium">{client.nome}</p>
+                      <p className="text-xs text-foreground-secondary">{client.email}</p>
                     </div>
                     {program.client_id === client.id && (
-                      <Check className="w-5 h-5 text-blue-400 ml-auto" />
+                      <Check className="w-5 h-5 text-dourado ml-auto" />
                     )}
                   </button>
                 ))
               )}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-slate-700">
+            <div className="mt-4 pt-4 border-t border-border">
               <button
                 onClick={() => setShowClientModal(false)}
-                className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                className="w-full px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
               >
                 Cancelar
               </button>
@@ -876,17 +876,17 @@ function AddExerciseModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-slate-800 rounded-xl max-w-md w-full p-6 my-8">
+      <div className="bg-white rounded-xl max-w-md w-full p-6 my-8 border border-border">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Adicionar Exercício</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded">
-            <X className="w-5 h-5 text-slate-400" />
+          <h3 className="text-lg font-semibold text-foreground">Adicionar Exercício</h3>
+          <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
+            <X className="w-5 h-5 text-foreground-secondary" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Nome do Exercício *
             </label>
             <input
@@ -894,19 +894,19 @@ function AddExerciseModal({
               value={formData.exercise_name}
               onChange={(e) => setFormData({ ...formData, exercise_name: e.target.value })}
               placeholder="Ex: Supino Reto"
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Grupo Muscular
             </label>
             <select
               value={formData.muscle_group}
               onChange={(e) => setFormData({ ...formData, muscle_group: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
             >
               <option value="">Selecione...</option>
               {MUSCLE_GROUPS.map(mg => (
@@ -917,50 +917,50 @@ function AddExerciseModal({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Séries</label>
+              <label className="block text-xs text-foreground-secondary mb-1">Séries</label>
               <input
                 type="number"
                 min="1"
                 value={formData.sets}
                 onChange={(e) => setFormData({ ...formData, sets: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+                className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Reps</label>
+              <label className="block text-xs text-foreground-secondary mb-1">Reps</label>
               <input
                 type="text"
                 value={formData.reps}
                 onChange={(e) => setFormData({ ...formData, reps: e.target.value })}
                 placeholder="10-12"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+                className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Descanso (s)</label>
+              <label className="block text-xs text-foreground-secondary mb-1">Descanso (s)</label>
               <input
                 type="number"
                 min="0"
                 value={formData.rest_seconds}
                 onChange={(e) => setFormData({ ...formData, rest_seconds: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+                className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Carga Sugerida</label>
+              <label className="block text-xs text-foreground-secondary mb-1">Carga Sugerida</label>
               <input
                 type="text"
                 value={formData.weight_suggestion}
                 onChange={(e) => setFormData({ ...formData, weight_suggestion: e.target.value })}
                 placeholder="20kg, 70% 1RM"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+                className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">RPE (1-10)</label>
+              <label className="block text-xs text-foreground-secondary mb-1">RPE (1-10)</label>
               <input
                 type="number"
                 min="1"
@@ -968,19 +968,19 @@ function AddExerciseModal({
                 value={formData.rpe_target}
                 onChange={(e) => setFormData({ ...formData, rpe_target: e.target.value })}
                 placeholder="8"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+                className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Instruções</label>
+            <label className="block text-xs text-foreground-secondary mb-1">Instruções</label>
             <textarea
               value={formData.instructions}
               onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
               placeholder="Dicas de execução..."
               rows={2}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 resize-none"
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado resize-none"
             />
           </div>
 
@@ -989,22 +989,22 @@ function AddExerciseModal({
               type="checkbox"
               checked={formData.is_warmup}
               onChange={(e) => setFormData({ ...formData, is_warmup: e.target.checked })}
-              className="w-4 h-4 rounded border-slate-600 text-orange-500 focus:ring-orange-500 bg-slate-700"
+              className="w-4 h-4 rounded border-border text-dourado focus:ring-dourado/50 bg-white"
             />
-            <span className="text-sm text-slate-300">Exercício de aquecimento</span>
+            <span className="text-sm text-foreground">Exercício de aquecimento</span>
           </label>
 
           <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-colors flex items-center justify-center gap-2"
             >
               <Check className="w-4 h-4" />
               Adicionar

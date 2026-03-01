@@ -6,7 +6,7 @@ import { createBrowserClient } from '@supabase/ssr'
 interface Professional {
   id: string
   user_id: string
-  type: 'nutritionist' | 'trainer' | 'coach'
+  type: 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist'
   registration: string | null
   specialty: string | null
   bio: string | null
@@ -20,6 +20,7 @@ export function useProfessional() {
   const [professional, setProfessional] = useState<Professional | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     async function checkProfessional() {
@@ -34,6 +35,17 @@ export function useProfessional() {
         if (!user) {
           setLoading(false)
           return
+        }
+
+        // Verificar se é super_admin
+        const { data: profile } = await supabase
+          .from('fitness_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.role === 'super_admin') {
+          setIsSuperAdmin(true)
         }
 
         // Buscar registro de profissional
@@ -58,10 +70,12 @@ export function useProfessional() {
     professional,
     loading,
     error,
-    isProfessional: !!professional,
+    isSuperAdmin,
+    isProfessional: !!professional || isSuperAdmin,
     isNutritionist: professional?.type === 'nutritionist',
     isTrainer: professional?.type === 'trainer',
     isCoach: professional?.type === 'coach',
-    isActive: professional?.is_active ?? false
+    isPhysiotherapist: professional?.type === 'physiotherapist',
+    isActive: professional?.is_active ?? isSuperAdmin
   }
 }

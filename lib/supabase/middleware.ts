@@ -68,10 +68,13 @@ export async function updateSession(request: NextRequest) {
   // Rotas do admin
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
 
-  // Verificar se é profissional (personal, nutricionista ou coach)
+  // Verificar role do usuário
   let isProfessional = false
   let isAdminUser = false
+  let isSuperAdmin = false
   let profile: { role: string; onboarding_completed: boolean } | null = null
+
+  const professionalRoles = ['nutritionist', 'trainer', 'coach', 'physiotherapist']
 
   if (user) {
     const { data: profileData } = await supabase
@@ -82,39 +85,48 @@ export async function updateSession(request: NextRequest) {
 
     profile = profileData
 
-    if (profile?.role === 'super_admin' || profile?.role === 'admin') {
+    if (profile?.role === 'super_admin') {
+      isSuperAdmin = true
+      isAdminUser = true
+    } else if (profile?.role === 'admin') {
       isAdminUser = true
     }
 
-    const { data: professional } = await supabase
-      .from('fitness_professionals')
-      .select('id, is_active')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (professional) {
+    // Detectar profissional pelo role no perfil OU pela tabela fitness_professionals
+    if (professionalRoles.includes(profile?.role || '')) {
       isProfessional = true
+    } else {
+      // Fallback: verificar tabela fitness_professionals
+      const { data: professional } = await supabase
+        .from('fitness_professionals')
+        .select('id, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (professional) {
+        isProfessional = true
+      }
     }
   }
 
   // Se está autenticado e tentando acessar rota pública (login/registro)
   if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/registro'))) {
     const url = request.nextUrl.clone()
-    // Profissionais vão direto para o portal
-    url.pathname = isProfessional ? '/portal' : '/dashboard'
+    // Profissionais vão direto para o portal, super_admin vai para dashboard
+    url.pathname = (isProfessional && !isSuperAdmin) ? '/portal' : '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  // Se é profissional tentando acessar rotas do app, redirecionar para o portal
-  if (user && isProfessional && isAppRoute) {
+  // Profissional (exceto super_admin) tentando acessar rotas do app → portal
+  if (user && isProfessional && !isSuperAdmin && isAppRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/portal'
     return NextResponse.redirect(url)
   }
 
-  // Se NÃO é profissional tentando acessar portal, redirecionar para o app
-  if (user && !isProfessional && isPortalRoute) {
+  // Cliente (não profissional e não super_admin) tentando acessar portal → app
+  if (user && !isProfessional && !isSuperAdmin && isPortalRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
