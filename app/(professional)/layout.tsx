@@ -9,6 +9,7 @@ import {
   Utensils,
   Dumbbell,
   MessageSquare,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -17,6 +18,7 @@ import {
   Activity,
   ClipboardList,
   Brain,
+  FileText,
   CalendarDays,
   Library,
   Stethoscope
@@ -87,10 +89,12 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
     { href: '/portal/nutrition', icon: Apple, label: 'Planos Alimentares', show: isNutritionist || isSuperAdmin },
     { href: '/portal/training', icon: Activity, label: 'Planos de Treino', show: isTrainer || isSuperAdmin },
     { href: '/portal/coach', icon: Brain, label: 'Dashboard Coach', show: isCoach || isSuperAdmin },
+    { href: '/portal/notes', icon: FileText, label: 'Prontuário', show: true },
     { href: '/portal/exercises', icon: Library, label: 'Exercícios', show: isTrainer || isSuperAdmin },
     { href: '/portal/agenda', icon: CalendarDays, label: 'Agenda', show: true },
     { href: '/portal/forms', icon: ClipboardList, label: 'Formulários', show: true },
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
+    { href: '/portal/settings', icon: Settings, label: 'Configurações', show: true },
   ].filter(item => item.show)
 
   const professionalTypeLabel = isSuperAdmin
