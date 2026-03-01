@@ -85,19 +85,18 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
   }
 
   const menuItems = [
-    { href: '/portal', icon: LayoutDashboard, label: 'Dashboard', show: true },
+    { href: isCoach ? '/portal/coach' : '/portal', icon: isCoach ? Brain : LayoutDashboard, label: 'Dashboard', show: true },
     { href: '/portal/clients', icon: Users, label: 'Meus Pacientes', show: true },
     { href: '/portal/meals', icon: Utensils, label: 'Refeições', show: isNutritionist },
     { href: '/portal/workouts', icon: Dumbbell, label: 'Treinos', show: isTrainer },
     { href: '/portal/nutrition', icon: Apple, label: 'Planos Alimentares', show: isNutritionist },
     { href: '/portal/training', icon: Activity, label: 'Planos de Treino', show: isTrainer },
-    { href: '/portal/coach', icon: Brain, label: 'Dashboard Coach', show: isCoach },
     { href: '/portal/notes', icon: FileText, label: 'Prontuário', show: true },
     { href: '/portal/exercises', icon: Library, label: 'Exercícios', show: isTrainer },
     { href: '/portal/agenda', icon: CalendarDays, label: 'Agenda', show: true },
     { href: '/portal/forms', icon: ClipboardList, label: 'Formulários', show: true },
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
-    { href: '/portal/settings', icon: Settings, label: 'Configurações', show: true },
+    { href: '/portal/settings', icon: Settings, label: 'Configurações', show: !isCoach && !isPhysiotherapist },
   ].filter(item => item.show)
 
   // Itens admin — só visíveis para super_admin

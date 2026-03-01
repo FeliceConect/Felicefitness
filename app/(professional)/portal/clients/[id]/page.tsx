@@ -121,7 +121,7 @@ type TabKey = 'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'pront
 export default function ClientDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { professional, isNutritionist, isTrainer } = useProfessional()
+  const { professional, isNutritionist, isTrainer, isCoach, isPhysiotherapist } = useProfessional()
   const [client, setClient] = useState<ClientDetails | null>(null)
   const [weekStats, setWeekStats] = useState<WeekStats | null>(null)
   const [recentMeals, setRecentMeals] = useState<Meal[]>([])
@@ -232,8 +232,8 @@ export default function ClientDetailPage() {
     { key: 'hydration', label: 'Hidratação', show: true },
     { key: 'sleep', label: 'Sono', show: true },
     { key: 'prontuario', label: 'Prontuário', show: true },
-    { key: 'bioimpedancia', label: 'Bioimpedância', show: true },
-    { key: 'antropometria', label: 'Antropometria', show: true },
+    { key: 'bioimpedancia', label: 'Bioimpedância', show: !isCoach && !isPhysiotherapist },
+    { key: 'antropometria', label: 'Antropometria', show: !isCoach && !isPhysiotherapist },
     { key: 'plano-alimentar', label: 'Plano Alimentar', show: isNutritionist },
     { key: 'formularios', label: 'Formulários', show: true },
   ]
@@ -812,7 +812,7 @@ export default function ClientDetailPage() {
       )}
 
       {activeTab === 'prontuario' && (
-        <TabProntuario patientId={params.id as string} />
+        <TabProntuario patientId={params.id as string} professionalType={professional?.type} />
       )}
 
       {activeTab === 'bioimpedancia' && (

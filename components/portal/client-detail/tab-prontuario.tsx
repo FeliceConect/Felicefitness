@@ -5,6 +5,7 @@ import { Plus, FileText } from 'lucide-react'
 import type { Note } from '@/components/portal/notes/note-card'
 import { ConsultationEditor } from '@/components/portal/notes/consultation-editor'
 import { ConsultationCard } from '@/components/portal/notes/consultation-card'
+import { getConsultationLabel } from '@/components/portal/notes/consultation-sections'
 
 interface ConsultationData {
   anamnese: string
@@ -15,14 +16,17 @@ interface ConsultationData {
 
 interface TabProntuarioProps {
   patientId: string
+  professionalType?: string
 }
 
-export function TabProntuario({ patientId }: TabProntuarioProps) {
+export function TabProntuario({ patientId, professionalType }: TabProntuarioProps) {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [showConsultationEditor, setShowConsultationEditor] = useState(false)
   const [editingConsultation, setEditingConsultation] = useState<{ id?: string; data?: ConsultationData } | null>(null)
   const [saving, setSaving] = useState(false)
+
+  const label = getConsultationLabel(professionalType)
 
   const fetchNotes = async () => {
     try {
@@ -76,7 +80,7 @@ export function TabProntuario({ patientId }: TabProntuarioProps) {
   }
 
   const handleDeleteNote = async (id: string) => {
-    if (!confirm('Remover esta consulta?')) return
+    if (!confirm(`Remover ${label.toLowerCase()}?`)) return
     try {
       await fetch(`/api/portal/notes/${id}`, { method: 'DELETE' })
       setNotes(prev => prev.filter(n => n.id !== id))
@@ -115,7 +119,7 @@ export function TabProntuario({ patientId }: TabProntuarioProps) {
           className="flex items-center gap-2 px-4 py-2 bg-dourado hover:bg-dourado/90 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Nova Consulta
+          Nova {label}
         </button>
       </div>
 
@@ -123,8 +127,12 @@ export function TabProntuario({ patientId }: TabProntuarioProps) {
       {consultations.length === 0 ? (
         <div className="text-center py-8 bg-white border border-border rounded-xl">
           <FileText className="w-10 h-10 text-foreground-muted mx-auto mb-2" />
-          <p className="text-foreground-secondary">Nenhuma consulta registrada</p>
-          <p className="text-foreground-muted text-sm mt-1">Registre consultas com anamnese, exames, diagnóstico e conduta</p>
+          <p className="text-foreground-secondary">Nenhuma {label.toLowerCase()} registrada</p>
+          <p className="text-foreground-muted text-sm mt-1">
+            {professionalType === 'coach'
+              ? 'Registre sessões com anamnese, avaliação comportamental, objetivos e plano de ação'
+              : 'Registre consultas com anamnese, exames, diagnóstico e conduta'}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -134,6 +142,7 @@ export function TabProntuario({ patientId }: TabProntuarioProps) {
               note={note}
               onEdit={() => handleEditConsultation(note)}
               onDelete={() => handleDeleteNote(note.id)}
+              professionalType={professionalType}
             />
           ))}
         </div>
@@ -146,6 +155,7 @@ export function TabProntuario({ patientId }: TabProntuarioProps) {
         onSave={handleSaveConsultation}
         initialData={editingConsultation?.data}
         saving={saving}
+        professionalType={professionalType}
       />
     </div>
   )

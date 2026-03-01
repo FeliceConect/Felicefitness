@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Plus, Filter, User } from 'lucide-react'
-import { NoteCard, type Note } from '@/components/portal/notes/note-card'
-import { NoteEditor } from '@/components/portal/notes/note-editor'
+import { FileText, Plus, User } from 'lucide-react'
+import type { Note } from '@/components/portal/notes/note-card'
+import { ConsultationEditor } from '@/components/portal/notes/consultation-editor'
+import { ConsultationCard } from '@/components/portal/notes/consultation-card'
+import { getConsultationLabel } from '@/components/portal/notes/consultation-sections'
+import { useProfessional } from '@/hooks/use-professional'
 
 interface Client {
   id: string
@@ -11,16 +14,26 @@ interface Client {
   email: string
 }
 
-export default function NotesPage() {
+interface ConsultationData {
+  anamnese: string
+  exames: string
+  diagnostico: string
+  conduta: string
+}
+
+export default function ProntuarioPage() {
+  const { professional } = useProfessional()
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClient, setSelectedClient] = useState<string>('')
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingClients, setLoadingClients] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
-  const [editingNote, setEditingNote] = useState<Note | null>(null)
+  const [editingConsultation, setEditingConsultation] = useState<{ id?: string; data?: ConsultationData } | null>(null)
   const [saving, setSaving] = useState(false)
-  const [filterType, setFilterType] = useState<string>('')
+
+  const professionalType = professional?.type
+  const label = getConsultationLabel(professionalType)
 
   // Fetch assigned clients
   useEffect(() => {
@@ -40,7 +53,7 @@ export default function NotesPage() {
     fetchClients()
   }, [])
 
-  // Fetch notes when client or filter changes
+  // Fetch notes when client changes
   const fetchNotes = useCallback(async () => {
     if (!selectedClient) {
       setNotes([])
@@ -48,9 +61,7 @@ export default function NotesPage() {
     }
     setLoading(true)
     try {
-      const params = new URLSearchParams({ patientId: selectedClient })
-      if (filterType) params.set('noteType', filterType)
-      const res = await fetch(`/api/portal/notes?${params}`)
+      const res = await fetch(`/api/portal/notes?patientId=${selectedClient}`)
       const data = await res.json()
       if (data.success) {
         setNotes(data.notes || [])
@@ -60,74 +71,68 @@ export default function NotesPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedClient, filterType])
+  }, [selectedClient])
 
   useEffect(() => {
     fetchNotes()
   }, [fetchNotes])
 
-  const handleSave = async (data: { note_type: string; content: string }) => {
+  // Filter consultations only
+  const consultations = notes.filter(n => n.note_type === 'consultation')
+
+  const handleSaveConsultation = async (data: ConsultationData) => {
     setSaving(true)
     try {
-      if (editingNote) {
-        const res = await fetch(`/api/portal/notes/${editingNote.id}`, {
+      const content = JSON.stringify(data)
+      if (editingConsultation?.id) {
+        const res = await fetch(`/api/portal/notes/${editingConsultation.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
+          body: JSON.stringify({ note_type: 'consultation', content }),
         })
-        const result = await res.json()
-        if (result.success) {
+        if ((await res.json()).success) {
           setShowEditor(false)
-          setEditingNote(null)
-          fetchNotes()
+          setEditingConsultation(null)
+          await fetchNotes()
         }
       } else {
         const res = await fetch('/api/portal/notes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            patient_id: selectedClient,
-            ...data,
-          }),
+          body: JSON.stringify({ patient_id: selectedClient, note_type: 'consultation', content }),
         })
-        const result = await res.json()
-        if (result.success) {
+        if ((await res.json()).success) {
           setShowEditor(false)
-          fetchNotes()
+          setEditingConsultation(null)
+          await fetchNotes()
         }
       }
     } catch (error) {
-      console.error('Erro ao salvar nota:', error)
+      console.error('Erro ao salvar:', error)
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Remover esta nota?')) return
     try {
-      const res = await fetch(`/api/portal/notes/${id}`, { method: 'DELETE' })
-      const data = await res.json()
-      if (data.success) {
-        fetchNotes()
-      }
+      await fetch(`/api/portal/notes/${id}`, { method: 'DELETE' })
+      setNotes(prev => prev.filter(n => n.id !== id))
     } catch (error) {
-      console.error('Erro ao deletar nota:', error)
+      console.error('Erro ao deletar:', error)
     }
   }
 
-  const handleEdit = (note: Note) => {
-    setEditingNote(note)
-    setShowEditor(true)
+  const handleEditConsultation = (note: Note) => {
+    try {
+      const data = JSON.parse(note.content) as ConsultationData
+      setEditingConsultation({ id: note.id, data })
+      setShowEditor(true)
+    } catch {
+      setEditingConsultation({ id: note.id, data: { anamnese: note.content, exames: '', diagnostico: '', conduta: '' } })
+      setShowEditor(true)
+    }
   }
-
-  const filterTypes = [
-    { value: '', label: 'Todos' },
-    { value: 'observation', label: 'Observacao' },
-    { value: 'evolution', label: 'Evolucao' },
-    { value: 'action_plan', label: 'Plano de Acao' },
-    { value: 'alert', label: 'Alerta' },
-  ]
 
   return (
     <div className="space-y-6">
@@ -136,19 +141,19 @@ export default function NotesPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileText className="w-6 h-6 text-dourado" />
-            Prontuario
+            Prontuário
           </h1>
           <p className="text-foreground-secondary text-sm mt-1">
-            Notas e acompanhamento dos seus pacientes
+            Registros e acompanhamento dos seus pacientes
           </p>
         </div>
         {selectedClient && (
           <button
-            onClick={() => { setEditingNote(null); setShowEditor(true) }}
+            onClick={() => { setEditingConsultation(null); setShowEditor(true) }}
             className="flex items-center gap-2 px-4 py-2.5 bg-dourado text-white rounded-lg text-sm font-medium hover:bg-dourado/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Nova Nota
+            Nova {label}
           </button>
         )}
       </div>
@@ -175,69 +180,51 @@ export default function NotesPage() {
         )}
       </div>
 
-      {/* Filters */}
-      {selectedClient && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <Filter className="w-4 h-4 text-foreground-muted flex-shrink-0" />
-          {filterTypes.map((ft) => (
-            <button
-              key={ft.value}
-              onClick={() => setFilterType(ft.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                filterType === ft.value
-                  ? 'bg-dourado text-white'
-                  : 'bg-background-elevated text-foreground-secondary hover:text-foreground'
-              }`}
-            >
-              {ft.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Notes list */}
+      {/* Content */}
       {!selectedClient ? (
         <div className="text-center py-12">
           <User className="w-12 h-12 text-foreground-muted mx-auto mb-3" />
-          <p className="text-foreground-secondary">Selecione um paciente para ver o prontuario</p>
+          <p className="text-foreground-secondary">Selecione um paciente para ver o prontuário</p>
         </div>
       ) : loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white border border-border rounded-xl p-4 h-32 animate-pulse" />
+            <div key={i} className="bg-white border border-border rounded-xl p-4 h-28 animate-pulse" />
           ))}
         </div>
-      ) : notes.length === 0 ? (
-        <div className="text-center py-12">
+      ) : consultations.length === 0 ? (
+        <div className="text-center py-12 bg-white border border-border rounded-xl">
           <FileText className="w-12 h-12 text-foreground-muted mx-auto mb-3" />
-          <p className="text-foreground-secondary">Nenhuma nota encontrada</p>
+          <p className="text-foreground-secondary">Nenhuma {label.toLowerCase()} registrada</p>
           <button
-            onClick={() => { setEditingNote(null); setShowEditor(true) }}
+            onClick={() => { setEditingConsultation(null); setShowEditor(true) }}
             className="mt-3 text-dourado text-sm font-medium hover:text-dourado/80"
           >
-            Criar primeira nota
+            Registrar primeira {label.toLowerCase()}
           </button>
         </div>
       ) : (
         <div className="space-y-3">
-          {notes.map((note) => (
-            <NoteCard
+          {consultations.map((note) => (
+            <ConsultationCard
               key={note.id}
               note={note}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
+              onEdit={() => handleEditConsultation(note)}
+              onDelete={() => handleDelete(note.id)}
+              professionalType={professionalType}
             />
           ))}
         </div>
       )}
 
-      {/* Editor modal */}
-      <NoteEditor
+      {/* Consultation Editor Modal */}
+      <ConsultationEditor
         isOpen={showEditor}
-        onClose={() => { setShowEditor(false); setEditingNote(null) }}
-        onSave={handleSave}
-        initialData={editingNote ? { note_type: editingNote.note_type, content: editingNote.content } : null}
+        onClose={() => { setShowEditor(false); setEditingConsultation(null) }}
+        onSave={handleSaveConsultation}
+        initialData={editingConsultation?.data}
         saving={saving}
+        professionalType={professionalType}
       />
     </div>
   )

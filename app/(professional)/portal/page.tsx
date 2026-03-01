@@ -6,6 +6,7 @@ import {
   Users,
   Utensils,
   Dumbbell,
+  Stethoscope,
   TrendingUp,
   AlertCircle,
   Clock,
@@ -39,7 +40,7 @@ interface NeedsAttention {
 }
 
 export default function ProfessionalDashboard() {
-  const { isNutritionist, isTrainer } = useProfessional()
+  const { isNutritionist, isTrainer, isPhysiotherapist } = useProfessional()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [needsAttention, setNeedsAttention] = useState<NeedsAttention[]>([])
@@ -94,7 +95,9 @@ export default function ProfessionalDashboard() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-foreground-secondary">
-          {isNutritionist ? 'Acompanhe a alimentação dos seus clientes' : 'Acompanhe os treinos dos seus clientes'}
+          {isNutritionist ? 'Acompanhe a alimentação dos seus pacientes'
+            : isPhysiotherapist ? 'Acompanhe os atendimentos dos seus pacientes'
+            : 'Acompanhe os treinos dos seus clientes'}
         </p>
       </div>
 
@@ -124,7 +127,9 @@ export default function ProfessionalDashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-foreground-secondary text-sm">
-                {isNutritionist ? 'Refeições Hoje' : 'Treinos Hoje'}
+                {isNutritionist ? 'Refeições Hoje'
+                  : isPhysiotherapist ? 'Atendimentos Hoje'
+                  : 'Treinos Hoje'}
               </p>
               <p className="text-2xl font-bold text-foreground mt-1">
                 {isNutritionist ? stats?.mealsToday || 0 : stats?.workoutsToday || 0}
@@ -138,10 +143,14 @@ export default function ProfessionalDashboard() {
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
               isNutritionist
                 ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                : 'bg-gradient-to-br from-orange-500 to-red-600'
+                : isPhysiotherapist
+                  ? 'bg-gradient-to-br from-teal-500 to-cyan-600'
+                  : 'bg-gradient-to-br from-orange-500 to-red-600'
             }`}>
               {isNutritionist ? (
                 <Utensils className="w-6 h-6 text-white" />
+              ) : isPhysiotherapist ? (
+                <Stethoscope className="w-6 h-6 text-white" />
               ) : (
                 <Dumbbell className="w-6 h-6 text-white" />
               )}

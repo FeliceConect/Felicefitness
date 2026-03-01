@@ -107,10 +107,10 @@ export default function CoachPortalPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Brain className="w-6 h-6 text-vinho" />
-          Coach Alta Performance
+          Dashboard
         </h1>
         <p className="text-foreground-secondary text-sm mt-1">
-          Acompanhamento e prontuario dos seus pacientes
+          Acompanhamento e prontuário dos seus pacientes
         </p>
       </div>
 
@@ -288,40 +288,6 @@ export default function CoachPortalPage() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white border border-border rounded-xl p-4">
-        <h2 className="font-semibold text-foreground mb-4">Acoes Rapidas</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Link
-            href="/portal/clients"
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background-elevated hover:bg-border transition-colors"
-          >
-            <Users className="w-6 h-6 text-vinho" />
-            <span className="text-sm text-foreground-secondary text-center">Pacientes</span>
-          </Link>
-          <Link
-            href="/portal/notes"
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background-elevated hover:bg-border transition-colors"
-          >
-            <FileText className="w-6 h-6 text-blue-500" />
-            <span className="text-sm text-foreground-secondary text-center">Prontuario</span>
-          </Link>
-          <Link
-            href="/portal/agenda"
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background-elevated hover:bg-border transition-colors"
-          >
-            <CalendarDays className="w-6 h-6 text-dourado" />
-            <span className="text-sm text-foreground-secondary text-center">Agenda</span>
-          </Link>
-          <Link
-            href="/portal/forms"
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background-elevated hover:bg-border transition-colors"
-          >
-            <Brain className="w-6 h-6 text-emerald-500" />
-            <span className="text-sm text-foreground-secondary text-center">Formularios</span>
-          </Link>
-        </div>
-      </div>
     </div>
   )
 }
