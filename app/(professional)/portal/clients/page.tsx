@@ -42,7 +42,7 @@ interface Client {
 }
 
 export default function ClientsPage() {
-  const { isNutritionist, isTrainer } = useProfessional()
+  const { isNutritionist, isTrainer, isSuperAdmin } = useProfessional()
   const [clients, setClients] = useState<Client[]>([])
   const [filteredClients, setFilteredClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
@@ -250,13 +250,13 @@ export default function ClientsPage() {
                         {client.objetivo}
                       </div>
                     )}
-                    {isNutritionist && (
+                    {(isNutritionist || isSuperAdmin) && (
                       <div className="flex items-center gap-1 text-foreground">
                         <Utensils className="w-4 h-4 text-green-400" />
                         {client.weekStats.meals} refeições
                       </div>
                     )}
-                    {isTrainer && (
+                    {(isTrainer || isSuperAdmin) && (
                       <div className="flex items-center gap-1 text-foreground">
                         <Dumbbell className="w-4 h-4 text-orange-400" />
                         {client.weekStats.workouts} treinos
@@ -270,7 +270,7 @@ export default function ClientsPage() {
 
                   {/* Week Summary */}
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    {isNutritionist && (
+                    {(isNutritionist || isSuperAdmin) && (
                       <>
                         <span className="px-2 py-1 bg-background-elevated rounded text-foreground-secondary">
                           ~{client.weekStats.avgDailyCalories} kcal/dia
@@ -280,7 +280,7 @@ export default function ClientsPage() {
                         </span>
                       </>
                     )}
-                    {isTrainer && (
+                    {(isTrainer || isSuperAdmin) && (
                       <>
                         <span className="px-2 py-1 bg-background-elevated rounded text-foreground-secondary">
                           {client.weekStats.workoutDays} dias treinando

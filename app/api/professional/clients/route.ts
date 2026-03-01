@@ -62,27 +62,70 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
+    // Verificar se é super_admin (tem acesso a todos os pacientes)
+    let isSuperAdmin = false
     if (profError || !professional) {
-      return NextResponse.json(
-        { success: false, error: 'Profissional não encontrado' },
-        { status: 404 }
-      )
+      const { data: profile } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role === 'super_admin') {
+        isSuperAdmin = true
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'Profissional não encontrado' },
+          { status: 404 }
+        )
+      }
     }
 
-    // Buscar clientes atribuídos
-    const { data: assignments } = await supabaseAdmin
-      .from('fitness_client_assignments')
-      .select('client_id, assigned_at, notes, is_active')
-      .eq('professional_id', professional.id)
+    let clientIds: string[] = []
+    let assignments: { client_id: string; assigned_at: string; notes: string | null; is_active: boolean }[] = []
 
-    if (!assignments || assignments.length === 0) {
-      return NextResponse.json({
-        success: true,
-        clients: []
-      })
+    if (isSuperAdmin) {
+      // Super admin vê todos os clientes do sistema
+      const { data: allClients } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id')
+        .eq('role', 'client')
+
+      clientIds = allClients?.map(c => c.id) || []
+
+      if (clientIds.length === 0) {
+        return NextResponse.json({
+          success: true,
+          clients: [],
+          professionalType: 'super_admin'
+        })
+      }
+
+      // Criar assignments virtuais para manter compatibilidade
+      assignments = clientIds.map(id => ({
+        client_id: id,
+        assigned_at: new Date().toISOString(),
+        notes: null,
+        is_active: true
+      }))
+    } else {
+      // Buscar clientes atribuídos ao profissional
+      const { data: assignmentData } = await supabaseAdmin
+        .from('fitness_client_assignments')
+        .select('client_id, assigned_at, notes, is_active')
+        .eq('professional_id', professional!.id)
+
+      if (!assignmentData || assignmentData.length === 0) {
+        return NextResponse.json({
+          success: true,
+          clients: [],
+          professionalType: professional!.type
+        })
+      }
+
+      assignments = assignmentData
+      clientIds = assignmentData.map(a => a.client_id)
     }
-
-    const clientIds = assignments.map(a => a.client_id)
 
     // Buscar perfis dos clientes
     const { data: profiles } = await supabaseAdmin
@@ -186,7 +229,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       clients,
-      professionalType: professional.type
+      professionalType: isSuperAdmin ? 'super_admin' : professional!.type
     })
 
   } catch (error) {
