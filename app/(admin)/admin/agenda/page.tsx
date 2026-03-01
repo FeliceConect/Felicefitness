@@ -86,12 +86,12 @@ export default function AdminAgendaPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Agenda</h1>
-          <p className="text-slate-400 text-sm">Gerencie consultas e agendamentos</p>
+          <h1 className="text-2xl font-bold text-foreground">Agenda</h1>
+          <p className="text-foreground-secondary text-sm">Gerencie consultas e agendamentos</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-dourado text-white rounded-xl hover:bg-dourado/90 transition-colors font-medium text-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-dourado text-foreground rounded-xl hover:bg-dourado/90 transition-colors font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
           Nova Consulta
@@ -113,7 +113,7 @@ export default function AdminAgendaPage() {
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-            showFilters ? 'bg-dourado text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            showFilters ? 'bg-dourado text-foreground' : 'bg-background-elevated text-foreground-muted hover:bg-border'
           }`}
         >
           <Filter className="w-4 h-4" />
@@ -127,7 +127,7 @@ export default function AdminAgendaPage() {
               setFilterDateFrom('')
               setFilterDateTo('')
             }}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm"
+            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-background-elevated text-foreground-muted hover:bg-border text-sm"
           >
             <X className="w-3.5 h-3.5" />
             Limpar
@@ -136,13 +136,13 @@ export default function AdminAgendaPage() {
       </div>
 
       {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-slate-800 rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-white rounded-xl">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Status</label>
+            <label className="block text-xs text-foreground-secondary mb-1">Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
             >
               <option value="">Todos</option>
               <option value="scheduled">Agendada</option>
@@ -154,27 +154,27 @@ export default function AdminAgendaPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Data início</label>
+            <label className="block text-xs text-foreground-secondary mb-1">Data início</label>
             <input
               type="date"
               value={filterDateFrom}
               onChange={(e) => setFilterDateFrom(e.target.value)}
-              className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
             />
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Data fim</label>
+            <label className="block text-xs text-foreground-secondary mb-1">Data fim</label>
             <input
               type="date"
               value={filterDateTo}
               onChange={(e) => setFilterDateTo(e.target.value)}
-              className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
             />
           </div>
           <div className="flex items-end">
             <button
               onClick={fetchAppointments}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-dourado text-white rounded-lg text-sm hover:bg-dourado/90"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-dourado text-foreground rounded-lg text-sm hover:bg-dourado/90"
             >
               <Search className="w-4 h-4" />
               Buscar
@@ -184,28 +184,28 @@ export default function AdminAgendaPage() {
       )}
 
       {/* Table */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-dourado mx-auto"></div>
-            <p className="text-slate-400 text-sm mt-3">Carregando consultas...</p>
+            <p className="text-foreground-secondary text-sm mt-3">Carregando consultas...</p>
           </div>
         ) : appointments.length === 0 ? (
           <div className="p-8 text-center">
-            <Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-400">Nenhuma consulta encontrada</p>
+            <Calendar className="w-10 h-10 text-foreground-muted mx-auto mb-3" />
+            <p className="text-foreground-secondary">Nenhuma consulta encontrada</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-700">
-                  <th className="text-left text-xs text-slate-400 font-medium px-4 py-3">Paciente</th>
-                  <th className="text-left text-xs text-slate-400 font-medium px-4 py-3">Profissional</th>
-                  <th className="text-left text-xs text-slate-400 font-medium px-4 py-3">Data/Hora</th>
-                  <th className="text-left text-xs text-slate-400 font-medium px-4 py-3">Tipo</th>
-                  <th className="text-left text-xs text-slate-400 font-medium px-4 py-3">Status</th>
-                  <th className="text-right text-xs text-slate-400 font-medium px-4 py-3">Ações</th>
+                <tr className="border-b border-border">
+                  <th className="text-left text-xs text-foreground-secondary font-medium px-4 py-3">Paciente</th>
+                  <th className="text-left text-xs text-foreground-secondary font-medium px-4 py-3">Profissional</th>
+                  <th className="text-left text-xs text-foreground-secondary font-medium px-4 py-3">Data/Hora</th>
+                  <th className="text-left text-xs text-foreground-secondary font-medium px-4 py-3">Tipo</th>
+                  <th className="text-left text-xs text-foreground-secondary font-medium px-4 py-3">Status</th>
+                  <th className="text-right text-xs text-foreground-secondary font-medium px-4 py-3">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,31 +215,31 @@ export default function AdminAgendaPage() {
                   const startTime = apt.start_time.slice(0, 5)
 
                   return (
-                    <tr key={apt.id} className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${
+                    <tr key={apt.id} className={`border-b border-border/50 hover:bg-background-elevated/30 ${
                       apt.status === 'reschedule_requested' ? 'bg-yellow-500/5' : ''
                     }`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-slate-500" />
+                          <User className="w-4 h-4 text-foreground-muted" />
                           <div>
-                            <p className="text-sm text-white">{apt.patient_name || 'Paciente'}</p>
-                            <p className="text-xs text-slate-500">{apt.patient_email}</p>
+                            <p className="text-sm text-foreground">{apt.patient_name || 'Paciente'}</p>
+                            <p className="text-xs text-foreground-muted">{apt.patient_email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Stethoscope className="w-4 h-4 text-slate-500" />
+                          <Stethoscope className="w-4 h-4 text-foreground-muted" />
                           <div>
-                            <p className="text-sm text-white">{apt.professional_name}</p>
-                            <p className="text-xs text-slate-500">{PROFESSIONAL_TYPE_LABELS[apt.professional_type]}</p>
+                            <p className="text-sm text-foreground">{apt.professional_name}</p>
+                            <p className="text-xs text-foreground-muted">{PROFESSIONAL_TYPE_LABELS[apt.professional_type]}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-slate-500" />
-                          <span className="text-sm text-white">{dateStr} às {startTime}</span>
+                          <Clock className="w-4 h-4 text-foreground-muted" />
+                          <span className="text-sm text-foreground">{dateStr} às {startTime}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -249,7 +249,7 @@ export default function AdminAgendaPage() {
                           ) : (
                             <MapPin className="w-3.5 h-3.5 text-green-400" />
                           )}
-                          <span className="text-sm text-slate-300">
+                          <span className="text-sm text-foreground-muted">
                             {apt.appointment_type === 'online' ? 'Online' : 'Presencial'}
                           </span>
                         </div>
@@ -424,13 +424,13 @@ function CreateAppointmentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+      <div className="relative bg-white border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Calendar className="w-5 h-5 text-dourado" />
             Nova Consulta
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-background-elevated text-foreground-secondary">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -438,16 +438,16 @@ function CreateAppointmentModal({
         <div className="space-y-4">
           {/* Paciente */}
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Paciente *</label>
+            <label className="block text-sm text-foreground-muted mb-1">Paciente *</label>
             <input
               type="text"
               placeholder="Buscar paciente..."
               value={searchPatient}
               onChange={(e) => setSearchPatient(e.target.value)}
-              className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600 mb-1"
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border mb-1"
             />
             {searchPatient && filteredPatients.length > 0 && !patientId && (
-              <div className="bg-slate-700 rounded-lg border border-slate-600 max-h-32 overflow-y-auto">
+              <div className="bg-background-elevated rounded-lg border border-border max-h-32 overflow-y-auto">
                 {filteredPatients.slice(0, 5).map(p => (
                   <button
                     key={p.id}
@@ -455,9 +455,9 @@ function CreateAppointmentModal({
                       setPatientId(p.id)
                       setSearchPatient(p.nome || p.email)
                     }}
-                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors"
+                    className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-border transition-colors"
                   >
-                    {p.nome || 'Sem nome'} <span className="text-slate-400">({p.email})</span>
+                    {p.nome || 'Sem nome'} <span className="text-foreground-secondary">({p.email})</span>
                   </button>
                 ))}
               </div>
@@ -474,11 +474,11 @@ function CreateAppointmentModal({
 
           {/* Profissional */}
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Profissional *</label>
+            <label className="block text-sm text-foreground-muted mb-1">Profissional *</label>
             <select
               value={professionalId}
               onChange={(e) => setProfessionalId(e.target.value)}
-              className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
             >
               <option value="">Selecione...</option>
               {professionals.map(p => (
@@ -491,14 +491,14 @@ function CreateAppointmentModal({
 
           {/* Tipo */}
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Tipo</label>
+            <label className="block text-sm text-foreground-muted mb-1">Tipo</label>
             <div className="flex gap-2">
               <button
                 onClick={() => setAppointmentType('presencial')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   appointmentType === 'presencial'
-                    ? 'bg-dourado text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-dourado text-foreground'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
                 }`}
               >
                 <MapPin className="w-4 h-4" />
@@ -508,8 +508,8 @@ function CreateAppointmentModal({
                 onClick={() => setAppointmentType('online')}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   appointmentType === 'online'
-                    ? 'bg-dourado text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-dourado text-foreground'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
                 }`}
               >
                 <Video className="w-4 h-4" />
@@ -521,30 +521,30 @@ function CreateAppointmentModal({
           {/* Data e horários */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm text-slate-300 mb-1">Data *</label>
+              <label className="block text-sm text-foreground-muted mb-1">Data *</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-300 mb-1">Início *</label>
+              <label className="block text-sm text-foreground-muted mb-1">Início *</label>
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-300 mb-1">Fim *</label>
+              <label className="block text-sm text-foreground-muted mb-1">Fim *</label>
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
               />
             </div>
           </div>
@@ -552,37 +552,37 @@ function CreateAppointmentModal({
           {/* Local ou Link */}
           {appointmentType === 'presencial' ? (
             <div>
-              <label className="block text-sm text-slate-300 mb-1">Local</label>
+              <label className="block text-sm text-foreground-muted mb-1">Local</label>
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Complexo Felice"
-                className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
               />
             </div>
           ) : (
             <div>
-              <label className="block text-sm text-slate-300 mb-1">Link da reunião</label>
+              <label className="block text-sm text-foreground-muted mb-1">Link da reunião</label>
               <input
                 type="url"
                 value={meetingLink}
                 onChange={(e) => setMeetingLink(e.target.value)}
                 placeholder="https://meet.google.com/..."
-                className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600"
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
               />
             </div>
           )}
 
           {/* Notas */}
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Notas (opcional)</label>
+            <label className="block text-sm text-foreground-muted mb-1">Notas (opcional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Observações sobre a consulta..."
-              className="w-full rounded-lg bg-slate-700 text-white text-sm px-3 py-2 border border-slate-600 resize-none"
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border resize-none"
             />
           </div>
 
@@ -595,7 +595,7 @@ function CreateAppointmentModal({
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full py-3 px-4 rounded-xl bg-dourado text-white font-medium text-sm hover:bg-dourado/90 transition-colors disabled:opacity-50"
+            className="w-full py-3 px-4 rounded-xl bg-dourado text-foreground font-medium text-sm hover:bg-dourado/90 transition-colors disabled:opacity-50"
           >
             {submitting ? 'Criando...' : 'Criar Consulta'}
           </button>

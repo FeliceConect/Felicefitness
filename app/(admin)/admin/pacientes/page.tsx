@@ -89,26 +89,26 @@ export default function PacientesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Pacientes</h1>
-        <p className="text-slate-400">Visão completa dos pacientes do programa</p>
+        <h1 className="text-2xl font-bold text-foreground">Pacientes</h1>
+        <p className="text-foreground-secondary">Visão completa dos pacientes do programa</p>
       </div>
 
       {/* Busca */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-white rounded-xl p-4 border border-border">
         <form onSubmit={handleSearch} className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-secondary" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome ou email..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-dourado/50"
+              className="w-full pl-10 pr-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
             />
           </div>
           <button
             type="submit"
-            className="px-6 py-2.5 bg-dourado hover:bg-dourado/90 text-white rounded-lg transition-colors font-medium"
+            className="px-6 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors font-medium"
           >
             Buscar
           </button>
@@ -116,18 +116,18 @@ export default function PacientesPage() {
       </div>
 
       {/* Contagem */}
-      <div className="text-sm text-slate-400">
+      <div className="text-sm text-foreground-secondary">
         {pagination.total} paciente(s) encontrado(s)
       </div>
 
       {/* Lista */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-10 h-10 text-dourado animate-spin" />
           </div>
         ) : patients.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-foreground-secondary">
             <UserCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Nenhum paciente encontrado</p>
           </div>
@@ -136,33 +136,33 @@ export default function PacientesPage() {
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-700/50">
+                <thead className="bg-background-elevated">
                   <tr>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Paciente
                     </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Membro desde
                     </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Objetivo
                     </th>
-                    <th className="text-center px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-center px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Streak
                     </th>
-                    <th className="text-center px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-center px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Nível / XP
                     </th>
-                    <th className="text-right px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-right px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Ação
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700">
+                <tbody className="divide-y divide-border">
                   {patients.map((patient) => (
                     <tr
                       key={patient.id}
-                      className="hover:bg-slate-700/30 cursor-pointer transition-colors"
+                      className="hover:bg-background-elevated cursor-pointer transition-colors"
                       onClick={() => router.push(`/admin/pacientes/${patient.id}`)}
                     >
                       <td className="px-6 py-4">
@@ -182,15 +182,15 @@ export default function PacientesPage() {
                             )}
                           </div>
                           <div>
-                            <p className="text-white font-medium">{patient.nome || 'Sem nome'}</p>
-                            <p className="text-sm text-slate-400">{patient.email}</p>
+                            <p className="text-foreground font-medium">{patient.nome || 'Sem nome'}</p>
+                            <p className="text-sm text-foreground-secondary">{patient.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-400">
+                      <td className="px-6 py-4 text-sm text-foreground-secondary">
                         {formatDate(patient.created_at)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-300">
+                      <td className="px-6 py-4 text-sm text-foreground-muted">
                         {patient.objetivo || '-'}
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -200,7 +200,7 @@ export default function PacientesPage() {
                             {patient.streak_atual}
                           </span>
                         ) : (
-                          <span className="text-slate-500 text-sm">-</span>
+                          <span className="text-foreground-muted text-sm">-</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -209,7 +209,7 @@ export default function PacientesPage() {
                             <Star className="w-4 h-4" />
                             {patient.nivel || 1}
                           </span>
-                          <span className="text-slate-500 text-xs">
+                          <span className="text-foreground-muted text-xs">
                             {patient.xp_total || 0} XP
                           </span>
                         </div>
@@ -232,12 +232,12 @@ export default function PacientesPage() {
             </div>
 
             {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-slate-700">
+            <div className="md:hidden divide-y divide-border">
               {patients.map((patient) => (
                 <button
                   key={patient.id}
                   onClick={() => router.push(`/admin/pacientes/${patient.id}`)}
-                  className="w-full p-4 text-left hover:bg-slate-700/30 transition-colors"
+                  className="w-full p-4 text-left hover:bg-background-elevated transition-colors"
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-12 h-12 rounded-full bg-dourado/20 flex items-center justify-center flex-shrink-0">
@@ -255,14 +255,14 @@ export default function PacientesPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium truncate">{patient.nome || 'Sem nome'}</p>
-                      <p className="text-sm text-slate-400 truncate">{patient.email}</p>
+                      <p className="text-foreground font-medium truncate">{patient.nome || 'Sem nome'}</p>
+                      <p className="text-sm text-foreground-secondary truncate">{patient.email}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-xs">
-                    <span className="text-slate-500">Desde {formatDate(patient.created_at)}</span>
+                    <span className="text-foreground-muted">Desde {formatDate(patient.created_at)}</span>
                     {patient.objetivo && (
-                      <span className="px-2 py-0.5 bg-slate-700 text-slate-300 rounded">
+                      <span className="px-2 py-0.5 bg-background-elevated text-foreground-muted rounded">
                         {patient.objetivo}
                       </span>
                     )}
@@ -285,22 +285,22 @@ export default function PacientesPage() {
 
         {/* Paginação */}
         {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700">
-            <p className="text-sm text-slate-400">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+            <p className="text-sm text-foreground-secondary">
               Página {pagination.page} de {pagination.totalPages}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={pagination.page === 1}
-                className="p-2 rounded-lg bg-slate-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors"
+                className="p-2 rounded-lg bg-background-elevated text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={pagination.page === pagination.totalPages}
-                className="p-2 rounded-lg bg-slate-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors"
+                className="p-2 rounded-lg bg-background-elevated text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>

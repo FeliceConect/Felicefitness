@@ -258,7 +258,7 @@ export default function AssignmentsPage() {
       case 'trainer': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'coach': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
       case 'physiotherapist': return 'bg-teal-500/20 text-teal-400 border-teal-500/30'
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+      default: return 'bg-background-elevated text-foreground-muted border-border'
     }
   }
 
@@ -316,12 +316,12 @@ export default function AssignmentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Atribuições</h1>
-          <p className="text-slate-400">Vincular clientes a profissionais</p>
+          <h1 className="text-2xl font-bold text-foreground">Atribuições</h1>
+          <p className="text-foreground-secondary">Vincular clientes a profissionais</p>
         </div>
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           Nova Atribuição
@@ -329,14 +329,14 @@ export default function AssignmentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-white rounded-xl p-4 border border-border">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <Filter className="w-5 h-5 text-slate-400" />
+          <Filter className="w-5 h-5 text-foreground-secondary" />
 
           <select
             value={professionalFilter}
             onChange={(e) => setProfessionalFilter(e.target.value)}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
           >
             <option value="">Todos os profissionais</option>
             {professionals.map(prof => (
@@ -349,7 +349,7 @@ export default function AssignmentsPage() {
           <select
             value={activeFilter}
             onChange={(e) => setActiveFilter(e.target.value)}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
           >
             <option value="">Todas</option>
             <option value="true">Ativas</option>
@@ -361,16 +361,16 @@ export default function AssignmentsPage() {
       {/* Assignments Grouped by Client */}
       <div className="space-y-3">
         {loading ? (
-          <div className="bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-violet-500"></div>
+          <div className="bg-white rounded-xl border border-border flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-dourado"></div>
           </div>
         ) : groupedByClient.length === 0 ? (
-          <div className="bg-slate-800 rounded-xl border border-slate-700 text-center py-12 text-slate-400">
+          <div className="bg-white rounded-xl border border-border text-center py-12 text-foreground-secondary">
             <Link2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Nenhuma atribuição encontrada</p>
             <button
               onClick={openAddModal}
-              className="mt-4 text-violet-400 hover:text-violet-300"
+              className="mt-4 text-dourado hover:text-dourado"
             >
               Criar primeira atribuição
             </button>
@@ -382,21 +382,21 @@ export default function AssignmentsPage() {
             const inactiveAssignments = group.assignments.filter(a => !a.is_active)
 
             return (
-              <div key={group.client.id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+              <div key={group.client.id} className="bg-white rounded-xl border border-border overflow-hidden">
                 {/* Client Header */}
                 <button
                   onClick={() => toggleClientExpanded(group.client.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors"
+                  className="w-full flex items-center justify-between p-4 hover:bg-background-elevated transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-violet-400 font-medium">
+                    <div className="w-11 h-11 rounded-full bg-dourado/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-dourado font-medium">
                         {(group.client.nome || '?').charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="text-left">
-                      <p className="text-white font-medium">{group.client.nome || 'Sem nome'}</p>
-                      <p className="text-xs text-slate-400">{group.client.email}</p>
+                      <p className="text-foreground font-medium">{group.client.nome || 'Sem nome'}</p>
+                      <p className="text-xs text-foreground-secondary">{group.client.email}</p>
                     </div>
                   </div>
 
@@ -413,34 +413,34 @@ export default function AssignmentsPage() {
                         </span>
                       ))}
                       {inactiveAssignments.length > 0 && (
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-foreground-muted">
                           +{inactiveAssignments.length} inativo{inactiveAssignments.length > 1 ? 's' : ''}
                         </span>
                       )}
                     </div>
 
-                    <span className="text-sm text-slate-500 tabular-nums">
+                    <span className="text-sm text-foreground-muted tabular-nums">
                       {group.assignments.length} prof.
                     </span>
 
                     {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-slate-400" />
+                      <ChevronUp className="w-5 h-5 text-foreground-secondary" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 text-slate-400" />
+                      <ChevronDown className="w-5 h-5 text-foreground-secondary" />
                     )}
                   </div>
                 </button>
 
                 {/* Expanded details */}
                 {isExpanded && (
-                  <div className="border-t border-slate-700 divide-y divide-slate-700/50">
+                  <div className="border-t border-border divide-y divide-border">
                     {group.assignments.map(assignment => {
                       const profName = assignment.professional?.display_name || assignment.professional?.fitness_profiles?.nome || 'Profissional'
                       const profAvatar = assignment.professional?.avatar_url || assignment.professional?.fitness_profiles?.avatar_url
                       const profType = assignment.professional?.type
 
                       return (
-                        <div key={assignment.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-700/20">
+                        <div key={assignment.id} className="flex items-center justify-between px-4 py-3 hover:bg-background-elevated/20">
                           <div className="flex items-center gap-3">
                             <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
                               getTypeBadgeColor(profType).split(' ')[0]
@@ -455,7 +455,7 @@ export default function AssignmentsPage() {
                               )}
                             </div>
                             <div>
-                              <p className="text-white text-sm font-medium">{profName}</p>
+                              <p className="text-foreground text-sm font-medium">{profName}</p>
                               <span className={`inline-flex items-center gap-1 text-xs ${getTypeBadgeColor(profType).split(' ')[1]}`}>
                                 {getTypeEmoji(profType)} {getTypeLabel(profType)}
                               </span>
@@ -463,7 +463,7 @@ export default function AssignmentsPage() {
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <span className="text-xs text-slate-500 hidden sm:inline">
+                            <span className="text-xs text-foreground-muted hidden sm:inline">
                               {formatDate(assignment.assigned_at)}
                             </span>
 
@@ -472,7 +472,7 @@ export default function AssignmentsPage() {
                               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors ${
                                 assignment.is_active
                                   ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                  : 'bg-slate-600 text-slate-400 hover:bg-slate-500'
+                                  : 'bg-border text-foreground-secondary hover:bg-border'
                               }`}
                             >
                               {assignment.is_active ? (
@@ -484,7 +484,7 @@ export default function AssignmentsPage() {
 
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDeleteAssignment(assignment) }}
-                              className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-red-500/20 text-foreground-secondary hover:text-red-400 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -503,12 +503,12 @@ export default function AssignmentsPage() {
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
-              <h3 className="text-lg font-semibold text-white">Nova Atribuição</h3>
+          <div className="bg-white rounded-xl border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-white z-10">
+              <h3 className="text-lg font-semibold text-foreground">Nova Atribuição</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400"
+                className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -517,46 +517,46 @@ export default function AssignmentsPage() {
             <div className="p-4 space-y-4">
               {/* Selecionar Cliente */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Cliente / Paciente</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Cliente / Paciente</label>
                 <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-secondary" />
                   <input
                     type="text"
                     value={searchClient}
                     onChange={(e) => setSearchClient(e.target.value)}
                     placeholder="Buscar por nome ou email..."
-                    className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full pl-10 pr-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   />
                 </div>
-                <div className="max-h-40 overflow-y-auto border border-slate-600 rounded-lg">
+                <div className="max-h-40 overflow-y-auto border border-border rounded-lg">
                   {loadingClients ? (
-                    <div className="p-4 text-center text-slate-400">Carregando...</div>
+                    <div className="p-4 text-center text-foreground-secondary">Carregando...</div>
                   ) : filteredClients.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400">Nenhum usuário encontrado</div>
+                    <div className="p-4 text-center text-foreground-secondary">Nenhum usuário encontrado</div>
                   ) : (
                     filteredClients.map(client => (
                       <button
                         key={client.id}
                         onClick={() => setSelectedClient(client.id)}
-                        className={`w-full flex items-center gap-3 p-3 hover:bg-slate-700 transition-colors ${
-                          selectedClient === client.id ? 'bg-violet-500/10' : ''
+                        className={`w-full flex items-center gap-3 p-3 hover:bg-background-elevated transition-colors ${
+                          selectedClient === client.id ? 'bg-dourado/10' : ''
                         }`}
                       >
-                        <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center text-sm text-violet-400">
+                        <div className="w-8 h-8 rounded-full bg-dourado/20 flex items-center justify-center text-sm text-dourado">
                           {client.nome?.charAt(0).toUpperCase() || client.email?.charAt(0).toUpperCase()}
                         </div>
                         <div className="text-left flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-white text-sm">{client.nome || 'Sem nome'}</p>
+                            <p className="text-foreground text-sm">{client.nome || 'Sem nome'}</p>
                             {client.role === 'super_admin' && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-dourado/20 text-dourado">Admin</span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400">{client.email}</p>
+                          <p className="text-xs text-foreground-secondary">{client.email}</p>
                         </div>
                         {selectedClient === client.id && (
-                          <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
-                            <span className="text-white text-xs">✓</span>
+                          <div className="w-5 h-5 rounded-full bg-dourado flex items-center justify-center">
+                            <span className="text-foreground text-xs">✓</span>
                           </div>
                         )}
                       </button>
@@ -567,15 +567,15 @@ export default function AssignmentsPage() {
 
               {/* Selecionar Profissionais (multi-select) */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">
+                <label className="block text-sm text-foreground-secondary mb-2">
                   Profissionais
                   {selectedProfessionals.length > 0 && (
-                    <span className="ml-2 text-violet-400">({selectedProfessionals.length} selecionado{selectedProfessionals.length > 1 ? 's' : ''})</span>
+                    <span className="ml-2 text-dourado">({selectedProfessionals.length} selecionado{selectedProfessionals.length > 1 ? 's' : ''})</span>
                   )}
                 </label>
                 <div className="space-y-2 max-h-56 overflow-y-auto">
                   {professionals.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 border border-slate-600 rounded-lg">
+                    <div className="p-4 text-center text-foreground-secondary border border-border rounded-lg">
                       Nenhum profissional ativo
                     </div>
                   ) : (
@@ -591,10 +591,10 @@ export default function AssignmentsPage() {
                           disabled={alreadyAssigned}
                           className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                             alreadyAssigned
-                              ? 'border-slate-700 bg-slate-700/30 opacity-50 cursor-not-allowed'
+                              ? 'border-border bg-background-elevated/30 opacity-50 cursor-not-allowed'
                               : isSelected
-                              ? 'border-violet-500 bg-violet-500/10'
-                              : 'border-slate-600 hover:border-slate-500'
+                              ? 'border-dourado bg-dourado/10'
+                              : 'border-border hover:border-dourado/30'
                           }`}
                         >
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${
@@ -610,19 +610,19 @@ export default function AssignmentsPage() {
                             )}
                           </div>
                           <div className="text-left flex-1">
-                            <p className="text-white font-medium">{profName}</p>
+                            <p className="text-foreground font-medium">{profName}</p>
                             <span className={`inline-flex items-center gap-1 text-xs ${getTypeBadgeColor(prof.type).split(' ')[1]}`}>
                               {getTypeEmoji(prof.type)} {getTypeLabel(prof.type)}
                             </span>
                           </div>
                           {alreadyAssigned ? (
-                            <span className="text-xs text-slate-500">Já atribuído</span>
+                            <span className="text-xs text-foreground-muted">Já atribuído</span>
                           ) : isSelected ? (
-                            <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center">
-                              <span className="text-white text-sm">✓</span>
+                            <div className="w-6 h-6 rounded-full bg-dourado flex items-center justify-center">
+                              <span className="text-foreground text-sm">✓</span>
                             </div>
                           ) : (
-                            <div className="w-6 h-6 rounded-full border-2 border-slate-600"></div>
+                            <div className="w-6 h-6 rounded-full border-2 border-border"></div>
                           )}
                         </button>
                       )
@@ -633,28 +633,28 @@ export default function AssignmentsPage() {
 
               {/* Notas */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Notas (opcional)</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Notas (opcional)</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Observações sobre esta atribuição..."
                   rows={2}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
                 />
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-700 flex gap-3 sticky bottom-0 bg-slate-800">
+            <div className="p-4 border-t border-border flex gap-3 sticky bottom-0 bg-white">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-border text-foreground-muted rounded-lg hover:bg-background-elevated transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleCreateAssignment}
                 disabled={saving || !selectedClient || selectedProfessionals.length === 0}
-                className="flex-1 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Salvando...' : `Atribuir ${selectedProfessionals.length > 0 ? `(${selectedProfessionals.length})` : ''}`}
               </button>

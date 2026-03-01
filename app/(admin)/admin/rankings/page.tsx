@@ -323,32 +323,32 @@ export default function AdminRankingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Trophy className="w-6 h-6 text-dourado" />
             Rankings & Gamificacao
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-foreground-secondary text-sm mt-1">
             Gerenciar rankings, pontuacao e bioimpedancia
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={openBioModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/80 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-vinho text-foreground rounded-lg text-sm font-medium hover:bg-vinho/80 transition-colors"
           >
             <Zap className="w-4 h-4" />
             Bioimpedancia
           </button>
           <button
             onClick={fetchTransactions}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-background-elevated text-foreground rounded-lg text-sm font-medium hover:bg-border transition-colors"
           >
             <TrendingUp className="w-4 h-4" />
             Transacoes
           </button>
           <button
             onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2.5 bg-dourado text-white rounded-lg text-sm font-medium hover:bg-dourado/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-dourado text-foreground rounded-lg text-sm font-medium hover:bg-dourado/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Novo Ranking
@@ -360,13 +360,13 @@ export default function AdminRankingsPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl h-48 animate-pulse" />
+            <div key={i} className="bg-white border border-border rounded-xl h-48 animate-pulse" />
           ))}
         </div>
       ) : rankings.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800 rounded-xl border border-slate-700">
-          <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400">Nenhum ranking criado</p>
+        <div className="text-center py-12 bg-white rounded-xl border border-border">
+          <Trophy className="w-12 h-12 text-foreground-muted mx-auto mb-3" />
+          <p className="text-foreground-secondary">Nenhum ranking criado</p>
           <button onClick={openNew} className="mt-3 text-dourado text-sm font-medium hover:text-dourado/80">
             Criar primeiro ranking
           </button>
@@ -376,13 +376,13 @@ export default function AdminRankingsPage() {
           {rankings.map(ranking => (
             <div
               key={ranking.id}
-              className={`bg-slate-800 border rounded-xl p-4 ${
-                ranking.is_active ? 'border-dourado/30' : 'border-slate-700 opacity-60'
+              className={`bg-white border rounded-xl p-4 ${
+                ranking.is_active ? 'border-dourado/30' : 'border-border opacity-60'
               }`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="text-white font-semibold">{ranking.name}</h3>
+                  <h3 className="text-foreground font-semibold">{ranking.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-dourado/20 text-dourado font-medium">
                       {getTypeLabel(ranking.type)}
@@ -397,14 +397,14 @@ export default function AdminRankingsPage() {
                 <div className="flex gap-1">
                   <button
                     onClick={() => openEdit(ranking)}
-                    className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400"
+                    className="p-1.5 rounded-lg hover:bg-background-elevated text-foreground-secondary"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => toggleActive(ranking)}
-                    className={`p-1.5 rounded-lg hover:bg-slate-700 ${
-                      ranking.is_active ? 'text-green-400' : 'text-slate-500'
+                    className={`p-1.5 rounded-lg hover:bg-background-elevated ${
+                      ranking.is_active ? 'text-green-400' : 'text-foreground-muted'
                     }`}
                   >
                     {ranking.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
@@ -413,10 +413,10 @@ export default function AdminRankingsPage() {
               </div>
 
               {ranking.description && (
-                <p className="text-slate-400 text-sm mb-3 line-clamp-2">{ranking.description}</p>
+                <p className="text-foreground-secondary text-sm mb-3 line-clamp-2">{ranking.description}</p>
               )}
 
-              <div className="flex items-center gap-4 text-sm text-slate-500">
+              <div className="flex items-center gap-4 text-sm text-foreground-muted">
                 {ranking.start_date && (
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
@@ -437,34 +437,34 @@ export default function AdminRankingsPage() {
       {/* Create/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-slate-700">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">
                 {editingRanking ? 'Editar Ranking' : 'Novo Ranking'}
               </h3>
-              <button onClick={() => { setShowForm(false); setEditingRanking(null) }} className="p-2 hover:bg-slate-700 rounded-lg">
-                <X className="w-5 h-5 text-slate-400" />
+              <button onClick={() => { setShowForm(false); setEditingRanking(null) }} className="p-2 hover:bg-background-elevated rounded-lg">
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Nome *</label>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Nome *</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   placeholder="Ex: Ranking Geral 2026"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Tipo *</label>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Tipo *</label>
                   <select
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   >
                     {RANKING_TYPES.map(t => (
                       <option key={t.value} value={t.value}>{t.label}</option>
@@ -472,11 +472,11 @@ export default function AdminRankingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Categoria</label>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Categoria</label>
                   <select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   >
                     {CATEGORIES.map(c => (
                       <option key={c.value} value={c.value}>{c.label}</option>
@@ -487,42 +487,42 @@ export default function AdminRankingsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Data Inicio</label>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Data Inicio</label>
                   <input
                     type="date"
                     value={form.start_date}
                     onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Data Fim</label>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Data Fim</label>
                   <input
                     type="date"
                     value={form.end_date}
                     onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Descricao</label>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Descricao</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
                   placeholder="Descricao do ranking..."
                 />
               </div>
 
               {!editingRanking && (
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-slate-300">Participantes</label>
+                  <label className="block text-sm font-medium text-foreground-muted">Participantes</label>
 
                   {/* Selection Mode Tabs */}
-                  <div className="flex gap-1 bg-slate-700/50 rounded-lg p-1">
+                  <div className="flex gap-1 bg-background-elevated rounded-lg p-1">
                     {([
                       { mode: 'all' as SelectionMode, label: 'Todos', icon: Users },
                       { mode: 'filter' as SelectionMode, label: 'Filtros', icon: Filter },
@@ -539,8 +539,8 @@ export default function AdminRankingsPage() {
                         }}
                         className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                           selectionMode === mode
-                            ? 'bg-dourado text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-600'
+                            ? 'bg-dourado text-foreground'
+                            : 'text-foreground-secondary hover:text-foreground hover:bg-border'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
@@ -551,10 +551,10 @@ export default function AdminRankingsPage() {
 
                   {/* All Mode */}
                   {selectionMode === 'all' && (
-                    <div className="bg-slate-700/30 rounded-lg p-3 text-center">
+                    <div className="bg-background-elevated rounded-lg p-3 text-center">
                       <Users className="w-8 h-8 text-dourado mx-auto mb-1" />
-                      <p className="text-sm text-slate-300">Todos os pacientes serao adicionados automaticamente</p>
-                      <p className="text-xs text-slate-500 mt-1">{allClients.length} pacientes cadastrados</p>
+                      <p className="text-sm text-foreground-muted">Todos os pacientes serao adicionados automaticamente</p>
+                      <p className="text-xs text-foreground-muted mt-1">{allClients.length} pacientes cadastrados</p>
                     </div>
                   )}
 
@@ -563,11 +563,11 @@ export default function AdminRankingsPage() {
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-xs text-slate-400 mb-1">Profissional</label>
+                          <label className="block text-xs text-foreground-secondary mb-1">Profissional</label>
                           <select
                             value={filterProfessionalId}
                             onChange={e => setFilterProfessionalId(e.target.value)}
-                            className="w-full px-2 py-1.5 rounded-lg border border-slate-600 bg-slate-700 text-white text-xs"
+                            className="w-full px-2 py-1.5 rounded-lg border border-border bg-background-elevated text-foreground text-xs"
                           >
                             <option value="">Todos</option>
                             {professionals.map(p => (
@@ -576,11 +576,11 @@ export default function AdminRankingsPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs text-slate-400 mb-1">Status</label>
+                          <label className="block text-xs text-foreground-secondary mb-1">Status</label>
                           <select
                             value={filterStatus}
                             onChange={e => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
-                            className="w-full px-2 py-1.5 rounded-lg border border-slate-600 bg-slate-700 text-white text-xs"
+                            className="w-full px-2 py-1.5 rounded-lg border border-border bg-background-elevated text-foreground text-xs"
                           >
                             <option value="all">Todos</option>
                             <option value="active">Ativos (ultimos 7 dias)</option>
@@ -590,13 +590,13 @@ export default function AdminRankingsPage() {
                       </div>
 
                       {/* Filtered client list with checkboxes */}
-                      <div className="bg-slate-700/30 rounded-lg max-h-40 overflow-y-auto">
+                      <div className="bg-background-elevated rounded-lg max-h-40 overflow-y-auto">
                         {loadingClients ? (
-                          <div className="p-3 text-center text-sm text-slate-500">Carregando...</div>
+                          <div className="p-3 text-center text-sm text-foreground-muted">Carregando...</div>
                         ) : allClients.length === 0 ? (
-                          <div className="p-3 text-center text-sm text-slate-500">Nenhum paciente encontrado</div>
+                          <div className="p-3 text-center text-sm text-foreground-muted">Nenhum paciente encontrado</div>
                         ) : (
-                          <div className="divide-y divide-slate-700/50">
+                          <div className="divide-y divide-border">
                             <button
                               type="button"
                               onClick={() => {
@@ -606,13 +606,13 @@ export default function AdminRankingsPage() {
                                   setSelectedClientIds(new Set(allClients.map(c => c.id)))
                                 }
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dourado hover:bg-slate-700/50 font-medium"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dourado hover:bg-background-elevated font-medium"
                             >
                               <CheckSquare className="w-3.5 h-3.5" />
                               {selectedClientIds.size === allClients.length ? 'Desmarcar todos' : 'Selecionar todos filtrados'}
                             </button>
                             {allClients.map(c => (
-                              <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-700/50 cursor-pointer">
+                              <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-background-elevated cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={selectedClientIds.has(c.id)}
@@ -622,16 +622,16 @@ export default function AdminRankingsPage() {
                                     else next.delete(c.id)
                                     setSelectedClientIds(next)
                                   }}
-                                  className="rounded border-slate-600 text-dourado focus:ring-dourado w-3.5 h-3.5"
+                                  className="rounded border-border text-dourado focus:ring-dourado w-3.5 h-3.5"
                                 />
-                                <span className="text-sm text-white truncate">{c.nome || 'Sem nome'}</span>
-                                <span className="text-xs text-slate-500 truncate ml-auto">{c.email}</span>
+                                <span className="text-sm text-foreground truncate">{c.nome || 'Sem nome'}</span>
+                                <span className="text-xs text-foreground-muted truncate ml-auto">{c.email}</span>
                               </label>
                             ))}
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 text-right">
+                      <p className="text-xs text-foreground-muted text-right">
                         {selectedClientIds.size} de {allClients.length} selecionados
                       </p>
                     </div>
@@ -641,21 +641,21 @@ export default function AdminRankingsPage() {
                   {selectionMode === 'manual' && (
                     <div className="space-y-2">
                       <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground-muted" />
                         <input
                           type="text"
                           value={clientSearch}
                           onChange={e => setClientSearch(e.target.value)}
                           placeholder="Buscar paciente por nome ou email..."
-                          className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm"
+                          className="w-full pl-8 pr-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm"
                         />
                       </div>
 
-                      <div className="bg-slate-700/30 rounded-lg max-h-48 overflow-y-auto">
+                      <div className="bg-background-elevated rounded-lg max-h-48 overflow-y-auto">
                         {loadingClients ? (
-                          <div className="p-3 text-center text-sm text-slate-500">Carregando...</div>
+                          <div className="p-3 text-center text-sm text-foreground-muted">Carregando...</div>
                         ) : (
-                          <div className="divide-y divide-slate-700/50">
+                          <div className="divide-y divide-border">
                             {allClients
                               .filter(c =>
                                 !clientSearch ||
@@ -663,7 +663,7 @@ export default function AdminRankingsPage() {
                                 c.email?.toLowerCase().includes(clientSearch.toLowerCase())
                               )
                               .map(c => (
-                                <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-700/50 cursor-pointer">
+                                <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-background-elevated cursor-pointer">
                                   <input
                                     type="checkbox"
                                     checked={selectedClientIds.has(c.id)}
@@ -673,10 +673,10 @@ export default function AdminRankingsPage() {
                                       else next.delete(c.id)
                                       setSelectedClientIds(next)
                                     }}
-                                    className="rounded border-slate-600 text-dourado focus:ring-dourado w-3.5 h-3.5"
+                                    className="rounded border-border text-dourado focus:ring-dourado w-3.5 h-3.5"
                                   />
-                                  <span className="text-sm text-white truncate">{c.nome || 'Sem nome'}</span>
-                                  <span className="text-xs text-slate-500 truncate ml-auto">{c.email}</span>
+                                  <span className="text-sm text-foreground truncate">{c.nome || 'Sem nome'}</span>
+                                  <span className="text-xs text-foreground-muted truncate ml-auto">{c.email}</span>
                                 </label>
                               ))
                             }
@@ -685,14 +685,14 @@ export default function AdminRankingsPage() {
                               c.nome?.toLowerCase().includes(clientSearch.toLowerCase()) ||
                               c.email?.toLowerCase().includes(clientSearch.toLowerCase())
                             ).length === 0 && (
-                              <div className="p-3 text-center text-sm text-slate-500">
+                              <div className="p-3 text-center text-sm text-foreground-muted">
                                 {clientSearch ? 'Nenhum resultado para a busca' : 'Nenhum paciente cadastrado'}
                               </div>
                             )}
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 text-right">
+                      <p className="text-xs text-foreground-muted text-right">
                         {selectedClientIds.size} paciente{selectedClientIds.size !== 1 ? 's' : ''} selecionado{selectedClientIds.size !== 1 ? 's' : ''}
                       </p>
                     </div>
@@ -703,14 +703,14 @@ export default function AdminRankingsPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => { setShowForm(false); setEditingRanking(null) }}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-600 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-muted text-sm font-medium hover:bg-background-elevated transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={!form.name || saving}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-foreground text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
                 >
                   {saving ? 'Salvando...' : 'Salvar'}
                 </button>
@@ -723,23 +723,23 @@ export default function AdminRankingsPage() {
       {/* Bioimpedance Points Modal */}
       {showBioModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-slate-700">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <div className="bg-white rounded-2xl w-full max-w-md border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Zap className="w-5 h-5 text-dourado" />
                 Pontos Bioimpedancia
               </h3>
-              <button onClick={() => setShowBioModal(false)} className="p-2 hover:bg-slate-700 rounded-lg">
-                <X className="w-5 h-5 text-slate-400" />
+              <button onClick={() => setShowBioModal(false)} className="p-2 hover:bg-background-elevated rounded-lg">
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Paciente *</label>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Paciente *</label>
                 <select
                   value={selectedClient}
                   onChange={e => setSelectedClient(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 >
                   <option value="">Selecione</option>
                   {clients.map(c => (
@@ -749,7 +749,7 @@ export default function AdminRankingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-foreground-muted mb-1">
                   Pontos: {bioPoints}
                 </label>
                 <input
@@ -761,19 +761,19 @@ export default function AdminRankingsPage() {
                   onChange={e => setBioPoints(parseInt(e.target.value))}
                   className="w-full accent-dourado"
                 />
-                <div className="flex justify-between text-xs text-slate-500">
+                <div className="flex justify-between text-xs text-foreground-muted">
                   <span>20</span>
                   <span>50</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Justificativa *</label>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Justificativa *</label>
                 <textarea
                   value={bioReason}
                   onChange={e => setBioReason(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
                   placeholder="Ex: Reducao de 2% gordura corporal"
                 />
               </div>
@@ -781,14 +781,14 @@ export default function AdminRankingsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowBioModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-600 text-slate-300 text-sm"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-muted text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={awardBioPoints}
                   disabled={!selectedClient || !bioReason || awardingBio}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-foreground text-sm font-medium disabled:opacity-50"
                 >
                   {awardingBio ? 'Atribuindo...' : `Atribuir ${bioPoints} pts`}
                 </button>
@@ -801,22 +801,22 @@ export default function AdminRankingsPage() {
       {/* Transactions Modal */}
       {showTransactions && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] border border-slate-700 flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Transacoes de Pontos</h3>
-              <button onClick={() => setShowTransactions(false)} className="p-2 hover:bg-slate-700 rounded-lg">
-                <X className="w-5 h-5 text-slate-400" />
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] border border-border flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">Transacoes de Pontos</h3>
+              <button onClick={() => setShowTransactions(false)} className="p-2 hover:bg-background-elevated rounded-lg">
+                <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
-            <div className="p-4 border-b border-slate-700">
+            <div className="p-4 border-b border-border">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
                 <input
                   type="text"
                   value={txSearch}
                   onChange={e => setTxSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && fetchTransactions()}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-600 bg-slate-700 text-white text-sm"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm"
                   placeholder="Buscar por nome..."
                 />
               </div>
@@ -825,19 +825,19 @@ export default function AdminRankingsPage() {
               {loadingTransactions ? (
                 <div className="space-y-2">
                   {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className="h-14 bg-slate-700 rounded-lg animate-pulse" />
+                    <div key={i} className="h-14 bg-background-elevated rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : transactions.length === 0 ? (
-                <p className="text-center text-slate-500 py-8">Nenhuma transacao encontrada</p>
+                <p className="text-center text-foreground-muted py-8">Nenhuma transacao encontrada</p>
               ) : (
                 <div className="space-y-2">
                   {transactions.map(tx => (
-                    <div key={tx.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                    <div key={tx.id} className="flex items-center justify-between p-3 bg-background-elevated rounded-lg">
                       <div>
-                        <p className="text-sm text-white">{tx.user_name || tx.user_id.substring(0, 8)}</p>
-                        <p className="text-xs text-slate-400">{tx.reason}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm text-foreground">{tx.user_name || tx.user_id.substring(0, 8)}</p>
+                        <p className="text-xs text-foreground-secondary">{tx.reason}</p>
+                        <p className="text-xs text-foreground-muted">
                           {new Date(tx.created_at).toLocaleDateString('pt-BR', {
                             day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                           })}
@@ -845,7 +845,7 @@ export default function AdminRankingsPage() {
                       </div>
                       <div className="text-right">
                         <span className="text-dourado font-bold">+{tx.points}</span>
-                        <span className="block text-xs text-slate-500">{tx.source}</span>
+                        <span className="block text-xs text-foreground-muted">{tx.source}</span>
                       </div>
                     </div>
                   ))}

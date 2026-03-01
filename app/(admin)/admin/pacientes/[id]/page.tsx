@@ -216,7 +216,7 @@ function profTypeBadge(type: string) {
     case 'physiotherapist':
       return { label: 'Fisioterapeuta', cls: 'bg-teal-500/20 text-teal-400 border-teal-500/30' }
     default:
-      return { label: type, cls: 'bg-slate-500/20 text-slate-400 border-slate-500/30' }
+      return { label: type, cls: 'bg-background-elevated text-foreground-muted border-border' }
   }
 }
 
@@ -227,13 +227,13 @@ function statusBadge(status: string) {
     case 'confirmed':
       return { label: 'Confirmada', cls: 'bg-green-500/20 text-green-400' }
     case 'completed':
-      return { label: 'Realizada', cls: 'bg-slate-500/20 text-slate-400' }
+      return { label: 'Realizada', cls: 'bg-background-elevated text-foreground-muted' }
     case 'cancelled':
       return { label: 'Cancelada', cls: 'bg-red-500/20 text-red-400' }
     case 'reschedule_requested':
       return { label: 'Reagendamento', cls: 'bg-yellow-500/20 text-yellow-400' }
     default:
-      return { label: status, cls: 'bg-slate-500/20 text-slate-400' }
+      return { label: status, cls: 'bg-background-elevated text-foreground-muted' }
   }
 }
 
@@ -249,7 +249,7 @@ function formStatusBadge(status: string) {
     case 'expired':
       return { label: 'Expirado', cls: 'bg-red-500/20 text-red-400' }
     default:
-      return { label: status, cls: 'bg-slate-500/20 text-slate-400' }
+      return { label: status, cls: 'bg-background-elevated text-foreground-muted' }
   }
 }
 
@@ -264,7 +264,7 @@ function noteTypeBadge(noteType: string) {
     case 'alert':
       return { label: 'Alerta', cls: 'bg-red-500/20 text-red-400' }
     default:
-      return { label: noteType, cls: 'bg-slate-500/20 text-slate-400' }
+      return { label: noteType, cls: 'bg-background-elevated text-foreground-muted' }
   }
 }
 
@@ -279,19 +279,19 @@ function Section({ title, icon: Icon, children, defaultOpen = true }: {
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+    <div className="bg-white rounded-xl border border-border overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-700/30 transition-colors"
+        className="w-full flex items-center justify-between px-6 py-4 hover:bg-background-elevated transition-colors"
       >
         <div className="flex items-center gap-3">
           <Icon className="w-5 h-5 text-dourado" />
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         </div>
         {open ? (
-          <ChevronUp className="w-5 h-5 text-slate-400" />
+          <ChevronUp className="w-5 h-5 text-foreground-secondary" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-slate-400" />
+          <ChevronDown className="w-5 h-5 text-foreground-secondary" />
         )}
       </button>
       {open && <div className="px-6 pb-6">{children}</div>}
@@ -308,13 +308,13 @@ function StatCard({ label, value, sub, icon: Icon }: {
   icon?: React.ElementType
 }) {
   return (
-    <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
+    <div className="bg-background-elevated rounded-lg p-4 border border-border/50">
       <div className="flex items-center gap-2 mb-1">
         {Icon && <Icon className="w-4 h-4 text-dourado" />}
-        <span className="text-xs text-slate-400 uppercase tracking-wide">{label}</span>
+        <span className="text-xs text-foreground-secondary uppercase tracking-wide">{label}</span>
       </div>
-      <p className="text-xl font-bold text-white">{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      <p className="text-xl font-bold text-foreground">{value}</p>
+      {sub && <p className="text-xs text-foreground-secondary mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -392,13 +392,13 @@ export default function PatientDetailPage() {
       <div>
         <button
           onClick={() => router.push('/admin/pacientes')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+          className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar para pacientes
         </button>
 
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+        <div className="bg-white rounded-xl border border-border p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Avatar */}
             <div className="w-16 h-16 rounded-full bg-dourado/20 flex items-center justify-center flex-shrink-0">
@@ -418,9 +418,9 @@ export default function PatientDetailPage() {
 
             {/* Info */}
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-white">{patient.nome || 'Sem nome'}</h1>
-              <p className="text-slate-400">{patient.email}</p>
-              <p className="text-xs text-slate-500 mt-1">
+              <h1 className="text-2xl font-bold text-foreground">{patient.nome || 'Sem nome'}</h1>
+              <p className="text-foreground-secondary">{patient.email}</p>
+              <p className="text-xs text-foreground-muted mt-1">
                 Membro desde {formatDate(patient.created_at)}
                 {patient.data_nascimento && ` · Nasc. ${formatDate(patient.data_nascimento)}`}
                 {patient.altura_cm && ` · ${patient.altura_cm}cm`}
@@ -441,7 +441,7 @@ export default function PatientDetailPage() {
                 </span>
               )}
               {patient.objetivo && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 text-slate-300 rounded-full text-sm border border-slate-600">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background-elevated text-foreground-muted rounded-full text-sm border border-border">
                   <Target className="w-4 h-4" />
                   {patient.objetivo}
                 </span>
@@ -515,13 +515,13 @@ export default function PatientDetailPage() {
       {/* Equipe Profissional */}
       <Section title="Equipe Profissional" icon={Users}>
         {team.length === 0 ? (
-          <p className="text-slate-400 text-sm">Nenhum profissional atribuído</p>
+          <p className="text-foreground-secondary text-sm">Nenhum profissional atribuído</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {team.map((prof, i) => {
               const badge = profTypeBadge(prof.type)
               return (
-                <div key={i} className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
+                <div key={i} className="bg-background-elevated rounded-lg p-4 border border-border/50">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       prof.type === 'nutritionist' ? 'bg-green-500/20' :
@@ -539,19 +539,19 @@ export default function PatientDetailPage() {
                       </span>
                     </div>
                     <div>
-                      <p className="text-white font-medium text-sm">{prof.display_name || prof.name}</p>
+                      <p className="text-foreground font-medium text-sm">{prof.display_name || prof.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${badge.cls}`}>
                           {badge.label}
                         </span>
                         {prof.specialty && (
-                          <span className="text-xs text-slate-400">{prof.specialty}</span>
+                          <span className="text-xs text-foreground-secondary">{prof.specialty}</span>
                         )}
                       </div>
                     </div>
                   </div>
                   {prof.assigned_at && (
-                    <p className="text-xs text-slate-500 mt-2">Vinculado em {formatDate(prof.assigned_at)}</p>
+                    <p className="text-xs text-foreground-muted mt-2">Vinculado em {formatDate(prof.assigned_at)}</p>
                   )}
                 </div>
               )
@@ -563,20 +563,20 @@ export default function PatientDetailPage() {
       {/* Histórico de Consultas */}
       <Section title="Histórico de Consultas" icon={Calendar}>
         {appointments.length === 0 ? (
-          <p className="text-slate-400 text-sm">Nenhuma consulta registrada</p>
+          <p className="text-foreground-secondary text-sm">Nenhuma consulta registrada</p>
         ) : (
           <div className="space-y-3">
             {appointments.map((apt) => {
               const badge = statusBadge(apt.status)
               return (
-                <div key={apt.id} className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
+                <div key={apt.id} className="bg-background-elevated rounded-lg p-4 border border-border/50">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-medium text-sm">
+                        <span className="text-foreground font-medium text-sm">
                           {formatDate(apt.date)}
                         </span>
-                        <span className="text-slate-400 text-sm">
+                        <span className="text-foreground-secondary text-sm">
                           {apt.start_time?.slice(0, 5)}{apt.end_time ? ` - ${apt.end_time.slice(0, 5)}` : ''}
                         </span>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>
@@ -586,23 +586,23 @@ export default function PatientDetailPage() {
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {apt.professional && (
                           <>
-                            <span className="text-sm text-slate-300">{apt.professional.name}</span>
+                            <span className="text-sm text-foreground-muted">{apt.professional.name}</span>
                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs border ${profTypeBadge(apt.professional.type).cls}`}>
                               {profTypeBadge(apt.professional.type).label}
                             </span>
                           </>
                         )}
                         {apt.type && (
-                          <span className="text-xs text-slate-500">({apt.type})</span>
+                          <span className="text-xs text-foreground-muted">({apt.type})</span>
                         )}
                       </div>
                     </div>
                     {apt.location && (
-                      <span className="text-xs text-slate-500">{apt.location}</span>
+                      <span className="text-xs text-foreground-muted">{apt.location}</span>
                     )}
                   </div>
                   {apt.notes && (
-                    <p className="text-xs text-slate-400 mt-2 border-t border-slate-600/50 pt-2">{apt.notes}</p>
+                    <p className="text-xs text-foreground-secondary mt-2 border-t border-border/50 pt-2">{apt.notes}</p>
                   )}
                   {apt.reschedule_reason && (
                     <p className="text-xs text-yellow-400/80 mt-1">Motivo reagendamento: {apt.reschedule_reason}</p>
@@ -642,7 +642,7 @@ export default function PatientDetailPage() {
         {mealPlan && (
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-4">
             <p className="text-green-400 text-sm font-medium">Plano alimentar ativo: {mealPlan.name}</p>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-foreground-secondary mt-0.5">
               {mealPlan.goal && `Objetivo: ${mealPlan.goal}`}
               {mealPlan.starts_at && ` · Início: ${formatDate(mealPlan.starts_at)}`}
               {mealPlan.ends_at && ` · Fim: ${formatDate(mealPlan.ends_at)}`}
@@ -654,31 +654,31 @@ export default function PatientDetailPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-600/50">
-                  <th className="text-left py-2 text-xs text-slate-400 font-medium">Data</th>
-                  <th className="text-left py-2 text-xs text-slate-400 font-medium">Tipo</th>
-                  <th className="text-right py-2 text-xs text-slate-400 font-medium">Cal</th>
-                  <th className="text-right py-2 text-xs text-slate-400 font-medium">Prot</th>
-                  <th className="text-right py-2 text-xs text-slate-400 font-medium">Carb</th>
-                  <th className="text-right py-2 text-xs text-slate-400 font-medium">Gord</th>
+                <tr className="border-b border-border/50">
+                  <th className="text-left py-2 text-xs text-foreground-secondary font-medium">Data</th>
+                  <th className="text-left py-2 text-xs text-foreground-secondary font-medium">Tipo</th>
+                  <th className="text-right py-2 text-xs text-foreground-secondary font-medium">Cal</th>
+                  <th className="text-right py-2 text-xs text-foreground-secondary font-medium">Prot</th>
+                  <th className="text-right py-2 text-xs text-foreground-secondary font-medium">Carb</th>
+                  <th className="text-right py-2 text-xs text-foreground-secondary font-medium">Gord</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-border">
                 {recentMeals.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-700/30">
-                    <td className="py-2 text-slate-300">{formatDate(m.data)}</td>
-                    <td className="py-2 text-slate-300 capitalize">{m.tipo || '-'}</td>
-                    <td className="py-2 text-right text-slate-300">{m.calorias || '-'}</td>
-                    <td className="py-2 text-right text-slate-300">{m.proteinas ? `${m.proteinas}g` : '-'}</td>
-                    <td className="py-2 text-right text-slate-300">{m.carboidratos ? `${m.carboidratos}g` : '-'}</td>
-                    <td className="py-2 text-right text-slate-300">{m.gorduras ? `${m.gorduras}g` : '-'}</td>
+                  <tr key={m.id} className="hover:bg-background-elevated">
+                    <td className="py-2 text-foreground-muted">{formatDate(m.data)}</td>
+                    <td className="py-2 text-foreground-muted capitalize">{m.tipo || '-'}</td>
+                    <td className="py-2 text-right text-foreground-muted">{m.calorias || '-'}</td>
+                    <td className="py-2 text-right text-foreground-muted">{m.proteinas ? `${m.proteinas}g` : '-'}</td>
+                    <td className="py-2 text-right text-foreground-muted">{m.carboidratos ? `${m.carboidratos}g` : '-'}</td>
+                    <td className="py-2 text-right text-foreground-muted">{m.gorduras ? `${m.gorduras}g` : '-'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="text-slate-400 text-sm">Nenhuma refeição nos últimos 30 dias</p>
+          <p className="text-foreground-secondary text-sm">Nenhuma refeição nos últimos 30 dias</p>
         )}
       </Section>
 
@@ -694,7 +694,7 @@ export default function PatientDetailPage() {
         {trainingProgram && (
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
             <p className="text-blue-400 text-sm font-medium">Programa ativo: {trainingProgram.name}</p>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-foreground-secondary mt-0.5">
               {trainingProgram.goal && `Objetivo: ${trainingProgram.goal}`}
               {trainingProgram.difficulty && ` · ${trainingProgram.difficulty}`}
               {trainingProgram.starts_at && ` · Início: ${formatDate(trainingProgram.starts_at)}`}
@@ -707,29 +707,29 @@ export default function PatientDetailPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-600/50">
-                  <th className="text-left py-2 text-xs text-slate-400 font-medium">Data</th>
-                  <th className="text-left py-2 text-xs text-slate-400 font-medium">Nome</th>
-                  <th className="text-left py-2 text-xs text-slate-400 font-medium">Tipo</th>
-                  <th className="text-right py-2 text-xs text-slate-400 font-medium">Duração</th>
-                  <th className="text-right py-2 text-xs text-slate-400 font-medium">Cal</th>
+                <tr className="border-b border-border/50">
+                  <th className="text-left py-2 text-xs text-foreground-secondary font-medium">Data</th>
+                  <th className="text-left py-2 text-xs text-foreground-secondary font-medium">Nome</th>
+                  <th className="text-left py-2 text-xs text-foreground-secondary font-medium">Tipo</th>
+                  <th className="text-right py-2 text-xs text-foreground-secondary font-medium">Duração</th>
+                  <th className="text-right py-2 text-xs text-foreground-secondary font-medium">Cal</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-border">
                 {recentWorkouts.map((w) => (
-                  <tr key={w.id} className="hover:bg-slate-700/30">
-                    <td className="py-2 text-slate-300">{formatDate(w.data)}</td>
-                    <td className="py-2 text-slate-300">{w.nome || '-'}</td>
-                    <td className="py-2 text-slate-300 capitalize">{w.tipo || '-'}</td>
-                    <td className="py-2 text-right text-slate-300">{w.duracao ? `${w.duracao}min` : '-'}</td>
-                    <td className="py-2 text-right text-slate-300">{w.calorias || '-'}</td>
+                  <tr key={w.id} className="hover:bg-background-elevated">
+                    <td className="py-2 text-foreground-muted">{formatDate(w.data)}</td>
+                    <td className="py-2 text-foreground-muted">{w.nome || '-'}</td>
+                    <td className="py-2 text-foreground-muted capitalize">{w.tipo || '-'}</td>
+                    <td className="py-2 text-right text-foreground-muted">{w.duracao ? `${w.duracao}min` : '-'}</td>
+                    <td className="py-2 text-right text-foreground-muted">{w.calorias || '-'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="text-slate-400 text-sm">Nenhum treino nos últimos 30 dias</p>
+          <p className="text-foreground-secondary text-sm">Nenhum treino nos últimos 30 dias</p>
         )}
       </Section>
 
@@ -763,20 +763,20 @@ export default function PatientDetailPage() {
             <div className="overflow-x-auto mb-4">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-600/50">
-                    <th className="text-left py-2 text-xs text-slate-400 font-medium">Data</th>
-                    <th className="text-right py-2 text-xs text-slate-400 font-medium">Peso</th>
-                    <th className="text-right py-2 text-xs text-slate-400 font-medium">% Gord.</th>
-                    <th className="text-right py-2 text-xs text-slate-400 font-medium">M. Muscular</th>
+                  <tr className="border-b border-border/50">
+                    <th className="text-left py-2 text-xs text-foreground-secondary font-medium">Data</th>
+                    <th className="text-right py-2 text-xs text-foreground-secondary font-medium">Peso</th>
+                    <th className="text-right py-2 text-xs text-foreground-secondary font-medium">% Gord.</th>
+                    <th className="text-right py-2 text-xs text-foreground-secondary font-medium">M. Muscular</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/50">
+                <tbody className="divide-y divide-border">
                   {bodyComposition.map((b, i) => (
-                    <tr key={i} className="hover:bg-slate-700/30">
-                      <td className="py-2 text-slate-300">{formatDate(b.data)}</td>
-                      <td className="py-2 text-right text-slate-300">{b.peso ? `${b.peso}kg` : '-'}</td>
-                      <td className="py-2 text-right text-slate-300">{b.gordura_percentual ? `${b.gordura_percentual}%` : '-'}</td>
-                      <td className="py-2 text-right text-slate-300">{b.massa_muscular ? `${b.massa_muscular}kg` : '-'}</td>
+                    <tr key={i} className="hover:bg-background-elevated">
+                      <td className="py-2 text-foreground-muted">{formatDate(b.data)}</td>
+                      <td className="py-2 text-right text-foreground-muted">{b.peso ? `${b.peso}kg` : '-'}</td>
+                      <td className="py-2 text-right text-foreground-muted">{b.gordura_percentual ? `${b.gordura_percentual}%` : '-'}</td>
+                      <td className="py-2 text-right text-foreground-muted">{b.massa_muscular ? `${b.massa_muscular}kg` : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -788,38 +788,38 @@ export default function PatientDetailPage() {
                 <p className="text-dourado text-sm font-medium mb-1">Última Bioimpedância</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   {!!lastBioimpedance.data && (
-                    <span className="text-slate-400">Data: <span className="text-slate-300">{formatDate(String(lastBioimpedance.data))}</span></span>
+                    <span className="text-foreground-secondary">Data: <span className="text-foreground-muted">{formatDate(String(lastBioimpedance.data))}</span></span>
                   )}
                   {!!lastBioimpedance.peso && (
-                    <span className="text-slate-400">Peso: <span className="text-slate-300">{String(lastBioimpedance.peso)}kg</span></span>
+                    <span className="text-foreground-secondary">Peso: <span className="text-foreground-muted">{String(lastBioimpedance.peso)}kg</span></span>
                   )}
                   {!!lastBioimpedance.agua_corporal && (
-                    <span className="text-slate-400">Água corp.: <span className="text-slate-300">{String(lastBioimpedance.agua_corporal)}%</span></span>
+                    <span className="text-foreground-secondary">Água corp.: <span className="text-foreground-muted">{String(lastBioimpedance.agua_corporal)}%</span></span>
                   )}
                   {!!lastBioimpedance.massa_ossea && (
-                    <span className="text-slate-400">Massa óssea: <span className="text-slate-300">{String(lastBioimpedance.massa_ossea)}kg</span></span>
+                    <span className="text-foreground-secondary">Massa óssea: <span className="text-foreground-muted">{String(lastBioimpedance.massa_ossea)}kg</span></span>
                   )}
                   {!!lastBioimpedance.metabolismo_basal && (
-                    <span className="text-slate-400">TMB: <span className="text-slate-300">{String(lastBioimpedance.metabolismo_basal)}kcal</span></span>
+                    <span className="text-foreground-secondary">TMB: <span className="text-foreground-muted">{String(lastBioimpedance.metabolismo_basal)}kcal</span></span>
                   )}
                 </div>
               </div>
             )}
           </>
         ) : (
-          <p className="text-slate-400 text-sm mb-4">Nenhuma medição corporal registrada</p>
+          <p className="text-foreground-secondary text-sm mb-4">Nenhuma medição corporal registrada</p>
         )}
 
         {/* Fotos de progresso */}
         {progressPhotos.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-foreground-muted mb-2 flex items-center gap-2">
               <Camera className="w-4 h-4 text-dourado" />
               Fotos de Progresso
             </h3>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {progressPhotos.map((photo) => (
-                <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden bg-slate-700">
+                <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden bg-background-elevated">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.foto_url}
@@ -827,7 +827,7 @@ export default function PatientDetailPage() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-0 inset-x-0 bg-black/60 px-1 py-0.5">
-                    <p className="text-[10px] text-white text-center">{formatDate(photo.data)}</p>
+                    <p className="text-[10px] text-foreground text-center">{formatDate(photo.data)}</p>
                   </div>
                 </div>
               ))}
@@ -841,7 +841,7 @@ export default function PatientDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Água */}
           <div>
-            <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-foreground-muted mb-3 flex items-center gap-2">
               <Droplets className="w-4 h-4 text-blue-400" />
               Hidratação
             </h3>
@@ -858,7 +858,7 @@ export default function PatientDetailPage() {
 
           {/* Sono */}
           <div>
-            <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-foreground-muted mb-3 flex items-center gap-2">
               <Moon className="w-4 h-4 text-indigo-400" />
               Sono
             </h3>
@@ -883,18 +883,18 @@ export default function PatientDetailPage() {
             {forms.map((f) => {
               const badge = formStatusBadge(f.status)
               return (
-                <div key={f.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div key={f.id} className="bg-background-elevated rounded-lg p-3 border border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <p className="text-white text-sm font-medium">{f.templateName}</p>
+                    <p className="text-foreground text-sm font-medium">{f.templateName}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {f.professional && (
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs border ${profTypeBadge(f.professional.type).cls}`}>
                           {f.professional.name}
                         </span>
                       )}
-                      <span className="text-xs text-slate-500">Enviado: {formatDate(f.sent_at)}</span>
+                      <span className="text-xs text-foreground-muted">Enviado: {formatDate(f.sent_at)}</span>
                       {f.completed_at && (
-                        <span className="text-xs text-slate-500">Preenchido: {formatDate(f.completed_at)}</span>
+                        <span className="text-xs text-foreground-muted">Preenchido: {formatDate(f.completed_at)}</span>
                       )}
                     </div>
                   </div>
@@ -906,7 +906,7 @@ export default function PatientDetailPage() {
             })}
           </div>
         ) : (
-          <p className="text-slate-400 text-sm">Nenhum formulário</p>
+          <p className="text-foreground-secondary text-sm">Nenhum formulário</p>
         )}
       </Section>
 
@@ -925,7 +925,7 @@ export default function PatientDetailPage() {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${typeInfo.cls}`}>
                         {typeInfo.label}
                       </span>
-                      <span className="text-slate-500 text-xs font-normal">({groupNotes.length} {groupNotes.length === 1 ? 'nota' : 'notas'})</span>
+                      <span className="text-foreground-muted text-xs font-normal">({groupNotes.length} {groupNotes.length === 1 ? 'nota' : 'notas'})</span>
                     </h3>
                     <div className="space-y-2">
                       {groupNotes.map((n) => {
@@ -933,21 +933,21 @@ export default function PatientDetailPage() {
                         const isExpanded = expandedNotes.has(n.id)
                         const isLong = n.content.length > 200
                         return (
-                          <div key={n.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600/50">
+                          <div key={n.id} className="bg-background-elevated rounded-lg p-3 border border-border/50">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>
                                   {badge.label}
                                 </span>
                                 {n.professional && (
-                                  <span className="text-xs text-slate-400">
+                                  <span className="text-xs text-foreground-secondary">
                                     {n.professional.name}
                                   </span>
                                 )}
                               </div>
-                              <span className="text-xs text-slate-500 whitespace-nowrap">{formatDateTime(n.created_at)}</span>
+                              <span className="text-xs text-foreground-muted whitespace-nowrap">{formatDateTime(n.created_at)}</span>
                             </div>
-                            <p className="text-sm text-slate-300 mt-2 whitespace-pre-wrap">
+                            <p className="text-sm text-foreground-muted mt-2 whitespace-pre-wrap">
                               {isLong && !isExpanded ? n.content.slice(0, 200) + '...' : n.content}
                             </p>
                             {isLong && (
@@ -973,7 +973,7 @@ export default function PatientDetailPage() {
                 const isExpanded = expandedNotes.has(n.id)
                 const isLong = n.content.length > 200
                 return (
-                  <div key={n.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600/50">
+                  <div key={n.id} className="bg-background-elevated rounded-lg p-3 border border-border/50">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>
@@ -985,9 +985,9 @@ export default function PatientDetailPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-slate-500 whitespace-nowrap">{formatDateTime(n.created_at)}</span>
+                      <span className="text-xs text-foreground-muted whitespace-nowrap">{formatDateTime(n.created_at)}</span>
                     </div>
-                    <p className="text-sm text-slate-300 mt-2 whitespace-pre-wrap">
+                    <p className="text-sm text-foreground-muted mt-2 whitespace-pre-wrap">
                       {isLong && !isExpanded ? n.content.slice(0, 200) + '...' : n.content}
                     </p>
                     {isLong && (
@@ -1004,7 +1004,7 @@ export default function PatientDetailPage() {
             </div>
           )
         ) : (
-          <p className="text-slate-400 text-sm">Nenhuma nota registrada</p>
+          <p className="text-foreground-secondary text-sm">Nenhuma nota registrada</p>
         )}
       </Section>
 
@@ -1030,13 +1030,13 @@ export default function PatientDetailPage() {
 
         {pointTransactions.length > 0 ? (
           <div>
-            <h3 className="text-sm font-medium text-slate-300 mb-2">Últimas transações</h3>
+            <h3 className="text-sm font-medium text-foreground-muted mb-2">Últimas transações</h3>
             <div className="space-y-1">
               {pointTransactions.map((pt) => (
-                <div key={pt.id} className="flex items-center justify-between py-2 border-b border-slate-700/50">
+                <div key={pt.id} className="flex items-center justify-between py-2 border-b border-border/50">
                   <div>
-                    <p className="text-sm text-slate-300">{pt.reason}</p>
-                    <p className="text-xs text-slate-500">{pt.category} · {formatDateTime(pt.created_at)}</p>
+                    <p className="text-sm text-foreground-muted">{pt.reason}</p>
+                    <p className="text-xs text-foreground-muted">{pt.category} · {formatDateTime(pt.created_at)}</p>
                   </div>
                   <span className={`text-sm font-medium ${pt.points > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {pt.points > 0 ? '+' : ''}{pt.points}
@@ -1046,7 +1046,7 @@ export default function PatientDetailPage() {
             </div>
           </div>
         ) : (
-          <p className="text-slate-400 text-sm">Nenhuma transação de pontos</p>
+          <p className="text-foreground-secondary text-sm">Nenhuma transação de pontos</p>
         )}
       </Section>
     </div>

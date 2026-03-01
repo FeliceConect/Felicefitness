@@ -377,12 +377,12 @@ export default function ProfessionalsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Profissionais</h1>
-          <p className="text-slate-400">Gerenciar nutricionistas, personal trainers e coaches</p>
+          <h1 className="text-2xl font-bold text-foreground">Profissionais</h1>
+          <p className="text-foreground-secondary">Gerenciar nutricionistas, personal trainers e coaches</p>
         </div>
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           Adicionar Profissional
@@ -390,13 +390,13 @@ export default function ProfessionalsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-white rounded-xl p-4 border border-border">
         <div className="flex items-center gap-4">
-          <Filter className="w-5 h-5 text-slate-400" />
+          <Filter className="w-5 h-5 text-foreground-secondary" />
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
           >
             <option value="">Todos os tipos</option>
             <option value="trainer">Personal Trainers</option>
@@ -408,26 +408,26 @@ export default function ProfessionalsPage() {
       </div>
 
       {/* Professionals List */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700">
+      <div className="bg-white rounded-xl border border-border">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-violet-500"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-dourado"></div>
           </div>
         ) : professionals.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-foreground-secondary">
             <UserCog className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Nenhum profissional cadastrado</p>
             <button
               onClick={openAddModal}
-              className="mt-4 text-violet-400 hover:text-violet-300"
+              className="mt-4 text-dourado hover:text-dourado"
             >
               Adicionar primeiro profissional
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-slate-700">
+          <div className="divide-y divide-border">
             {professionals.map((professional) => (
-              <div key={professional.id} className="p-4 hover:bg-slate-700/30">
+              <div key={professional.id} className="p-4 hover:bg-background-elevated">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   {/* Info */}
                   <div className="flex items-center gap-4">
@@ -447,7 +447,7 @@ export default function ProfessionalsPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-medium">
+                        <p className="text-foreground font-medium">
                           {professional.display_name || professional.fitness_profiles?.nome || 'Sem nome'}
                         </p>
                         {!professional.is_active && (
@@ -456,7 +456,7 @@ export default function ProfessionalsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-foreground-secondary">
                         {professional.fitness_profiles?.email}
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -465,12 +465,12 @@ export default function ProfessionalsPage() {
                           {getTypeLabel(professional.type)}
                         </span>
                         {professional.registration && (
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-foreground-muted">
                             {getRegistrationLabel(professional.type)}: {professional.registration}
                           </span>
                         )}
                         {professional.specialty && (
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-foreground-muted">
                             {professional.specialty}
                           </span>
                         )}
@@ -480,7 +480,7 @@ export default function ProfessionalsPage() {
 
                   {/* Stats & Actions */}
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-slate-400">
+                    <div className="flex items-center gap-2 text-foreground-secondary">
                       <Users className="w-4 h-4" />
                       <span className="text-sm">
                         {professional.clientCount} / {professional.max_clients} clientes
@@ -493,20 +493,20 @@ export default function ProfessionalsPage() {
                         className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                           professional.is_active
                             ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                            : 'bg-slate-600 text-slate-400 hover:bg-slate-500'
+                            : 'bg-border text-foreground-secondary hover:bg-border'
                         }`}
                       >
                         {professional.is_active ? 'Ativo' : 'Inativo'}
                       </button>
                       <button
                         onClick={() => openEditModal(professional)}
-                        className="p-2 rounded-lg hover:bg-slate-600 text-slate-400 hover:text-white transition-colors"
+                        className="p-2 rounded-lg hover:bg-border text-foreground-secondary hover:text-foreground transition-colors"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteProfessional(professional)}
-                        className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                        className="p-2 rounded-lg hover:bg-red-500/20 text-foreground-secondary hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -522,12 +522,12 @@ export default function ProfessionalsPage() {
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700 sticky top-0 bg-slate-800">
-              <h3 className="text-lg font-semibold text-white">Adicionar Profissional</h3>
+          <div className="bg-white rounded-xl border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-white">
+              <h3 className="text-lg font-semibold text-foreground">Adicionar Profissional</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400"
+                className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -536,7 +536,7 @@ export default function ProfessionalsPage() {
             <div className="p-4 space-y-4">
               {/* Tipo */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Tipo de Profissional</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Tipo de Profissional</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {([
                     { value: 'trainer' as const, label: 'Personal Trainer', emoji: '💪', borderColor: 'border-blue-500', bgColor: 'bg-blue-500/10', textColor: 'text-blue-400' },
@@ -550,11 +550,11 @@ export default function ProfessionalsPage() {
                       className={`p-3 rounded-lg border transition-colors ${
                         formData.type === opt.value
                           ? `${opt.borderColor} ${opt.bgColor}`
-                          : 'border-slate-600 hover:border-slate-500'
+                          : 'border-border hover:border-dourado/30'
                       }`}
                     >
                       <span className="text-2xl">{opt.emoji}</span>
-                      <p className={`mt-1 font-medium text-sm ${formData.type === opt.value ? opt.textColor : 'text-white'}`}>
+                      <p className={`mt-1 font-medium text-sm ${formData.type === opt.value ? opt.textColor : 'text-foreground'}`}>
                         {opt.label}
                       </p>
                     </button>
@@ -564,22 +564,22 @@ export default function ProfessionalsPage() {
 
               {/* Selecionar Usuário */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Selecionar Usuário</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Selecionar Usuário</label>
                 <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-secondary" />
                   <input
                     type="text"
                     value={searchUser}
                     onChange={(e) => setSearchUser(e.target.value)}
                     placeholder="Buscar usuário..."
-                    className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full pl-10 pr-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   />
                 </div>
-                <div className="max-h-40 overflow-y-auto border border-slate-600 rounded-lg">
+                <div className="max-h-40 overflow-y-auto border border-border rounded-lg">
                   {loadingUsers ? (
-                    <div className="p-4 text-center text-slate-400">Carregando...</div>
+                    <div className="p-4 text-center text-foreground-secondary">Carregando...</div>
                   ) : filteredUsers.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400">Nenhum usuário disponível</div>
+                    <div className="p-4 text-center text-foreground-secondary">Nenhum usuário disponível</div>
                   ) : (
                     filteredUsers.map(user => (
                       <button
@@ -595,16 +595,16 @@ export default function ProfessionalsPage() {
                                   user.role === 'physiotherapist' ? 'physiotherapist' : prev.type
                           }))
                         }}
-                        className={`w-full flex items-center gap-3 p-3 hover:bg-slate-700 transition-colors ${
-                          formData.userId === user.id ? 'bg-violet-500/10' : ''
+                        className={`w-full flex items-center gap-3 p-3 hover:bg-background-elevated transition-colors ${
+                          formData.userId === user.id ? 'bg-dourado/10' : ''
                         }`}
                       >
-                        <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-sm text-white">
+                        <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center text-sm text-foreground">
                           {user.nome?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
                         </div>
                         <div className="text-left flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-white text-sm">{user.nome || 'Sem nome'}</p>
+                            <p className="text-foreground text-sm">{user.nome || 'Sem nome'}</p>
                             {user.role === 'nutritionist' && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">Nutricionista</span>
                             )}
@@ -618,11 +618,11 @@ export default function ProfessionalsPage() {
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400">Fisio</span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400">{user.email}</p>
+                          <p className="text-xs text-foreground-secondary">{user.email}</p>
                         </div>
                         {formData.userId === user.id && (
-                          <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
-                            <span className="text-white text-xs">✓</span>
+                          <div className="w-5 h-5 rounded-full bg-dourado flex items-center justify-center">
+                            <span className="text-foreground text-xs">✓</span>
                           </div>
                         )}
                       </button>
@@ -633,27 +633,27 @@ export default function ProfessionalsPage() {
 
               {/* Nome de Exibição */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">
-                  Nome de Exibição <span className="text-violet-400">*</span>
+                <label className="block text-sm text-foreground-secondary mb-2">
+                  Nome de Exibição <span className="text-dourado">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.displayName}
                   onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
                   placeholder="Nome que aparece para os clientes"
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
-                <p className="text-xs text-slate-500 mt-1">Este é o nome que os clientes verão</p>
+                <p className="text-xs text-foreground-muted mt-1">Este é o nome que os clientes verão</p>
               </div>
 
               {/* Foto do Profissional */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">
+                <label className="block text-sm text-foreground-secondary mb-2">
                   Foto do Profissional (opcional)
                 </label>
                 <div className="flex items-center gap-4">
                   <div
-                    className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-slate-600 bg-slate-700 flex items-center justify-center cursor-pointer hover:border-violet-500 transition-colors group"
+                    className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-border bg-background-elevated flex items-center justify-center cursor-pointer hover:border-dourado transition-colors group"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {formData.avatarUrl ? (
@@ -665,13 +665,13 @@ export default function ProfessionalsPage() {
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Camera className="w-6 h-6 text-white" />
+                          <Camera className="w-6 h-6 text-foreground" />
                         </div>
                       </>
                     ) : (
-                      <div className="flex flex-col items-center text-slate-400 group-hover:text-violet-400 transition-colors">
+                      <div className="flex flex-col items-center text-foreground-secondary group-hover:text-dourado transition-colors">
                         {uploading ? (
-                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-violet-500"></div>
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-dourado"></div>
                         ) : (
                           <>
                             <Upload className="w-6 h-6" />
@@ -686,7 +686,7 @@ export default function ProfessionalsPage() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-300 hover:bg-slate-600 hover:text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                      className="px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground-muted hover:bg-border hover:text-foreground transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
                       <Upload className="w-4 h-4" />
                       {uploading ? 'Enviando...' : 'Escolher foto'}
@@ -713,7 +713,7 @@ export default function ProfessionalsPage() {
 
               {/* Registro */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">
+                <label className="block text-sm text-foreground-secondary mb-2">
                   {getRegistrationLabel(formData.type)} (opcional)
                 </label>
                 <input
@@ -721,47 +721,47 @@ export default function ProfessionalsPage() {
                   value={formData.registration}
                   onChange={(e) => setFormData(prev => ({ ...prev, registration: e.target.value }))}
                   placeholder={formData.type === 'nutritionist' ? 'Ex: CRN-1 12345' : formData.type === 'coach' ? 'Ex: CRP 06/12345' : formData.type === 'physiotherapist' ? 'Ex: CREFITO-4 123456-F' : 'Ex: CREF 012345-G/SP'}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
 
               {/* Especialidade */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Especialidade (opcional)</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Especialidade (opcional)</label>
                 <input
                   type="text"
                   value={formData.specialty}
                   onChange={(e) => setFormData(prev => ({ ...prev, specialty: e.target.value }))}
                   placeholder={formData.type === 'nutritionist' ? 'Ex: Nutrição Esportiva' : formData.type === 'coach' ? 'Ex: Alta Performance, Psicologia Esportiva' : formData.type === 'physiotherapist' ? 'Ex: Ortopédica, Esportiva' : 'Ex: Musculação e Funcional'}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
 
               {/* Max Clientes */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Máximo de Clientes</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Máximo de Clientes</label>
                 <input
                   type="number"
                   value={formData.maxClients}
                   onChange={(e) => setFormData(prev => ({ ...prev, maxClients: parseInt(e.target.value) || 30 }))}
                   min={1}
                   max={100}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-700 flex gap-3">
+            <div className="p-4 border-t border-border flex gap-3">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-border text-foreground-muted rounded-lg hover:bg-background-elevated transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAddProfessional}
                 disabled={saving || !formData.userId}
-                className="flex-1 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Salvando...' : 'Adicionar'}
               </button>
@@ -773,15 +773,15 @@ export default function ProfessionalsPage() {
       {/* Edit Modal */}
       {showEditModal && selectedProfessional && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Editar Profissional</h3>
+          <div className="bg-white rounded-xl border border-border w-full max-w-lg">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">Editar Profissional</h3>
               <button
                 onClick={() => {
                   setShowEditModal(false)
                   setSelectedProfessional(null)
                 }}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400"
+                className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -789,7 +789,7 @@ export default function ProfessionalsPage() {
 
             <div className="p-4 space-y-4">
               {/* Info do profissional */}
-              <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-background-elevated rounded-lg">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getTypeBgColor(selectedProfessional.type)}`}>
                   {formData.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -805,29 +805,29 @@ export default function ProfessionalsPage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-white font-medium">{formData.displayName || selectedProfessional.fitness_profiles?.nome}</p>
-                  <p className="text-sm text-slate-400">{getTypeLabel(selectedProfessional.type)}</p>
+                  <p className="text-foreground font-medium">{formData.displayName || selectedProfessional.fitness_profiles?.nome}</p>
+                  <p className="text-sm text-foreground-secondary">{getTypeLabel(selectedProfessional.type)}</p>
                 </div>
               </div>
 
               {/* Nome de Exibição */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Nome de Exibição</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Nome de Exibição</label>
                 <input
                   type="text"
                   value={formData.displayName}
                   onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
                   placeholder="Nome que aparece para os clientes"
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
 
               {/* Foto do Profissional */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Foto do Profissional</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Foto do Profissional</label>
                 <div className="flex items-center gap-4">
                   <div
-                    className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-slate-600 bg-slate-700 flex items-center justify-center cursor-pointer hover:border-violet-500 transition-colors group"
+                    className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-border bg-background-elevated flex items-center justify-center cursor-pointer hover:border-dourado transition-colors group"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {formData.avatarUrl ? (
@@ -839,13 +839,13 @@ export default function ProfessionalsPage() {
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Camera className="w-6 h-6 text-white" />
+                          <Camera className="w-6 h-6 text-foreground" />
                         </div>
                       </>
                     ) : (
-                      <div className="flex flex-col items-center text-slate-400 group-hover:text-violet-400 transition-colors">
+                      <div className="flex flex-col items-center text-foreground-secondary group-hover:text-dourado transition-colors">
                         {uploading ? (
-                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-violet-500"></div>
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-dourado"></div>
                         ) : (
                           <>
                             <Upload className="w-6 h-6" />
@@ -860,7 +860,7 @@ export default function ProfessionalsPage() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-300 hover:bg-slate-600 hover:text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                      className="px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground-muted hover:bg-border hover:text-foreground transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
                       <Upload className="w-4 h-4" />
                       {uploading ? 'Enviando...' : 'Escolher foto'}
@@ -887,67 +887,67 @@ export default function ProfessionalsPage() {
 
               {/* Registro */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">
+                <label className="block text-sm text-foreground-secondary mb-2">
                   {getRegistrationLabel(selectedProfessional.type)}
                 </label>
                 <input
                   type="text"
                   value={formData.registration}
                   onChange={(e) => setFormData(prev => ({ ...prev, registration: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
 
               {/* Especialidade */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Especialidade</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Especialidade</label>
                 <input
                   type="text"
                   value={formData.specialty}
                   onChange={(e) => setFormData(prev => ({ ...prev, specialty: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
 
               {/* Bio */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Biografia</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Biografia</label>
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                   rows={3}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
                 />
               </div>
 
               {/* Max Clientes */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2">Máximo de Clientes</label>
+                <label className="block text-sm text-foreground-secondary mb-2">Máximo de Clientes</label>
                 <input
                   type="number"
                   value={formData.maxClients}
                   onChange={(e) => setFormData(prev => ({ ...prev, maxClients: parseInt(e.target.value) || 30 }))}
                   min={1}
                   max={100}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-700 flex gap-3">
+            <div className="p-4 border-t border-border flex gap-3">
               <button
                 onClick={() => {
                   setShowEditModal(false)
                   setSelectedProfessional(null)
                 }}
-                className="flex-1 px-4 py-2.5 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-border text-foreground-muted rounded-lg hover:bg-background-elevated transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleUpdateProfessional}
                 disabled={saving}
-                className="flex-1 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors disabled:opacity-50"
               >
                 {saving ? 'Salvando...' : 'Salvar'}
               </button>

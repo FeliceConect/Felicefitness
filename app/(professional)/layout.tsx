@@ -21,7 +21,10 @@ import {
   FileText,
   CalendarDays,
   Library,
-  Stethoscope
+  Stethoscope,
+  UserCog,
+  Link2,
+  Trophy
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -96,6 +99,15 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
     { href: '/portal/settings', icon: Settings, label: 'Configurações', show: true },
   ].filter(item => item.show)
+
+  // Itens admin — só visíveis para super_admin
+  const adminMenuItems = isSuperAdmin ? [
+    { href: '/admin', icon: LayoutDashboard, label: 'Painel Admin' },
+    { href: '/admin/users', icon: Users, label: 'Usuários' },
+    { href: '/admin/professionals', icon: UserCog, label: 'Profissionais' },
+    { href: '/admin/assignments', icon: Link2, label: 'Atribuições' },
+    { href: '/admin/rankings', icon: Trophy, label: 'Rankings' },
+  ] : []
 
   const professionalTypeLabel = isNutritionist
     ? 'Nutricionista'
@@ -185,6 +197,31 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
               {sidebarOpen && <span>{item.label}</span>}
             </Link>
           ))}
+
+          {/* Admin section — só para super_admin */}
+          {adminMenuItems.length > 0 && (
+            <>
+              <div className="my-3 border-t border-vinho/20" />
+              {sidebarOpen && (
+                <p className="px-3 text-xs font-semibold text-nude/60 uppercase tracking-wider mb-1">Admin</p>
+              )}
+              {adminMenuItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg
+                    text-fendi hover:text-seda hover:bg-vinho/30
+                    transition-colors
+                  `}
+                >
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
 
         {/* User Info */}

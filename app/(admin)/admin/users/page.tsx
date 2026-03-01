@@ -258,7 +258,7 @@ export default function UsersPage() {
       case 'physiotherapist':
         return 'bg-teal-500/20 text-teal-400 border-teal-500/30'
       default:
-        return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+        return 'bg-background-elevated text-foreground-muted border-border'
     }
   }
 
@@ -275,16 +275,16 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Usuários</h1>
-          <p className="text-slate-400">Gerenciar usuários do sistema</p>
+          <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
+          <p className="text-foreground-secondary">Gerenciar usuários do sistema</p>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-foreground-secondary">
             {pagination.total} usuário(s) cadastrado(s)
           </span>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Novo Usuário</span>
@@ -293,30 +293,30 @@ export default function UsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-white rounded-xl p-4 border border-border">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-secondary" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome ou email..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
             />
           </div>
 
           {/* Role Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-secondary" />
             <select
               value={roleFilter}
               onChange={(e) => {
                 setRoleFilter(e.target.value)
                 setPagination(prev => ({ ...prev, page: 1 }))
               }}
-              className="pl-10 pr-8 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500 appearance-none cursor-pointer"
+              className="pl-10 pr-8 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50 appearance-none cursor-pointer"
             >
               <option value="">Todos os papéis</option>
               <option value="client">Clientes</option>
@@ -330,7 +330,7 @@ export default function UsersPage() {
 
           <button
             type="submit"
-            className="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+            className="px-6 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors"
           >
             Buscar
           </button>
@@ -338,13 +338,13 @@ export default function UsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-violet-500"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-dourado"></div>
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-foreground-secondary">
             <UserCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Nenhum usuário encontrado</p>
           </div>
@@ -353,32 +353,32 @@ export default function UsersPage() {
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-700/50">
+                <thead className="bg-background-elevated">
                   <tr>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Usuário
                     </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Papel
                     </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Profissionais
                     </th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Cadastro
                     </th>
-                    <th className="text-right px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="text-right px-6 py-3 text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700">
+                <tbody className="divide-y divide-border">
                   {users.map((user) => (
-                    <tr key={user.id} className={`hover:bg-slate-700/30 ${user.is_active === false ? 'opacity-60' : ''}`}>
+                    <tr key={user.id} className={`hover:bg-background-elevated ${user.is_active === false ? 'opacity-60' : ''}`}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            user.is_active === false ? 'bg-red-500/20' : 'bg-violet-500/20'
+                            user.is_active === false ? 'bg-red-500/20' : 'bg-dourado/20'
                           }`}>
                             {user.avatar_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -390,21 +390,21 @@ export default function UsersPage() {
                             ) : user.is_active === false ? (
                               <UserX className="w-5 h-5 text-red-400" />
                             ) : (
-                              <span className="text-violet-400 font-medium">
+                              <span className="text-dourado font-medium">
                                 {user.nome?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
                               </span>
                             )}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="text-white font-medium">{user.nome || 'Sem nome'}</p>
+                              <p className="text-foreground font-medium">{user.nome || 'Sem nome'}</p>
                               {user.is_active === false && (
                                 <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-xs rounded">
                                   Inativo
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-slate-400">{user.email}</p>
+                            <p className="text-sm text-foreground-secondary">{user.email}</p>
                           </div>
                         </div>
                       </td>
@@ -436,10 +436,10 @@ export default function UsersPage() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-slate-500 text-sm">-</span>
+                          <span className="text-foreground-muted text-sm">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-400">
+                      <td className="px-6 py-4 text-sm text-foreground-secondary">
                         {formatDate(user.created_at)}
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -448,7 +448,7 @@ export default function UsersPage() {
                             setSelectedUser(user)
                             setShowRoleModal(true)
                           }}
-                          className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                          className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary hover:text-foreground transition-colors"
                         >
                           <MoreVertical className="w-5 h-5" />
                         </button>
@@ -460,19 +460,19 @@ export default function UsersPage() {
             </div>
 
             {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-slate-700">
+            <div className="md:hidden divide-y divide-border">
               {users.map((user) => (
                 <div key={user.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center">
-                        <span className="text-violet-400 font-medium text-lg">
+                      <div className="w-12 h-12 rounded-full bg-dourado/20 flex items-center justify-center">
+                        <span className="text-dourado font-medium text-lg">
                           {user.nome?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>
-                        <p className="text-white font-medium">{user.nome || 'Sem nome'}</p>
-                        <p className="text-sm text-slate-400">{user.email}</p>
+                        <p className="text-foreground font-medium">{user.nome || 'Sem nome'}</p>
+                        <p className="text-sm text-foreground-secondary">{user.email}</p>
                       </div>
                     </div>
                     <button
@@ -480,7 +480,7 @@ export default function UsersPage() {
                         setSelectedUser(user)
                         setShowRoleModal(true)
                       }}
-                      className="p-2 rounded-lg hover:bg-slate-700 text-slate-400"
+                      className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
                     >
                       <MoreVertical className="w-5 h-5" />
                     </button>
@@ -504,7 +504,7 @@ export default function UsersPage() {
                       </span>
                     ))}
                   </div>
-                  <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+                  <div className="mt-2 flex items-center gap-4 text-xs text-foreground-muted">
                     <span>Cadastro: {formatDate(user.created_at)}</span>
                   </div>
                 </div>
@@ -515,22 +515,22 @@ export default function UsersPage() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700">
-            <p className="text-sm text-slate-400">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+            <p className="text-sm text-foreground-secondary">
               Página {pagination.page} de {pagination.totalPages}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={pagination.page === 1}
-                className="p-2 rounded-lg bg-slate-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors"
+                className="p-2 rounded-lg bg-background-elevated text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={pagination.page === pagination.totalPages}
-                className="p-2 rounded-lg bg-slate-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors"
+                className="p-2 rounded-lg bg-background-elevated text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -542,33 +542,33 @@ export default function UsersPage() {
       {/* Role Change Modal */}
       {showRoleModal && selectedUser && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Gerenciar Usuário</h3>
+          <div className="bg-white rounded-xl border border-border w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">Gerenciar Usuário</h3>
               <button
                 onClick={() => {
                   setShowRoleModal(false)
                   setSelectedUser(null)
                 }}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400"
+                className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-4">
-              <div className="flex items-center gap-3 mb-4 p-3 bg-slate-700/50 rounded-lg">
+              <div className="flex items-center gap-3 mb-4 p-3 bg-background-elevated rounded-lg">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  selectedUser.is_active === false ? 'bg-red-500/20' : 'bg-violet-500/20'
+                  selectedUser.is_active === false ? 'bg-red-500/20' : 'bg-dourado/20'
                 }`}>
                   <span className={`font-medium ${
-                    selectedUser.is_active === false ? 'text-red-400' : 'text-violet-400'
+                    selectedUser.is_active === false ? 'text-red-400' : 'text-dourado'
                   }`}>
                     {selectedUser.nome?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-medium">{selectedUser.nome || 'Sem nome'}</p>
-                  <p className="text-sm text-slate-400">{selectedUser.email}</p>
+                  <p className="text-foreground font-medium">{selectedUser.nome || 'Sem nome'}</p>
+                  <p className="text-sm text-foreground-secondary">{selectedUser.email}</p>
                 </div>
                 {selectedUser.is_active === false && (
                   <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">
@@ -577,7 +577,7 @@ export default function UsersPage() {
                 )}
               </div>
 
-              <p className="text-sm text-slate-400 mb-3">Alterar papel:</p>
+              <p className="text-sm text-foreground-secondary mb-3">Alterar papel:</p>
 
               <div className="space-y-2 mb-6">
                 {[
@@ -595,29 +595,29 @@ export default function UsersPage() {
                     disabled={updatingRole || selectedUser.role === role.value}
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                       selectedUser.role === role.value
-                        ? 'border-violet-500 bg-violet-500/10'
-                        : 'border-slate-600 hover:border-slate-500 hover:bg-slate-700/50'
+                        ? 'border-dourado bg-dourado/10'
+                        : 'border-border hover:border-dourado/30 hover:bg-background-elevated'
                     } ${updatingRole ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <role.icon className={`w-5 h-5 ${
-                      selectedUser.role === role.value ? 'text-violet-400' : 'text-slate-400'
+                      selectedUser.role === role.value ? 'text-dourado' : 'text-foreground-secondary'
                     }`} />
                     <div className="text-left flex-1">
                       <p className={`font-medium ${
-                        selectedUser.role === role.value ? 'text-violet-400' : 'text-white'
+                        selectedUser.role === role.value ? 'text-dourado' : 'text-foreground'
                       }`}>{role.label}</p>
-                      <p className="text-xs text-slate-500">{role.desc}</p>
+                      <p className="text-xs text-foreground-muted">{role.desc}</p>
                     </div>
                     {selectedUser.role === role.value && (
-                      <span className="text-xs text-violet-400 font-medium">Atual</span>
+                      <span className="text-xs text-dourado font-medium">Atual</span>
                     )}
                   </button>
                 ))}
               </div>
 
               {/* Ações de Inativar/Excluir */}
-              <div className="border-t border-slate-700 pt-4 space-y-2">
-                <p className="text-sm text-slate-400 mb-3">Ações:</p>
+              <div className="border-t border-border pt-4 space-y-2">
+                <p className="text-sm text-foreground-secondary mb-3">Ações:</p>
 
                 {/* Botão Inativar/Ativar */}
                 <button
@@ -641,7 +641,7 @@ export default function UsersPage() {
                     }`}>
                       {selectedUser.is_active === false ? 'Reativar Usuário' : 'Inativar Usuário'}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-foreground-muted">
                       {selectedUser.is_active === false
                         ? 'O usuário poderá fazer login novamente'
                         : 'O usuário não poderá fazer login, mas os dados são mantidos'
@@ -662,7 +662,7 @@ export default function UsersPage() {
                   <Trash2 className="w-5 h-5 text-red-400" />
                   <div className="text-left flex-1">
                     <p className="font-medium text-red-400">Excluir Permanentemente</p>
-                    <p className="text-xs text-slate-500">Remove o usuário e todos os seus dados. Esta ação é irreversível!</p>
+                    <p className="text-xs text-foreground-muted">Remove o usuário e todos os seus dados. Esta ação é irreversível!</p>
                   </div>
                 </button>
               </div>
@@ -674,21 +674,21 @@ export default function UsersPage() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedUser && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-red-500/30 w-full max-w-md">
-            <div className="flex items-center gap-3 p-4 border-b border-slate-700 bg-red-500/10">
+          <div className="bg-white rounded-xl border border-red-500/30 w-full max-w-md">
+            <div className="flex items-center gap-3 p-4 border-b border-border bg-red-500/10">
               <AlertTriangle className="w-6 h-6 text-red-400" />
-              <h3 className="text-lg font-semibold text-white">Confirmar Exclusão</h3>
+              <h3 className="text-lg font-semibold text-foreground">Confirmar Exclusão</h3>
             </div>
             <div className="p-4">
-              <div className="flex items-center gap-3 mb-4 p-3 bg-slate-700/50 rounded-lg">
+              <div className="flex items-center gap-3 mb-4 p-3 bg-background-elevated rounded-lg">
                 <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
                   <span className="text-red-400 font-medium">
                     {selectedUser.nome?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <p className="text-white font-medium">{selectedUser.nome || 'Sem nome'}</p>
-                  <p className="text-sm text-slate-400">{selectedUser.email}</p>
+                  <p className="text-foreground font-medium">{selectedUser.nome || 'Sem nome'}</p>
+                  <p className="text-sm text-foreground-secondary">{selectedUser.email}</p>
                 </div>
               </div>
 
@@ -705,14 +705,14 @@ export default function UsersPage() {
                     setSelectedUser(null)
                   }}
                   disabled={deleting}
-                  className="flex-1 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                  className="flex-1 py-2.5 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDeleteUser}
                   disabled={deleting}
-                  className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-red-600 text-foreground rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {deleting ? (
                     <>
@@ -735,16 +735,16 @@ export default function UsersPage() {
       {/* Create User Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Criar Novo Usuário</h3>
+          <div className="bg-white rounded-xl border border-border w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">Criar Novo Usuário</h3>
               <button
                 onClick={() => {
                   setShowCreateModal(false)
                   setNewUser({ nome: '', email: '', password: '', role: 'client' })
                   setShowPassword(false)
                 }}
-                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400"
+                className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -752,7 +752,7 @@ export default function UsersPage() {
             <form onSubmit={handleCreateUser} className="p-4 space-y-4">
               {/* Nome */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-foreground-muted mb-1">
                   Nome
                 </label>
                 <input
@@ -760,13 +760,13 @@ export default function UsersPage() {
                   value={newUser.nome}
                   onChange={(e) => setNewUser({ ...newUser, nome: e.target.value })}
                   placeholder="Nome do usuário"
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-foreground-muted mb-1">
                   Email *
                 </label>
                 <input
@@ -775,13 +775,13 @@ export default function UsersPage() {
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   placeholder="email@exemplo.com"
                   required
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 />
               </div>
 
               {/* Senha */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-foreground-muted mb-1">
                   Senha *
                 </label>
                 <div className="relative">
@@ -792,12 +792,12 @@ export default function UsersPage() {
                     placeholder="Mínimo 6 caracteres"
                     required
                     minLength={6}
-                    className="w-full px-4 py-2.5 pr-12 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-full px-4 py-2.5 pr-12 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-secondary hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -806,13 +806,13 @@ export default function UsersPage() {
 
               {/* Role */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-foreground-muted mb-1">
                   Papel
                 </label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
                 >
                   <option value="client">Cliente</option>
                   <option value="trainer">Personal Trainer</option>
@@ -833,14 +833,14 @@ export default function UsersPage() {
                     setNewUser({ nome: '', email: '', password: '', role: 'client' })
                     setShowPassword(false)
                   }}
-                  className="flex-1 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                  className="flex-1 py-2.5 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="flex-1 py-2.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-dourado text-foreground rounded-lg hover:bg-dourado/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {creating ? (
                     <>

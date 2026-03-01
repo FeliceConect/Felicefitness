@@ -167,20 +167,20 @@ export default function ProntuarioPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Prontuario</h1>
-        <p className="text-slate-400">Notas dos profissionais sobre pacientes</p>
+        <h1 className="text-2xl font-bold text-foreground">Prontuario</h1>
+        <p className="text-foreground-secondary">Notas dos profissionais sobre pacientes</p>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-white rounded-xl p-4 border border-border">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <Filter className="w-5 h-5 text-slate-400 hidden sm:block flex-shrink-0" />
+          <Filter className="w-5 h-5 text-foreground-secondary hidden sm:block flex-shrink-0" />
 
           {/* Note Type Filter */}
           <select
             value={noteTypeFilter}
             onChange={(e) => setNoteTypeFilter(e.target.value)}
-            className="w-full sm:w-auto px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full sm:w-auto px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
           >
             <option value="">Todos os tipos</option>
             <option value="observation">Observacao</option>
@@ -193,7 +193,7 @@ export default function ProntuarioPage() {
           <select
             value={profTypeFilter}
             onChange={(e) => setProfTypeFilter(e.target.value)}
-            className="w-full sm:w-auto px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full sm:w-auto px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
           >
             <option value="">Todos os profissionais</option>
             <option value="nutritionist">Nutricionista</option>
@@ -204,38 +204,38 @@ export default function ProntuarioPage() {
 
           {/* Search Input */}
           <div className="relative w-full sm:flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-secondary" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por paciente, profissional ou conteudo..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full pl-10 pr-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
             />
           </div>
         </div>
       </div>
 
       {/* Notes List */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700">
+      <div className="bg-white rounded-xl border border-border">
         {loading ? (
           /* Loading Skeleton */
-          <div className="divide-y divide-slate-700">
+          <div className="divide-y divide-border">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="p-4 animate-pulse">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-700" />
+                  <div className="w-10 h-10 rounded-full bg-background-elevated" />
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-5 w-20 rounded bg-slate-700" />
-                      <div className="h-5 w-24 rounded bg-slate-700" />
+                      <div className="h-5 w-20 rounded bg-background-elevated" />
+                      <div className="h-5 w-24 rounded bg-background-elevated" />
                     </div>
-                    <div className="h-4 w-48 rounded bg-slate-700" />
+                    <div className="h-4 w-48 rounded bg-background-elevated" />
                     <div className="space-y-2">
-                      <div className="h-3 w-full rounded bg-slate-700" />
-                      <div className="h-3 w-3/4 rounded bg-slate-700" />
+                      <div className="h-3 w-full rounded bg-background-elevated" />
+                      <div className="h-3 w-3/4 rounded bg-background-elevated" />
                     </div>
-                    <div className="h-3 w-32 rounded bg-slate-700" />
+                    <div className="h-3 w-32 rounded bg-background-elevated" />
                   </div>
                 </div>
               </div>
@@ -243,7 +243,7 @@ export default function ProntuarioPage() {
           </div>
         ) : filteredNotes.length === 0 ? (
           /* Empty State */
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-foreground-secondary">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="text-lg font-medium">Nenhuma nota encontrada</p>
             <p className="text-sm mt-1">
@@ -254,7 +254,7 @@ export default function ProntuarioPage() {
           </div>
         ) : (
           /* Notes */
-          <div className="divide-y divide-slate-700">
+          <div className="divide-y divide-border">
             {filteredNotes.map((note) => {
               const noteConfig = NOTE_TYPE_CONFIG[note.note_type] || NOTE_TYPE_CONFIG.observation
               const profConfig = note.professional
@@ -266,12 +266,12 @@ export default function ProntuarioPage() {
               return (
                 <div
                   key={note.id}
-                  className="p-4 hover:bg-slate-700/30 transition-colors"
+                  className="p-4 hover:bg-background-elevated transition-colors"
                 >
                   <div className="flex items-start gap-4">
                     {/* Patient Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-violet-400 font-medium text-sm">
+                    <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-dourado font-medium text-sm">
                         {(note.patient?.nome || 'P').charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -296,20 +296,20 @@ export default function ProntuarioPage() {
                       {/* Patient & Professional Info */}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                         <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-slate-500" />
-                          <span className="text-sm text-white font-medium">
+                          <User className="w-3.5 h-3.5 text-foreground-muted" />
+                          <span className="text-sm text-foreground font-medium">
                             {note.patient?.nome || 'Paciente'}
                           </span>
                         </div>
                         {note.professional?.display_name && (
-                          <span className="text-sm text-slate-400">
+                          <span className="text-sm text-foreground-secondary">
                             por {note.professional.display_name}
                           </span>
                         )}
                       </div>
 
                       {/* Content */}
-                      <div className="text-sm text-slate-300 whitespace-pre-wrap break-words">
+                      <div className="text-sm text-foreground-muted whitespace-pre-wrap break-words">
                         {isExpanded ? note.content : truncateContent(note.content)}
                       </div>
 
@@ -317,7 +317,7 @@ export default function ProntuarioPage() {
                       {isLong && (
                         <button
                           onClick={() => toggleExpand(note.id)}
-                          className="flex items-center gap-1 mt-2 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                          className="flex items-center gap-1 mt-2 text-xs text-dourado hover:text-dourado transition-colors"
                         >
                           {isExpanded ? (
                             <>
@@ -335,8 +335,8 @@ export default function ProntuarioPage() {
 
                       {/* Date */}
                       <div className="flex items-center gap-1.5 mt-2">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        <span className="text-xs text-slate-500">
+                        <Clock className="w-3.5 h-3.5 text-foreground-muted" />
+                        <span className="text-xs text-foreground-muted">
                           {formatDate(note.created_at)} as {formatTime(note.created_at)}
                         </span>
                       </div>
@@ -351,7 +351,7 @@ export default function ProntuarioPage() {
 
       {/* Results Count */}
       {!loading && filteredNotes.length > 0 && (
-        <div className="text-center text-sm text-slate-500">
+        <div className="text-center text-sm text-foreground-muted">
           {filteredNotes.length} {filteredNotes.length === 1 ? 'nota encontrada' : 'notas encontradas'}
           {(searchQuery || noteTypeFilter || profTypeFilter) && notes.length !== filteredNotes.length && (
             <span> de {notes.length} total</span>

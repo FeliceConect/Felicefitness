@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado"></div>
       </div>
     )
@@ -52,10 +52,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Não autorizado
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Acesso Negado</h1>
-          <p className="text-slate-400">Você não tem permissão para acessar esta área.</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Acesso Negado</h1>
+          <p className="text-foreground-secondary">Você não tem permissão para acessar esta área.</p>
         </div>
       </div>
     )
@@ -81,20 +81,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-slate-800 border-b border-slate-700 z-50 flex items-center justify-between px-4">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-cafe border-b border-cafe/80 z-50 flex items-center justify-between px-4">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-slate-700"
+          className="p-2 rounded-lg hover:bg-vinho/30"
         >
           {mobileMenuOpen ? (
-            <X className="w-6 h-6 text-white" />
+            <X className="w-6 h-6 text-seda" />
           ) : (
-            <Menu className="w-6 h-6 text-white" />
+            <Menu className="w-6 h-6 text-seda" />
           )}
         </button>
-        <span className="text-white font-semibold">Complexo Wellness — {adminName}</span>
+        <span className="text-seda font-semibold">Complexo Wellness — {adminName}</span>
         <div className="w-10" /> {/* Spacer */}
       </div>
 
@@ -106,28 +106,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — dark café premium */}
       <aside className={`
-        fixed top-0 left-0 h-full bg-slate-800 border-r border-slate-700 z-50
+        fixed top-0 left-0 h-full bg-cafe border-r border-vinho/20 z-50
         transition-all duration-300 ease-in-out flex flex-col
         ${sidebarOpen ? 'w-64' : 'w-20'}
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700 flex-shrink-0">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-vinho/20 flex-shrink-0">
           {sidebarOpen && (
             <Link href="/admin" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">
                 <span className="text-white font-bold text-sm">{adminName.charAt(0)}</span>
               </div>
-              <span className="text-white font-semibold">{adminName}</span>
+              <span className="text-seda font-semibold">{adminName}</span>
             </Link>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex p-2 rounded-lg hover:bg-slate-700"
+            className="hidden lg:flex p-2 rounded-lg hover:bg-vinho/30"
           >
-            <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${sidebarOpen ? 'rotate-90' : '-rotate-90'}`} />
+            <ChevronDown className={`w-5 h-5 text-nude transition-transform ${sidebarOpen ? 'rotate-90' : '-rotate-90'}`} />
           </button>
         </div>
 
@@ -140,7 +140,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               onClick={() => setMobileMenuOpen(false)}
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg
-                text-slate-300 hover:text-white hover:bg-slate-700
+                text-fendi hover:text-seda hover:bg-vinho/30
                 transition-colors
               `}
             >
@@ -151,7 +151,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
 
         {/* User Info */}
-        <div className="flex-shrink-0 p-4 border-t border-slate-700">
+        <div className="flex-shrink-0 p-4 border-t border-vinho/20">
           {sidebarOpen ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -161,13 +161,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{adminName}</p>
-                  <p className="text-xs text-slate-400">{roleLabels[role]}</p>
+                  <p className="text-sm text-seda truncate">{adminName}</p>
+                  <p className="text-xs text-nude">{roleLabels[role]}</p>
                 </div>
               </div>
               <Link
                 href="/"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-fendi hover:text-seda hover:bg-vinho/30 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Voltar ao App</span>
@@ -179,7 +179,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-error hover:text-error/80 hover:bg-error/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Sair</span>
@@ -189,7 +189,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <div className="space-y-2">
               <Link
                 href="/"
-                className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                className="flex items-center justify-center p-2 rounded-lg text-fendi hover:text-seda hover:bg-vinho/30"
               >
                 <LogOut className="w-5 h-5" />
               </Link>
@@ -200,7 +200,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
-                className="flex items-center justify-center p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-slate-700"
+                className="flex items-center justify-center p-2 rounded-lg text-error hover:text-error/80 hover:bg-error/10"
                 title="Sair"
               >
                 <LogOut className="w-5 h-5" />
@@ -210,7 +210,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content — light warm background */}
       <main className={`
         min-h-screen transition-all duration-300
         pt-16 lg:pt-0
