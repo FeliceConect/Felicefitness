@@ -40,7 +40,7 @@ interface NeedsAttention {
 }
 
 export default function ProfessionalDashboard() {
-  const { isNutritionist, isTrainer, isPhysiotherapist } = useProfessional()
+  const { isNutritionist, isPhysiotherapist } = useProfessional()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [needsAttention, setNeedsAttention] = useState<NeedsAttention[]>([])

@@ -8,12 +8,6 @@ import { Logo } from "@/components/shared/logo"
 
 export function Header() {
   const pathname = usePathname()
-
-  // Esconder header em telas com navegação própria (ex: form wizard)
-  const hideOnRoutes = ['/formularios/']
-  if (hideOnRoutes.some(route => pathname.startsWith(route) && pathname !== '/formularios')) {
-    return null
-  }
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
@@ -48,6 +42,12 @@ export function Header() {
     const interval = setInterval(fetchUnreadCounts, 30000)
     return () => clearInterval(interval)
   }, [fetchUnreadCounts])
+
+  // Esconder header em telas com navegação própria (ex: form wizard)
+  const hideOnRoutes = ['/formularios/']
+  if (hideOnRoutes.some(route => pathname.startsWith(route) && pathname !== '/formularios')) {
+    return null
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>

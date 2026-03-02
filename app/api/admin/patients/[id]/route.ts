@@ -218,7 +218,7 @@ export async function GET(
     // Buscar dados dos profissionais vinculados
     const assignments = assignmentsResult.data || []
     const professionalIds = assignments.map((a: { professional_id: string }) => a.professional_id)
-    let professionalsMap: Record<string, { display_name: string | null; type: string; specialty: string | null; user_id: string }> = {}
+    const professionalsMap: Record<string, { display_name: string | null; type: string; specialty: string | null; user_id: string }> = {}
 
     if (professionalIds.length > 0) {
       const { data: professionals } = await supabaseAdmin
@@ -256,7 +256,7 @@ export async function GET(
     const notesProfIds = Array.from(new Set((notesResult.data || []).map((n: { professional_id: string }) => n.professional_id)))
     const allProfIds = Array.from(new Set([...appointmentProfIds, ...notesProfIds, ...professionalIds]))
 
-    let allProfMap: Record<string, { name: string; type: string }> = {}
+    const allProfMap: Record<string, { name: string; type: string }> = {}
     if (allProfIds.length > 0) {
       const { data: allProfs } = await supabaseAdmin
         .from('fitness_professionals')
@@ -289,7 +289,7 @@ export async function GET(
     // Buscar nomes dos templates de formulários
     const formAssignments = formAssignmentsResult.data || []
     const templateIds = Array.from(new Set(formAssignments.map((f: { template_id: string }) => f.template_id)))
-    let templateMap: Record<string, string> = {}
+    const templateMap: Record<string, string> = {}
     if (templateIds.length > 0) {
       const { data: templates } = await supabaseAdmin
         .from('fitness_form_templates')

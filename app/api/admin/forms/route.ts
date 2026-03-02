@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao buscar formularios' }, { status: 500 })
     }
 
-    let filtered = assignments || []
+    const filtered = assignments || []
 
     // Enrich with template, client and professional data
     if (filtered.length > 0) {
