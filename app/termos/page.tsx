@@ -9,146 +9,145 @@ export const metadata: Metadata = {
 
 export default function TermosPage() {
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-bg-primary">
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/dashboard"
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg bg-bg-elevated hover:bg-border transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Termos de Uso</h1>
+          <h1 className="text-2xl font-butler font-bold text-foreground">Termos de Uso</h1>
         </div>
 
         {/* Content */}
-        <div className="prose prose-invert prose-slate max-w-none">
-          <p className="text-sm text-slate-400 mb-8">
-            Ultima atualizacao: 27 de dezembro de 2024 | Versao: 1.0.0
+        <div className="prose prose-slate max-w-none">
+          <p className="text-sm text-foreground-muted mb-8">
+            Última atualização: 27 de dezembro de 2024 | Versão: 1.0.0
           </p>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">1. Aceitacao dos Termos</h2>
-            <p className="text-slate-300">
-              Ao acessar e usar o aplicativo Complexo Wellness, voce concorda em cumprir e estar vinculado
-              a estes Termos de Uso. Se voce nao concordar com qualquer parte destes termos,
-              nao devera usar nosso aplicativo.
+            <h2 className="text-xl font-semibold text-foreground mb-4">1. Aceitação dos Termos</h2>
+            <p className="text-foreground-secondary">
+              Ao acessar e usar o aplicativo Complexo Wellness, você concorda em cumprir e estar vinculado
+              a estes Termos de Uso. Se você não concordar com qualquer parte destes termos,
+              não deverá usar nosso aplicativo.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">2. Descricao do Servico</h2>
-            <p className="text-slate-300">
-              O Complexo Wellness e um aplicativo de acompanhamento de fitness e saude que oferece:
+            <h2 className="text-xl font-semibold text-foreground mb-4">2. Descrição do Serviço</h2>
+            <p className="text-foreground-secondary">
+              O Complexo Wellness é um aplicativo de acompanhamento de fitness e saúde que oferece:
             </p>
-            <ul className="list-disc list-inside text-slate-300 mt-2 space-y-1">
+            <ul className="list-disc list-inside text-foreground-secondary mt-2 space-y-1">
               <li>Registro e acompanhamento de treinos</li>
-              <li>Monitoramento de alimentacao e nutricao</li>
-              <li>Controle de hidratacao</li>
+              <li>Monitoramento de alimentação e nutrição</li>
+              <li>Controle de hidratação</li>
               <li>Acompanhamento do sono</li>
-              <li>Analise de composicao corporal</li>
-              <li>Sistema de gamificacao e conquistas</li>
-              <li>Coach de IA personalizado</li>
-              <li>Comunicacao com profissionais de saude</li>
+              <li>Análise de composição corporal</li>
+              <li>Sistema de gamificação e conquistas</li>
+              <li>Comunicação com profissionais de saúde</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">3. Cadastro e Conta</h2>
-            <p className="text-slate-300">
-              Para usar o Complexo Wellness, voce deve criar uma conta fornecendo informacoes precisas
-              e completas. Voce e responsavel por manter a confidencialidade de sua senha e
+            <h2 className="text-xl font-semibold text-foreground mb-4">3. Cadastro e Conta</h2>
+            <p className="text-foreground-secondary">
+              Para usar o Complexo Wellness, você deve criar uma conta fornecendo informações precisas
+              e completas. Você é responsável por manter a confidencialidade de sua senha e
               por todas as atividades que ocorrem em sua conta.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">4. Uso Adequado</h2>
-            <p className="text-slate-300">Voce concorda em nao:</p>
-            <ul className="list-disc list-inside text-slate-300 mt-2 space-y-1">
+            <h2 className="text-xl font-semibold text-foreground mb-4">4. Uso Adequado</h2>
+            <p className="text-foreground-secondary">Você concorda em não:</p>
+            <ul className="list-disc list-inside text-foreground-secondary mt-2 space-y-1">
               <li>Usar o aplicativo para qualquer finalidade ilegal</li>
               <li>Compartilhar sua conta com terceiros</li>
-              <li>Tentar acessar areas restritas do sistema</li>
-              <li>Enviar conteudo ofensivo, difamatorio ou inapropriado</li>
+              <li>Tentar acessar áreas restritas do sistema</li>
+              <li>Enviar conteúdo ofensivo, difamatório ou inapropriado</li>
               <li>Interferir no funcionamento do aplicativo</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">5. Aviso de Saude</h2>
-            <p className="text-slate-300">
-              O Complexo Wellness fornece informacoes gerais sobre fitness e saude, mas NAO substitui
-              aconselhamento medico profissional. Antes de iniciar qualquer programa de exercicios
-              ou dieta, consulte um profissional de saude qualificado.
+            <h2 className="text-xl font-semibold text-foreground mb-4">5. Aviso de Saúde</h2>
+            <p className="text-foreground-secondary">
+              O Complexo Wellness fornece informações gerais sobre fitness e saúde, mas NÃO substitui
+              aconselhamento médico profissional. Antes de iniciar qualquer programa de exercícios
+              ou dieta, consulte um profissional de saúde qualificado.
             </p>
-            <p className="text-slate-300 mt-2">
-              A analise de alimentos por IA e as sugestoes do Coach IA sao apenas orientativas
-              e podem conter imprecisoes. Sempre verifique as informacoes nutricionais com
-              fontes confiavei.
+            <p className="text-foreground-secondary mt-2">
+              As informações nutricionais são apenas orientativas
+              e podem conter imprecisões. Sempre verifique as informações nutricionais com
+              fontes confiáveis.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">6. Propriedade Intelectual</h2>
-            <p className="text-slate-300">
-              Todo o conteudo do Complexo Wellness, incluindo textos, graficos, logos, icones e software,
-              e propriedade da Complexo Wellness ou de seus licenciadores e esta protegido por leis de
+            <h2 className="text-xl font-semibold text-foreground mb-4">6. Propriedade Intelectual</h2>
+            <p className="text-foreground-secondary">
+              Todo o conteúdo do Complexo Wellness, incluindo textos, gráficos, logos, ícones e software,
+              é propriedade da Complexo Wellness ou de seus licenciadores e está protegido por leis de
               propriedade intelectual.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">7. Limitacao de Responsabilidade</h2>
-            <p className="text-slate-300">
-              O Complexo Wellness e fornecido &quot;como esta&quot;, sem garantias de qualquer tipo. Nao nos
-              responsabilizamos por lesoes, problemas de saude ou quaisquer danos resultantes
+            <h2 className="text-xl font-semibold text-foreground mb-4">7. Limitação de Responsabilidade</h2>
+            <p className="text-foreground-secondary">
+              O Complexo Wellness é fornecido &quot;como está&quot;, sem garantias de qualquer tipo. Não nos
+              responsabilizamos por lesões, problemas de saúde ou quaisquer danos resultantes
               do uso do aplicativo.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">8. Modificacoes</h2>
-            <p className="text-slate-300">
-              Reservamo-nos o direito de modificar estes termos a qualquer momento. As alteracoes
-              entram em vigor imediatamente apos a publicacao. O uso continuado do aplicativo
-              apos as alteracoes constitui aceitacao dos novos termos.
+            <h2 className="text-xl font-semibold text-foreground mb-4">8. Modificações</h2>
+            <p className="text-foreground-secondary">
+              Reservamo-nos o direito de modificar estes termos a qualquer momento. As alterações
+              entram em vigor imediatamente após a publicação. O uso continuado do aplicativo
+              após as alterações constitui aceitação dos novos termos.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">9. Encerramento</h2>
-            <p className="text-slate-300">
+            <h2 className="text-xl font-semibold text-foreground mb-4">9. Encerramento</h2>
+            <p className="text-foreground-secondary">
               Podemos suspender ou encerrar sua conta a qualquer momento, por qualquer motivo,
-              incluindo violacao destes termos. Voce tambem pode encerrar sua conta a qualquer
-              momento atraves das configuracoes do aplicativo.
+              incluindo violação destes termos. Você também pode encerrar sua conta a qualquer
+              momento através das configurações do aplicativo.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">10. Lei Aplicavel</h2>
-            <p className="text-slate-300">
-              Estes termos sao regidos pelas leis do Brasil. Qualquer disputa sera resolvida
-              nos tribunais competentes da cidade de Sao Paulo, SP.
+            <h2 className="text-xl font-semibold text-foreground mb-4">10. Lei Aplicável</h2>
+            <p className="text-foreground-secondary">
+              Estes termos são regidos pelas leis do Brasil. Qualquer disputa será resolvida
+              nos tribunais competentes da cidade de São Paulo, SP.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">11. Contato</h2>
-            <p className="text-slate-300">
-              Para duvidas sobre estes Termos de Uso, entre em contato conosco atraves do
-              email: contato@felicefit.com.br
+            <h2 className="text-xl font-semibold text-foreground mb-4">11. Contato</h2>
+            <p className="text-foreground-secondary">
+              Para dúvidas sobre estes Termos de Uso, entre em contato conosco através do
+              email: contato@feliceconect.com.br
             </p>
           </section>
         </div>
 
         {/* Back link */}
-        <div className="mt-8 pt-8 border-t border-slate-800">
+        <div className="mt-8 pt-8 border-t border-border">
           <Link
             href="/privacidade"
-            className="text-violet-400 hover:text-violet-300 transition-colors"
+            className="text-accent hover:text-accent/80 transition-colors"
           >
-            Ver Politica de Privacidade
+            Ver Política de Privacidade
           </Link>
         </div>
       </div>

@@ -42,17 +42,13 @@ export default function MealDetailPage() {
   // Carregar refeição específica pelo ID
   const loadMeal = useCallback(async () => {
     setLoading(true)
-    console.log('=== CARREGANDO REFEIÇÃO ===')
-    console.log('ID:', id)
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.log('Usuário não autenticado')
         setMeal(null)
         return
       }
-      console.log('User ID:', user.id)
 
       // Buscar refeição específica
       const { data: mealData, error } = await supabase
@@ -81,19 +77,11 @@ export default function MealDetailPage() {
         setMeal(null)
         return
       }
-      console.log('Refeição carregada:', mealData)
-
       // Buscar itens separadamente - sem filtro de user_id (RLS cuida disso)
-      const { data: itemsData, error: itemsError } = await supabase
+      const { data: itemsData } = await supabase
         .from('fitness_meal_items')
         .select('*')
         .eq('meal_id', id) as { data: DbMealItem[] | null, error: Error | null }
-
-      console.log('=== ITENS DA REFEIÇÃO ===')
-      console.log('Query: meal_id =', id)
-      console.log('Resultado:', itemsData)
-      console.log('Erro:', itemsError)
-      console.log('Quantidade:', itemsData?.length || 0)
 
       // Converter itens
       const convertedItems: MealItem[] = (itemsData || []).map((item: DbMealItem) => ({
@@ -117,8 +105,6 @@ export default function MealDetailPage() {
         gorduras: item.gorduras || 0
       }))
 
-      console.log('Itens convertidos:', convertedItems)
-
       setMeal({
         id: mealData.id,
         user_id: mealData.user_id || '',
@@ -137,7 +123,6 @@ export default function MealDetailPage() {
         created_at: mealData.created_at
       })
 
-      console.log('=== REFEIÇÃO CARREGADA COM SUCESSO ===')
     } catch (err) {
       console.error('Erro geral:', err)
       setMeal(null)
@@ -259,13 +244,11 @@ export default function MealDetailPage() {
     if (newItems.length === 0) return
 
     setSaving(true)
-    console.log('=== SALVANDO ITENS COMPLEMENTARES ===')
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuário não autenticado')
 
       // 1. Inserir APENAS os novos itens (preserva os existentes)
-      console.log('Inserindo', newItems.length, 'novos itens')
       for (const item of newItems) {
         const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
 
@@ -280,8 +263,6 @@ export default function MealDetailPage() {
           carboidratos: Math.round(item.carboidratos),
           gorduras: Math.round(item.gorduras)
         }
-        console.log('Inserindo item:', itemToInsert)
-
         const { error: insertError } = await supabase
           .from('fitness_meal_items')
           .insert(itemToInsert as never)
@@ -292,7 +273,6 @@ export default function MealDetailPage() {
       }
 
       // 2. Atualizar totais na refeição
-      console.log('Atualizando totais da refeição')
       await supabase
         .from('fitness_meals')
         .update({
@@ -313,7 +293,6 @@ export default function MealDetailPage() {
         gorduras_total: addingTotals.gorduras
       })
 
-      console.log('=== ITENS COMPLEMENTARES SALVOS COM SUCESSO ===')
       setIsAdding(false)
       setNewItems([])
       setShowAddFood(false)
@@ -326,13 +305,11 @@ export default function MealDetailPage() {
 
   const handleSaveEdit = async () => {
     setSaving(true)
-    console.log('=== SALVANDO EDIÇÃO ===')
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuário não autenticado')
 
       // 1. Deletar itens antigos
-      console.log('Deletando itens antigos do meal_id:', meal.id)
       const { error: deleteError } = await supabase
         .from('fitness_meal_items')
         .delete()
@@ -344,7 +321,6 @@ export default function MealDetailPage() {
 
       // 2. Inserir novos itens um por um
       if (editedItems.length > 0) {
-        console.log('Inserindo', editedItems.length, 'novos itens')
         for (const item of editedItems) {
           // Verificar se food_id é um UUID válido
           const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
@@ -360,8 +336,6 @@ export default function MealDetailPage() {
             carboidratos: Math.round(item.carboidratos),
             gorduras: Math.round(item.gorduras)
           }
-          console.log('Inserindo item:', itemToInsert)
-
           const { error: insertError } = await supabase
             .from('fitness_meal_items')
             .insert(itemToInsert as never)
@@ -373,7 +347,6 @@ export default function MealDetailPage() {
       }
 
       // 3. Atualizar totais na refeição
-      console.log('Atualizando totais da refeição')
       await supabase
         .from('fitness_meals')
         .update({
@@ -394,7 +367,6 @@ export default function MealDetailPage() {
         gorduras_total: editedTotals.gorduras
       })
 
-      console.log('=== EDIÇÃO SALVA COM SUCESSO ===')
       setIsEditing(false)
       setEditedItems([])
       setShowAddFood(false)

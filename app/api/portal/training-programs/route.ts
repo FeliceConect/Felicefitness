@@ -80,14 +80,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar dados dos clientes separadamente
-    console.log('=== DEBUG GET PROGRAMAS ===')
-    console.log('Programas encontrados:', programs?.map(p => ({ id: p.id, name: p.name, client_id: p.client_id })))
-
     const clientIds = (programs || [])
       .filter(p => p.client_id)
       .map(p => p.client_id)
-
-    console.log('Client IDs encontrados:', clientIds)
 
     const clientsMap: Record<string, { id: string; nome: string; email: string; avatar_url?: string }> = {}
 
@@ -97,8 +92,7 @@ export async function GET(request: NextRequest) {
         .select('id, nome, email')
         .in('id', clientIds)
 
-      console.log('Clientes buscados:', clients)
-      if (clientsError) console.log('Erro ao buscar clientes:', clientsError)
+      if (clientsError) console.error('Erro ao buscar clientes:', clientsError)
 
       if (clients) {
         clients.forEach(c => {
@@ -107,15 +101,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('Clients Map:', clientsMap)
-
     // Adicionar dados do cliente a cada programa
     const programsWithClients = (programs || []).map(p => ({
       ...p,
       client: p.client_id ? clientsMap[p.client_id] || null : null
     }))
-
-    console.log('Programas com clientes:', programsWithClients.map(p => ({ name: p.name, client_id: p.client_id, client: p.client })))
 
     return NextResponse.json({
       success: true,
@@ -404,8 +394,6 @@ export async function PATCH(request: NextRequest) {
     if (updateData.endsAt !== undefined) updateFields.ends_at = updateData.endsAt
     if (updateData.notes !== undefined) updateFields.notes = updateData.notes
 
-    console.log('Atualizando programa:', programId, 'com campos:', updateFields)
-
     if (Object.keys(updateFields).length === 0) {
       return NextResponse.json(
         { success: false, error: 'Nenhum campo para atualizar' },
@@ -427,8 +415,6 @@ export async function PATCH(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('Programa atualizado:', updatedProgram)
 
     return NextResponse.json({
       success: true,

@@ -32,9 +32,6 @@ export async function GET() {
 
     // Buscar programa de treino ativo do cliente
     // client_id deve ser igual ao user.id (que é o fitness_profiles.id = auth.uid())
-    console.log('=== DEBUG CLIENT TRAINING PROGRAM ===')
-    console.log('User ID:', user.id)
-
     const { data: program, error: programError } = await supabaseAdmin
       .from('fitness_training_programs')
       .select('*')
@@ -43,9 +40,6 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
-
-    console.log('Programa encontrado:', program ? { id: program.id, name: program.name, client_id: program.client_id } : null)
-    console.log('Erro ao buscar:', programError?.message || 'nenhum')
 
     if (programError && programError.code !== 'PGRST116') {
       // PGRST116 = no rows returned (not an error for us)

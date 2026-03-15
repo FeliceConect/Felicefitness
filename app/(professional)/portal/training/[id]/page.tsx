@@ -368,8 +368,6 @@ export default function TrainingProgramDetailPage() {
       })
 
       const data = await response.json()
-      console.log('Resposta da API:', data)
-
       if (data.success) {
         // Usar os dados retornados pela API para garantir sincronização
         const updatedProgram = data.program

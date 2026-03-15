@@ -15,7 +15,6 @@ export default function SobrePage() {
     'TypeScript',
     'Tailwind CSS',
     'Supabase',
-    'OpenAI GPT-4',
     'Recharts',
     'PWA'
   ]

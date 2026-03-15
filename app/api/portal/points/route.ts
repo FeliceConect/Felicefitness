@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     if (!assignment) {
       return NextResponse.json(
-        { success: false, error: 'Paciente nao esta vinculado a voce' },
+        { success: false, error: 'Paciente não está vinculado a você' },
         { status: 403 }
       )
     }

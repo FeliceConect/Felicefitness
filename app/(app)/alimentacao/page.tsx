@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronRight, Calendar, TrendingUp, Droplets, Sparkles, Search } from 'lucide-react'
+import { ChevronRight, Calendar, TrendingUp, Droplets } from 'lucide-react'
 import Link from 'next/link'
 import { MacrosProgress } from '@/components/alimentacao/macros-progress'
 import { MealTimeline } from '@/components/alimentacao/meal-timeline'
@@ -166,51 +166,8 @@ export default function AlimentacaoPage() {
         </div>
       )}
 
-      {/* AI Analyzer Quick Access */}
-      <div className="px-4 mb-4 space-y-3">
-        <Link href="/alimentacao/analisar">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-gradient-to-r from-dourado/20 to-dourado/10 border border-dourado/30 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-dourado to-dourado/70 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-foreground font-semibold">Analisar Refeição</p>
-                <p className="text-foreground-secondary text-sm">Foto do prato - IA calcula macros</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-dourado" />
-            </div>
-          </motion.div>
-        </Link>
-
-        <Link href="/alimentacao/analisar-alimento">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 flex items-center justify-center flex-shrink-0">
-                <Search className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-foreground font-semibold">Cadastrar Alimento</p>
-                <p className="text-foreground-secondary text-sm">Foto de UM alimento - salve no seu banco</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-emerald-400" />
-            </div>
-          </motion.div>
-        </Link>
-      </div>
+      {/* Spacer */}
+      <div className="mb-4" />
 
       {/* Quick stats */}
       <div className="px-4 mb-6">

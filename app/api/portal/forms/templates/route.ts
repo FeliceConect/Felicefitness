@@ -96,9 +96,7 @@ export async function GET(request: NextRequest) {
       .limit(1)
 
     if (!checkError && (!checkSystem || checkSystem.length === 0)) {
-      console.log('Auto-seeding system templates...')
-      const seeded = await seedSystemTemplates(supabaseAdmin)
-      console.log(`Auto-seeded ${seeded.length} templates`)
+      await seedSystemTemplates(supabaseAdmin)
     }
 
     // Buscar templates do sistema
