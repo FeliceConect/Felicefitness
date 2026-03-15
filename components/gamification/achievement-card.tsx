@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import type { Achievement, UserAchievement } from '@/types/gamification'
 import { TIER_COLORS, TIER_GRADIENTS, getAchievementProgress } from '@/lib/gamification'
 import type { UserStats } from '@/types/gamification'
+import { ShareButton } from '@/components/share/share-button'
 
 interface AchievementCardProps {
   achievement: Achievement
@@ -92,12 +93,30 @@ export function AchievementCard({
             </div>
           ) : null}
 
-          {/* XP Reward */}
-          <div className="mt-2 flex items-center gap-1">
-            <span className="text-xs">⭐</span>
-            <span className="text-xs text-amber-500 font-medium">
-              +{achievement.xpReward} XP
-            </span>
+          {/* XP Reward + Share */}
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <span className="text-xs">⭐</span>
+              <span className="text-xs text-amber-500 font-medium">
+                +{achievement.xpReward} XP
+              </span>
+            </div>
+            {isUnlocked && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <ShareButton
+                  type="achievement"
+                  data={{
+                    name: achievement.name,
+                    description: achievement.description,
+                    icon: achievement.icon,
+                    rarity: achievement.tier === 'legendary' ? 'legendary' : achievement.tier === 'epic' ? 'epic' : achievement.tier === 'rare' ? 'rare' : 'common',
+                    date: userAchievement ? new Date(userAchievement.unlockedAt).toLocaleDateString('pt-BR') : '',
+                  }}
+                  variant="icon"
+                  className="text-foreground-muted hover:text-dourado -mr-1"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

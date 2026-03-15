@@ -17,6 +17,7 @@ import {
 } from './components'
 import dynamic from 'next/dynamic'
 import { GamificationWidgetCompact } from '@/components/gamification'
+import { ShareButton } from '@/components/share/share-button'
 
 // Lazy load celebration modals — rare events
 const LevelUpModal = dynamic(() => import('@/components/gamification/level-up-modal').then(m => ({ default: m.LevelUpModal })), { ssr: false })
@@ -318,11 +319,29 @@ export function DashboardContent() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-dourado" />
-                <span className="font-heading font-bold text-foreground">Recap da Semana</span>
+                <span className="font-heading font-bold text-foreground">Resumo da Semana</span>
               </div>
-              <span className="text-xs text-foreground-muted">
-                {new Date(weeklyRecap.week_start).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} — {new Date(weeklyRecap.week_end).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-foreground-muted">
+                  {new Date(weeklyRecap.week_start).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} — {new Date(weeklyRecap.week_end).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                </span>
+                <ShareButton
+                  type="weekly"
+                  data={{
+                    weekStart: new Date(weeklyRecap.week_start).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+                    weekEnd: new Date(weeklyRecap.week_end).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+                    workoutsCompleted: weeklyRecap.workouts,
+                    workoutsPlanned: 0,
+                    totalDuration: '',
+                    totalCalories: 0,
+                    totalSets: 0,
+                    prsSet: 0,
+                    highlights: [`+${weeklyRecap.points} pontos`, `Streak: ${weeklyRecap.streak}`],
+                  }}
+                  variant="icon"
+                  className="text-foreground-muted hover:text-dourado -mr-1"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-4 gap-2">
               <div className="bg-white/60 rounded-xl p-2.5 text-center">
@@ -338,7 +357,7 @@ export function DashboardContent() {
               <div className="bg-white/60 rounded-xl p-2.5 text-center">
                 <Flame className="w-4 h-4 text-orange-500 mx-auto mb-1" />
                 <p className="font-bold text-lg text-foreground">{weeklyRecap.streak}</p>
-                <p className="text-[10px] text-foreground-muted">Streak</p>
+                <p className="text-[10px] text-foreground-muted">Sequência</p>
               </div>
               <div className="bg-white/60 rounded-xl p-2.5 text-center">
                 <Trophy className="w-4 h-4 text-dourado mx-auto mb-1" />

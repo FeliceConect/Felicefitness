@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Clock, Dumbbell, Flame, Trophy, Share2, Home, Loader2, Zap } from 'lucide-react'
+import { Clock, Dumbbell, Flame, Trophy, Home, Loader2, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ShareButton } from '@/components/share/share-button'
 import { useWorkouts } from '@/hooks/use-workouts'
 import { useSaveWorkout } from '@/hooks/use-save-workout'
 import { useGamification } from '@/hooks/use-gamification'
@@ -547,23 +548,22 @@ export default function WorkoutSummaryPage() {
             )}
           </Button>
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              size="lg"
-              className="flex-1 gap-2"
-              onClick={() => {
-                // Share functionality
-                if (navigator.share) {
-                  navigator.share({
-                    title: 'Treino concluído!',
-                    text: `Completei ${workout.nome} em ${summary.duration} minutos! 💪`
-                  })
-                }
-              }}
-            >
-              <Share2 className="w-4 h-4" />
-              Compartilhar
-            </Button>
+            <div className="flex-1">
+              <ShareButton
+                type="workout"
+                data={{
+                  workoutName: workout.nome || 'Treino',
+                  duration: `${summary.duration}min`,
+                  exercises: summary.exercisesCompleted,
+                  sets: summary.setsCompleted,
+                  calories: summary.caloriesBurned,
+                  prs: summary.newPRs.length,
+                  date: new Date().toLocaleDateString('pt-BR'),
+                }}
+                variant="button"
+                className="w-full"
+              />
+            </div>
             <Link href="/" className="flex-1">
               <Button variant="outline" size="lg" className="w-full gap-2">
                 <Home className="w-4 h-4" />
