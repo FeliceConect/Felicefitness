@@ -15,12 +15,11 @@ import {
   MoodFactorsInput,
 } from '@/components/wellness'
 import { getMoodLevel } from '@/lib/wellness/moods'
-import { useToast } from '@/hooks/use-toast'
+import { toast as sonnerToast } from 'sonner'
 
 export default function CheckinPage() {
   const router = useRouter()
   const wellness = useWellness()
-  const { toast } = useToast()
 
   const [mood, setMood] = useState<number>(wellness.todayCheckin?.humor || 3)
   const [stress, setStress] = useState<number>(wellness.todayCheckin?.stress || 3)
@@ -40,10 +39,7 @@ export default function CheckinPage() {
 
   const handleSave = async () => {
     if (energy === null) {
-      toast({
-        title: 'Selecione seu nível de energia',
-        variant: 'destructive',
-      })
+      sonnerToast.error('Selecione seu nível de energia')
       return
     }
 
@@ -58,19 +54,11 @@ export default function CheckinPage() {
         notes: notes.trim() || undefined,
       })
 
-      toast({
-        title: 'Check-in salvo!',
-        description: 'Seu bem-estar foi registrado com sucesso.',
-      })
-
-      router.push('/bem-estar')
+      sonnerToast.success('Check-in salvo e publicado no feed!')
+      router.push('/dashboard')
     } catch (error) {
       console.error('Error saving check-in:', error)
-      toast({
-        title: 'Erro ao salvar',
-        description: 'Tente novamente.',
-        variant: 'destructive',
-      })
+      sonnerToast.error('Erro ao salvar. Tente novamente.')
     } finally {
       setSaving(false)
     }

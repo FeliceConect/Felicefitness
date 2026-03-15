@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { format, startOfWeek, addDays, isToday } from 'date-fns'
+import { autoPostMeal } from '@/lib/services/auto-post'
 
 interface Food {
   name: string
@@ -225,6 +226,20 @@ export function useMealPlan() {
       const data = await response.json()
       if (data.success) {
         setCompletedMealIds(prev => [...prev, meal.id])
+
+        // Auto-post meal to feed
+        const totalCals = foods.reduce((s, f) => s + (f.calories || 0), 0)
+        const totalProt = foods.reduce((s, f) => s + (f.protein || 0), 0)
+        const totalCarbs = foods.reduce((s, f) => s + (f.carbs || 0), 0)
+        const totalFat = foods.reduce((s, f) => s + (f.fat || 0), 0)
+        autoPostMeal({
+          mealType: meal.meal_type,
+          calories: meal.total_calories || totalCals,
+          protein: meal.total_protein || totalProt,
+          carbs: meal.total_carbs || totalCarbs,
+          fat: meal.total_fat || totalFat,
+        })
+
         return true
       }
       return false

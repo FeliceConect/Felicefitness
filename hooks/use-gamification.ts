@@ -32,6 +32,7 @@ import {
   applyStreakFreezes,
 } from '@/lib/services/achievements'
 import type { FreezeInfo } from '@/lib/services/achievements'
+import { autoPostAchievement, autoPostLevelUp } from '@/lib/services/auto-post'
 
 // XP values for different activities
 const XP_VALUES = {
@@ -397,6 +398,7 @@ export function useGamification(): UseGamificationReturn {
     if (levelUp) {
       setNewLevel(levelUp)
       setShowLevelUp(true)
+      autoPostLevelUp({ level: levelUp.level, name: levelUp.name })
     }
 
     // Atualizar level info
@@ -452,10 +454,17 @@ export function useGamification(): UseGamificationReturn {
       // Mostrar primeira conquista nova
       setShowAchievement(newlyUnlocked[0])
 
-      // Salvar no Supabase
+      // Salvar no Supabase + auto-post primeiro achievement
       for (const achievement of newlyUnlocked) {
         await unlockAchievementByCode(achievement.id)
       }
+      autoPostAchievement({
+        name: newlyUnlocked[0].name,
+        description: newlyUnlocked[0].description,
+        icon: newlyUnlocked[0].icon,
+        tier: newlyUnlocked[0].tier,
+        xpReward: newlyUnlocked[0].xpReward,
+      })
 
       // Adicionar XP das conquistas
       for (const achievement of newlyUnlocked) {

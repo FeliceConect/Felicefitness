@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Conteúdo, imagem ou dados são obrigatórios' }, { status: 400 })
     }
 
-    const validTypes = ['meal', 'workout', 'achievement', 'free_text', 'check_in']
+    const validTypes = ['meal', 'workout', 'achievement', 'free_text', 'check_in', 'level_up']
     if (!validTypes.includes(post_type)) {
       return NextResponse.json({ success: false, error: 'Tipo de post inválido' }, { status: 400 })
     }

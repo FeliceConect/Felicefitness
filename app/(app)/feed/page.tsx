@@ -67,6 +67,7 @@ const POST_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   meal: { label: 'Refeição', color: 'bg-green-50 text-green-600' },
   achievement: { label: 'Conquista', color: 'bg-yellow-50 text-yellow-600' },
   check_in: { label: 'Check-in', color: 'bg-purple-50 text-purple-600' },
+  level_up: { label: 'Level Up', color: 'bg-red-50 text-red-600' },
 }
 
 const ENERGY_LEVELS = [
@@ -433,6 +434,11 @@ export default function FeedPage() {
                           {POST_TYPE_LABELS[post.post_type].label}
                         </span>
                       )}
+                      {post.is_auto_generated && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-dourado/10 text-dourado font-medium">
+                          Auto
+                        </span>
+                      )}
                     </div>
                   </div>
                   {post.is_own && (
@@ -525,6 +531,19 @@ export default function FeedPage() {
                       <span className="text-2xl">🏆</span>
                       <p className="text-sm font-heading font-bold text-dourado mt-1">{post.metadata.titulo}</p>
                       <p className="text-[10px] text-foreground-muted mt-0.5 uppercase tracking-wider">Conquista Desbloqueada</p>
+                    </div>
+                  </div>
+                )}
+
+                {post.post_type === 'level_up' && post.metadata && (
+                  <div className="mx-4 mb-2 p-4 rounded-lg bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 border border-red-100">
+                    <div className="text-center">
+                      <span className="text-3xl">⬆️</span>
+                      <p className="text-lg font-heading font-bold text-vinho mt-1">
+                        Nível {post.metadata.nivel}
+                      </p>
+                      <p className="text-sm font-medium text-dourado">{post.metadata.nome_nivel}</p>
+                      <p className="text-[10px] text-foreground-muted mt-1 uppercase tracking-wider">Level Up!</p>
                     </div>
                   </div>
                 )}

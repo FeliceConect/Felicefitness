@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Download, Trash2, AlertTriangle, Database, Share2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Download, Trash2, AlertTriangle, Database, Share2, Rss } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
@@ -32,8 +32,27 @@ export default function PrivacidadePage() {
   const [dataSize, setDataSize] = useState<{ total: number; breakdown: Record<string, number> } | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [autoPublishFeed, setAutoPublishFeed] = useState(true)
+  const [savingAutoPublish, setSavingAutoPublish] = useState(false)
 
   const supabase = createClient()
+
+  // Load auto_publish_feed setting
+  useEffect(() => {
+    async function loadAutoPublish() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from('fitness_profiles')
+        .select('auto_publish_feed')
+        .eq('id', user.id)
+        .single()
+      if (data) setAutoPublishFeed(data.auto_publish_feed !== false)
+    }
+    loadAutoPublish()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Initialize local settings when loaded
   if (settings && !localSettings) {
@@ -199,6 +218,49 @@ export default function PrivacidadePage() {
                 </div>
               </>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Auto-Publish Feed */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Rss className="h-4 w-4" />
+              Feed Automático
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Publicar no feed automaticamente</p>
+                <p className="text-sm text-muted-foreground">
+                  Treinos, conquistas, check-ins e level ups aparecem no feed
+                </p>
+              </div>
+              <Switch
+                checked={autoPublishFeed}
+                disabled={savingAutoPublish}
+                onCheckedChange={async (checked) => {
+                  setAutoPublishFeed(checked)
+                  setSavingAutoPublish(true)
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser()
+                    if (!user) return
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await (supabase as any)
+                      .from('fitness_profiles')
+                      .update({ auto_publish_feed: checked })
+                      .eq('id', user.id)
+                    toast.success(checked ? 'Auto-posts ativados' : 'Auto-posts desativados')
+                  } catch {
+                    setAutoPublishFeed(!checked)
+                    toast.error('Erro ao salvar')
+                  } finally {
+                    setSavingAutoPublish(false)
+                  }
+                }}
+              />
+            </div>
           </CardContent>
         </Card>
 

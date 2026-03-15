@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getTodayDateSP, getCurrentTimeSP, getNowSaoPaulo } from '@/lib/utils/date'
 import { calculateWellnessScore } from '@/lib/wellness/correlations'
 import type { WellnessCheckin, WellnessCheckinInput } from '@/types/wellness'
+import { autoPostCheckin } from '@/lib/services/auto-post'
 
 interface UseWellnessReturn {
   // Score
@@ -165,6 +166,13 @@ export function useWellness(): UseWellnessReturn {
         if (!todayCheckin) {
           setCheckinStreak((prev) => prev + 1)
         }
+
+        // Auto-post check-in to feed
+        autoPostCheckin({
+          humor: newCheckin.humor,
+          energia: newCheckin.energia,
+          stress: newCheckin.stress,
+        })
       } catch (err) {
         console.error('Error submitting check-in:', err)
         throw err

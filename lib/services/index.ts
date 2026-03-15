@@ -42,3 +42,12 @@ export {
   applyStreakFreezes,
 } from './achievements'
 export type { AchievementCodeEntry, FreezeInfo, FreezeResult } from './achievements'
+
+export {
+  autoPostWorkout,
+  autoPostAchievement,
+  autoPostLevelUp,
+  autoPostMeal,
+  autoPostCheckin,
+  autoPostStreakMilestone,
+} from './auto-post'

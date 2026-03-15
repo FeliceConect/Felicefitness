@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
-import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList } from 'lucide-react'
+import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList, SmilePlus } from 'lucide-react'
 import Link from 'next/link'
 import {
   GreetingHeader,
@@ -271,7 +271,7 @@ export function DashboardContent() {
         <StatsOverview stats={stats} />
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <button
             onClick={() => handleAddWater(250)}
             disabled={isAddingWater}
@@ -287,6 +287,10 @@ export function DashboardContent() {
           <Link href="/treino" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
             <Dumbbell className="w-5 h-5 text-vinho" />
             <span className="text-xs text-foreground-secondary">Treinar</span>
+          </Link>
+          <Link href="/bem-estar/checkin" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
+            <SmilePlus className="w-5 h-5 text-purple-500" />
+            <span className="text-xs text-foreground-secondary">Check-in</span>
           </Link>
         </div>
       </main>
