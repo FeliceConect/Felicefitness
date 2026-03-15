@@ -15,6 +15,7 @@ import {
   Swords,
 } from 'lucide-react'
 import Link from 'next/link'
+import { ShareButton } from '@/components/share/share-button'
 
 const TIER_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
   bronze: { label: 'Bronze', icon: '🥉', color: 'text-amber-700' },
@@ -168,12 +169,26 @@ export default function ChallengeDetailPage() {
               <p className="text-2xl font-bold text-dourado">{userScore}</p>
             </div>
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            {isActive ? (
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{daysLeft}d restantes</span>
-            ) : (
-              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Encerrado</span>
-            )}
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isActive ? (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{daysLeft}d restantes</span>
+              ) : (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Encerrado</span>
+              )}
+            </div>
+            <ShareButton
+              type="achievement"
+              data={{
+                name: challenge.title,
+                description: `Posição #${userPosition || '—'} • ${userScore} pts`,
+                icon: '⚔️',
+                rarity: 'common' as const,
+                date: new Date().toLocaleDateString('pt-BR'),
+              }}
+              variant="icon"
+              className="text-foreground-muted hover:text-dourado"
+            />
           </div>
         </div>
       ) : (

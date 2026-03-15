@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import type { Achievement } from '@/types/gamification'
 import { TIER_COLORS, TIER_GRADIENTS } from '@/lib/gamification'
+import { ShareButton } from '@/components/share/share-button'
 
 interface AchievementModalProps {
   isOpen: boolean
@@ -146,19 +147,35 @@ export function AchievementModal({ isOpen, achievement, onClose }: AchievementMo
                 </span>
               </motion.div>
 
-              {/* Botão */}
-              <motion.button
-                className="mt-4 px-6 py-3 rounded-full font-semibold text-black"
-                style={{ background: tierGradient }}
-                onClick={onClose}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              {/* Botões */}
+              <motion.div
+                className="mt-4 flex items-center gap-3"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                Incrível! 🎉
-              </motion.button>
+                <motion.button
+                  className="px-6 py-3 rounded-full font-semibold text-black"
+                  style={{ background: tierGradient }}
+                  onClick={onClose}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Incrível! 🎉
+                </motion.button>
+                <ShareButton
+                  type="achievement"
+                  data={{
+                    name: achievement.name,
+                    description: achievement.description,
+                    icon: achievement.icon,
+                    rarity: achievement.tier === 'legendary' ? 'legendary' : achievement.tier === 'epic' ? 'epic' : achievement.tier === 'rare' ? 'rare' : 'common',
+                    date: new Date().toLocaleDateString('pt-BR'),
+                  }}
+                  variant="icon"
+                  className="text-foreground-muted hover:text-dourado"
+                />
+              </motion.div>
             </div>
 
             {/* Sparkles */}

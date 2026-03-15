@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
-import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList, SmilePlus } from 'lucide-react'
+import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList, SmilePlus, BarChart3, Flame, Zap } from 'lucide-react'
 import Link from 'next/link'
 import {
   GreetingHeader,
@@ -92,6 +92,8 @@ export function DashboardContent() {
 
   // Pending forms
   const [pendingFormsCount, setPendingFormsCount] = useState(0)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [weeklyRecap, setWeeklyRecap] = useState<any>(null)
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -100,6 +102,16 @@ export function DashboardContent() {
       .then(data => {
         if (data.success && data.data && data.data.length > 0) {
           setNextAppointment(data.data[0])
+        }
+      })
+      .catch(() => {})
+
+    // Fetch weekly recap
+    fetch('/api/recap')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.recap) {
+          setWeeklyRecap(data.recap)
         }
       })
       .catch(() => {})
@@ -266,6 +278,43 @@ export function DashboardContent() {
             </div>
           </Link>
         </div>
+
+        {/* Weekly Recap Card */}
+        {weeklyRecap && weeklyRecap.points > 0 && (
+          <div className="bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-2xl border border-dourado/20 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-dourado" />
+                <span className="font-heading font-bold text-foreground">Recap da Semana</span>
+              </div>
+              <span className="text-xs text-foreground-muted">
+                {new Date(weeklyRecap.week_start).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} — {new Date(weeklyRecap.week_end).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-white/60 rounded-xl p-2.5 text-center">
+                <Dumbbell className="w-4 h-4 text-vinho mx-auto mb-1" />
+                <p className="font-bold text-lg text-foreground">{weeklyRecap.workouts}</p>
+                <p className="text-[10px] text-foreground-muted">Treinos</p>
+              </div>
+              <div className="bg-white/60 rounded-xl p-2.5 text-center">
+                <Zap className="w-4 h-4 text-dourado mx-auto mb-1" />
+                <p className="font-bold text-lg text-dourado">+{weeklyRecap.points}</p>
+                <p className="text-[10px] text-foreground-muted">Pontos</p>
+              </div>
+              <div className="bg-white/60 rounded-xl p-2.5 text-center">
+                <Flame className="w-4 h-4 text-orange-500 mx-auto mb-1" />
+                <p className="font-bold text-lg text-foreground">{weeklyRecap.streak}</p>
+                <p className="text-[10px] text-foreground-muted">Streak</p>
+              </div>
+              <div className="bg-white/60 rounded-xl p-2.5 text-center">
+                <Trophy className="w-4 h-4 text-dourado mx-auto mb-1" />
+                <p className="font-bold text-lg text-foreground">{weeklyRecap.ranking_position ? `#${weeklyRecap.ranking_position}` : '—'}</p>
+                <p className="text-[10px] text-foreground-muted">Ranking</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <StatsOverview stats={stats} />

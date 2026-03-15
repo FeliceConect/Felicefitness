@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import type { Level } from '@/types/gamification'
 import { getLevelEmoji, getLevelGradient } from '@/lib/gamification'
+import { ShareButton } from '@/components/share/share-button'
 
 interface LevelUpModalProps {
   isOpen: boolean
@@ -141,19 +142,33 @@ export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
                 Continue evoluindo para desbloquear novos poderes!
               </motion.p>
 
-              {/* Botão */}
-              <motion.button
-                className="mt-4 px-6 py-3 rounded-full font-semibold text-white"
-                style={{ background: gradient }}
-                onClick={onClose}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              {/* Botões */}
+              <motion.div
+                className="mt-4 flex items-center gap-3"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                Continuar 💪
-              </motion.button>
+                <motion.button
+                  className="px-6 py-3 rounded-full font-semibold text-white"
+                  style={{ background: gradient }}
+                  onClick={onClose}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Continuar 💪
+                </motion.button>
+                <ShareButton
+                  type="streak"
+                  data={{
+                    days: level.level,
+                    record: level.level,
+                    message: `Alcancei o Nível ${level.level} — ${level.name}!`,
+                  }}
+                  variant="icon"
+                  className="text-foreground-muted hover:text-dourado"
+                />
+              </motion.div>
             </div>
 
             {/* Partículas de fundo */}
