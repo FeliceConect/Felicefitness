@@ -402,7 +402,10 @@ export function getNotificationTypeIcon(type: NotificationType): string {
     formulario: '📋',
     consulta: '📅',
     sistema: '📱',
-    chat_message: '💬'
+    chat_message: '💬',
+    feed_reaction: '👍',
+    feed_comment: '💬',
+    streak_risk: '🔥'
   }
   return icons[type] || '📱'
 }
@@ -422,7 +425,10 @@ export function getNotificationTypeColor(type: NotificationType): string {
     formulario: '#8B5CF6', // violet
     consulta: '#c29863', // dourado
     sistema: '#6B7280', // gray
-    chat_message: '#c29863' // dourado
+    chat_message: '#c29863', // dourado
+    feed_reaction: '#c29863', // dourado
+    feed_comment: '#c29863', // dourado
+    streak_risk: '#EF4444' // red
   }
   return colors[type] || '#6B7280'
 }

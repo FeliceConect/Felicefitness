@@ -12,6 +12,9 @@ export type NotificationType =
   | 'formulario'
   | 'consulta'
   | 'chat_message'
+  | 'feed_reaction'
+  | 'feed_comment'
+  | 'streak_risk'
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent'
 
@@ -68,6 +71,14 @@ export interface NotificationPreferences {
     enabled: boolean
   }
   consulta: {
+    enabled: boolean
+  }
+  social: {
+    enabled: boolean
+    reactions: boolean
+    comments: boolean
+  }
+  streakRisk: {
     enabled: boolean
   }
 
@@ -146,6 +157,14 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     enabled: true
   },
   consulta: {
+    enabled: true
+  },
+  social: {
+    enabled: true,
+    reactions: true,
+    comments: true,
+  },
+  streakRisk: {
     enabled: true
   },
   quietHours: {

@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { notifyReaction } from '@/lib/notifications/social'
 
 function getAdminClient() {
   return createAdminClient(
@@ -100,6 +101,19 @@ export async function POST(
       .from('fitness_community_posts')
       .update({ reactions_count: reactionCounts })
       .eq('id', postId)
+
+    // Send push notification to post author (fire-and-forget)
+    if (added) {
+      const { data: post } = await supabaseAdmin
+        .from('fitness_community_posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single()
+
+      if (post) {
+        notifyReaction(post.user_id, user.id, reaction_type).catch(() => {})
+      }
+    }
 
     return NextResponse.json({
       success: true,

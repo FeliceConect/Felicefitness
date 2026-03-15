@@ -29,10 +29,19 @@ interface Post {
   created_at: string
   author_name: string
   author_initial: string
+  author_role?: string
   is_own: boolean
   user_reactions: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any> | null
+}
+
+const PROFESSIONAL_ROLES: Record<string, { label: string; color: string }> = {
+  super_admin: { label: 'Admin', color: 'bg-dourado/15 text-dourado border-dourado/30' },
+  admin: { label: 'Admin', color: 'bg-dourado/15 text-dourado border-dourado/30' },
+  nutritionist: { label: 'Nutri', color: 'bg-green-50 text-green-700 border-green-200' },
+  trainer: { label: 'Personal', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  coach: { label: 'Coach', color: 'bg-purple-50 text-purple-700 border-purple-200' },
 }
 
 interface Comment {
@@ -42,6 +51,7 @@ interface Comment {
   content: string
   created_at: string
   author_name: string
+  author_role?: string
   is_own: boolean
 }
 
@@ -426,7 +436,14 @@ export default function FeedPage() {
                     <span className="text-white font-bold text-sm">{post.author_initial}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground text-sm truncate">{post.author_name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-medium text-foreground text-sm truncate">{post.author_name}</p>
+                      {post.author_role && PROFESSIONAL_ROLES[post.author_role] && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[post.author_role].color}`}>
+                          {PROFESSIONAL_ROLES[post.author_role].label}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-foreground-muted">{formatDate(post.created_at)}</span>
                       {POST_TYPE_LABELS[post.post_type] && (
@@ -638,22 +655,30 @@ export default function FeedPage() {
                       </div>
                     ) : (
                       <>
-                        {(comments[post.id] || []).map(comment => (
-                          <div key={comment.id} className="px-4 py-2.5 flex gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-foreground-muted/30 to-foreground-muted/10 flex items-center justify-center flex-shrink-0">
-                              <span className="text-foreground-secondary text-xs font-medium">
+                        {(comments[post.id] || []).map(comment => {
+                          const isProfessional = comment.author_role && PROFESSIONAL_ROLES[comment.author_role]
+                          return (
+                          <div key={comment.id} className={`px-4 py-2.5 flex gap-2.5 ${isProfessional ? 'bg-dourado/5 border-l-2 border-l-dourado' : ''}`}>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isProfessional ? 'bg-gradient-to-br from-dourado to-vinho' : 'bg-gradient-to-br from-foreground-muted/30 to-foreground-muted/10'}`}>
+                              <span className={`text-xs font-medium ${isProfessional ? 'text-white' : 'text-foreground-secondary'}`}>
                                 {comment.author_name.charAt(0).toUpperCase()}
                               </span>
                             </div>
                             <div className="flex-1">
-                              <div className="flex items-baseline gap-2">
-                                <span className="text-xs font-medium text-foreground">{comment.author_name}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-xs font-medium ${isProfessional ? 'text-dourado' : 'text-foreground'}`}>{comment.author_name}</span>
+                                {isProfessional && (
+                                  <span className={`text-[8px] px-1 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[comment.author_role!].color}`}>
+                                    {PROFESSIONAL_ROLES[comment.author_role!].label}
+                                  </span>
+                                )}
                                 <span className="text-[10px] text-foreground-muted">{formatDate(comment.created_at)}</span>
                               </div>
                               <p className="text-xs text-foreground-secondary leading-relaxed">{comment.content}</p>
                             </div>
                           </div>
-                        ))}
+                          )
+                        })}
 
                         {/* Add comment */}
                         <div className="p-3 flex items-center gap-2 border-t border-border">

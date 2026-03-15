@@ -75,6 +75,14 @@ export async function GET() {
       consulta: {
         enabled: true
       },
+      social: {
+        enabled: true,
+        reactions: true,
+        comments: true,
+      },
+      streakRisk: {
+        enabled: true
+      },
       quietHours: DEFAULT_NOTIFICATION_PREFERENCES.quietHours
     }
 

@@ -13,7 +13,9 @@ import {
   Bell,
   ChevronRight,
   Minus,
-  Plus
+  Plus,
+  MessageCircle,
+  Flame
 } from 'lucide-react'
 import type { NotificationPreferences } from '@/types/notifications'
 import { cn } from '@/lib/utils'
@@ -352,6 +354,34 @@ export function NotificationPreferencesForm({
           enabled={preferences.conquistas.enabled}
           onToggle={() => onChange({
             conquistas: { enabled: !preferences.conquistas.enabled }
+          })}
+          disabled={disabled}
+        />
+
+        {/* Social */}
+        <PreferenceRow
+          icon={<MessageCircle className="w-5 h-5" />}
+          label="Social"
+          description="Reações e comentários no feed"
+          enabled={preferences.social?.enabled ?? true}
+          onToggle={() => onChange({
+            social: {
+              enabled: !(preferences.social?.enabled ?? true),
+              reactions: preferences.social?.reactions ?? true,
+              comments: preferences.social?.comments ?? true,
+            }
+          })}
+          disabled={disabled}
+        />
+
+        {/* Streak Risk */}
+        <PreferenceRow
+          icon={<Flame className="w-5 h-5" />}
+          label="Alerta de Streak"
+          description="Aviso quando seu streak está em risco"
+          enabled={preferences.streakRisk?.enabled ?? true}
+          onToggle={() => onChange({
+            streakRisk: { enabled: !(preferences.streakRisk?.enabled ?? true) }
           })}
           disabled={disabled}
         />

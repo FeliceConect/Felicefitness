@@ -26,7 +26,10 @@ const FILTER_OPTIONS: { value: NotificationType | 'all'; label: string }[] = [
   { value: 'refeicao', label: 'Refeição' },
   { value: 'agua', label: 'Água' },
   { value: 'medicamento', label: 'Medicamento' },
-  { value: 'conquista', label: 'Conquistas' }
+  { value: 'conquista', label: 'Conquistas' },
+  { value: 'feed_reaction', label: 'Reações' },
+  { value: 'feed_comment', label: 'Comentários' },
+  { value: 'streak_risk', label: 'Streak' }
 ]
 
 export default function NotificationsPage() {

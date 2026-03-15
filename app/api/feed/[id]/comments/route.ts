@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { notifyComment } from '@/lib/notifications/social'
 
 function getAdminClient() {
   return createAdminClient(
@@ -39,23 +40,27 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Erro ao buscar' }, { status: 500 })
     }
 
-    // Enrich with author names
+    // Enrich with author names + role
     const userIds = [...new Set((comments || []).map(c => c.user_id))]
-    const profileMap: Record<string, string> = {}
+    const profileMap: Record<string, { name: string; role: string }> = {}
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, display_name, apelido_ranking')
+        .select('id, nome, display_name, apelido_ranking, role')
         .in('id', userIds)
 
       for (const p of (profiles || [])) {
-        profileMap[p.id] = p.display_name || p.apelido_ranking || p.nome?.split(' ')[0] || 'Anonimo'
+        profileMap[p.id] = {
+          name: p.display_name || p.apelido_ranking || p.nome?.split(' ')[0] || 'Anonimo',
+          role: p.role || 'client',
+        }
       }
     }
 
     const enriched = (comments || []).map(c => ({
       ...c,
-      author_name: profileMap[c.user_id] || 'Anonimo',
+      author_name: profileMap[c.user_id]?.name || 'Anonimo',
+      author_role: profileMap[c.user_id]?.role || 'client',
       is_own: c.user_id === user.id,
     }))
 
@@ -126,6 +131,17 @@ export async function POST(
         source: 'automatic',
         reference_id: postId,
       })
+
+    // Send push notification to post author (fire-and-forget)
+    const { data: post } = await supabaseAdmin
+      .from('fitness_community_posts')
+      .select('user_id')
+      .eq('id', postId)
+      .single()
+
+    if (post) {
+      notifyComment(post.user_id, user.id, content.trim()).catch(() => {})
+    }
 
     // Get author name
     const { data: profile } = await supabaseAdmin

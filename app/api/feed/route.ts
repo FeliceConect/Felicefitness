@@ -47,11 +47,11 @@ export async function GET(request: NextRequest) {
 
     // Enrich with author info
     const userIds = [...new Set((posts || []).map(p => p.user_id))]
-    const profileMap: Record<string, { nome: string; display_name: string | null; apelido_ranking: string | null }> = {}
+    const profileMap: Record<string, { nome: string; display_name: string | null; apelido_ranking: string | null; role: string }> = {}
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, display_name, apelido_ranking')
+        .select('id, nome, display_name, apelido_ranking, role')
         .in('id', userIds)
 
       for (const p of (profiles || [])) {
@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
           nome: p.nome || '',
           display_name: p.display_name,
           apelido_ranking: p.apelido_ranking,
+          role: p.role || 'client',
         }
       }
     }
@@ -96,10 +97,12 @@ export async function GET(request: NextRequest) {
     const enrichedPosts = (posts || []).map(post => {
       const profile = profileMap[post.user_id]
       const displayName = profile?.display_name || profile?.apelido_ranking || profile?.nome?.split(' ')[0] || 'Anonimo'
+      const authorRole = profile?.role || 'client'
       return {
         ...post,
         author_name: displayName,
         author_initial: displayName.charAt(0).toUpperCase(),
+        author_role: authorRole,
         is_own: post.user_id === user.id,
         user_reactions: userReactions[post.id] || [],
         comment_count: commentCounts[post.id] || post.comments_count || 0,
