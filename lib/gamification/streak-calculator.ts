@@ -162,7 +162,9 @@ export function updateStreakData(
     currentStreak,
     bestStreak,
     lastActivityDate: activityDate,
-    streakHistory: updatedHistory
+    streakHistory: updatedHistory,
+    freezesAvailable: currentData.freezesAvailable,
+    freezesUsed: currentData.freezesUsed,
   }
 }
 
@@ -221,7 +223,9 @@ export function getInitialStreakData(): StreakData {
     currentStreak: 0,
     bestStreak: 0,
     lastActivityDate: null,
-    streakHistory: []
+    streakHistory: [],
+    freezesAvailable: 2,
+    freezesUsed: 0,
   }
 }
 

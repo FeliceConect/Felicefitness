@@ -161,12 +161,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao criar post' }, { status: 500 })
     }
 
-    // Award 2 points for posting
+    // Award 4 points for posting
     await supabaseAdmin
       .from('fitness_point_transactions')
       .insert({
         user_id: user.id,
-        points: 2,
+        points: 4,
         reason: 'Post no feed',
         category: 'social',
         source: 'automatic',

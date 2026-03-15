@@ -13,7 +13,7 @@
  * - Sono registrado: 3pts
  * - Check-in bem-estar: 3pts
  * - PR alcancado: 10pts
- * - Post no feed: 2pts (handled by feed API)
+ * - Post no feed: 4pts (handled by feed API)
  * - Reacao/comentario: 1pt (handled by feed API)
  * - Formulario preenchido: 5pts
  * - Streak 7 dias: 15pts bonus

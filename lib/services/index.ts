@@ -33,3 +33,12 @@ export {
   awardStreak30Points,
 } from './points'
 export type { PointAction, AwardPointsResult } from './points'
+
+export {
+  getUserAchievementCodes,
+  unlockAchievementByCode,
+  unlockAchievements,
+  getStreakFreezeStatus,
+  applyStreakFreezes,
+} from './achievements'
+export type { AchievementCodeEntry, FreezeInfo, FreezeResult } from './achievements'

@@ -88,6 +88,8 @@ export interface StreakData {
   bestStreak: number
   lastActivityDate: string | null
   streakHistory: StreakDay[]
+  freezesAvailable: number
+  freezesUsed: number
 }
 
 export interface StreakDay {
@@ -200,7 +202,6 @@ export interface UserStats {
 
   // Nutrição
   mealsLogged: number
-  aiAnalyses: number
   proteinStreakDays: number
   perfectMacroDays: number
 

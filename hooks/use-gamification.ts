@@ -23,13 +23,15 @@ import {
   ACHIEVEMENTS,
   checkUnlockedAchievements,
   getInitialStreakData,
-  updateStreakData,
-  getTodayString,
-  isComeback,
-  calculateStreakBonus,
   generateDailyChallenges,
   generateWeeklyChallenges
 } from '@/lib/gamification'
+import {
+  getUserAchievementCodes,
+  unlockAchievementByCode,
+  applyStreakFreezes,
+} from '@/lib/services/achievements'
+import type { FreezeInfo } from '@/lib/services/achievements'
 
 // XP values for different activities
 const XP_VALUES = {
@@ -61,7 +63,11 @@ const INITIAL_STATE = {
 }
 
 /**
- * Hook principal de gamificação - agora com dados reais do Supabase
+ * Hook principal de gamificação
+ * - XP e streak calculados do Supabase
+ * - Conquistas persistidas no Supabase (fitness_achievements_users)
+ * - Streak freeze: 2 dias de graça por mês
+ * - Desafios diários/semanais em localStorage (será migrado na Fase 4)
  */
 export function useGamification(): UseGamificationReturn {
   // Estados
@@ -79,6 +85,7 @@ export function useGamification(): UseGamificationReturn {
   const [newLevel, setNewLevel] = useState<Level | null>(null)
   const [showAchievement, setShowAchievement] = useState<Achievement | null>(null)
   const userStatsRef = useRef<UserStats | null>(null)
+  const userIdRef = useRef<string | null>(null)
 
   // Calcular XP baseado em atividades reais do banco
   const calculateXPFromDatabase = useCallback(async () => {
@@ -87,17 +94,17 @@ export function useGamification(): UseGamificationReturn {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        console.log('Gamification: No user found')
-        return { xp: 0, stats: null, streakData: getInitialStreakData() }
+        return { xp: 0, stats: null, streakData: getInitialStreakData(), freezeInfo: null }
       }
 
+      userIdRef.current = user.id
       const today = getTodayISO()
 
-      // Buscar dados do perfil (streak)
+      // Buscar dados do perfil (streak + freeze)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase as any)
         .from('fitness_profiles')
-        .select('streak_atual, maior_streak, pontos_totais')
+        .select('streak_atual, maior_streak, pontos_totais, streak_freeze_used, streak_freeze_month, streak_last_activity_date')
         .eq('id', user.id)
         .single()
 
@@ -175,7 +182,6 @@ export function useGamification(): UseGamificationReturn {
         (prsAchieved || 0) * XP_VALUES.pr_achieved +
         ((profile?.streak_atual || 0) * XP_VALUES.streak_bonus_per_day)
 
-
       // Calcular score de hoje
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: todayWorkout } = await (supabase as any)
@@ -203,10 +209,21 @@ export function useGamification(): UseGamificationReturn {
         .eq('data', today)
         .maybeSingle()
 
+      // Buscar data do último treino (para freeze check)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: lastWorkout } = await (supabase as any)
+        .from('fitness_workouts')
+        .select('data')
+        .eq('user_id', user.id)
+        .eq('status', 'concluido')
+        .order('data', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
       // Score do dia (0-100)
       const workoutScore = todayWorkout ? 30 : 0
       const waterScore = Math.min(30, Math.round((todayWater / 3000) * 30))
-      const mealsScore = Math.min(25, (todayMealsCount || 0) * 5) // 5 pontos por refeição, max 25
+      const mealsScore = Math.min(25, (todayMealsCount || 0) * 5)
       const sleepScore = todaySleep ? 15 : 0
 
       const dailyScore: DailyScoreBreakdown = {
@@ -214,7 +231,7 @@ export function useGamification(): UseGamificationReturn {
         workout: workoutScore,
         nutrition: mealsScore,
         hydration: waterScore,
-        extras: sleepScore // sleep + outros extras
+        extras: sleepScore
       }
 
       // Streak data
@@ -222,7 +239,16 @@ export function useGamification(): UseGamificationReturn {
         currentStreak: profile?.streak_atual || 0,
         bestStreak: profile?.maior_streak || 0,
         lastActivityDate: today,
-        streakHistory: []
+        streakHistory: [],
+        freezesAvailable: 2,
+        freezesUsed: 0,
+      }
+
+      // Freeze info for the freeze check
+      const freezeInfo: FreezeInfo = {
+        freezeUsed: profile?.streak_freeze_used || 0,
+        freezeMonth: profile?.streak_freeze_month || null,
+        lastActivityDate: profile?.streak_last_activity_date || lastWorkout?.data || null,
       }
 
       // Build full UserStats
@@ -233,7 +259,6 @@ export function useGamification(): UseGamificationReturn {
         prsAchieved: prsAchieved || 0,
         earlyWorkouts: 0,
         mealsLogged: mealsLogged || 0,
-        aiAnalyses: 0,
         proteinStreakDays: 0,
         perfectMacroDays: 0,
         waterGoalsMet: waterGoalsMet || 0,
@@ -253,11 +278,12 @@ export function useGamification(): UseGamificationReturn {
         xp: calculatedXP,
         stats: fullStats,
         streakData,
-        dailyScore
+        dailyScore,
+        freezeInfo,
       }
     } catch (error) {
       console.error('Erro ao calcular XP:', error)
-      return { xp: 0, stats: null, streakData: getInitialStreakData(), dailyScore: null }
+      return { xp: 0, stats: null, streakData: getInitialStreakData(), dailyScore: null, freezeInfo: null }
     }
   }, [])
 
@@ -270,13 +296,12 @@ export function useGamification(): UseGamificationReturn {
   const loadGamificationData = useCallback(async () => {
     setLoading(true)
     try {
-      const { xp, stats, streakData, dailyScore } = await calculateXPFromDatabase()
+      const { xp, stats, streakData, dailyScore, freezeInfo } = await calculateXPFromDatabase()
 
       setTotalXP(xp)
       setCurrentLevel(getLevelFromXP(xp))
       setXpToNextLevel(getXPToNextLevel(xp))
       setLevelProgress(getLevelProgress(xp))
-      setStreak(streakData)
 
       // Save real stats for achievement checking
       if (stats) {
@@ -287,14 +312,51 @@ export function useGamification(): UseGamificationReturn {
         setTodayScore(dailyScore)
       }
 
-      // Carregar desafios do localStorage (por enquanto)
+      // --- Load achievements from Supabase ---
+      const dbAchievementCodes = await getUserAchievementCodes()
+      if (dbAchievementCodes.length > 0) {
+        const userAchievements: UserAchievement[] = dbAchievementCodes.map(a => ({
+          id: a.code,
+          achievementId: a.code,
+          unlockedAt: a.unlockedAt,
+        }))
+        setUnlockedAchievements(userAchievements)
+      }
+
+      // --- Check and apply streak freezes ---
+      if (freezeInfo && userIdRef.current) {
+        const freezeResult = await applyStreakFreezes(
+          userIdRef.current,
+          streakData.currentStreak,
+          freezeInfo
+        )
+
+        const updatedStreak: StreakData = {
+          ...streakData,
+          currentStreak: freezeResult.newStreak ?? streakData.currentStreak,
+          freezesAvailable: freezeResult.freezesAvailable,
+          freezesUsed: freezeResult.freezesUsed,
+        }
+
+        // If streak was recalculated, update best streak too
+        if (freezeResult.newStreak !== null) {
+          updatedStreak.bestStreak = Math.max(
+            updatedStreak.bestStreak,
+            updatedStreak.currentStreak
+          )
+        }
+
+        setStreak(updatedStreak)
+      } else {
+        setStreak(streakData)
+      }
+
+      // Active challenges stay in localStorage (Phase 4 will migrate to DB)
       const savedData = localStorage.getItem('felicefit_gamification')
       if (savedData) {
         const data = JSON.parse(savedData)
-        setUnlockedAchievements(data.unlockedAchievements || [])
         setActiveChallenges(data.activeChallenges || [])
       } else {
-        // Inicializar com desafios
         const dailyChallenges = generateDailyChallenges()
         const weeklyChallenges = generateWeeklyChallenges()
         setActiveChallenges([...dailyChallenges, ...weeklyChallenges])
@@ -307,22 +369,21 @@ export function useGamification(): UseGamificationReturn {
     }
   }, [calculateXPFromDatabase])
 
-  // Salvar dados de conquistas no localStorage
+  // Salvar dados de desafios no localStorage (conquistas agora vão para o DB)
   const saveGamificationData = useCallback(() => {
     const data = {
-      unlockedAchievements,
       activeChallenges,
       lastUpdated: new Date().toISOString()
     }
     localStorage.setItem('felicefit_gamification', JSON.stringify(data))
-  }, [unlockedAchievements, activeChallenges])
+  }, [activeChallenges])
 
-  // Auto-save quando dados de conquistas mudam
+  // Auto-save quando dados de desafios mudam
   useEffect(() => {
     if (!loading) {
       saveGamificationData()
     }
-  }, [unlockedAchievements, activeChallenges, loading, saveGamificationData])
+  }, [activeChallenges, loading, saveGamificationData])
 
   // Adicionar XP (para ações manuais, o cálculo principal vem do banco)
   const addXP = useCallback(async (amount: number, reason: string, type?: XPEventType) => {
@@ -355,7 +416,6 @@ export function useGamification(): UseGamificationReturn {
       prsAchieved: 0,
       earlyWorkouts: 0,
       mealsLogged: 0,
-      aiAnalyses: 0,
       proteinStreakDays: 0,
       perfectMacroDays: 0,
       waterGoalsMet: 0,
@@ -382,7 +442,7 @@ export function useGamification(): UseGamificationReturn {
     if (newlyUnlocked.length > 0) {
       // Adicionar às conquistas desbloqueadas
       const newUserAchievements: UserAchievement[] = newlyUnlocked.map(a => ({
-        id: `${a.id}_${Date.now()}`,
+        id: a.id,
         achievementId: a.id,
         unlockedAt: new Date()
       }))
@@ -391,6 +451,11 @@ export function useGamification(): UseGamificationReturn {
 
       // Mostrar primeira conquista nova
       setShowAchievement(newlyUnlocked[0])
+
+      // Salvar no Supabase
+      for (const achievement of newlyUnlocked) {
+        await unlockAchievementByCode(achievement.id)
+      }
 
       // Adicionar XP das conquistas
       for (const achievement of newlyUnlocked) {

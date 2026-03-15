@@ -9,15 +9,17 @@ interface StreakCounterProps {
   size?: 'sm' | 'md' | 'lg'
   showMessage?: boolean
   showBest?: boolean
+  showFreeze?: boolean
 }
 
 export function StreakCounter({
   streak,
   size = 'md',
   showMessage = true,
-  showBest = false
+  showBest = false,
+  showFreeze = true,
 }: StreakCounterProps) {
-  const { currentStreak, bestStreak } = streak
+  const { currentStreak, bestStreak, freezesAvailable, freezesUsed } = streak
   const color = getStreakColor(currentStreak)
   const message = getStreakMessage(currentStreak)
   const intensity = getFlameIntensity(currentStreak)
@@ -90,6 +92,27 @@ export function StreakCounter({
         <div className="text-xs text-muted-foreground mt-2">
           Melhor: {bestStreak} dias
         </div>
+      )}
+
+      {showFreeze && (
+        <motion.div
+          className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-bg-elevated"
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <span className="text-xs">
+            {freezesAvailable > 0 ? '🛡️' : '⚠️'}
+          </span>
+          <span className="text-xs text-text-secondary font-sarabun">
+            {freezesAvailable}/{freezesAvailable + freezesUsed} freezes
+          </span>
+          {freezesUsed > 0 && (
+            <span className="text-[10px] text-text-muted">
+              ({freezesUsed} usado{freezesUsed > 1 ? 's' : ''})
+            </span>
+          )}
+        </motion.div>
       )}
     </div>
   )

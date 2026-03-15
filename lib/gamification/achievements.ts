@@ -310,26 +310,6 @@ export const ACHIEVEMENTS: Achievement[] = [
     criteria: { type: 'meals_logged', value: 500 }
   },
   {
-    id: 'ai_photo_1',
-    name: 'Olho Digital',
-    description: 'Use a IA para analisar uma refeição',
-    icon: '📸',
-    category: 'nutrition',
-    tier: 'bronze',
-    xpReward: TIER_XP.bronze,
-    criteria: { type: 'ai_analyses', value: 1 }
-  },
-  {
-    id: 'ai_photo_25',
-    name: 'Fotógrafo Fit',
-    description: 'Use a IA para analisar 25 refeições',
-    icon: '📷',
-    category: 'nutrition',
-    tier: 'silver',
-    xpReward: TIER_XP.silver,
-    criteria: { type: 'ai_analyses', value: 25 }
-  },
-  {
     id: 'protein_7',
     name: 'Semana Proteica',
     description: 'Atinja a meta de proteína 7 dias seguidos',
@@ -730,10 +710,6 @@ export function checkUnlockedAchievements(
         unlocked = stats.mealsLogged >= (criteria.value || 0)
         break
 
-      case 'ai_analyses':
-        unlocked = stats.aiAnalyses >= (criteria.value || 0)
-        break
-
       case 'protein_streak':
         unlocked = stats.proteinStreakDays >= (criteria.value || 0)
         break
@@ -827,9 +803,6 @@ export function getAchievementProgress(
       break
     case 'meals_logged':
       current = stats.mealsLogged
-      break
-    case 'ai_analyses':
-      current = stats.aiAnalyses
       break
     case 'protein_streak':
       current = stats.proteinStreakDays
