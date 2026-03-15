@@ -109,7 +109,7 @@ export function AchievementCard({
                     name: achievement.name,
                     description: achievement.description,
                     icon: achievement.icon,
-                    rarity: achievement.tier === 'legendary' ? 'legendary' : achievement.tier === 'epic' ? 'epic' : achievement.tier === 'rare' ? 'rare' : 'common',
+                    rarity: achievement.tier === 'diamond' ? 'legendary' : achievement.tier === 'platinum' ? 'epic' : achievement.tier === 'gold' ? 'rare' : 'common',
                     date: userAchievement ? new Date(userAchievement.unlockedAt).toLocaleDateString('pt-BR') : '',
                   }}
                   variant="icon"

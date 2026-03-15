@@ -169,7 +169,7 @@ export function AchievementModal({ isOpen, achievement, onClose }: AchievementMo
                     name: achievement.name,
                     description: achievement.description,
                     icon: achievement.icon,
-                    rarity: achievement.tier === 'legendary' ? 'legendary' : achievement.tier === 'epic' ? 'epic' : achievement.tier === 'rare' ? 'rare' : 'common',
+                    rarity: achievement.tier === 'diamond' ? 'legendary' : achievement.tier === 'platinum' ? 'epic' : achievement.tier === 'gold' ? 'rare' : 'common',
                     date: new Date().toLocaleDateString('pt-BR'),
                   }}
                   variant="icon"
