@@ -13,7 +13,6 @@ import {
   Coffee,
   CheckCircle,
   PenLine,
-  ImagePlus,
   Camera,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -32,6 +31,7 @@ interface Post {
   author_initial: string
   is_own: boolean
   user_reactions: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any> | null
 }
 
@@ -48,7 +48,7 @@ interface Comment {
 const POST_TYPES = [
   { value: 'free_text', label: 'Texto', icon: PenLine },
   { value: 'workout', label: 'Treino', icon: Dumbbell },
-  { value: 'meal', label: 'Refeicao', icon: Coffee },
+  { value: 'meal', label: 'Refeição', icon: Coffee },
   { value: 'achievement', label: 'Conquista', icon: Award },
   { value: 'check_in', label: 'Check-in', icon: CheckCircle },
 ]
@@ -56,7 +56,7 @@ const POST_TYPES = [
 const REACTIONS = [
   { type: 'fire', emoji: '🔥', label: 'Fogo' },
   { type: 'heart', emoji: '❤️', label: 'Amor' },
-  { type: 'strength', emoji: '💪', label: 'Forca' },
+  { type: 'strength', emoji: '💪', label: 'Força' },
   { type: 'clap', emoji: '👏', label: 'Palmas' },
   { type: 'star', emoji: '⭐', label: 'Estrela' },
 ]
@@ -64,7 +64,7 @@ const REACTIONS = [
 const POST_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   free_text: { label: 'Post', color: 'bg-foreground-muted/10 text-foreground-secondary' },
   workout: { label: 'Treino', color: 'bg-blue-50 text-blue-600' },
-  meal: { label: 'Refeicao', color: 'bg-green-50 text-green-600' },
+  meal: { label: 'Refeição', color: 'bg-green-50 text-green-600' },
   achievement: { label: 'Conquista', color: 'bg-yellow-50 text-yellow-600' },
   check_in: { label: 'Check-in', color: 'bg-purple-50 text-purple-600' },
 }
@@ -74,7 +74,7 @@ const ENERGY_LEVELS = [
   { value: 2, emoji: '😐', label: 'Moderada' },
   { value: 3, emoji: '🙂', label: 'Boa' },
   { value: 4, emoji: '😊', label: 'Alta' },
-  { value: 5, emoji: '🔥', label: 'Maxima' },
+  { value: 5, emoji: '🔥', label: 'Máxima' },
 ]
 
 const MOOD_OPTIONS = [
@@ -111,6 +111,7 @@ export default function FeedPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Post metadata (type-specific fields)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [postMetadata, setPostMetadata] = useState<Record<string, any>>({})
 
   // Comments
@@ -162,7 +163,7 @@ export default function FeedPage() {
     // Validate type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Formato nao suportado. Use JPG, PNG, GIF ou WebP')
+      toast.error('Formato não suportado. Use JPG, PNG, GIF ou WebP')
       return
     }
 
@@ -486,7 +487,7 @@ export default function FeedPage() {
                     <div className="flex items-center gap-1.5 mb-2">
                       <Coffee className="w-3.5 h-3.5 text-green-600" />
                       <span className="text-[11px] font-semibold text-green-600 uppercase tracking-wide">
-                        {MEAL_TYPE_OPTIONS.find(m => m.value === post.metadata?.tipo_refeicao)?.label || 'Refeicao'}
+                        {MEAL_TYPE_OPTIONS.find(m => m.value === post.metadata?.tipo_refeicao)?.label || 'Refeição'}
                       </span>
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 text-center">
@@ -862,7 +863,7 @@ export default function FeedPage() {
               {newPostType === 'check_in' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] text-foreground-muted block mb-1.5">Como voce esta?</label>
+                    <label className="text-[11px] text-foreground-muted block mb-1.5">Como você está?</label>
                     <div className="flex gap-1.5">
                       {MOOD_OPTIONS.map(m => (
                         <button
@@ -915,7 +916,7 @@ export default function FeedPage() {
                   newPostType === 'meal' ? 'Notas sobre a refeicao (opcional)...' :
                   newPostType === 'achievement' ? 'Celebre sua conquista!' :
                   newPostType === 'check_in' ? 'Algo mais que queira compartilhar? (opcional)' :
-                  'O que voce quer compartilhar?'
+                  'O que você quer compartilhar?'
                 }
                 autoFocus={newPostType === 'free_text'}
               />

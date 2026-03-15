@@ -21,22 +21,22 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
     if (!file) {
-      return NextResponse.json({ success: false, error: 'Arquivo obrigatorio' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Arquivo obrigatório' }, { status: 400 })
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ success: false, error: 'Tipo de arquivo nao permitido. Use JPG, PNG, GIF ou WebP' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Tipo de arquivo não permitido. Use JPG, PNG, GIF ou WebP' }, { status: 400 })
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ success: false, error: 'Arquivo muito grande. Maximo 5MB' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Arquivo muito grande. Máximo 5MB' }, { status: 400 })
     }
 
     const supabaseAdmin = getAdminClient()

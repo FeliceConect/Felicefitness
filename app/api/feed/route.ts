@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -79,17 +79,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get comment counts
+    // Get comment counts (single query instead of N+1)
     const commentCounts: Record<string, number> = {}
     if (postIds.length > 0) {
-      for (const postId of postIds) {
-        const { count } = await supabaseAdmin
-          .from('fitness_community_comments')
-          .select('id', { count: 'exact', head: true })
-          .eq('post_id', postId)
-          .eq('is_visible', true)
+      const { data: comments } = await supabaseAdmin
+        .from('fitness_community_comments')
+        .select('post_id')
+        .in('post_id', postIds)
+        .eq('is_visible', true)
 
-        commentCounts[postId] = count || 0
+      for (const c of (comments || [])) {
+        commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1
       }
     }
 
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -131,12 +131,12 @@ export async function POST(request: NextRequest) {
     const { post_type, content, image_url, related_id, is_auto_generated, metadata } = body
 
     if (!post_type || (!content?.trim() && !image_url && !metadata)) {
-      return NextResponse.json({ success: false, error: 'Conteudo, imagem ou dados sao obrigatorios' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Conteúdo, imagem ou dados são obrigatórios' }, { status: 400 })
     }
 
     const validTypes = ['meal', 'workout', 'achievement', 'free_text', 'check_in']
     if (!validTypes.includes(post_type)) {
-      return NextResponse.json({ success: false, error: 'Tipo de post invalido' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Tipo de post inválido' }, { status: 400 })
     }
 
     const { data: post, error: insertError } = await supabaseAdmin
