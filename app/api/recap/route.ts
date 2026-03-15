@@ -64,11 +64,11 @@ export async function GET(_request: NextRequest) {
     // Streak
     const { data: profile } = await db
       .from('fitness_profiles')
-      .select('streak_atual, maior_streak')
+      .select('streak_atual, maior_streak, xp_total')
       .eq('id', user.id)
       .single()
 
-    // Ranking position
+    // Ranking position — try multi-ranking first, fall back to legacy XP ranking
     let rankingPosition = null
     const { data: rankings } = await db
       .from('fitness_ranking_participants')
@@ -84,6 +84,17 @@ export async function GET(_request: NextRequest) {
         .eq('ranking_id', rankings[0].ranking_id)
         .gt('total_points', rankings[0].total_points)
       rankingPosition = (above || 0) + 1
+    }
+
+    // Fallback: legacy XP-based position
+    if (!rankingPosition) {
+      const { count: aboveXp } = await db
+        .from('fitness_profiles')
+        .select('id', { count: 'exact', head: true })
+        .gt('xp_total', profile?.xp_total || 0)
+      if (aboveXp !== null) {
+        rankingPosition = aboveXp + 1
+      }
     }
 
     return NextResponse.json({

@@ -128,13 +128,12 @@ export function DashboardContent() {
       })
       .catch(() => {})
 
-    // Fetch ranking position
-    fetch('/api/rankings?leaderboard=false')
+    // Fetch ranking position (legacy XP-based ranking — always available)
+    fetch('/api/ranking?limit=1')
       .then(r => r.json())
       .then(data => {
-        if (data.success && data.rankings?.length > 0) {
-          const pos = data.rankings[0].user_position
-          if (pos) setRankingPosition(pos)
+        if (data.success && data.userRanking?.posicao) {
+          setRankingPosition(data.userRanking.posicao)
         }
       })
       .catch(() => {})
