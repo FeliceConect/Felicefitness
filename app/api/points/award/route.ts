@@ -167,6 +167,51 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Update challenge scores for active challenges the user has joined
+    const today = new Date().toISOString().split('T')[0]
+    const { data: userChallenges } = await supabaseAdmin
+      .from('fitness_challenge_participants')
+      .select('challenge_id')
+      .eq('user_id', user.id)
+
+    if (userChallenges && userChallenges.length > 0) {
+      const challengeIds = userChallenges.map(c => c.challenge_id)
+      const { data: activeChallenges } = await supabaseAdmin
+        .from('fitness_challenges')
+        .select('id, scoring_category')
+        .in('id', challengeIds)
+        .eq('is_active', true)
+        .lte('start_date', today)
+        .gte('end_date', today)
+
+      for (const ch of (activeChallenges || [])) {
+        // If challenge has a scoring_category filter, only count matching points
+        if (ch.scoring_category && ch.scoring_category !== config.category) continue
+
+        const { data: participant } = await supabaseAdmin
+          .from('fitness_challenge_participants')
+          .select('score')
+          .eq('challenge_id', ch.id)
+          .eq('user_id', user.id)
+          .single()
+
+        if (participant) {
+          await supabaseAdmin
+            .from('fitness_challenge_participants')
+            .update({ score: (participant.score || 0) + config.points })
+            .eq('challenge_id', ch.id)
+            .eq('user_id', user.id)
+        }
+      }
+    }
+
+    // Update user tier (never demotes)
+    try {
+      await supabaseAdmin.rpc('update_user_tier', { p_user_id: user.id })
+    } catch {
+      // tier update is best-effort
+    }
+
     return NextResponse.json({
       success: true,
       transaction,

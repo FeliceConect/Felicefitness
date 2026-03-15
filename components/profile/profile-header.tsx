@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
+const TIER_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+  bronze: { label: 'Bronze', icon: '🥉', color: 'text-amber-700' },
+  prata: { label: 'Prata', icon: '🥈', color: 'text-gray-500' },
+  ouro: { label: 'Ouro', icon: '🥇', color: 'text-yellow-500' },
+  platina: { label: 'Platina', icon: '💎', color: 'text-cyan-400' },
+}
+
 interface ProfileHeaderProps {
   profile: {
     nome: string
@@ -15,6 +22,7 @@ interface ProfileHeaderProps {
     titulo?: string
     xp_total?: number
     streak_atual?: number
+    status_tier?: string
   }
   onEditPhoto?: () => void
   className?: string
@@ -77,7 +85,7 @@ export function ProfileHeader({ profile, onEditPhoto, className }: ProfileHeader
         {/* Name */}
         <h1 className="mt-4 text-2xl font-bold">{fullName}</h1>
 
-        {/* Level badge */}
+        {/* Level badge + Tier */}
         <div className="mt-2 flex items-center gap-2">
           <div className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-medium flex items-center gap-1.5">
             <Award className="h-4 w-4" />
@@ -85,6 +93,15 @@ export function ProfileHeader({ profile, onEditPhoto, className }: ProfileHeader
             <span className="mx-1">•</span>
             <span>{titulo}</span>
           </div>
+          {(() => {
+            const tier = TIER_CONFIG[profile.status_tier || 'bronze']
+            return (
+              <div className={`px-2.5 py-1 rounded-full bg-white/80 border border-border text-sm font-medium flex items-center gap-1 ${tier.color}`}>
+                <span>{tier.icon}</span>
+                <span>{tier.label}</span>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Stats */}

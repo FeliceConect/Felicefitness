@@ -13,7 +13,12 @@ import {
   Settings,
   RefreshCw,
   Zap,
+  Swords,
+  Users,
+  Calendar,
+  ChevronRight,
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface RankingData {
   id: string
@@ -74,6 +79,34 @@ const CATEGORY_ICONS: Record<string, string> = {
   consistency: '🔥',
 }
 
+const TIER_CONFIG: Record<string, { label: string; color: string; icon: string; bg: string }> = {
+  bronze: { label: 'Bronze', color: 'text-amber-700', icon: '🥉', bg: 'from-amber-700/10 to-amber-600/5 border-amber-700/20' },
+  prata: { label: 'Prata', color: 'text-gray-500', icon: '🥈', bg: 'from-gray-400/10 to-gray-300/5 border-gray-400/20' },
+  ouro: { label: 'Ouro', color: 'text-yellow-500', icon: '🥇', bg: 'from-yellow-400/10 to-yellow-300/5 border-yellow-400/20' },
+  platina: { label: 'Platina', color: 'text-cyan-400', icon: '💎', bg: 'from-cyan-400/10 to-cyan-300/5 border-cyan-400/20' },
+}
+
+const TIER_THRESHOLDS = [
+  { tier: 'prata', points: 500, label: 'Prata' },
+  { tier: 'ouro', points: 2000, label: 'Ouro' },
+  { tier: 'platina', points: 5000, label: 'Platina' },
+]
+
+interface ChallengeData {
+  id: string
+  title: string
+  description: string
+  challenge_type: string
+  start_date: string
+  end_date: string
+  participant_count: number
+  is_joined: boolean
+  user_score: number
+  user_position: number | null
+  has_started: boolean
+  is_private: boolean
+}
+
 export default function RankingPage() {
   const [rankings, setRankings] = useState<RankingData[]>([])
   const [activeTab, setActiveTab] = useState(0)
@@ -89,6 +122,11 @@ export default function RankingPage() {
   const [showTimeline, setShowTimeline] = useState(false)
   const [pointsSummary, setPointsSummary] = useState({ totalPoints: 0, todayTotal: 0, monthTotal: 0 })
 
+  // Challenges + Tier
+  const [challenges, setChallenges] = useState<ChallengeData[]>([])
+  const [userTier, setUserTier] = useState('bronze')
+  const [joiningChallenge, setJoiningChallenge] = useState<string | null>(null)
+
   // Also fetch legacy ranking for backwards compatibility
   const [legacyRanking, setLegacyRanking] = useState<{ posicao: number; xp_total: number; nivel: number; percentil: number; total_usuarios: number } | null>(null)
   const [legacyLeaderboard, setLegacyLeaderboard] = useState<{ posicao: number; apelido: string; xp_total: number; nivel: number; streak_atual: number }[]>([])
@@ -96,16 +134,18 @@ export default function RankingPage() {
   const fetchData = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true)
     try {
-      // Fetch multi-ranking data
-      const [rankRes, legacyRes, pointsRes] = await Promise.all([
+      // Fetch multi-ranking data + challenges
+      const [rankRes, legacyRes, pointsRes, challengeRes] = await Promise.all([
         fetch('/api/rankings?leaderboard=true&limit=20'),
         fetch('/api/ranking'),
         fetch('/api/points/award?limit=10'),
+        fetch('/api/challenges'),
       ])
 
       const rankData = await rankRes.json()
       const legacyData = await legacyRes.json()
       const pointsData = await pointsRes.json()
+      const challengeData = await challengeRes.json()
 
       if (rankData.success) {
         setRankings(rankData.rankings || [])
@@ -123,6 +163,16 @@ export default function RankingPage() {
           todayTotal: pointsData.todayTotal || 0,
           monthTotal: pointsData.monthTotal || 0,
         })
+        // Calculate tier from total points
+        const tp = pointsData.totalPoints || 0
+        if (tp >= 5000) setUserTier('platina')
+        else if (tp >= 2000) setUserTier('ouro')
+        else if (tp >= 500) setUserTier('prata')
+        else setUserTier('bronze')
+      }
+
+      if (challengeData.success) {
+        setChallenges(challengeData.challenges || [])
       }
     } catch (error) {
       console.error('Erro ao buscar ranking:', error)
@@ -153,6 +203,21 @@ export default function RankingPage() {
       console.error('Erro ao salvar:', error)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const joinChallenge = async (challengeId: string) => {
+    setJoiningChallenge(challengeId)
+    try {
+      const res = await fetch(`/api/challenges/${challengeId}`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, is_joined: true, participant_count: c.participant_count + 1 } : c))
+      }
+    } catch {
+      // silent
+    } finally {
+      setJoiningChallenge(null)
     }
   }
 
@@ -256,6 +321,95 @@ export default function RankingPage() {
           <p className="text-xs text-foreground-secondary">Hoje</p>
         </div>
       </div>
+
+      {/* Tier Badge */}
+      {(() => {
+        const tier = TIER_CONFIG[userTier]
+        const nextTier = TIER_THRESHOLDS.find(t => pointsSummary.totalPoints < t.points)
+        const progress = nextTier
+          ? Math.min(100, Math.round((pointsSummary.totalPoints / nextTier.points) * 100))
+          : 100
+        return (
+          <div className={`bg-gradient-to-r ${tier.bg} rounded-xl border p-4`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{tier.icon}</span>
+                <div>
+                  <p className={`font-heading font-bold text-lg ${tier.color}`}>Tier {tier.label}</p>
+                  {nextTier ? (
+                    <p className="text-xs text-foreground-secondary">
+                      {pointsSummary.totalPoints}/{nextTier.points} pts para {nextTier.label}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-foreground-secondary">Tier maximo alcancado!</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            {nextTier && (
+              <div className="mt-3 h-2 bg-white/50 rounded-full overflow-hidden">
+                <div className="h-full bg-dourado rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Active Challenges */}
+      {challenges.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Swords className="w-5 h-5 text-vinho" />
+            Desafios Ativos
+          </h2>
+          {challenges.map(challenge => {
+            const daysLeft = Math.ceil((new Date(challenge.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+            return (
+              <div key={challenge.id} className="bg-white rounded-xl border border-border overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground">{challenge.title}</p>
+                      {challenge.description && (
+                        <p className="text-xs text-foreground-secondary mt-0.5">{challenge.description}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-2 text-xs text-foreground-muted">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {challenge.participant_count}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {daysLeft > 0 ? `${daysLeft}d restantes` : 'Encerrado'}
+                        </span>
+                        {challenge.is_private && (
+                          <span className="text-vinho font-medium">Convidado</span>
+                        )}
+                      </div>
+                    </div>
+                    {challenge.is_joined ? (
+                      <Link href={`/ranking/desafio/${challenge.id}`}>
+                        <div className="flex items-center gap-1 px-3 py-1.5 bg-dourado/10 text-dourado rounded-full text-xs font-medium">
+                          {challenge.user_position ? `#${challenge.user_position}` : 'Ver'}
+                          <ChevronRight className="w-3 h-3" />
+                        </div>
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => joinChallenge(challenge.id)}
+                        disabled={joiningChallenge === challenge.id || !challenge.has_started}
+                        className="px-4 py-1.5 bg-dourado text-white rounded-full text-xs font-medium hover:bg-dourado/90 transition-colors disabled:opacity-50"
+                      >
+                        {joiningChallenge === challenge.id ? 'Entrando...' : challenge.has_started ? 'Participar' : 'Em breve'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Ranking Tabs */}
       {hasMultiRankings && (

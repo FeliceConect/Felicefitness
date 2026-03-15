@@ -47,11 +47,11 @@ export async function GET(request: NextRequest) {
 
     // Enrich with author info
     const userIds = [...new Set((posts || []).map(p => p.user_id))]
-    const profileMap: Record<string, { nome: string; display_name: string | null; apelido_ranking: string | null; role: string }> = {}
+    const profileMap: Record<string, { nome: string; display_name: string | null; apelido_ranking: string | null; role: string; status_tier: string }> = {}
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, display_name, apelido_ranking, role')
+        .select('id, nome, display_name, apelido_ranking, role, status_tier')
         .in('id', userIds)
 
       for (const p of (profiles || [])) {
@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
           display_name: p.display_name,
           apelido_ranking: p.apelido_ranking,
           role: p.role || 'client',
+          status_tier: p.status_tier || 'bronze',
         }
       }
     }
@@ -103,6 +104,7 @@ export async function GET(request: NextRequest) {
         author_name: displayName,
         author_initial: displayName.charAt(0).toUpperCase(),
         author_role: authorRole,
+        author_tier: profile?.status_tier || 'bronze',
         is_own: post.user_id === user.id,
         user_reactions: userReactions[post.id] || [],
         comment_count: commentCounts[post.id] || post.comments_count || 0,

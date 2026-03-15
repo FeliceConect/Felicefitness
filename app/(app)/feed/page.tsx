@@ -17,6 +17,13 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+const TIER_ICONS: Record<string, string> = {
+  bronze: '🥉',
+  prata: '🥈',
+  ouro: '🥇',
+  platina: '💎',
+}
+
 interface Post {
   id: string
   user_id: string
@@ -30,6 +37,7 @@ interface Post {
   author_name: string
   author_initial: string
   author_role?: string
+  author_tier?: string
   is_own: boolean
   user_reactions: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -438,6 +446,9 @@ export default function FeedPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="font-medium text-foreground text-sm truncate">{post.author_name}</p>
+                      {post.author_tier && post.author_tier !== 'bronze' && (
+                        <span className="text-xs" title={post.author_tier}>{TIER_ICONS[post.author_tier]}</span>
+                      )}
                       {post.author_role && PROFESSIONAL_ROLES[post.author_role] && (
                         <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[post.author_role].color}`}>
                           {PROFESSIONAL_ROLES[post.author_role].label}

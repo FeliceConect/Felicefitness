@@ -16,6 +16,9 @@ import {
   Filter,
   UserCheck,
   CheckSquare,
+  Swords,
+  Lock,
+  Globe,
 } from 'lucide-react'
 
 interface Ranking {
@@ -54,6 +57,35 @@ interface Professional {
   display_name: string
   type: string
 }
+
+interface Challenge {
+  id: string
+  title: string
+  description: string
+  challenge_type: string
+  scoring_category: string | null
+  start_date: string
+  end_date: string
+  is_active: boolean
+  is_private: boolean
+  participant_count: number
+  created_at: string
+}
+
+const CHALLENGE_TYPES = [
+  { value: 'points', label: 'Mais pontos' },
+  { value: 'workouts', label: 'Mais treinos' },
+  { value: 'streak', label: 'Maior streak' },
+  { value: 'custom', label: 'Pontuacao manual' },
+]
+
+const SCORING_CATEGORIES = [
+  { value: '', label: 'Todas (geral)' },
+  { value: 'workout', label: 'Treino' },
+  { value: 'nutrition', label: 'Nutricao' },
+  { value: 'consistency', label: 'Consistencia' },
+  { value: 'social', label: 'Social' },
+]
 
 type SelectionMode = 'all' | 'filter' | 'manual'
 
@@ -114,6 +146,38 @@ export default function AdminRankingsPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [loadingClients, setLoadingClients] = useState(false)
 
+  // Challenges
+  const [challenges, setChallenges] = useState<Challenge[]>([])
+  const [showChallengeForm, setShowChallengeForm] = useState(false)
+  const [savingChallenge, setSavingChallenge] = useState(false)
+  const [challengeForm, setChallengeForm] = useState({
+    title: '',
+    description: '',
+    challenge_type: 'points',
+    scoring_category: '',
+    start_date: '',
+    end_date: '',
+    is_private: false,
+  })
+  const [challengeSelectionMode, setChallengeSelectionMode] = useState<SelectionMode>('all')
+  const [challengeSelectedIds, setChallengeSelectedIds] = useState<Set<string>>(new Set())
+  const [challengeClientSearch, setChallengeClientSearch] = useState('')
+  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null)
+  const [challengeLeaderboard, setChallengeLeaderboard] = useState<{ position: number; user_id: string; name: string; tier: string; score: number }[]>([])
+  const [loadingChallengeDetail, setLoadingChallengeDetail] = useState(false)
+
+  const fetchChallenges = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/challenges')
+      const data = await res.json()
+      if (data.success) {
+        setChallenges(data.challenges || [])
+      }
+    } catch {
+      // silent
+    }
+  }, [])
+
   const fetchRankings = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/rankings')
@@ -130,7 +194,8 @@ export default function AdminRankingsPage() {
 
   useEffect(() => {
     fetchRankings()
-  }, [fetchRankings])
+    fetchChallenges()
+  }, [fetchRankings, fetchChallenges])
 
   const handleSave = async () => {
     setSaving(true)
@@ -309,6 +374,83 @@ export default function AdminRankingsPage() {
     }
   }
 
+  // Challenge handlers
+  const openNewChallenge = () => {
+    setChallengeForm({
+      title: '',
+      description: '',
+      challenge_type: 'points',
+      scoring_category: '',
+      start_date: '',
+      end_date: '',
+      is_private: false,
+    })
+    setChallengeSelectionMode('all')
+    setChallengeSelectedIds(new Set())
+    setChallengeClientSearch('')
+    setShowChallengeForm(true)
+    loadClientsAndProfessionals()
+  }
+
+  const handleSaveChallenge = async () => {
+    setSavingChallenge(true)
+    try {
+      const payload = {
+        ...challengeForm,
+        scoring_category: challengeForm.scoring_category || null,
+        invited_user_ids: challengeForm.is_private
+          ? (challengeSelectionMode === 'all'
+            ? allClients.map(c => c.id)
+            : Array.from(challengeSelectedIds))
+          : undefined,
+      }
+      const res = await fetch('/api/challenges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowChallengeForm(false)
+        fetchChallenges()
+      }
+    } catch {
+      // silent
+    } finally {
+      setSavingChallenge(false)
+    }
+  }
+
+  const openChallengeDetail = async (ch: Challenge) => {
+    setSelectedChallenge(ch)
+    setLoadingChallengeDetail(true)
+    setChallengeLeaderboard([])
+    try {
+      const res = await fetch(`/api/challenges/${ch.id}`)
+      const data = await res.json()
+      if (data.success) {
+        setChallengeLeaderboard(data.leaderboard || [])
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoadingChallengeDetail(false)
+    }
+  }
+
+  const toggleChallengeActive = async (ch: Challenge) => {
+    try {
+      await fetch('/api/admin/challenges', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: ch.id, is_active: !ch.is_active }),
+      })
+      fetchChallenges()
+    } catch {
+      // silent
+    }
+  }
+
   const getTypeLabel = (type: string) => {
     return RANKING_TYPES.find(t => t.value === type)?.label || type
   }
@@ -334,7 +476,7 @@ export default function AdminRankingsPage() {
         <div className="flex gap-2">
           <button
             onClick={openBioModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-vinho text-foreground rounded-lg text-sm font-medium hover:bg-vinho/80 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/80 transition-colors"
           >
             <Zap className="w-4 h-4" />
             Bioimpedancia
@@ -431,6 +573,435 @@ export default function AdminRankingsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ═══ DESAFIOS SECTION ═══ */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Swords className="w-5 h-5 text-vinho" />
+          Desafios
+        </h2>
+        <button
+          onClick={openNewChallenge}
+          className="flex items-center gap-2 px-4 py-2 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/90 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Novo Desafio
+        </button>
+      </div>
+
+      {challenges.length === 0 ? (
+        <div className="text-center py-8 bg-white rounded-xl border border-border">
+          <Swords className="w-10 h-10 text-foreground-muted mx-auto mb-2" />
+          <p className="text-foreground-secondary text-sm">Nenhum desafio criado</p>
+          <button onClick={openNewChallenge} className="mt-2 text-vinho text-sm font-medium hover:text-vinho/80">
+            Criar primeiro desafio
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {challenges.map(ch => {
+            const daysLeft = Math.ceil((new Date(ch.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+            return (
+              <div
+                key={ch.id}
+                onClick={() => openChallengeDetail(ch)}
+                className={`bg-white border rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow ${ch.is_active ? 'border-vinho/30' : 'border-border opacity-60'}`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-foreground font-semibold truncate">{ch.title}</h3>
+                      {ch.is_private ? (
+                        <Lock className="w-3.5 h-3.5 text-vinho shrink-0" />
+                      ) : (
+                        <Globe className="w-3.5 h-3.5 text-foreground-muted shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-vinho/15 text-vinho font-medium">
+                        {CHALLENGE_TYPES.find(t => t.value === ch.challenge_type)?.label || ch.challenge_type}
+                      </span>
+                      {ch.is_private && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-foreground-muted/15 text-foreground-muted font-medium">
+                          Privado
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleChallengeActive(ch) }}
+                    className={`p-1.5 rounded-lg hover:bg-background-elevated ${ch.is_active ? 'text-green-400' : 'text-foreground-muted'}`}
+                  >
+                    {ch.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
+                  </button>
+                </div>
+                {ch.description && (
+                  <p className="text-foreground-secondary text-sm mb-2 line-clamp-2">{ch.description}</p>
+                )}
+                <div className="flex items-center gap-4 text-xs text-foreground-muted">
+                  <span className="flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5" />
+                    {ch.participant_count} participantes
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {daysLeft > 0 ? `${daysLeft}d restantes` : 'Encerrado'}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Challenge Detail Modal */}
+      {selectedChallenge && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] border border-border flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Swords className="w-5 h-5 text-vinho" />
+                  {selectedChallenge.title}
+                </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-vinho/15 text-vinho font-medium">
+                    {CHALLENGE_TYPES.find(t => t.value === selectedChallenge.challenge_type)?.label || selectedChallenge.challenge_type}
+                  </span>
+                  {selectedChallenge.is_private && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-foreground-muted/15 text-foreground-muted font-medium flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Privado
+                    </span>
+                  )}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${selectedChallenge.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {selectedChallenge.is_active ? 'Ativo' : 'Inativo'}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedChallenge(null)} className="p-2 hover:bg-background-elevated rounded-lg">
+                <X className="w-5 h-5 text-foreground-secondary" />
+              </button>
+            </div>
+
+            {/* Info */}
+            <div className="p-4 border-b border-border space-y-2">
+              {selectedChallenge.description && (
+                <p className="text-sm text-foreground-secondary">{selectedChallenge.description}</p>
+              )}
+              <div className="flex items-center gap-4 text-sm text-foreground-muted">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(selectedChallenge.start_date).toLocaleDateString('pt-BR')} — {new Date(selectedChallenge.end_date).toLocaleDateString('pt-BR')}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  {selectedChallenge.participant_count} participantes
+                </span>
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 pb-2">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-dourado" />
+                  Classificacao
+                </h4>
+              </div>
+              {loadingChallengeDetail ? (
+                <div className="p-4 space-y-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-12 bg-background-elevated rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : challengeLeaderboard.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Users className="w-10 h-10 text-foreground-muted mx-auto mb-2" />
+                  <p className="text-sm text-foreground-secondary">Nenhum participante ainda</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {challengeLeaderboard.map(entry => (
+                    <div key={entry.user_id} className="px-4 py-3 flex items-center gap-3">
+                      <div className="w-8 text-center">
+                        {entry.position === 1 ? (
+                          <span className="text-yellow-400 text-lg">&#x1F451;</span>
+                        ) : entry.position === 2 ? (
+                          <span className="text-gray-400 text-lg">&#x1F948;</span>
+                        ) : entry.position === 3 ? (
+                          <span className="text-amber-600 text-lg">&#x1F949;</span>
+                        ) : (
+                          <span className="text-foreground-secondary font-bold text-sm">{entry.position}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-foreground truncate block">{entry.name}</span>
+                      </div>
+                      <span className="text-xs">
+                        {entry.tier === 'platina' ? '💎' : entry.tier === 'ouro' ? '🥇' : entry.tier === 'prata' ? '🥈' : '🥉'}
+                      </span>
+                      <div className="text-right">
+                        <span className="font-bold text-foreground">{entry.score}</span>
+                        <span className="text-foreground-secondary text-xs ml-1">pts</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-border flex gap-2">
+              <button
+                onClick={() => { toggleChallengeActive(selectedChallenge); setSelectedChallenge(null) }}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  selectedChallenge.is_active
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                    : 'bg-green-50 text-green-600 hover:bg-green-100'
+                }`}
+              >
+                {selectedChallenge.is_active ? 'Desativar' : 'Ativar'}
+              </button>
+              <button
+                onClick={() => setSelectedChallenge(null)}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Challenge Create Modal */}
+      {showChallengeForm && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Swords className="w-5 h-5 text-vinho" />
+                Novo Desafio
+              </h3>
+              <button onClick={() => setShowChallengeForm(false)} className="p-2 hover:bg-background-elevated rounded-lg">
+                <X className="w-5 h-5 text-foreground-secondary" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Titulo *</label>
+                <input
+                  type="text"
+                  value={challengeForm.title}
+                  onChange={e => setChallengeForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-vinho/50"
+                  placeholder="Ex: Desafio Marco Fitness"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Descricao</label>
+                <textarea
+                  value={challengeForm.description}
+                  onChange={e => setChallengeForm(f => ({ ...f, description: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-vinho/50 resize-none"
+                  placeholder="Quem acumula mais pontos..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Tipo</label>
+                  <select
+                    value={challengeForm.challenge_type}
+                    onChange={e => setChallengeForm(f => ({ ...f, challenge_type: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm"
+                  >
+                    {CHALLENGE_TYPES.map(t => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Categoria</label>
+                  <select
+                    value={challengeForm.scoring_category}
+                    onChange={e => setChallengeForm(f => ({ ...f, scoring_category: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm"
+                  >
+                    {SCORING_CATEGORIES.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Inicio *</label>
+                  <input
+                    type="date"
+                    value={challengeForm.start_date}
+                    onChange={e => setChallengeForm(f => ({ ...f, start_date: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">Fim *</label>
+                  <input
+                    type="date"
+                    value={challengeForm.end_date}
+                    onChange={e => setChallengeForm(f => ({ ...f, end_date: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Private Toggle */}
+              <div className="flex items-center justify-between p-3 bg-background-elevated rounded-lg">
+                <div className="flex items-center gap-2">
+                  {challengeForm.is_private ? <Lock className="w-4 h-4 text-vinho" /> : <Globe className="w-4 h-4 text-foreground-muted" />}
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {challengeForm.is_private ? 'Desafio Privado' : 'Desafio Publico'}
+                    </p>
+                    <p className="text-xs text-foreground-muted">
+                      {challengeForm.is_private ? 'Apenas convidados podem ver e participar' : 'Todos os pacientes podem participar'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setChallengeForm(f => ({ ...f, is_private: !f.is_private }))}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${challengeForm.is_private ? 'bg-vinho' : 'bg-border'}`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${challengeForm.is_private ? 'translate-x-5.5 left-0' : 'left-0.5'}`}
+                    style={{ transform: challengeForm.is_private ? 'translateX(22px)' : 'translateX(0)' }}
+                  />
+                </button>
+              </div>
+
+              {/* Participant Selection (shown when private) */}
+              {challengeForm.is_private && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-foreground-muted">Convidados</label>
+
+                  <div className="flex gap-1 bg-background-elevated rounded-lg p-1">
+                    {([
+                      { mode: 'all' as SelectionMode, label: 'Todos', icon: Users },
+                      { mode: 'manual' as SelectionMode, label: 'Selecionar', icon: UserCheck },
+                    ]).map(({ mode, label, icon: Icon }) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => {
+                          setChallengeSelectionMode(mode)
+                          if (mode === 'all') setChallengeSelectedIds(new Set())
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                          challengeSelectionMode === mode
+                            ? 'bg-vinho text-white'
+                            : 'text-foreground-secondary hover:text-foreground hover:bg-border'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {challengeSelectionMode === 'all' && (
+                    <div className="bg-background-elevated rounded-lg p-3 text-center">
+                      <Users className="w-7 h-7 text-vinho mx-auto mb-1" />
+                      <p className="text-sm text-foreground-muted">Todos os {allClients.length} pacientes serao convidados</p>
+                    </div>
+                  )}
+
+                  {challengeSelectionMode === 'manual' && (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground-muted" />
+                        <input
+                          type="text"
+                          value={challengeClientSearch}
+                          onChange={e => setChallengeClientSearch(e.target.value)}
+                          placeholder="Buscar paciente..."
+                          className="w-full pl-8 pr-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm"
+                        />
+                      </div>
+                      <div className="bg-background-elevated rounded-lg max-h-48 overflow-y-auto">
+                        {loadingClients ? (
+                          <div className="p-3 text-center text-sm text-foreground-muted">Carregando...</div>
+                        ) : (
+                          <div className="divide-y divide-border">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (challengeSelectedIds.size === allClients.length) {
+                                  setChallengeSelectedIds(new Set())
+                                } else {
+                                  setChallengeSelectedIds(new Set(allClients.map(c => c.id)))
+                                }
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-vinho hover:bg-white font-medium"
+                            >
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              {challengeSelectedIds.size === allClients.length ? 'Desmarcar todos' : 'Selecionar todos'}
+                            </button>
+                            {allClients
+                              .filter(c =>
+                                !challengeClientSearch ||
+                                c.nome?.toLowerCase().includes(challengeClientSearch.toLowerCase()) ||
+                                c.email?.toLowerCase().includes(challengeClientSearch.toLowerCase())
+                              )
+                              .map(c => (
+                                <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-white cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={challengeSelectedIds.has(c.id)}
+                                    onChange={e => {
+                                      const next = new Set(challengeSelectedIds)
+                                      if (e.target.checked) next.add(c.id)
+                                      else next.delete(c.id)
+                                      setChallengeSelectedIds(next)
+                                    }}
+                                    className="rounded border-border text-vinho focus:ring-vinho w-3.5 h-3.5"
+                                  />
+                                  <span className="text-sm text-foreground truncate">{c.nome || 'Sem nome'}</span>
+                                  <span className="text-xs text-foreground-muted truncate ml-auto">{c.email}</span>
+                                </label>
+                              ))
+                            }
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-foreground-muted text-right">
+                        {challengeSelectedIds.size} paciente{challengeSelectedIds.size !== 1 ? 's' : ''} selecionado{challengeSelectedIds.size !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowChallengeForm(false)}
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-muted text-sm font-medium hover:bg-background-elevated transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveChallenge}
+                  disabled={!challengeForm.title || !challengeForm.start_date || !challengeForm.end_date || savingChallenge || (challengeForm.is_private && challengeSelectionMode === 'manual' && challengeSelectedIds.size === 0)}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-vinho text-white text-sm font-medium hover:bg-vinho/90 disabled:opacity-50 transition-colors"
+                >
+                  {savingChallenge ? 'Criando...' : 'Criar Desafio'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
