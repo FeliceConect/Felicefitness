@@ -250,7 +250,9 @@ export default function RankingPage() {
             <Trophy className="w-6 h-6 text-dourado" />
             Ranking
           </h1>
-          <p className="text-sm text-foreground-secondary">Competicao anonima</p>
+          <p className="text-sm text-foreground-secondary">
+            {activeRanking ? activeRanking.name : 'Compete e suba de nivel!'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -628,7 +630,7 @@ export default function RankingPage() {
       {/* Info */}
       <div className="bg-background-elevated/30 rounded-xl p-4 border border-border">
         <p className="text-sm text-foreground-secondary text-center">
-          O ranking e anonimo para proteger sua privacidade. Complete atividades para ganhar pontos e subir no ranking!
+          Complete atividades para ganhar pontos e subir no ranking! Voce pode configurar seu apelido e visibilidade nas configuracoes.
         </p>
       </div>
     </div>

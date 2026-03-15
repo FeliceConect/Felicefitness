@@ -94,6 +94,8 @@ export function DashboardContent() {
   const [pendingFormsCount, setPendingFormsCount] = useState(0)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [weeklyRecap, setWeeklyRecap] = useState<any>(null)
+  const [rankingPosition, setRankingPosition] = useState<number | null>(null)
+  const [feedCount, setFeedCount] = useState(0)
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -122,6 +124,27 @@ export function DashboardContent() {
       .then(data => {
         if (data.success && data.data) {
           setPendingFormsCount(data.data.length)
+        }
+      })
+      .catch(() => {})
+
+    // Fetch ranking position
+    fetch('/api/rankings?leaderboard=false')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.rankings?.length > 0) {
+          const pos = data.rankings[0].user_position
+          if (pos) setRankingPosition(pos)
+        }
+      })
+      .catch(() => {})
+
+    // Fetch recent feed posts count (last 7 days)
+    fetch('/api/feed?limit=5')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.posts) {
+          setFeedCount(data.posts.length)
         }
       })
       .catch(() => {})
@@ -256,7 +279,7 @@ export function DashboardContent() {
           />
         </div>
 
-        {/* Ranking + Feed placeholders */}
+        {/* Ranking + Feed */}
         <div className="grid grid-cols-2 gap-3">
           <Link href="/ranking">
             <div className="bg-white border border-border rounded-2xl p-4 hover:border-dourado/30 hover:shadow-md transition-all shadow-sm h-full">
@@ -264,8 +287,12 @@ export function DashboardContent() {
                 <Trophy className="w-4 h-4 text-dourado" />
                 <span className="text-xs text-foreground-muted uppercase tracking-wide">Ranking</span>
               </div>
-              <p className="font-heading text-2xl font-bold text-dourado">--</p>
-              <p className="text-xs text-foreground-secondary mt-1">Em breve</p>
+              <p className="font-heading text-2xl font-bold text-dourado">
+                {rankingPosition ? `#${rankingPosition}` : '—'}
+              </p>
+              <p className="text-xs text-foreground-secondary mt-1">
+                {rankingPosition ? 'Sua posição' : 'Ver ranking'}
+              </p>
             </div>
           </Link>
           <Link href="/feed">
@@ -274,7 +301,14 @@ export function DashboardContent() {
                 <Globe className="w-4 h-4 text-foreground-secondary" />
                 <span className="text-xs text-foreground-muted uppercase tracking-wide">Feed</span>
               </div>
-              <p className="text-sm text-foreground-secondary">Nenhuma atividade recente</p>
+              {feedCount > 0 ? (
+                <>
+                  <p className="font-heading text-2xl font-bold text-foreground">{feedCount}</p>
+                  <p className="text-xs text-foreground-secondary mt-1">Posts recentes</p>
+                </>
+              ) : (
+                <p className="text-sm text-foreground-secondary">Nenhuma atividade recente</p>
+              )}
             </div>
           </Link>
         </div>
