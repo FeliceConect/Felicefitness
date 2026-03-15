@@ -25,7 +25,7 @@ export function ShareCard({ theme, format, children, className }: ShareCardProps
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-xl',
+        'relative overflow-hidden rounded-xl w-full',
         aspectRatios[format],
         className
       )}
