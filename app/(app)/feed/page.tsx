@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Plus,
   MessageCircle,
@@ -13,7 +13,10 @@ import {
   Coffee,
   CheckCircle,
   PenLine,
+  ImagePlus,
+  Camera,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Post {
   id: string
@@ -29,6 +32,7 @@ interface Post {
   author_initial: string
   is_own: boolean
   user_reactions: string[]
+  metadata: Record<string, any> | null
 }
 
 interface Comment {
@@ -65,6 +69,30 @@ const POST_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   check_in: { label: 'Check-in', color: 'bg-purple-50 text-purple-600' },
 }
 
+const ENERGY_LEVELS = [
+  { value: 1, emoji: '😴', label: 'Baixa' },
+  { value: 2, emoji: '😐', label: 'Moderada' },
+  { value: 3, emoji: '🙂', label: 'Boa' },
+  { value: 4, emoji: '😊', label: 'Alta' },
+  { value: 5, emoji: '🔥', label: 'Maxima' },
+]
+
+const MOOD_OPTIONS = [
+  { value: 'triste', emoji: '😢', label: 'Triste' },
+  { value: 'cansado', emoji: '😩', label: 'Cansado' },
+  { value: 'normal', emoji: '😐', label: 'Normal' },
+  { value: 'bem', emoji: '🙂', label: 'Bem' },
+  { value: 'feliz', emoji: '😊', label: 'Feliz' },
+  { value: 'incrivel', emoji: '🤩', label: 'Incrivel' },
+]
+
+const MEAL_TYPE_OPTIONS = [
+  { value: 'cafe_manha', label: 'Cafe da manha', emoji: '☕' },
+  { value: 'almoco', label: 'Almoco', emoji: '🍽️' },
+  { value: 'lanche', label: 'Lanche', emoji: '🥪' },
+  { value: 'jantar', label: 'Jantar', emoji: '🌙' },
+]
+
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -76,6 +104,14 @@ export default function FeedPage() {
   const [newPostType, setNewPostType] = useState('free_text')
   const [newPostContent, setNewPostContent] = useState('')
   const [creating, setCreating] = useState(false)
+
+  // Image upload
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Post metadata (type-specific fields)
+  const [postMetadata, setPostMetadata] = useState<Record<string, any>>({})
 
   // Comments
   const [expandedComments, setExpandedComments] = useState<string | null>(null)
@@ -119,27 +155,89 @@ export default function FeedPage() {
     fetchPosts(true)
   }, [filterType]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Formato nao suportado. Use JPG, PNG, GIF ou WebP')
+      return
+    }
+
+    // Validate size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem muito grande. Maximo 5MB')
+      return
+    }
+
+    setSelectedImage(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const hasMetadata = Object.keys(postMetadata).length > 0
+  const canPost = newPostContent.trim() || selectedImage || hasMetadata
+
+  const resetForm = () => {
+    setNewPostContent('')
+    setNewPostType('free_text')
+    setPostMetadata({})
+    removeImage()
+  }
+
   const handleCreatePost = async () => {
-    if (!newPostContent.trim()) return
+    if (!canPost) return
     setCreating(true)
     try {
+      // Upload image first if selected
+      let imageUrl: string | null = null
+      if (selectedImage) {
+        const formData = new FormData()
+        formData.append('file', selectedImage)
+        const uploadRes = await fetch('/api/feed/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        const uploadData = await uploadRes.json()
+        if (!uploadData.success) {
+          toast.error(uploadData.error || 'Erro ao enviar imagem')
+          setCreating(false)
+          return
+        }
+        imageUrl = uploadData.image_url
+      }
+
       const res = await fetch('/api/feed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           post_type: newPostType,
           content: newPostContent.trim(),
+          image_url: imageUrl,
+          metadata: hasMetadata ? postMetadata : null,
         }),
       })
       const data = await res.json()
       if (data.success) {
         setShowCreate(false)
-        setNewPostContent('')
-        setNewPostType('free_text')
+        resetForm()
         fetchPosts(true)
+        toast.success('Post publicado! +2 pts')
+      } else {
+        toast.error(data.error || 'Erro ao publicar')
       }
     } catch (error) {
       console.error('Erro ao criar post:', error)
+      toast.error('Erro ao publicar post')
     } finally {
       setCreating(false)
     }
@@ -168,6 +266,7 @@ export default function FeedPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      toast.error('Erro ao reagir')
     }
   }
 
@@ -177,6 +276,7 @@ export default function FeedPage() {
       return
     }
     setExpandedComments(postId)
+    setNewComment('')
     if (!comments[postId]) {
       setLoadingComments(postId)
       try {
@@ -213,9 +313,13 @@ export default function FeedPage() {
         setPosts(prev => prev.map(p =>
           p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p
         ))
+        toast.success('Comentario enviado! +1 pt')
+      } else {
+        toast.error(data.error || 'Erro ao comentar')
       }
     } catch (error) {
       console.error('Erro:', error)
+      toast.error('Erro ao enviar comentario')
     } finally {
       setSubmittingComment(false)
     }
@@ -228,9 +332,11 @@ export default function FeedPage() {
       const data = await res.json()
       if (data.success) {
         setPosts(prev => prev.filter(p => p.id !== postId))
+        toast.success('Post removido')
       }
     } catch (error) {
       console.error('Erro:', error)
+      toast.error('Erro ao remover post')
     }
   }
 
@@ -338,10 +444,115 @@ export default function FeedPage() {
                   )}
                 </div>
 
+                {/* Type-specific card */}
+                {post.post_type === 'workout' && post.metadata && Object.keys(post.metadata).length > 0 && (
+                  <div className="mx-4 mb-2 p-3 rounded-lg bg-blue-50/60 border border-blue-100">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Dumbbell className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wide">Treino Concluido</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      {post.metadata.duracao_min && (
+                        <div className="bg-white/70 rounded-lg py-1.5">
+                          <p className="text-base font-heading font-bold text-foreground">{post.metadata.duracao_min}</p>
+                          <p className="text-[9px] text-foreground-muted">minutos</p>
+                        </div>
+                      )}
+                      {post.metadata.exercicios && (
+                        <div className="bg-white/70 rounded-lg py-1.5">
+                          <p className="text-base font-heading font-bold text-foreground">{post.metadata.exercicios}</p>
+                          <p className="text-[9px] text-foreground-muted">exercicios</p>
+                        </div>
+                      )}
+                      {post.metadata.calorias && (
+                        <div className="bg-white/70 rounded-lg py-1.5">
+                          <p className="text-base font-heading font-bold text-foreground">{post.metadata.calorias}</p>
+                          <p className="text-[9px] text-foreground-muted">kcal</p>
+                        </div>
+                      )}
+                    </div>
+                    {post.metadata.energia && (
+                      <div className="mt-2 flex items-center justify-center gap-1">
+                        <span className="text-[10px] text-foreground-muted">Energia:</span>
+                        <span className="text-sm">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
+                        <span className="text-[10px] text-blue-600 font-medium">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.label}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {post.post_type === 'meal' && post.metadata && Object.keys(post.metadata).length > 0 && (
+                  <div className="mx-4 mb-2 p-3 rounded-lg bg-green-50/60 border border-green-100">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Coffee className="w-3.5 h-3.5 text-green-600" />
+                      <span className="text-[11px] font-semibold text-green-600 uppercase tracking-wide">
+                        {MEAL_TYPE_OPTIONS.find(m => m.value === post.metadata?.tipo_refeicao)?.label || 'Refeicao'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 text-center">
+                      {post.metadata.calorias && (
+                        <div className="bg-white/70 rounded-lg py-1.5">
+                          <p className="text-sm font-heading font-bold text-dourado">{post.metadata.calorias}</p>
+                          <p className="text-[9px] text-foreground-muted">kcal</p>
+                        </div>
+                      )}
+                      {post.metadata.proteinas && (
+                        <div className="bg-white/70 rounded-lg py-1.5">
+                          <p className="text-sm font-heading font-bold text-foreground">{post.metadata.proteinas}g</p>
+                          <p className="text-[9px] text-foreground-muted">proteina</p>
+                        </div>
+                      )}
+                      {post.metadata.carboidratos && (
+                        <div className="bg-white/70 rounded-lg py-1.5">
+                          <p className="text-sm font-heading font-bold text-foreground">{post.metadata.carboidratos}g</p>
+                          <p className="text-[9px] text-foreground-muted">carbos</p>
+                        </div>
+                      )}
+                      {post.metadata.gorduras && (
+                        <div className="bg-white/70 rounded-lg py-1.5">
+                          <p className="text-sm font-heading font-bold text-foreground">{post.metadata.gorduras}g</p>
+                          <p className="text-[9px] text-foreground-muted">gordura</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {post.post_type === 'achievement' && post.metadata?.titulo && (
+                  <div className="mx-4 mb-2 p-3 rounded-lg bg-gradient-to-br from-dourado/10 to-yellow-50 border border-dourado/20">
+                    <div className="text-center">
+                      <span className="text-2xl">🏆</span>
+                      <p className="text-sm font-heading font-bold text-dourado mt-1">{post.metadata.titulo}</p>
+                      <p className="text-[10px] text-foreground-muted mt-0.5 uppercase tracking-wider">Conquista Desbloqueada</p>
+                    </div>
+                  </div>
+                )}
+
+                {post.post_type === 'check_in' && post.metadata && Object.keys(post.metadata).length > 0 && (
+                  <div className="mx-4 mb-2 p-3 rounded-lg bg-purple-50/60 border border-purple-100">
+                    <div className="flex items-center justify-center gap-4">
+                      {post.metadata.humor && (
+                        <div className="text-center">
+                          <span className="text-2xl">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.emoji}</span>
+                          <p className="text-[10px] text-purple-600 font-medium mt-0.5">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.label}</p>
+                        </div>
+                      )}
+                      {post.metadata.energia && (
+                        <div className="text-center">
+                          <span className="text-2xl">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
+                          <p className="text-[10px] text-purple-600 font-medium mt-0.5">Energia {ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.label}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Content */}
-                <div className="px-4 pb-3">
-                  <p className="text-foreground text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
-                </div>
+                {post.content && (
+                  <div className="px-4 pb-3">
+                    <p className="text-foreground text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                  </div>
+                )}
 
                 {/* Image */}
                 {post.image_url && (
@@ -349,7 +560,7 @@ export default function FeedPage() {
                     <img
                       src={post.image_url}
                       alt="Post"
-                      className="w-full rounded-lg object-cover max-h-80"
+                      className="w-full rounded-lg object-contain"
                     />
                   </div>
                 )}
@@ -469,19 +680,19 @@ export default function FeedPage() {
 
       {/* Create Post Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center pb-16 sm:pb-0">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[75vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
               <h3 className="text-lg font-semibold text-foreground">Novo Post</h3>
               <button
-                onClick={() => { setShowCreate(false); setNewPostContent(''); setNewPostType('free_text') }}
+                onClick={() => { setShowCreate(false); resetForm() }}
                 className="p-2 hover:bg-background-elevated rounded-lg"
               >
                 <X className="w-5 h-5 text-foreground-secondary" />
               </button>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
               {/* Post type selector */}
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {POST_TYPES.map(pt => {
@@ -489,7 +700,7 @@ export default function FeedPage() {
                   return (
                     <button
                       key={pt.value}
-                      onClick={() => setNewPostType(pt.value)}
+                      onClick={() => { setNewPostType(pt.value); setPostMetadata({}) }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                         newPostType === pt.value
                           ? 'bg-dourado text-white'
@@ -503,37 +714,261 @@ export default function FeedPage() {
                 })}
               </div>
 
+              {/* Type-specific fields */}
+              {newPostType === 'workout' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[11px] text-foreground-muted block mb-1">Duracao (min)</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={postMetadata.duracao_min || ''}
+                        onChange={(e) => setPostMetadata(prev => ({ ...prev, duracao_min: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full px-2.5 py-2 rounded-lg border border-border bg-background-input text-foreground text-sm text-center focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                        placeholder="45"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-foreground-muted block mb-1">Exercicios</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={postMetadata.exercicios || ''}
+                        onChange={(e) => setPostMetadata(prev => ({ ...prev, exercicios: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full px-2.5 py-2 rounded-lg border border-border bg-background-input text-foreground text-sm text-center focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                        placeholder="6"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-foreground-muted block mb-1">Calorias</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={postMetadata.calorias || ''}
+                        onChange={(e) => setPostMetadata(prev => ({ ...prev, calorias: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full px-2.5 py-2 rounded-lg border border-border bg-background-input text-foreground text-sm text-center focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                        placeholder="320"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-foreground-muted block mb-1.5">Nivel de energia</label>
+                    <div className="flex gap-1.5">
+                      {ENERGY_LEVELS.map(e => (
+                        <button
+                          key={e.value}
+                          type="button"
+                          onClick={() => setPostMetadata(prev => ({ ...prev, energia: e.value }))}
+                          className={`flex-1 py-2 rounded-lg text-center transition-all ${
+                            postMetadata.energia === e.value
+                              ? 'bg-dourado/15 border-2 border-dourado/40 scale-105'
+                              : 'bg-background-elevated border border-transparent'
+                          }`}
+                        >
+                          <span className="text-lg">{e.emoji}</span>
+                          <p className="text-[9px] text-foreground-muted mt-0.5">{e.label}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {newPostType === 'meal' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] text-foreground-muted block mb-1.5">Tipo de refeicao</label>
+                    <div className="flex gap-2">
+                      {MEAL_TYPE_OPTIONS.map(mt => (
+                        <button
+                          key={mt.value}
+                          type="button"
+                          onClick={() => setPostMetadata(prev => ({ ...prev, tipo_refeicao: mt.value }))}
+                          className={`flex-1 py-2 px-1 rounded-lg text-center transition-all ${
+                            postMetadata.tipo_refeicao === mt.value
+                              ? 'bg-dourado/15 border-2 border-dourado/40'
+                              : 'bg-background-elevated border border-transparent'
+                          }`}
+                        >
+                          <span className="text-base">{mt.emoji}</span>
+                          <p className="text-[9px] text-foreground-muted mt-0.5">{mt.label}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label className="text-[11px] text-foreground-muted block mb-1">Calorias</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={postMetadata.calorias || ''}
+                        onChange={(e) => setPostMetadata(prev => ({ ...prev, calorias: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full px-1.5 py-2 rounded-lg border border-border bg-background-input text-foreground text-xs text-center focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                        placeholder="450"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-foreground-muted block mb-1">Proteina</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={postMetadata.proteinas || ''}
+                        onChange={(e) => setPostMetadata(prev => ({ ...prev, proteinas: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full px-1.5 py-2 rounded-lg border border-border bg-background-input text-foreground text-xs text-center focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                        placeholder="30g"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-foreground-muted block mb-1">Carbos</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={postMetadata.carboidratos || ''}
+                        onChange={(e) => setPostMetadata(prev => ({ ...prev, carboidratos: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full px-1.5 py-2 rounded-lg border border-border bg-background-input text-foreground text-xs text-center focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                        placeholder="55g"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-foreground-muted block mb-1">Gordura</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={postMetadata.gorduras || ''}
+                        onChange={(e) => setPostMetadata(prev => ({ ...prev, gorduras: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-full px-1.5 py-2 rounded-lg border border-border bg-background-input text-foreground text-xs text-center focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                        placeholder="15g"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {newPostType === 'achievement' && (
+                <div>
+                  <label className="text-[11px] text-foreground-muted block mb-1">Nome da conquista</label>
+                  <input
+                    type="text"
+                    value={postMetadata.titulo || ''}
+                    onChange={(e) => setPostMetadata(prev => ({ ...prev, titulo: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background-input text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                    placeholder="Ex: Primeiro PR no supino!"
+                  />
+                </div>
+              )}
+
+              {newPostType === 'check_in' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] text-foreground-muted block mb-1.5">Como voce esta?</label>
+                    <div className="flex gap-1.5">
+                      {MOOD_OPTIONS.map(m => (
+                        <button
+                          key={m.value}
+                          type="button"
+                          onClick={() => setPostMetadata(prev => ({ ...prev, humor: m.value }))}
+                          className={`flex-1 py-2 rounded-lg text-center transition-all ${
+                            postMetadata.humor === m.value
+                              ? 'bg-dourado/15 border-2 border-dourado/40 scale-105'
+                              : 'bg-background-elevated border border-transparent'
+                          }`}
+                        >
+                          <span className="text-lg">{m.emoji}</span>
+                          <p className="text-[9px] text-foreground-muted mt-0.5">{m.label}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-foreground-muted block mb-1.5">Nivel de energia</label>
+                    <div className="flex gap-1.5">
+                      {ENERGY_LEVELS.map(e => (
+                        <button
+                          key={e.value}
+                          type="button"
+                          onClick={() => setPostMetadata(prev => ({ ...prev, energia: e.value }))}
+                          className={`flex-1 py-2 rounded-lg text-center transition-all ${
+                            postMetadata.energia === e.value
+                              ? 'bg-dourado/15 border-2 border-dourado/40 scale-105'
+                              : 'bg-background-elevated border border-transparent'
+                          }`}
+                        >
+                          <span className="text-lg">{e.emoji}</span>
+                          <p className="text-[9px] text-foreground-muted mt-0.5">{e.label}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Content */}
               <textarea
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                rows={5}
+                rows={newPostType === 'free_text' ? 4 : 2}
                 className="w-full px-3 py-3 rounded-lg border border-border bg-background-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
                 placeholder={
-                  newPostType === 'workout' ? 'Conte sobre seu treino de hoje...' :
-                  newPostType === 'meal' ? 'Compartilhe sua refeicao...' :
+                  newPostType === 'workout' ? 'Notas sobre o treino (opcional)...' :
+                  newPostType === 'meal' ? 'Notas sobre a refeicao (opcional)...' :
                   newPostType === 'achievement' ? 'Celebre sua conquista!' :
-                  newPostType === 'check_in' ? 'Como voce esta hoje?' :
+                  newPostType === 'check_in' ? 'Algo mais que queira compartilhar? (opcional)' :
                   'O que voce quer compartilhar?'
                 }
-                autoFocus
+                autoFocus={newPostType === 'free_text'}
               />
 
-              <div className="flex gap-3">
+              {/* Image upload */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full rounded-lg object-cover max-h-48"
+                  />
+                  <button
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={() => { setShowCreate(false); setNewPostContent(''); setNewPostType('free_text') }}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-3 rounded-lg border border-dashed border-border text-foreground-secondary hover:border-dourado hover:text-dourado transition-colors"
                 >
-                  Cancelar
+                  <Camera className="w-5 h-5" />
+                  <span className="text-sm font-medium">Adicionar foto</span>
                 </button>
-                <button
-                  onClick={handleCreatePost}
-                  disabled={!newPostContent.trim() || creating}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
-                >
-                  {creating ? 'Publicando...' : 'Publicar'}
-                </button>
-              </div>
+              )}
+
+            </div>
+
+            <div className="flex gap-3 p-4 border-t border-border flex-shrink-0">
+              <button
+                onClick={() => { setShowCreate(false); resetForm() }}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreatePost}
+                disabled={!canPost || creating}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
+              >
+                {creating ? (selectedImage ? 'Enviando foto...' : 'Publicando...') : 'Publicar'}
+              </button>
             </div>
           </div>
         </div>

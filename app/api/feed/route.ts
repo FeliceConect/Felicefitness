@@ -128,10 +128,10 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getAdminClient()
     const body = await request.json()
-    const { post_type, content, image_url, related_id, is_auto_generated } = body
+    const { post_type, content, image_url, related_id, is_auto_generated, metadata } = body
 
-    if (!post_type || !content?.trim()) {
-      return NextResponse.json({ success: false, error: 'Tipo e conteudo sao obrigatorios' }, { status: 400 })
+    if (!post_type || (!content?.trim() && !image_url && !metadata)) {
+      return NextResponse.json({ success: false, error: 'Conteudo, imagem ou dados sao obrigatorios' }, { status: 400 })
     }
 
     const validTypes = ['meal', 'workout', 'achievement', 'free_text', 'check_in']
@@ -144,10 +144,11 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         post_type,
-        content: content.trim(),
+        content: content?.trim() || '',
         image_url: image_url || null,
         related_id: related_id || null,
         is_auto_generated: is_auto_generated || false,
+        metadata: metadata || {},
         reactions_count: {},
         comments_count: 0,
         is_visible: true,
