@@ -2,23 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Download, Trash2, AlertTriangle, Database, Share2, Rss } from 'lucide-react'
+import { ArrowLeft, Loader2, Database, Share2, Rss } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { useSettings } from '@/hooks/use-settings'
-import { exportAllData, exportToJSON, downloadBlob, clearLocalCache, formatFileSize, calculateDataSize } from '@/lib/settings/exporters'
+import { formatFileSize, calculateDataSize } from '@/lib/settings/exporters'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { PrivacySettings } from '@/types/settings'
@@ -28,10 +18,7 @@ export default function PrivacidadePage() {
   const { settings, loading, updatePrivacy } = useSettings()
   const [localSettings, setLocalSettings] = useState<PrivacySettings | null>(null)
   const [saving, setSaving] = useState(false)
-  const [exporting, setExporting] = useState(false)
   const [dataSize, setDataSize] = useState<{ total: number; breakdown: Record<string, number> } | null>(null)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const [autoPublishFeed, setAutoPublishFeed] = useState(true)
   const [savingAutoPublish, setSavingAutoPublish] = useState(false)
 
@@ -91,60 +78,6 @@ export default function PrivacidadePage() {
       toast.error('Erro ao salvar configurações')
     } finally {
       setSaving(false)
-    }
-  }
-
-  const handleExport = async () => {
-    setExporting(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
-
-      const data = await exportAllData(user.id)
-      const blob = exportToJSON(data)
-      const filename = `felicefit-backup-${new Date().toISOString().split('T')[0]}.json`
-      downloadBlob(blob, filename)
-      toast.success('Dados exportados com sucesso!')
-    } catch (err) {
-      console.error('Export error:', err)
-      toast.error('Erro ao exportar dados')
-    } finally {
-      setExporting(false)
-    }
-  }
-
-  const handleClearCache = () => {
-    clearLocalCache()
-    toast.success('Cache limpo com sucesso!')
-  }
-
-  const handleDeleteData = async () => {
-    setDeleting(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
-
-      // Delete all user data from all tables
-      await Promise.all([
-        supabase.from('fitness_workouts').delete().eq('user_id', user.id),
-        supabase.from('nutrition_logs').delete().eq('user_id', user.id),
-        supabase.from('water_logs').delete().eq('user_id', user.id),
-        supabase.from('body_measurements').delete().eq('user_id', user.id),
-        supabase.from('progress_photos').delete().eq('user_id', user.id),
-        supabase.from('personal_records').delete().eq('user_id', user.id),
-        supabase.from('daily_scores').delete().eq('user_id', user.id),
-        supabase.from('user_achievements').delete().eq('user_id', user.id),
-        supabase.from('xp_logs').delete().eq('user_id', user.id)
-      ])
-
-      toast.success('Todos os dados foram excluídos')
-      setShowDeleteDialog(false)
-      router.push('/dashboard')
-    } catch (err) {
-      console.error('Delete error:', err)
-      toast.error('Erro ao excluir dados')
-    } finally {
-      setDeleting(false)
     }
   }
 
@@ -326,77 +259,11 @@ export default function PrivacidadePage() {
           </CardContent>
         </Card>
 
-        {/* Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Ações</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleExport}
-              disabled={exporting}
-            >
-              {exporting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-2" />
-              )}
-              Exportar todos os dados
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleClearCache}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Limpar cache
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full justify-start text-destructive hover:text-destructive"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Excluir todos os dados
-            </Button>
-          </CardContent>
-        </Card>
-
         <p className="text-xs text-center text-muted-foreground">
           Seus dados são armazenados de forma segura e nunca compartilhados
           sem sua permissão explícita.
         </p>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir todos os dados?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação é irreversível. Todos os seus treinos, refeições, medições,
-              fotos e conquistas serão permanentemente excluídos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteData}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : null}
-              Excluir tudo
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

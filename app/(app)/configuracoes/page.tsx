@@ -11,7 +11,6 @@ import {
   Palette,
   Shield,
   UserCog,
-  Download,
   Info,
   MessageSquare,
   LogOut,
@@ -185,19 +184,13 @@ export default function SettingsPage() {
             <SettingsItem
               icon={<Shield className="w-5 h-5" />}
               label="Privacidade"
-              description="Compartilhamento, dados"
-              href="/configuracoes/privacidade"
-            />
-            <SettingsItem
-              icon={<Download className="w-5 h-5" />}
-              label="Exportar Dados"
-              description="Backup, download"
+              description="Compartilhamento, feed automático"
               href="/configuracoes/privacidade"
             />
             <SettingsItem
               icon={<UserCog className="w-5 h-5" />}
               label="Conta"
-              description="Email, senha, excluir"
+              description="Email, senha"
               href="/configuracoes/conta"
             />
           </div>
