@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, CardTitle, CardDate } from './share-card'
+import { ShareCard, CardDate } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, AchievementShareData } from '@/types/share'
 
@@ -18,91 +18,96 @@ export function ShareAchievementCard({
   showDate = true,
 }: ShareAchievementCardProps) {
   const colors = getThemeColors(theme)
+  const isDark = theme === 'power' || theme === 'gradient' || theme === 'fire'
 
-  const rarityColors = {
-    common: '#9CA3AF',
-    rare: '#3B82F6',
-    epic: '#8B5CF6',
-    legendary: '#F59E0B',
+  const rarityConfig = {
+    common: { color: '#ae9b89', label: 'Comum', glow: 'rgba(174, 155, 137, 0.3)' },
+    rare: { color: '#c29863', label: 'Rara', glow: 'rgba(194, 152, 99, 0.4)' },
+    epic: { color: '#8B5CF6', label: 'Epica', glow: 'rgba(139, 92, 246, 0.4)' },
+    legendary: { color: '#F59E0B', label: 'Lendaria', glow: 'rgba(245, 158, 11, 0.5)' },
   }
 
-  const rarityLabels = {
-    common: 'Comum',
-    rare: 'Rara',
-    epic: 'Epica',
-    legendary: 'Lendaria',
-  }
-
-  const rarityColor = rarityColors[data.rarity]
+  const rarity = rarityConfig[data.rarity]
 
   return (
     <ShareCard theme={theme} format={format}>
-      {/* Sparkle effect for legendary */}
-      {data.rarity === 'legendary' && (
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(15)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute text-xl animate-pulse"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-              }}
-            >
-              ✨
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Rarity glow — subtle radial behind icon */}
+      <div
+        className="absolute"
+        style={{
+          top: '25%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 200,
+          height: 200,
+          background: `radial-gradient(circle, ${rarity.glow} 0%, transparent 70%)`,
+          opacity: 0.6,
+        }}
+      />
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
-        {/* Badge Icon */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+        {/* Top label */}
+        <span
+          className="text-[11px] font-semibold tracking-[0.2em] uppercase"
+          style={{ color: colors.accent, opacity: 0.8 }}
+        >
+          Conquista Desbloqueada
+        </span>
+
+        {/* Badge Icon — large with ring */}
+        <div className="mt-6 relative">
+          {/* Outer ring */}
+          <div
+            className="w-28 h-28 rounded-full flex items-center justify-center"
+            style={{
+              background: isDark
+                ? `linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)`
+                : `linear-gradient(135deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.01) 100%)`,
+              borderWidth: 2,
+              borderColor: `${rarity.color}50`,
+              boxShadow: `0 0 30px ${rarity.glow}`,
+            }}
+          >
+            <span className="text-5xl">{data.icon}</span>
+          </div>
+        </div>
+
+        {/* Rarity pill */}
         <div
-          className="w-24 h-24 rounded-full flex items-center justify-center text-5xl"
+          className="mt-4 px-3.5 py-1 rounded-full"
           style={{
-            backgroundColor: `${rarityColor}20`,
-            boxShadow: `0 0 40px ${rarityColor}40`,
+            backgroundColor: `${rarity.color}18`,
+            borderWidth: 1,
+            borderColor: `${rarity.color}30`,
           }}
         >
-          {data.icon}
-        </div>
-
-        {/* Rarity Badge */}
-        <div
-          className="mt-4 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-          style={{
-            backgroundColor: `${rarityColor}20`,
-            color: rarityColor,
-          }}
-        >
-          {rarityLabels[data.rarity]}
-        </div>
-
-        {/* Title */}
-        <div className="mt-4">
-          <CardTitle text="Conquista Desbloqueada!" theme={theme} />
+          <span
+            className="text-[10px] font-bold uppercase tracking-[0.15em]"
+            style={{ color: rarity.color }}
+          >
+            {rarity.label}
+          </span>
         </div>
 
         {/* Achievement Name */}
-        <div
-          className="mt-4 text-3xl font-bold text-center"
-          style={{ color: colors.primary }}
+        <h2
+          className="mt-5 text-2xl font-heading font-bold text-center leading-tight"
+          style={{ color: colors.text }}
         >
           {data.name}
-        </div>
+        </h2>
 
         {/* Description */}
-        <div
-          className="mt-3 text-center max-w-xs text-lg"
-          style={{ color: colors.secondary }}
+        <p
+          className="mt-2.5 text-center text-sm max-w-[240px] leading-relaxed"
+          style={{ color: colors.secondary, opacity: 0.8 }}
         >
           {data.description}
-        </div>
+        </p>
 
         {/* Date */}
         {showDate && (
-          <div className="mt-8">
+          <div className="mt-6">
             <CardDate date={data.date} theme={theme} />
           </div>
         )}
