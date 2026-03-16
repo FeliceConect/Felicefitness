@@ -16,6 +16,9 @@ import {
 } from '@/components/wellness'
 import { getMoodLevel } from '@/lib/wellness/moods'
 import { toast as sonnerToast } from 'sonner'
+import { QuickShare } from '@/components/share/quick-share'
+import { getLevelFromXP, getLevelEmoji } from '@/lib/gamification/level-system'
+import type { CheckinShareData } from '@/types/share'
 
 export default function CheckinPage() {
   const router = useRouter()
@@ -34,6 +37,8 @@ export default function CheckinPage() {
   )
   const [notes, setNotes] = useState<string>(wellness.todayCheckin?.notas || '')
   const [saving, setSaving] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+  const [shareData, setShareData] = useState<CheckinShareData | null>(null)
 
   const currentMood = getMoodLevel(mood)
 
@@ -54,8 +59,23 @@ export default function CheckinPage() {
         notes: notes.trim() || undefined,
       })
 
-      sonnerToast.success('Check-in salvo e publicado no feed!')
-      router.push('/dashboard')
+      // Build share card data
+      const level = getLevelFromXP(0) // Will use real XP when user_stats table exists
+      setShareData({
+        journeyDays: 1,
+        streak: 1,
+        treino: false,
+        nutricao: false,
+        hidratacao: false,
+        sono: false,
+        level: level.level,
+        levelName: level.name,
+        levelEmoji: getLevelEmoji(level),
+        todayScore: undefined,
+      })
+
+      sonnerToast.success('Check-in salvo!')
+      setShowShare(true)
     } catch (error) {
       console.error('Error saving check-in:', error)
       sonnerToast.error('Erro ao salvar. Tente novamente.')
@@ -65,6 +85,20 @@ export default function CheckinPage() {
   }
 
   return (
+    <>
+    {/* Quick Share overlay after check-in */}
+    {showShare && shareData && (
+      <QuickShare
+        type="checkin"
+        data={shareData}
+        onClose={() => {
+          setShowShare(false)
+          router.push('/dashboard')
+        }}
+        title="Check-in concluído!"
+        subtitle="Compartilhe sua jornada wellness"
+      />
+    )}
     <div className="container mx-auto px-4 py-6 pb-24 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -169,5 +203,6 @@ export default function CheckinPage() {
         Salvar Check-in
       </Button>
     </div>
+    </>
   )
 }
