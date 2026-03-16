@@ -4,6 +4,14 @@ import { cn } from '@/lib/utils'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat } from '@/types/share'
 
+// Convert hex color to rgba
+export function withAlpha(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 interface ShareCardProps {
   theme: ShareTheme
   format: ShareFormat
@@ -13,15 +21,14 @@ interface ShareCardProps {
 
 export function ShareCard({ theme, format, children, className }: ShareCardProps) {
   const colors = getThemeColors(theme)
+  const a = (alpha: number) => withAlpha(colors.accent, alpha)
+  const isGradient = colors.background.includes('gradient')
 
   const aspectRatios = {
     square: 'aspect-square',
     story: 'aspect-[9/16]',
     wide: 'aspect-[1.91/1]',
   }
-
-  const isGradient = colors.background.includes('gradient')
-  const accentColor = colors.accent
 
   return (
     <div
@@ -33,113 +40,105 @@ export function ShareCard({ theme, format, children, className }: ShareCardProps
       style={{
         background: isGradient ? colors.background : undefined,
         backgroundColor: !isGradient ? colors.background : undefined,
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderColor: a(0.15),
       }}
     >
-      {/* Diagonal stripe pattern — luxury texture */}
+      {/* ═══ SIGNATURE GOLDEN ARCS ═══ */}
+
+      {/* Arc 1 — Large, sweeping from upper-right corner */}
       <div
-        className="absolute inset-0"
+        className="absolute pointer-events-none"
         style={{
-          backgroundImage: `repeating-linear-gradient(-45deg, transparent, transparent 10px, ${accentColor}08 10px, ${accentColor}08 10.5px)`,
+          top: '-28%',
+          right: '-22%',
+          width: '92%',
+          height: '92%',
+          borderRadius: '50%',
+          border: `2.5px solid ${a(0.32)}`,
+          boxShadow: `0 0 30px ${a(0.1)}, inset 0 0 30px ${a(0.05)}`,
         }}
       />
 
-      {/* Subtle radial glow in center */}
+      {/* Arc 2 — Complementary, from lower-left */}
       <div
-        className="absolute inset-0"
+        className="absolute pointer-events-none"
         style={{
-          background: `radial-gradient(ellipse at 50% 40%, ${accentColor}08 0%, transparent 70%)`,
+          bottom: '-18%',
+          left: '-12%',
+          width: '58%',
+          height: '58%',
+          borderRadius: '50%',
+          border: `2px solid ${a(0.22)}`,
+          boxShadow: `0 0 20px ${a(0.06)}`,
         }}
       />
 
-      {/* Inner rectangular frame — Art Deco style */}
+      {/* Arc 3 — Subtle third ring, depth detail */}
       <div
         className="absolute pointer-events-none"
         style={{
-          inset: 14,
-          borderWidth: 1,
-          borderStyle: 'solid',
-          borderColor: `${accentColor}25`,
+          top: '8%',
+          right: '-38%',
+          width: '72%',
+          height: '72%',
+          borderRadius: '50%',
+          border: `1px solid ${a(0.1)}`,
         }}
       />
 
-      {/* Corner brackets — top left */}
+      {/* Golden atmospheric pool — warm glow rising from bottom */}
       <div
         className="absolute pointer-events-none"
         style={{
-          top: 10,
-          left: 10,
-          width: 24,
-          height: 24,
-          borderTop: `1.5px solid ${accentColor}60`,
-          borderLeft: `1.5px solid ${accentColor}60`,
-        }}
-      />
-      {/* Corner brackets — top right */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          top: 10,
-          right: 10,
-          width: 24,
-          height: 24,
-          borderTop: `1.5px solid ${accentColor}60`,
-          borderRight: `1.5px solid ${accentColor}60`,
-        }}
-      />
-      {/* Corner brackets — bottom left */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          bottom: 10,
-          left: 10,
-          width: 24,
-          height: 24,
-          borderBottom: `1.5px solid ${accentColor}60`,
-          borderLeft: `1.5px solid ${accentColor}60`,
-        }}
-      />
-      {/* Corner brackets — bottom right */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          bottom: 10,
-          right: 10,
-          width: 24,
-          height: 24,
-          borderBottom: `1.5px solid ${accentColor}60`,
-          borderRight: `1.5px solid ${accentColor}60`,
+          bottom: 0,
+          left: '-15%',
+          right: '-15%',
+          height: '50%',
+          background: `linear-gradient(to top, ${a(0.14)} 0%, ${a(0.05)} 50%, transparent 100%)`,
+          clipPath: 'ellipse(70% 100% at 50% 100%)',
         }}
       />
 
-      {/* Children content */}
+      {/* Upper-right warm glow — light source from arc */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: '-8%',
+          right: '-8%',
+          width: '55%',
+          height: '55%',
+          background: `radial-gradient(circle at center, ${a(0.06)} 0%, transparent 70%)`,
+          borderRadius: '50%',
+        }}
+      />
+
+      {/* Subtle diagonal texture */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `repeating-linear-gradient(-45deg, transparent, transparent 14px, ${a(0.03)} 14px, ${a(0.03)} 14.5px)`,
+        }}
+      />
+
+      {/* Content */}
       {children}
 
-      {/* Bottom brand watermark — membership feel */}
-      <div className="absolute bottom-0 inset-x-0 flex items-center justify-center pb-5">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-[0.5px]" style={{ backgroundColor: `${accentColor}30` }} />
-          <div
-            className="w-1 h-1 rotate-45"
-            style={{ backgroundColor: `${accentColor}40` }}
-          />
-          <span
-            className="text-[7px] font-semibold tracking-[0.25em] uppercase"
-            style={{ color: accentColor, opacity: 0.45 }}
-          >
-            Membro Complexo Wellness
-          </span>
-          <div
-            className="w-1 h-1 rotate-45"
-            style={{ backgroundColor: `${accentColor}40` }}
-          />
-          <div className="w-3 h-[0.5px]" style={{ backgroundColor: `${accentColor}30` }} />
-        </div>
+      {/* Bottom brand — COMPLEXO WELLNESS */}
+      <div className="absolute bottom-0 inset-x-0 flex items-center justify-center pb-3.5">
+        <span
+          className="text-[7px] font-semibold tracking-[0.3em] uppercase"
+          style={{ color: colors.accent, opacity: 0.4 }}
+        >
+          Complexo Wellness
+        </span>
       </div>
     </div>
   )
 }
 
-// Brand mark — COMPLEXO text for top of cards
+// ═══ BRAND MARK — The Complexo logo ═══
 interface BrandMarkProps {
   theme: ShareTheme
 }
@@ -149,87 +148,74 @@ export function BrandMark({ theme }: BrandMarkProps) {
   return (
     <div className="flex flex-col items-center">
       <span
-        className="text-[10px] font-heading font-bold tracking-[0.35em] uppercase"
-        style={{ color: colors.accent, opacity: 0.7 }}
+        className="text-sm font-heading font-bold tracking-[0.3em]"
+        style={{ color: colors.accent }}
       >
-        Complexo
-      </span>
-    </div>
-  )
-}
-
-// Ornamental divider — ── ◆ ── pattern
-interface OrnamentalDividerProps {
-  theme: ShareTheme
-  width?: string
-}
-
-export function OrnamentalDivider({ theme, width = 'max-w-[100px]' }: OrnamentalDividerProps) {
-  const colors = getThemeColors(theme)
-  return (
-    <div className={cn('flex items-center gap-1.5 w-full', width)}>
-      <div className="flex-1 h-[0.5px]" style={{ backgroundColor: `${colors.accent}30` }} />
-      <div
-        className="w-[5px] h-[5px] rotate-45"
-        style={{ backgroundColor: `${colors.accent}40` }}
-      />
-      <div className="flex-1 h-[0.5px]" style={{ backgroundColor: `${colors.accent}30` }} />
-    </div>
-  )
-}
-
-// Stat Box Component — glass morphism with accent top line
-interface StatBoxProps {
-  label: string
-  value: string | number
-  theme: ShareTheme
-  size?: 'sm' | 'md' | 'lg'
-  accent?: boolean
-}
-
-export function StatBox({ label, value, theme, size = 'md', accent }: StatBoxProps) {
-  const colors = getThemeColors(theme)
-  const isDark = theme === 'power' || theme === 'gradient' || theme === 'fire'
-
-  const sizes = {
-    sm: { value: 'text-lg', label: 'text-[8px]' },
-    md: { value: 'text-xl', label: 'text-[8px]' },
-    lg: { value: 'text-3xl', label: 'text-[9px]' },
-  }
-
-  return (
-    <div
-      className="flex flex-col items-center py-2.5 px-2 rounded-lg relative overflow-hidden"
-      style={{
-        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
-      }}
-    >
-      {/* Accent top line */}
-      <div
-        className="absolute top-0 inset-x-0 h-[1.5px]"
-        style={{
-          background: `linear-gradient(90deg, transparent 10%, ${colors.accent}50 50%, transparent 90%)`,
-        }}
-      />
-      <span
-        className={cn('font-bold font-heading', sizes[size].value)}
-        style={{ color: accent ? colors.accent : colors.text }}
-      >
-        {value}
+        COMPLEXO
       </span>
       <span
-        className={cn('uppercase tracking-[0.15em] mt-0.5', sizes[size].label)}
+        className="text-[8px] tracking-[0.4em] mt-0.5"
         style={{ color: colors.secondary, opacity: 0.6 }}
       >
-        {label}
+        WELLNESS
       </span>
     </div>
   )
 }
 
-// Card type label — small uppercase tag
+// ═══ ORNAMENTAL DIVIDER — thin gold line ═══
+interface OrnamentalDividerProps {
+  theme: ShareTheme
+}
+
+export function OrnamentalDivider({ theme }: OrnamentalDividerProps) {
+  const colors = getThemeColors(theme)
+  return (
+    <div className="w-10 h-[0.5px]" style={{ backgroundColor: withAlpha(colors.accent, 0.3) }} />
+  )
+}
+
+// ═══ STAT ROW — horizontal stats with vertical dividers ═══
+interface StatRowProps {
+  stats: { label: string; value: string | number }[]
+  theme: ShareTheme
+}
+
+export function StatRow({ stats, theme }: StatRowProps) {
+  const colors = getThemeColors(theme)
+  const a = (alpha: number) => withAlpha(colors.accent, alpha)
+
+  return (
+    <div className="flex items-center justify-center">
+      {stats.map((stat, i) => (
+        <div key={i} className="flex items-center">
+          {i > 0 && (
+            <div
+              className="w-[1px] h-7 mx-3.5"
+              style={{ backgroundColor: a(0.18) }}
+            />
+          )}
+          <div className="flex flex-col items-center min-w-[48px]">
+            <span
+              className="text-lg font-heading font-bold leading-none"
+              style={{ color: colors.text }}
+            >
+              {stat.value}
+            </span>
+            <span
+              className="text-[7px] uppercase tracking-[0.12em] mt-1"
+              style={{ color: colors.secondary, opacity: 0.55 }}
+            >
+              {stat.label}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ═══ CARD LABEL — type identifier ═══
 interface CardLabelProps {
   text: string
   theme: ShareTheme
@@ -240,14 +226,14 @@ export function CardLabel({ text, theme }: CardLabelProps) {
   return (
     <span
       className="text-[10px] font-semibold tracking-[0.2em] uppercase"
-      style={{ color: colors.accent, opacity: 0.9 }}
+      style={{ color: colors.accent }}
     >
       {text}
     </span>
   )
 }
 
-// Date Component — minimal
+// ═══ CARD DATE ═══
 interface CardDateProps {
   date: string
   theme: ShareTheme
@@ -258,7 +244,7 @@ export function CardDate({ date, theme }: CardDateProps) {
   return (
     <span
       className="text-[9px] tracking-[0.1em]"
-      style={{ color: colors.secondary, opacity: 0.5 }}
+      style={{ color: colors.secondary, opacity: 0.45 }}
     >
       {date}
     </span>

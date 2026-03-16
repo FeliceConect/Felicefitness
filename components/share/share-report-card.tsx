@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatBox, CardDate } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatRow, CardDate } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, WeeklyShareData } from '@/types/share'
 
@@ -18,21 +18,23 @@ export function ShareReportCard({
   showDate = true,
 }: ShareReportCardProps) {
   const colors = getThemeColors(theme)
-  const isStory = format === 'story'
+
+  // Build stat row dynamically
+  const statItems: { label: string; value: string | number }[] = []
+  if (data.totalCalories > 0) statItems.push({ label: 'Calorias', value: data.totalCalories })
+  if (data.totalSets > 0) statItems.push({ label: 'Series', value: data.totalSets })
+  if (data.prsSet > 0) statItems.push({ label: 'PRs', value: data.prsSet })
 
   return (
     <ShareCard theme={theme} format={format}>
       <div className="absolute inset-0 flex flex-col items-center justify-center px-10 py-8">
-        {/* Brand mark */}
         <BrandMark theme={theme} />
 
-        {/* Ornamental divider */}
-        <div className="mt-2.5">
+        <div className="mt-3">
           <OrnamentalDivider theme={theme} />
         </div>
 
-        {/* Card type label */}
-        <div className="mt-4">
+        <div className="mt-3.5">
           <CardLabel text="Resumo Semanal" theme={theme} />
         </div>
 
@@ -44,16 +46,16 @@ export function ShareReportCard({
           {data.weekStart} — {data.weekEnd}
         </span>
 
-        {/* Hero — Workout count */}
+        {/* Hero workout count */}
         <div className="mt-4 flex flex-col items-center">
           <span
-            className="text-6xl font-heading font-black tracking-tighter leading-none"
-            style={{ color: colors.text }}
+            className="text-7xl font-heading font-black tracking-tighter leading-none"
+            style={{ color: colors.accent }}
           >
             {data.workoutsCompleted}
           </span>
           <span
-            className="text-base font-heading font-medium mt-1"
+            className="text-sm font-heading font-medium mt-1"
             style={{ color: colors.secondary }}
           >
             {data.workoutsCompleted === 1 ? 'treino' : 'treinos'}
@@ -63,39 +65,31 @@ export function ShareReportCard({
         {/* Highlights pills */}
         {data.highlights && data.highlights.length > 0 && (
           <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-            {data.highlights.map((highlight, index) => (
+            {data.highlights.map((h, i) => (
               <div
-                key={index}
-                className="px-3 py-1 rounded-full text-[9px] font-semibold"
+                key={i}
+                className="px-2.5 py-0.5 rounded-full text-[8px] font-semibold"
                 style={{
                   backgroundColor: `${colors.accent}12`,
                   color: colors.accent,
                   borderWidth: 1,
+                  borderStyle: 'solid',
                   borderColor: `${colors.accent}18`,
                 }}
               >
-                {highlight}
+                {h}
               </div>
             ))}
           </div>
         )}
 
-        {/* Stats Grid */}
-        {(data.totalCalories > 0 || data.totalSets > 0 || data.prsSet > 0) && (
-          <div className={`grid ${isStory ? 'grid-cols-2 gap-2.5' : 'grid-cols-3 gap-2'} mt-5 w-full`}>
-            {data.totalCalories > 0 && (
-              <StatBox label="Calorias" value={`${data.totalCalories}`} theme={theme} />
-            )}
-            {data.totalSets > 0 && (
-              <StatBox label="Series" value={String(data.totalSets)} theme={theme} />
-            )}
-            {data.prsSet > 0 && (
-              <StatBox label="PRs" value={String(data.prsSet)} theme={theme} accent />
-            )}
+        {/* Stats row */}
+        {statItems.length > 0 && (
+          <div className="mt-5">
+            <StatRow stats={statItems} theme={theme} />
           </div>
         )}
 
-        {/* Date */}
         {showDate && (
           <div className="mt-4">
             <CardDate date={new Date().toLocaleDateString('pt-BR')} theme={theme} />

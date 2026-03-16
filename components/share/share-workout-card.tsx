@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatBox, CardDate } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatRow, CardDate, withAlpha } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, WorkoutShareData } from '@/types/share'
 
@@ -20,70 +20,75 @@ export function ShareWorkoutCard({
   showDate = true,
 }: ShareWorkoutCardProps) {
   const colors = getThemeColors(theme)
-  const isDark = theme === 'power' || theme === 'gradient' || theme === 'fire'
 
   return (
     <ShareCard theme={theme} format={format}>
       <div className="absolute inset-0 flex flex-col items-center justify-center px-10 py-8">
-        {/* Brand mark */}
+        {/* Logo mark */}
         <BrandMark theme={theme} />
 
-        {/* Ornamental divider */}
-        <div className="mt-2.5">
+        {/* Divider */}
+        <div className="mt-3">
           <OrnamentalDivider theme={theme} />
         </div>
 
-        {/* Card type label */}
-        <div className="mt-4">
+        {/* Type label */}
+        <div className="mt-3.5">
           <CardLabel text="Treino Completo" theme={theme} />
         </div>
 
-        {/* Workout Name — hero */}
+        {/* Workout Name */}
         <h2
-          className="mt-3 text-2xl font-heading font-bold text-center leading-tight"
+          className="mt-2.5 text-xl font-heading font-bold text-center leading-tight"
           style={{ color: colors.text }}
         >
           {data.workoutName}
         </h2>
 
-        {/* Duration hero number */}
-        <div className="mt-4 flex flex-col items-center">
+        {/* Hero Duration — the focal point */}
+        <div className="mt-5 flex items-baseline gap-0.5">
           <span
-            className="text-5xl font-heading font-black tracking-tight leading-none"
-            style={{ color: colors.primary }}
+            className="text-6xl font-heading font-black tracking-tight leading-none"
+            style={{ color: colors.accent }}
           >
             {data.duration}
           </span>
-          <span
-            className="text-[9px] uppercase tracking-[0.2em] mt-1.5"
-            style={{ color: colors.secondary, opacity: 0.6 }}
-          >
-            de treino
-          </span>
         </div>
+        <span
+          className="text-[8px] uppercase tracking-[0.2em] mt-1.5"
+          style={{ color: colors.secondary, opacity: 0.5 }}
+        >
+          de treino
+        </span>
 
-        {/* Stats Grid */}
+        {/* Stats Row with vertical dividers */}
         {showStats && (
-          <div className="grid grid-cols-3 gap-2 mt-5 w-full">
-            <StatBox label="Exercicios" value={data.exercises} theme={theme} />
-            <StatBox label="Series" value={data.sets} theme={theme} />
-            <StatBox label="Calorias" value={`${data.calories}`} theme={theme} />
+          <div className="mt-6">
+            <StatRow
+              stats={[
+                { label: 'Exercicios', value: data.exercises },
+                { label: 'Series', value: data.sets },
+                { label: 'Calorias', value: data.calories },
+              ]}
+              theme={theme}
+            />
           </div>
         )}
 
         {/* PRs badge */}
         {data.prs > 0 && (
           <div
-            className="mt-4 flex items-center gap-2 px-3.5 py-1.5 rounded-full"
+            className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full"
             style={{
-              backgroundColor: isDark ? 'rgba(194, 152, 99, 0.12)' : 'rgba(194, 152, 99, 0.1)',
+              backgroundColor: withAlpha(colors.accent, 0.1),
               borderWidth: 1,
-              borderColor: `${colors.accent}25`,
+              borderStyle: 'solid',
+              borderColor: withAlpha(colors.accent, 0.2),
             }}
           >
             <span className="text-sm">🏆</span>
             <span
-              className="text-[10px] font-bold tracking-[0.1em] uppercase"
+              className="text-[9px] font-bold tracking-[0.1em] uppercase"
               style={{ color: colors.accent }}
             >
               {data.prs} {data.prs === 1 ? 'Recorde' : 'Recordes'}

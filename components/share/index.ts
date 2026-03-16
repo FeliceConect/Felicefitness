@@ -1,6 +1,6 @@
 // Share Components
 export { ShareButton } from './share-button'
-export { ShareCard, StatBox, BrandMark, OrnamentalDivider, CardLabel, CardDate } from './share-card'
+export { ShareCard, StatRow, BrandMark, OrnamentalDivider, CardLabel, CardDate, withAlpha } from './share-card'
 export { ShareModal } from './share-modal'
 export { SharePreview } from './share-preview'
 export type { SharePreviewHandle } from './share-preview'
