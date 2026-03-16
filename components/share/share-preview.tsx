@@ -12,6 +12,7 @@ import type {
   AchievementShareData,
   ProgressShareData,
   WeeklyShareData,
+  CheckinShareData,
 } from '@/types/share'
 import { ShareWorkoutCard } from './share-workout-card'
 import { SharePRCard } from './share-pr-card'
@@ -19,6 +20,7 @@ import { ShareStreakCard } from './share-streak-card'
 import { ShareAchievementCard } from './share-achievement-card'
 import { ShareProgressCard } from './share-progress-card'
 import { ShareReportCard } from './share-report-card'
+import { ShareCheckinCard } from './share-checkin-card'
 
 interface SharePreviewProps {
   type: ShareType
@@ -95,6 +97,14 @@ export const SharePreview = forwardRef<SharePreviewHandle, SharePreviewProps>(
               theme={theme}
               format={format}
               showDate={showDate}
+            />
+          )
+        case 'checkin':
+          return (
+            <ShareCheckinCard
+              data={data as CheckinShareData}
+              theme={theme}
+              format={format}
             />
           )
         default:

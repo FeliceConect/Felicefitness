@@ -109,6 +109,25 @@ export const CARD_TEMPLATES: Record<string, CardTemplate> = {
       'watermark',
     ],
   },
+
+  checkin: {
+    id: 'checkin',
+    name: 'Check-in Diario',
+    sizes: {
+      square: { width: 1080, height: 1080 },
+      story: { width: 1080, height: 1920 },
+      wide: { width: 1200, height: 630 },
+    },
+    elements: [
+      'background',
+      'level_badge',
+      'journey_day',
+      'wellness_grid',
+      'tagline',
+      'hashtag',
+      'watermark',
+    ],
+  },
 }
 
 // Theme Colors

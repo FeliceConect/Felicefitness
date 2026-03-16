@@ -41,6 +41,11 @@ export const SHARE_MESSAGES = {
     default: 'Semana concluida! Score: {score}/100',
     highlights: '{workouts} treinos | {prs} PRs | {streak} dias streak',
   },
+
+  checkin: {
+    default: 'Dia {journeyDays} da minha jornada wellness! Vivendo Felice! ✨',
+    streak: 'Dia {journeyDays} | 🔥 {streak} dias seguidos | Vivendo Felice!',
+  },
 }
 
 // Generate share text with variable substitution
@@ -85,6 +90,7 @@ export const HASHTAGS = {
   streak: ['#streak', '#consistencia', '#disciplina'],
   progress: ['#transformacao', '#antesedepois', '#progresso'],
   weekly: ['#resumodasemana', '#fitness', '#metas'],
+  checkin: ['#VivendoFelice', '#wellness', '#jornada', '#complexowellness'],
 }
 
 export function getHashtags(type: string, count: number = 3): string[] {
