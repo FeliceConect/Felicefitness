@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, StatBox, CardTitle, CardDate } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatBox, CardDate } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, WorkoutShareData } from '@/types/share'
 
@@ -20,78 +20,80 @@ export function ShareWorkoutCard({
   showDate = true,
 }: ShareWorkoutCardProps) {
   const colors = getThemeColors(theme)
-  const isStory = format === 'story'
   const isDark = theme === 'power' || theme === 'gradient' || theme === 'fire'
 
   return (
     <ShareCard theme={theme} format={format}>
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-        {/* Top label */}
-        <CardTitle text="Treino Completo" theme={theme} size="sm" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-10 py-8">
+        {/* Brand mark */}
+        <BrandMark theme={theme} />
 
-        {/* Workout Name — hero element */}
+        {/* Ornamental divider */}
+        <div className="mt-2.5">
+          <OrnamentalDivider theme={theme} />
+        </div>
+
+        {/* Card type label */}
+        <div className="mt-4">
+          <CardLabel text="Treino Completo" theme={theme} />
+        </div>
+
+        {/* Workout Name — hero */}
         <h2
-          className="mt-4 text-3xl font-heading font-bold text-center leading-tight tracking-tight"
+          className="mt-3 text-2xl font-heading font-bold text-center leading-tight"
           style={{ color: colors.text }}
         >
           {data.workoutName}
         </h2>
 
-        {/* Thin decorative divider */}
-        <div className="mt-5 flex items-center gap-3">
-          <div className="w-8 h-[1px]" style={{ backgroundColor: colors.accent, opacity: 0.4 }} />
-          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.accent, opacity: 0.6 }} />
-          <div className="w-8 h-[1px]" style={{ backgroundColor: colors.accent, opacity: 0.4 }} />
-        </div>
-
-        {/* Hero duration */}
-        <div className="mt-5 flex items-baseline gap-1">
+        {/* Duration hero number */}
+        <div className="mt-4 flex flex-col items-center">
           <span
-            className="text-5xl font-heading font-black tracking-tight"
+            className="text-5xl font-heading font-black tracking-tight leading-none"
             style={{ color: colors.primary }}
           >
             {data.duration}
           </span>
+          <span
+            className="text-[9px] uppercase tracking-[0.2em] mt-1.5"
+            style={{ color: colors.secondary, opacity: 0.6 }}
+          >
+            de treino
+          </span>
         </div>
-        <span
-          className="text-[11px] uppercase tracking-[0.2em] mt-1"
-          style={{ color: colors.secondary, opacity: 0.7 }}
-        >
-          de treino
-        </span>
 
-        {/* Stats Grid — glass morphism */}
+        {/* Stats Grid */}
         {showStats && (
-          <div className={`grid ${isStory ? 'grid-cols-3 gap-3' : 'grid-cols-3 gap-2.5'} mt-7 w-full max-w-[280px]`}>
+          <div className="grid grid-cols-3 gap-2 mt-5 w-full">
             <StatBox label="Exercicios" value={data.exercises} theme={theme} />
             <StatBox label="Series" value={data.sets} theme={theme} />
             <StatBox label="Calorias" value={`${data.calories}`} theme={theme} />
           </div>
         )}
 
-        {/* PRs badge — only if PRs were hit */}
+        {/* PRs badge */}
         {data.prs > 0 && (
           <div
-            className="mt-5 flex items-center gap-2 px-4 py-2 rounded-full"
+            className="mt-4 flex items-center gap-2 px-3.5 py-1.5 rounded-full"
             style={{
-              backgroundColor: isDark ? 'rgba(194, 152, 99, 0.15)' : 'rgba(194, 152, 99, 0.12)',
+              backgroundColor: isDark ? 'rgba(194, 152, 99, 0.12)' : 'rgba(194, 152, 99, 0.1)',
               borderWidth: 1,
-              borderColor: isDark ? 'rgba(194, 152, 99, 0.25)' : 'rgba(194, 152, 99, 0.2)',
+              borderColor: `${colors.accent}25`,
             }}
           >
-            <span className="text-base">🏆</span>
+            <span className="text-sm">🏆</span>
             <span
-              className="text-sm font-bold tracking-wide"
+              className="text-[10px] font-bold tracking-[0.1em] uppercase"
               style={{ color: colors.accent }}
             >
-              {data.prs} {data.prs === 1 ? 'PR' : 'PRs'}
+              {data.prs} {data.prs === 1 ? 'Recorde' : 'Recordes'}
             </span>
           </div>
         )}
 
         {/* Date */}
         {showDate && (
-          <div className="mt-5">
+          <div className="mt-4">
             <CardDate date={data.date} theme={theme} />
           </div>
         )}

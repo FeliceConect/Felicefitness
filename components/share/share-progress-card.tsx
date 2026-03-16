@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, ProgressShareData } from '@/types/share'
 
@@ -23,116 +23,107 @@ export function ShareProgressCard({
 
   return (
     <ShareCard theme={theme} format={format}>
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-        {/* Top label */}
-        <span
-          className="text-[11px] font-semibold tracking-[0.2em] uppercase"
-          style={{ color: colors.accent, opacity: 0.8 }}
-        >
-          Transformacao
-        </span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-10 py-8">
+        {/* Brand mark */}
+        <BrandMark theme={theme} />
+
+        {/* Ornamental divider */}
+        <div className="mt-2.5">
+          <OrnamentalDivider theme={theme} />
+        </div>
+
+        {/* Card type label */}
+        <div className="mt-3">
+          <CardLabel text="Transformacao" theme={theme} />
+        </div>
 
         {/* Photos Container */}
-        <div className={`mt-6 flex ${isStory ? 'flex-col' : 'flex-row'} gap-3 items-center justify-center`}>
+        <div className={`mt-4 flex ${isStory ? 'flex-col' : 'flex-row'} gap-3 items-center`}>
           {/* Before Photo */}
           <div className="relative">
             <div
-              className={`${isStory ? 'w-36 h-48' : 'w-28 h-40'} rounded-xl overflow-hidden`}
+              className={`${isStory ? 'w-32 h-44' : 'w-24 h-36'} rounded-lg overflow-hidden`}
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                 borderWidth: 1,
-                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
               }}
             >
               {data.beforePhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={data.beforePhoto}
-                  alt="Antes"
-                  className="w-full h-full object-cover"
-                />
+                <img src={data.beforePhoto} alt="Antes" className="w-full h-full object-cover" />
               ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center text-3xl"
-                  style={{ opacity: 0.3 }}
-                >
-                  👤
-                </div>
+                <div className="w-full h-full flex items-center justify-center text-2xl opacity-20">👤</div>
               )}
             </div>
             <div
-              className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full"
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
-                color: colors.secondary,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
                 borderWidth: 1,
-                borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
+                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)',
               }}
             >
-              Antes
+              <span className="text-[7px] font-bold uppercase tracking-[0.15em]" style={{ color: colors.secondary, opacity: 0.6 }}>
+                Antes
+              </span>
             </div>
           </div>
 
-          {/* Arrow */}
-          <div className="text-xl" style={{ color: colors.accent, opacity: 0.5 }}>
+          <span className="text-sm" style={{ color: colors.accent, opacity: 0.4 }}>
             {isStory ? '↓' : '→'}
-          </div>
+          </span>
 
           {/* After Photo */}
           <div className="relative">
             <div
-              className={`${isStory ? 'w-36 h-48' : 'w-28 h-40'} rounded-xl overflow-hidden`}
+              className={`${isStory ? 'w-32 h-44' : 'w-24 h-36'} rounded-lg overflow-hidden`}
               style={{
-                borderWidth: 2,
-                borderColor: `${colors.accent}40`,
-                boxShadow: `0 0 20px ${colors.accent}15`,
+                borderWidth: 1.5,
+                borderColor: `${colors.accent}35`,
+                boxShadow: `0 0 15px ${colors.accent}10`,
               }}
             >
               {data.afterPhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={data.afterPhoto}
-                  alt="Depois"
-                  className="w-full h-full object-cover"
-                />
+                <img src={data.afterPhoto} alt="Depois" className="w-full h-full object-cover" />
               ) : (
                 <div
-                  className="w-full h-full flex items-center justify-center text-3xl"
-                  style={{
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                    opacity: 0.3,
-                  }}
+                  className="w-full h-full flex items-center justify-center text-2xl opacity-20"
+                  style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}
                 >
                   💪
                 </div>
               )}
             </div>
             <div
-              className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full"
               style={{
-                backgroundColor: `${colors.accent}20`,
-                color: colors.accent,
+                backgroundColor: `${colors.accent}18`,
                 borderWidth: 1,
-                borderColor: `${colors.accent}30`,
+                borderColor: `${colors.accent}25`,
               }}
             >
-              Depois
+              <span className="text-[7px] font-bold uppercase tracking-[0.15em]" style={{ color: colors.accent }}>
+                Depois
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Days Badge */}
-        <div
-          className="mt-7 text-center"
-          style={{ color: colors.text }}
-        >
-          <span className="text-3xl font-heading font-bold">{data.daysBetween}</span>
-          <span className="text-base font-medium ml-1.5" style={{ color: colors.secondary }}>dias</span>
+        {/* Days */}
+        <div className="mt-5 flex items-baseline gap-1.5">
+          <span className="text-2xl font-heading font-bold" style={{ color: colors.text }}>
+            {data.daysBetween}
+          </span>
+          <span className="text-sm font-medium" style={{ color: colors.secondary, opacity: 0.7 }}>
+            dias
+          </span>
         </div>
 
-        {/* Stats Comparison — glass morphism chips */}
+        {/* Stats chips */}
         {showStats && data.stats && (
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             {data.stats.weight && (
               <StatChip
                 label="Peso"
@@ -171,7 +162,6 @@ export function ShareProgressCard({
   )
 }
 
-// Compact stat chip
 interface StatChipProps {
   label: string
   before: number
@@ -190,23 +180,21 @@ function StatChip({ label, before, after, unit, invertPositive, isDark, colors }
 
   return (
     <div
-      className="flex flex-col items-center px-3 py-2 rounded-xl"
+      className="flex flex-col items-center px-2.5 py-1.5 rounded-lg relative overflow-hidden"
       style={{
-        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
         borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
       }}
     >
-      <span
-        className="text-[9px] uppercase tracking-wider"
-        style={{ color: colors.secondary, opacity: 0.6 }}
-      >
+      <div
+        className="absolute top-0 inset-x-0 h-[1px]"
+        style={{ background: `linear-gradient(90deg, transparent 10%, ${colors.accent}40 50%, transparent 90%)` }}
+      />
+      <span className="text-[7px] uppercase tracking-[0.15em]" style={{ color: colors.secondary, opacity: 0.5 }}>
         {label}
       </span>
-      <span
-        className="text-sm font-bold mt-0.5"
-        style={{ color: changeColor }}
-      >
+      <span className="text-xs font-bold mt-0.5" style={{ color: changeColor }}>
         {sign}{change.toFixed(1)}{unit}
       </span>
     </div>

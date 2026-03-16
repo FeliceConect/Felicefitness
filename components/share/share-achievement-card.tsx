@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, CardDate } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, CardDate } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, AchievementShareData } from '@/types/share'
 
@@ -21,68 +21,71 @@ export function ShareAchievementCard({
   const isDark = theme === 'power' || theme === 'gradient' || theme === 'fire'
 
   const rarityConfig = {
-    common: { color: '#ae9b89', label: 'Comum', glow: 'rgba(174, 155, 137, 0.3)' },
-    rare: { color: '#c29863', label: 'Rara', glow: 'rgba(194, 152, 99, 0.4)' },
-    epic: { color: '#8B5CF6', label: 'Epica', glow: 'rgba(139, 92, 246, 0.4)' },
-    legendary: { color: '#F59E0B', label: 'Lendaria', glow: 'rgba(245, 158, 11, 0.5)' },
+    common: { color: '#ae9b89', label: 'Comum', glow: 'rgba(174, 155, 137, 0.25)' },
+    rare: { color: '#c29863', label: 'Rara', glow: 'rgba(194, 152, 99, 0.35)' },
+    epic: { color: '#8B5CF6', label: 'Epica', glow: 'rgba(139, 92, 246, 0.35)' },
+    legendary: { color: '#F59E0B', label: 'Lendaria', glow: 'rgba(245, 158, 11, 0.4)' },
   }
 
   const rarity = rarityConfig[data.rarity]
 
   return (
     <ShareCard theme={theme} format={format}>
-      {/* Rarity glow — subtle radial behind icon */}
+      {/* Rarity glow behind icon area */}
       <div
-        className="absolute"
+        className="absolute pointer-events-none"
         style={{
-          top: '25%',
+          top: '30%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 200,
-          height: 200,
+          width: 180,
+          height: 180,
           background: `radial-gradient(circle, ${rarity.glow} 0%, transparent 70%)`,
-          opacity: 0.6,
         }}
       />
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-        {/* Top label */}
-        <span
-          className="text-[11px] font-semibold tracking-[0.2em] uppercase"
-          style={{ color: colors.accent, opacity: 0.8 }}
-        >
-          Conquista Desbloqueada
-        </span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-10 py-8">
+        {/* Brand mark */}
+        <BrandMark theme={theme} />
 
-        {/* Badge Icon — large with ring */}
-        <div className="mt-6 relative">
-          {/* Outer ring */}
+        {/* Ornamental divider */}
+        <div className="mt-2.5">
+          <OrnamentalDivider theme={theme} />
+        </div>
+
+        {/* Card type label */}
+        <div className="mt-4">
+          <CardLabel text="Conquista" theme={theme} />
+        </div>
+
+        {/* Badge Icon — with ring */}
+        <div className="mt-4 relative">
           <div
-            className="w-28 h-28 rounded-full flex items-center justify-center"
+            className="w-24 h-24 rounded-full flex items-center justify-center"
             style={{
               background: isDark
-                ? `linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)`
-                : `linear-gradient(135deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.01) 100%)`,
-              borderWidth: 2,
-              borderColor: `${rarity.color}50`,
-              boxShadow: `0 0 30px ${rarity.glow}`,
+                ? `linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)`
+                : `linear-gradient(135deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.005) 100%)`,
+              borderWidth: 1.5,
+              borderColor: `${rarity.color}45`,
+              boxShadow: `0 0 25px ${rarity.glow}`,
             }}
           >
-            <span className="text-5xl">{data.icon}</span>
+            <span className="text-4xl">{data.icon}</span>
           </div>
         </div>
 
         {/* Rarity pill */}
         <div
-          className="mt-4 px-3.5 py-1 rounded-full"
+          className="mt-3 px-3 py-1 rounded-full"
           style={{
-            backgroundColor: `${rarity.color}18`,
+            backgroundColor: `${rarity.color}15`,
             borderWidth: 1,
-            borderColor: `${rarity.color}30`,
+            borderColor: `${rarity.color}25`,
           }}
         >
           <span
-            className="text-[10px] font-bold uppercase tracking-[0.15em]"
+            className="text-[8px] font-bold uppercase tracking-[0.2em]"
             style={{ color: rarity.color }}
           >
             {rarity.label}
@@ -91,7 +94,7 @@ export function ShareAchievementCard({
 
         {/* Achievement Name */}
         <h2
-          className="mt-5 text-2xl font-heading font-bold text-center leading-tight"
+          className="mt-3.5 text-xl font-heading font-bold text-center leading-tight"
           style={{ color: colors.text }}
         >
           {data.name}
@@ -99,15 +102,15 @@ export function ShareAchievementCard({
 
         {/* Description */}
         <p
-          className="mt-2.5 text-center text-sm max-w-[240px] leading-relaxed"
-          style={{ color: colors.secondary, opacity: 0.8 }}
+          className="mt-2 text-center text-[11px] leading-relaxed max-w-[200px]"
+          style={{ color: colors.secondary, opacity: 0.7 }}
         >
           {data.description}
         </p>
 
         {/* Date */}
         {showDate && (
-          <div className="mt-6">
+          <div className="mt-4">
             <CardDate date={data.date} theme={theme} />
           </div>
         )}

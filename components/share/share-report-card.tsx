@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, StatBox, CardDate } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatBox, CardDate } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, WeeklyShareData } from '@/types/share'
 
@@ -22,51 +22,56 @@ export function ShareReportCard({
 
   return (
     <ShareCard theme={theme} format={format}>
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-        {/* Top label */}
-        <span
-          className="text-[11px] font-semibold tracking-[0.2em] uppercase"
-          style={{ color: colors.accent, opacity: 0.8 }}
-        >
-          Resumo Semanal
-        </span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-10 py-8">
+        {/* Brand mark */}
+        <BrandMark theme={theme} />
+
+        {/* Ornamental divider */}
+        <div className="mt-2.5">
+          <OrnamentalDivider theme={theme} />
+        </div>
+
+        {/* Card type label */}
+        <div className="mt-4">
+          <CardLabel text="Resumo Semanal" theme={theme} />
+        </div>
 
         {/* Week Range */}
         <span
-          className="mt-2 text-xs font-medium tracking-wide"
-          style={{ color: colors.secondary, opacity: 0.6 }}
+          className="mt-1.5 text-[9px] tracking-[0.1em]"
+          style={{ color: colors.secondary, opacity: 0.5 }}
         >
           {data.weekStart} — {data.weekEnd}
         </span>
 
         {/* Hero — Workout count */}
-        <div className="mt-5 flex flex-col items-center">
+        <div className="mt-4 flex flex-col items-center">
           <span
-            className="text-7xl font-heading font-black tracking-tighter leading-none"
+            className="text-6xl font-heading font-black tracking-tighter leading-none"
             style={{ color: colors.text }}
           >
             {data.workoutsCompleted}
           </span>
           <span
-            className="text-lg font-medium mt-1"
+            className="text-base font-heading font-medium mt-1"
             style={{ color: colors.secondary }}
           >
             {data.workoutsCompleted === 1 ? 'treino' : 'treinos'}
           </span>
         </div>
 
-        {/* Highlights as elegant pills */}
+        {/* Highlights pills */}
         {data.highlights && data.highlights.length > 0 && (
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
             {data.highlights.map((highlight, index) => (
               <div
                 key={index}
-                className="px-3.5 py-1 rounded-full text-xs font-semibold"
+                className="px-3 py-1 rounded-full text-[9px] font-semibold"
                 style={{
-                  backgroundColor: `${colors.accent}15`,
+                  backgroundColor: `${colors.accent}12`,
                   color: colors.accent,
                   borderWidth: 1,
-                  borderColor: `${colors.accent}20`,
+                  borderColor: `${colors.accent}18`,
                 }}
               >
                 {highlight}
@@ -77,7 +82,7 @@ export function ShareReportCard({
 
         {/* Stats Grid */}
         {(data.totalCalories > 0 || data.totalSets > 0 || data.prsSet > 0) && (
-          <div className={`grid ${isStory ? 'grid-cols-2 gap-3' : 'grid-cols-3 gap-2.5'} mt-6 w-full max-w-[280px]`}>
+          <div className={`grid ${isStory ? 'grid-cols-2 gap-2.5' : 'grid-cols-3 gap-2'} mt-5 w-full`}>
             {data.totalCalories > 0 && (
               <StatBox label="Calorias" value={`${data.totalCalories}`} theme={theme} />
             )}
@@ -92,7 +97,7 @@ export function ShareReportCard({
 
         {/* Date */}
         {showDate && (
-          <div className="mt-5">
+          <div className="mt-4">
             <CardDate date={new Date().toLocaleDateString('pt-BR')} theme={theme} />
           </div>
         )}

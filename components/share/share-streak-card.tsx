@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, CardDate } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, CardDate } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, StreakShareData } from '@/types/share'
 
@@ -18,58 +18,56 @@ export function ShareStreakCard({ data, theme, format, showDate = true }: ShareS
 
   return (
     <ShareCard theme={theme} format={format}>
-      {/* Warm glow behind the number */}
+      {/* Warm glow behind number */}
       <div
-        className="absolute"
+        className="absolute pointer-events-none"
         style={{
-          top: '40%',
+          top: '42%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 240,
-          height: 240,
-          background: `radial-gradient(circle, rgba(194, 152, 99, 0.2) 0%, transparent 70%)`,
+          width: 200,
+          height: 200,
+          background: `radial-gradient(circle, rgba(194, 152, 99, 0.15) 0%, transparent 70%)`,
         }}
       />
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-        {/* Top label */}
-        <span
-          className="text-[11px] font-semibold tracking-[0.2em] uppercase"
-          style={{ color: colors.accent, opacity: 0.8 }}
-        >
-          Sequencia Ativa
-        </span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-10 py-8">
+        {/* Brand mark */}
+        <BrandMark theme={theme} />
 
-        {/* Flame icon — refined, not bouncing */}
-        <div className="mt-4 text-4xl">🔥</div>
+        {/* Ornamental divider */}
+        <div className="mt-2.5">
+          <OrnamentalDivider theme={theme} />
+        </div>
+
+        {/* Card type label */}
+        <div className="mt-4">
+          <CardLabel text="Sequencia" theme={theme} />
+        </div>
+
+        {/* Flame icon */}
+        <div className="mt-3 text-3xl">🔥</div>
 
         {/* Hero Number */}
-        <div className="mt-3 flex items-baseline gap-2">
+        <div className="mt-2 flex items-baseline gap-1.5">
           <span
-            className="text-8xl font-heading font-black tracking-tighter leading-none"
+            className="text-7xl font-heading font-black tracking-tighter leading-none"
             style={{ color: colors.text }}
           >
             {data.days}
           </span>
         </div>
         <span
-          className="text-lg font-medium tracking-wide mt-1"
+          className="text-base font-heading font-medium mt-1"
           style={{ color: colors.secondary }}
         >
-          {data.days === 1 ? 'dia' : 'dias'}
+          {data.days === 1 ? 'dia consecutivo' : 'dias consecutivos'}
         </span>
-
-        {/* Decorative divider */}
-        <div className="mt-5 flex items-center gap-3">
-          <div className="w-6 h-[1px]" style={{ backgroundColor: colors.accent, opacity: 0.3 }} />
-          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: colors.accent, opacity: 0.5 }} />
-          <div className="w-6 h-[1px]" style={{ backgroundColor: colors.accent, opacity: 0.3 }} />
-        </div>
 
         {/* Message */}
         <p
-          className="mt-4 text-center text-base font-medium max-w-[220px] leading-relaxed"
-          style={{ color: colors.secondary, opacity: 0.9 }}
+          className="mt-4 text-center text-[11px] leading-relaxed max-w-[180px]"
+          style={{ color: colors.secondary, opacity: 0.7 }}
         >
           {data.message}
         </p>
@@ -77,16 +75,16 @@ export function ShareStreakCard({ data, theme, format, showDate = true }: ShareS
         {/* Record badge */}
         {isRecord && (
           <div
-            className="mt-5 flex items-center gap-2 px-4 py-2 rounded-full"
+            className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full"
             style={{
-              backgroundColor: isDark ? 'rgba(194, 152, 99, 0.15)' : 'rgba(194, 152, 99, 0.1)',
+              backgroundColor: isDark ? 'rgba(194, 152, 99, 0.12)' : 'rgba(194, 152, 99, 0.1)',
               borderWidth: 1,
-              borderColor: isDark ? 'rgba(194, 152, 99, 0.25)' : 'rgba(194, 152, 99, 0.2)',
+              borderColor: `${colors.accent}25`,
             }}
           >
-            <span className="text-sm">🏆</span>
+            <span className="text-xs">🏆</span>
             <span
-              className="text-xs font-bold uppercase tracking-wider"
+              className="text-[9px] font-bold uppercase tracking-[0.15em]"
               style={{ color: colors.accent }}
             >
               Novo Recorde
@@ -94,21 +92,19 @@ export function ShareStreakCard({ data, theme, format, showDate = true }: ShareS
           </div>
         )}
 
-        {/* Previous record — only if not current record */}
+        {/* Previous record */}
         {!isRecord && data.record > 0 && (
-          <div className="mt-4">
-            <span
-              className="text-xs tracking-wide"
-              style={{ color: colors.secondary, opacity: 0.5 }}
-            >
-              Recorde: {data.record} dias
-            </span>
-          </div>
+          <span
+            className="mt-3 text-[9px] tracking-[0.1em]"
+            style={{ color: colors.secondary, opacity: 0.4 }}
+          >
+            Recorde: {data.record} dias
+          </span>
         )}
 
         {/* Date */}
         {showDate && (
-          <div className="mt-5">
+          <div className="mt-4">
             <CardDate date={new Date().toLocaleDateString('pt-BR')} theme={theme} />
           </div>
         )}
