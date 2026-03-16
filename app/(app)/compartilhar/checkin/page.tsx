@@ -1,23 +1,21 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Instagram, Share2, Download } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { SharePreview, SharePreviewHandle } from '@/components/share/share-preview'
 import { CardCustomizer } from '@/components/share/card-customizer'
-import type { ShareFormat, ShareTheme, CheckinShareData } from '@/types/share'
+import type { ShareTheme, CheckinShareData } from '@/types/share'
 import { useShareImage } from '@/hooks/use-share-image'
 import { useWebShare } from '@/hooks/use-web-share'
-import { generateShareText } from '@/lib/share/messages'
 import { cn } from '@/lib/utils'
 import { getLevelFromXP, getLevelEmoji } from '@/lib/gamification/level-system'
 
 export default function CompartilharCheckinPage() {
   const [checkinData, setCheckinData] = useState<CheckinShareData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [theme, setTheme] = useState<ShareTheme>('power')
-  const [format, setFormat] = useState<ShareFormat>('square')
+  const [theme, setTheme] = useState<ShareTheme>('light')
   const [isSharing, setIsSharing] = useState(false)
 
   const previewRef = useRef<SharePreviewHandle>(null)
@@ -35,14 +33,12 @@ export default function CompartilharCheckinPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setFallbackData(); return }
 
-      // Load user stats for streak/journey and XP
       const { data: stats } = await supabase
         .from('user_stats')
         .select('current_streak, best_streak, total_xp, join_date')
         .eq('user_id', user.id)
         .single() as { data: { current_streak: number; best_streak: number; total_xp: number; join_date: string } | null }
 
-      // Load today's activity data
       const today = new Date().toISOString().split('T')[0]
       const { data: dayLog } = await supabase
         .from('fitness_daily_logs')
@@ -51,7 +47,6 @@ export default function CompartilharCheckinPage() {
         .eq('date', today)
         .single() as { data: { workout_completed: boolean; meals_logged: number; water_consumed: number; water_goal: number; sleep_logged: boolean; checkin_done: boolean; daily_score: number } | null }
 
-      // Calculate journey days from join date
       let journeyDays = 1
       if (stats?.join_date) {
         const joinDate = new Date(stats.join_date)
@@ -59,7 +54,6 @@ export default function CompartilharCheckinPage() {
         journeyDays = Math.max(1, Math.floor((now.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
       }
 
-      // Get level from XP
       const level = getLevelFromXP(stats?.total_xp || 0)
 
       setCheckinData({
@@ -98,27 +92,51 @@ export default function CompartilharCheckinPage() {
     setLoading(false)
   }
 
-  const handleShare = async () => {
-    if (!checkinData) return
+  const getBlob = async () => {
+    const element = previewRef.current?.getElement() ?? null
+    return generateImage(element)
+  }
 
+  const handleInstagramShare = async () => {
     setIsSharing(true)
     try {
-      const element = previewRef.current?.getElement() ?? null
-      const blob = await generateImage(element)
+      const blob = await getBlob()
+      if (!blob) return
 
-      if (blob) {
-        const file = new File([blob], `complexo-checkin.png`, { type: 'image/png' })
-        const text = generateShareText('checkin', checkinData as unknown as Record<string, unknown>)
+      const file = new File([blob], 'complexo-checkin.png', { type: 'image/png' })
 
-        if (canShareFiles) {
-          await share({
-            title: 'Complexo Wellness',
-            text: text + ' #VivendoFelice',
-            files: [file],
-          })
-        } else {
-          downloadImage(blob, `complexo-checkin-${Date.now()}.png`)
-        }
+      if (canShareFiles) {
+        // Web Share API opens native share sheet — user picks Instagram Stories
+        await share({ files: [file] })
+      } else {
+        // Fallback: download image, then try to open Instagram
+        downloadImage(blob, `complexo-checkin-${Date.now()}.png`)
+        // Try opening Instagram Stories camera
+        setTimeout(() => {
+          window.location.href = 'instagram-stories://share'
+        }, 500)
+      }
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
+  const handleShare = async () => {
+    setIsSharing(true)
+    try {
+      const blob = await getBlob()
+      if (!blob) return
+
+      const file = new File([blob], 'complexo-checkin.png', { type: 'image/png' })
+
+      if (canShareFiles) {
+        await share({
+          title: 'Complexo Wellness',
+          text: '#VivendoFelice',
+          files: [file],
+        })
+      } else {
+        downloadImage(blob, `complexo-checkin-${Date.now()}.png`)
       }
     } finally {
       setIsSharing(false)
@@ -128,8 +146,7 @@ export default function CompartilharCheckinPage() {
   const handleDownload = async () => {
     setIsSharing(true)
     try {
-      const element = previewRef.current?.getElement() ?? null
-      const blob = await generateImage(element)
+      const blob = await getBlob()
       if (blob) {
         downloadImage(blob, `complexo-checkin-${Date.now()}.png`)
       }
@@ -162,7 +179,7 @@ export default function CompartilharCheckinPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-28">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
         <div className="container flex items-center gap-4 h-14 px-4">
@@ -173,54 +190,73 @@ export default function CompartilharCheckinPage() {
         </div>
       </header>
 
-      <main className="container px-4 py-6 space-y-6">
-        {/* Preview */}
+      <main className="container px-4 py-6 space-y-5">
+        {/* Preview — always story format */}
         <div className="flex justify-center">
-          <div className="w-[280px]">
+          <div className="w-[200px]">
             <SharePreview
               ref={previewRef}
               type="checkin"
               data={checkinData}
               theme={theme}
-              format={format}
+              format="story"
             />
           </div>
         </div>
 
-        {/* Customizer */}
+        {/* Theme only */}
         <div className="bg-muted/30 rounded-xl p-4">
           <CardCustomizer
             theme={theme}
-            format={format}
             onThemeChange={setTheme}
-            onFormatChange={setFormat}
           />
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3">
+          {/* Primary: Instagram Stories */}
           <button
-            onClick={handleDownload}
+            onClick={handleInstagramShare}
             disabled={isSharing}
             className={cn(
-              'flex-1 py-3 rounded-xl font-semibold border',
-              'hover:bg-muted transition-colors',
+              'flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.97]',
               isSharing && 'opacity-50 cursor-not-allowed'
             )}
+            style={{
+              background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)',
+              color: '#fff',
+            }}
           >
-            Baixar
+            <Instagram className="w-5 h-5" />
+            {isSharing ? 'Gerando imagem...' : 'Postar nos Stories'}
           </button>
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className={cn(
-              'flex-1 py-3 rounded-xl font-semibold',
-              'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors',
-              isSharing && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            {isSharing ? 'Gerando...' : 'Compartilhar'}
-          </button>
+
+          {/* Secondary row */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Share2 className="w-4 h-4" />
+              Compartilhar
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={isSharing}
+              className={cn(
+                'flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </main>
     </div>

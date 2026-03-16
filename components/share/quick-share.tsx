@@ -6,14 +6,12 @@ import { useRouter } from 'next/navigation'
 import { SharePreview, SharePreviewHandle } from './share-preview'
 import { useShareImage } from '@/hooks/use-share-image'
 import { useWebShare } from '@/hooks/use-web-share'
-import { generateShareText } from '@/lib/share/messages'
-import type { ShareType, ShareCardData, ShareTheme, ShareFormat } from '@/types/share'
+import type { ShareType, ShareCardData, ShareTheme } from '@/types/share'
 
 interface QuickShareProps {
   type: ShareType
   data: ShareCardData
   theme?: ShareTheme
-  format?: ShareFormat
   onClose: () => void
   title?: string
   subtitle?: string
@@ -21,19 +19,19 @@ interface QuickShareProps {
 
 /**
  * QuickShare — Post-action share overlay.
- * Shows a card preview with one-tap share buttons.
- * Designed to appear right after completing a check-in, workout, etc.
+ * One-tap sharing right after completing a check-in, workout, etc.
+ * Always uses story format. Theme defaults to light.
  */
 export function QuickShare({
   type,
   data,
-  theme = 'power',
-  format = 'story',
+  theme = 'light',
   onClose,
   title = 'Compartilhe sua jornada!',
   subtitle = 'Poste nos stories e inspire outros',
 }: QuickShareProps) {
   const [isSharing, setIsSharing] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState<ShareTheme>(theme)
   const previewRef = useRef<SharePreviewHandle>(null)
   const { generateImage, downloadImage } = useShareImage()
   const { share, canShareFiles } = useWebShare()
@@ -44,30 +42,30 @@ export function QuickShare({
     return generateImage(element)
   }, [generateImage])
 
-  const handleShare = async () => {
+  const handleInstagramShare = async () => {
     setIsSharing(true)
     try {
       const blob = await getImageBlob()
       if (!blob) return
 
       const file = new File([blob], `complexo-${type}.png`, { type: 'image/png' })
-      const text = generateShareText(type, data as unknown as Record<string, unknown>)
 
       if (canShareFiles) {
-        await share({
-          title: 'Complexo Wellness',
-          text: text + ' #VivendoFelice',
-          files: [file],
-        })
+        // Opens native share sheet — user picks Instagram Stories
+        await share({ files: [file] })
       } else {
+        // Download then try to open Instagram
         downloadImage(blob, `complexo-${type}-${Date.now()}.png`)
+        setTimeout(() => {
+          window.location.href = 'instagram-stories://share'
+        }, 500)
       }
     } finally {
       setIsSharing(false)
     }
   }
 
-  const handleInstagram = async () => {
+  const handleShare = async () => {
     setIsSharing(true)
     try {
       const blob = await getImageBlob()
@@ -107,7 +105,7 @@ export function QuickShare({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-black/80 backdrop-blur-md overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-black/85 backdrop-blur-md overflow-y-auto">
       {/* Close button */}
       <div className="flex justify-end p-4 flex-shrink-0">
         <button
@@ -119,38 +117,68 @@ export function QuickShare({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
+      <div className="flex-1 flex flex-col items-center px-6 pb-8">
         {/* Title */}
         <div className="text-center mb-4">
           <h2 className="text-xl font-heading font-bold text-white">{title}</h2>
           <p className="text-sm text-white/50 mt-1">{subtitle}</p>
         </div>
 
-        {/* Card Preview — story format (taller, fits all content) */}
-        <div className="w-[180px] flex-shrink-0">
+        {/* Card Preview — story format */}
+        <div className="w-[160px] flex-shrink-0">
           <SharePreview
             ref={previewRef}
             type={type}
             data={data}
-            theme={theme}
-            format={format}
+            theme={selectedTheme}
+            format="story"
           />
+        </div>
+
+        {/* Theme toggle */}
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={() => setSelectedTheme('light')}
+            className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+            style={{
+              backgroundColor: selectedTheme === 'light' ? 'rgba(194,152,99,0.25)' : 'rgba(255,255,255,0.08)',
+              color: selectedTheme === 'light' ? '#c29863' : 'rgba(255,255,255,0.5)',
+              borderWidth: 1,
+              borderStyle: 'solid',
+              borderColor: selectedTheme === 'light' ? 'rgba(194,152,99,0.4)' : 'rgba(255,255,255,0.1)',
+            }}
+          >
+            Claro
+          </button>
+          <button
+            onClick={() => setSelectedTheme('gradient')}
+            className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+            style={{
+              backgroundColor: selectedTheme === 'gradient' ? 'rgba(194,152,99,0.25)' : 'rgba(255,255,255,0.08)',
+              color: selectedTheme === 'gradient' ? '#c29863' : 'rgba(255,255,255,0.5)',
+              borderWidth: 1,
+              borderStyle: 'solid',
+              borderColor: selectedTheme === 'gradient' ? 'rgba(194,152,99,0.4)' : 'rgba(255,255,255,0.1)',
+            }}
+          >
+            Vinho
+          </button>
         </div>
 
         {/* Customize link */}
         <button
           onClick={handleCustomize}
-          className="mt-3 flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+          className="mt-2.5 flex items-center gap-1.5 text-[11px] text-white/35 hover:text-white/60 transition-colors"
         >
-          <Settings2 className="w-3.5 h-3.5" />
-          Personalizar tema e formato
+          <Settings2 className="w-3 h-3" />
+          Mais opcoes
         </button>
 
         {/* Action buttons */}
         <div className="mt-5 flex flex-col gap-3 w-full max-w-[280px]">
-          {/* Primary: Instagram */}
+          {/* Primary: Instagram Stories */}
           <button
-            onClick={handleInstagram}
+            onClick={handleInstagramShare}
             disabled={isSharing}
             className="flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.97]"
             style={{
@@ -160,7 +188,7 @@ export function QuickShare({
             }}
           >
             <Instagram className="w-5 h-5" />
-            {isSharing ? 'Gerando...' : 'Postar no Instagram'}
+            {isSharing ? 'Gerando imagem...' : 'Postar nos Stories'}
           </button>
 
           {/* Secondary row */}
