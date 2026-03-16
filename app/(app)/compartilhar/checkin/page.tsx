@@ -193,7 +193,7 @@ export default function CompartilharCheckinPage() {
       <main className="container px-4 py-6 space-y-5">
         {/* Preview — always story format */}
         <div className="flex justify-center">
-          <div className="w-[200px]">
+          <div className="w-[260px]">
             <SharePreview
               ref={previewRef}
               type="checkin"
