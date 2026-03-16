@@ -35,7 +35,7 @@ export function ShareStreakCard({ data, theme, format, showDate = true }: ShareS
         <div className="mt-2 flex items-baseline gap-1">
           <span
             className="text-8xl font-heading font-black tracking-tighter leading-none"
-            style={{ color: colors.accent }}
+            style={{ color: colors.accent, textShadow: `0 0 50px ${withAlpha(colors.accent, 0.45)}` }}
           >
             {data.days}
           </span>

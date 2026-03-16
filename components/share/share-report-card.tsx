@@ -1,6 +1,6 @@
 'use client'
 
-import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatRow, CardDate } from './share-card'
+import { ShareCard, BrandMark, OrnamentalDivider, CardLabel, StatRow, CardDate, withAlpha } from './share-card'
 import { getThemeColors } from '@/lib/share/templates'
 import type { ShareTheme, ShareFormat, WeeklyShareData } from '@/types/share'
 
@@ -50,7 +50,7 @@ export function ShareReportCard({
         <div className="mt-4 flex flex-col items-center">
           <span
             className="text-7xl font-heading font-black tracking-tighter leading-none"
-            style={{ color: colors.accent }}
+            style={{ color: colors.accent, textShadow: `0 0 45px ${withAlpha(colors.accent, 0.4)}` }}
           >
             {data.workoutsCompleted}
           </span>

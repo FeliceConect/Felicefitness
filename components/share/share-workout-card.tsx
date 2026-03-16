@@ -49,7 +49,7 @@ export function ShareWorkoutCard({
         <div className="mt-5 flex items-baseline gap-0.5">
           <span
             className="text-6xl font-heading font-black tracking-tight leading-none"
-            style={{ color: colors.accent }}
+            style={{ color: colors.accent, textShadow: `0 0 40px ${withAlpha(colors.accent, 0.4)}` }}
           >
             {data.duration}
           </span>

@@ -47,7 +47,7 @@ export function SharePRCard({
         <div className="mt-3 flex items-baseline gap-1">
           <span
             className="text-7xl font-heading font-black tracking-tighter leading-none"
-            style={{ color: colors.accent }}
+            style={{ color: colors.accent, textShadow: `0 0 45px ${withAlpha(colors.accent, 0.4)}` }}
           >
             {data.weight}
           </span>

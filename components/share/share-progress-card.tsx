@@ -106,7 +106,7 @@ export function ShareProgressCard({
 
         {/* Days */}
         <div className="mt-5 flex items-baseline gap-1">
-          <span className="text-3xl font-heading font-bold" style={{ color: colors.accent }}>
+          <span className="text-3xl font-heading font-bold" style={{ color: colors.accent, textShadow: `0 0 30px ${withAlpha(colors.accent, 0.35)}` }}>
             {data.daysBetween}
           </span>
           <span className="text-sm font-medium" style={{ color: colors.secondary, opacity: 0.6 }}>
