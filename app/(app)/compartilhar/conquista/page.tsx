@@ -30,8 +30,8 @@ const rarityColors = {
 const rarityLabels = {
   common: 'Comum',
   rare: 'Rara',
-  epic: 'Epica',
-  legendary: 'Lendaria',
+  epic: 'Épica',
+  legendary: 'Lendária',
 }
 
 export default function CompartilharConquistaPage() {

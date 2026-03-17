@@ -29,7 +29,7 @@ export function InstallPrompt({
     },
     {
       icon: <Bell className="w-4 h-4 text-purple-400" />,
-      title: 'Notificacoes',
+      title: 'Notificações',
       description: 'Lembretes e alertas',
     },
     {

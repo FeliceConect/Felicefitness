@@ -52,21 +52,25 @@ interface DashboardData {
 }
 
 const NOTE_TYPE_LABELS: Record<string, string> = {
-  observation: 'Observacao',
-  evolution: 'Evolucao',
-  action_plan: 'Plano de Acao',
+  observation: 'Observação',
+  evolution: 'Evolução',
+  action_plan: 'Plano de Ação',
   alert: 'Alerta',
 }
 
 export default function CoachPortalPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/portal/coach/dashboard')
-      .then(r => r.json())
-      .then(d => { if (d.success) setData(d) })
-      .catch(console.error)
+      .then(r => {
+        if (!r.ok) throw new Error('Erro ao carregar dados')
+        return r.json()
+      })
+      .then(d => { if (d.success) setData(d); else setError('Não foi possível carregar o dashboard') })
+      .catch((err) => { console.error(err); setError('Erro ao conectar com o servidor') })
       .finally(() => setLoading(false))
   }, [])
 
@@ -82,7 +86,7 @@ export default function CoachPortalPage() {
     const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000)
     if (diffDays === 0) return 'Hoje'
     if (diffDays === 1) return 'Ontem'
-    if (diffDays < 7) return `${diffDays}d atras`
+    if (diffDays < 7) return `${diffDays}d atrás`
     return formatDate(dateStr)
   }
 
@@ -95,6 +99,26 @@ export default function CoachPortalPage() {
             <div key={i} className="bg-white border border-border rounded-xl h-28 animate-pulse" />
           ))}
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+          <AlertCircle className="w-7 h-7 text-red-500" />
+        </div>
+        <div className="text-center">
+          <p className="text-foreground font-medium">{error}</p>
+          <p className="text-foreground-secondary text-sm mt-1">Tente recarregar a página</p>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 transition-colors"
+        >
+          Recarregar
+        </button>
       </div>
     )
   }
@@ -145,8 +169,8 @@ export default function CoachPortalPage() {
               <p className="text-2xl font-bold text-foreground mt-1">{stats?.weekAppointments || 0}</p>
               <p className="text-xs text-foreground-muted">consultas</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-emerald-500" />
+            <div className="w-10 h-10 rounded-xl bg-dourado/10 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-dourado" />
             </div>
           </div>
         </div>
@@ -156,8 +180,8 @@ export default function CoachPortalPage() {
               <p className="text-foreground-secondary text-sm">Notas Recentes</p>
               <p className="text-2xl font-bold text-foreground mt-1">{stats?.recentNotesCount || 0}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-500" />
+            <div className="w-10 h-10 rounded-xl bg-vinho/10 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-vinho" />
             </div>
           </div>
         </div>
@@ -169,7 +193,7 @@ export default function CoachPortalPage() {
           <div className="p-4 border-b border-border flex items-center justify-between">
             <h2 className="font-semibold text-foreground flex items-center gap-2">
               <CalendarDays className="w-5 h-5 text-dourado" />
-              Proximas Consultas
+              Próximas Consultas
             </h2>
             <Link href="/portal/agenda" className="text-sm text-dourado hover:text-dourado/80 flex items-center gap-1">
               Ver agenda <ChevronRight className="w-4 h-4" />
@@ -213,9 +237,9 @@ export default function CoachPortalPage() {
           <div className="p-4 border-b border-border">
             <h2 className="font-semibold text-foreground flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-amber-500" />
-              Precisam de Atencao
+              Precisam de Atenção
             </h2>
-            <p className="text-xs text-foreground-muted mt-1">Sem nota ha 14+ dias</p>
+            <p className="text-xs text-foreground-muted mt-1">Sem nota há 14+ dias</p>
           </div>
           <div className="p-4">
             {(data?.needsAttention || []).length === 0 ? (
@@ -241,7 +265,7 @@ export default function CoachPortalPage() {
                     <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">{client.name}</p>
                       <p className="text-xs text-amber-600">
-                        {client.lastNote ? `Ultima nota: ${formatRelativeDate(client.lastNote)}` : 'Sem notas'}
+                        {client.lastNote ? `Última nota: ${formatRelativeDate(client.lastNote)}` : 'Sem notas'}
                       </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-foreground-muted" />
@@ -257,11 +281,11 @@ export default function CoachPortalPage() {
       <div className="bg-white border border-border rounded-xl">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="font-semibold text-foreground flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-500" />
+            <FileText className="w-5 h-5 text-vinho" />
             Notas Recentes
           </h2>
           <Link href="/portal/notes" className="text-sm text-dourado hover:text-dourado/80 flex items-center gap-1">
-            Ver prontuario <ChevronRight className="w-4 h-4" />
+            Ver prontuário <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
         <div className="p-4">

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     const { name, type, category, start_date, end_date, description, point_rules, add_all_clients, selected_client_ids } = body
 
     if (!name || !type) {
-      return NextResponse.json({ success: false, error: 'Nome e tipo sao obrigatorios' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Nome e tipo são obrigatórios' }, { status: 400 })
     }
 
     const { data: ranking, error: insertError } = await supabaseAdmin

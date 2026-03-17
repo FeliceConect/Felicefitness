@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     // Admin client for bypassing RLS
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     if (!plan) {
       return NextResponse.json(
-        { error: 'Plano de treinos nao fornecido' },
+        { error: 'Plano de treinos não fornecido' },
         { status: 400 }
       )
     }

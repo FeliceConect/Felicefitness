@@ -76,14 +76,14 @@ const CHALLENGE_TYPES = [
   { value: 'points', label: 'Mais pontos' },
   { value: 'workouts', label: 'Mais treinos' },
   { value: 'streak', label: 'Maior streak' },
-  { value: 'custom', label: 'Pontuacao manual' },
+  { value: 'custom', label: 'Pontuação manual' },
 ]
 
 const SCORING_CATEGORIES = [
   { value: '', label: 'Todas (geral)' },
   { value: 'workout', label: 'Treino' },
-  { value: 'nutrition', label: 'Nutricao' },
-  { value: 'consistency', label: 'Consistencia' },
+  { value: 'nutrition', label: 'Nutrição' },
+  { value: 'consistency', label: 'Consistência' },
   { value: 'social', label: 'Social' },
 ]
 
@@ -99,9 +99,9 @@ const RANKING_TYPES = [
 
 const CATEGORIES = [
   { value: '', label: 'Nenhuma' },
-  { value: 'nutrition', label: 'Nutricao' },
+  { value: 'nutrition', label: 'Nutrição' },
   { value: 'workout', label: 'Treino' },
-  { value: 'consistency', label: 'Consistencia' },
+  { value: 'consistency', label: 'Consistência' },
 ]
 
 export default function AdminRankingsPage() {
@@ -801,7 +801,7 @@ export default function AdminRankingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground-muted mb-1">Descricao</label>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Descrição</label>
                 <textarea
                   value={challengeForm.description}
                   onChange={e => setChallengeForm(f => ({ ...f, description: e.target.value }))}
@@ -1078,13 +1078,13 @@ export default function AdminRankingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground-muted mb-1">Descricao</label>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Descrição</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
-                  placeholder="Descricao do ranking..."
+                  placeholder="Descrição do ranking..."
                 />
               </div>
 

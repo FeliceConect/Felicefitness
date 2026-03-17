@@ -22,7 +22,7 @@ export async function GET(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -33,7 +33,7 @@ export async function GET(
       .single()
 
     if (error || !exercise) {
-      return NextResponse.json({ success: false, error: 'Exercicio nao encontrado' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Exercício não encontrado' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, exercise })
@@ -52,7 +52,7 @@ export async function PATCH(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -92,7 +92,7 @@ export async function PATCH(
       .single()
 
     if (error || !exercise) {
-      return NextResponse.json({ success: false, error: 'Exercicio nao encontrado' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Exercício não encontrado' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, exercise })
@@ -111,7 +111,7 @@ export async function DELETE(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()

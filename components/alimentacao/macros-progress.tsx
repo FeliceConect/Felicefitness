@@ -30,19 +30,19 @@ export function MacrosProgress({ totals, goals }: MacrosProgressProps) {
       {/* Macro rings */}
       <div className="flex justify-around mb-6">
         <MacrosRing
-          label="Proteína"
+          label="Proteínas"
           current={totals.proteinas}
           goal={goals.proteinas}
           color="violet"
         />
         <MacrosRing
-          label="Carboidrato"
+          label="Carboidratos"
           current={totals.carboidratos}
           goal={goals.carboidratos}
           color="cyan"
         />
         <MacrosRing
-          label="Gordura"
+          label="Gorduras"
           current={totals.gorduras}
           goal={goals.gorduras}
           color="amber"

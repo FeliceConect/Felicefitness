@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from 'sonner'
 import { useEffect, useState, useCallback } from 'react'
 import {
   Link2,
@@ -124,7 +125,7 @@ export default function AssignmentsPage() {
 
   const handleCreateAssignment = async () => {
     if (!selectedClient || selectedProfessionals.length === 0) {
-      alert('Selecione um cliente e pelo menos um profissional')
+      toast.error('Selecione um cliente e pelo menos um profissional')
       return
     }
 
@@ -145,17 +146,17 @@ export default function AssignmentsPage() {
       if (data.success) {
         const failed = data.results?.filter((r: { success: boolean }) => !r.success) || []
         if (failed.length > 0 && failed.length < selectedProfessionals.length) {
-          alert(`${data.message}. Alguns já existiam.`)
+          toast.success(`${data.message}. Alguns já existiam.`)
         }
         fetchAssignments()
         setShowAddModal(false)
         resetForm()
       } else {
-        alert(data.error || 'Erro ao criar atribuições')
+        toast.error(data.error || 'Erro ao criar atribuições')
       }
     } catch (error) {
       console.error('Erro ao criar atribuições:', error)
-      alert('Erro ao criar atribuições')
+      toast.error('Erro ao criar atribuições')
     } finally {
       setSaving(false)
     }
@@ -177,7 +178,7 @@ export default function AssignmentsPage() {
       if (data.success) {
         fetchAssignments()
       } else {
-        alert(data.error || 'Erro ao atualizar atribuição')
+        toast.error(data.error || 'Erro ao atualizar atribuição')
       }
     } catch (error) {
       console.error('Erro ao atualizar atribuição:', error)
@@ -201,11 +202,11 @@ export default function AssignmentsPage() {
       if (data.success) {
         fetchAssignments()
       } else {
-        alert(data.error || 'Erro ao remover atribuição')
+        toast.error(data.error || 'Erro ao remover atribuição')
       }
     } catch (error) {
       console.error('Erro ao remover atribuição:', error)
-      alert('Erro ao remover atribuição')
+      toast.error('Erro ao remover atribuição')
     }
   }
 

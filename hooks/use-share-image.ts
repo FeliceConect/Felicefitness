@@ -21,7 +21,7 @@ export function useShareImage(options: UseShareImageOptions = {}): UseShareImage
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const { quality = 1, pixelRatio = 2, backgroundColor } = options
+  const { quality = 1, pixelRatio = 4, backgroundColor } = options
 
   const generateDataUrl = useCallback(async (element: HTMLElement | null): Promise<string | null> => {
     if (!element) {

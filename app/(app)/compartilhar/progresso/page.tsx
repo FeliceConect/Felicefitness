@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Camera, Upload } from 'lucide-react'
+import { ArrowLeft, Camera, Upload, Instagram, Share2, Download } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { SharePreview, SharePreviewHandle } from '@/components/share/share-preview'
 import { CardCustomizer } from '@/components/share/card-customizer'
-import type { ShareFormat, ShareTheme, ProgressShareData } from '@/types/share'
+import type { ShareTheme, ProgressShareData } from '@/types/share'
 import { useShareImage } from '@/hooks/use-share-image'
 import { useWebShare } from '@/hooks/use-web-share'
 import { generateShareText } from '@/lib/share/messages'
@@ -29,9 +29,7 @@ export default function CompartilharProgressoPage() {
   const [afterPhoto, setAfterPhoto] = useState<ProgressPhoto | null>(null)
   const [showPreview, setShowPreview] = useState(false)
 
-  const [theme, setTheme] = useState<ShareTheme>('power')
-  const [format, setFormat] = useState<ShareFormat>('square')
-  const [showStats, setShowStats] = useState(true)
+  const [theme, setTheme] = useState<ShareTheme>('light')
   const [isSharing, setIsSharing] = useState(false)
 
   const previewRef = useRef<SharePreviewHandle>(null)
@@ -96,6 +94,24 @@ export default function CompartilharProgressoPage() {
     }
   }
 
+  const handleInstagramShare = async () => {
+    const progressData = getProgressData()
+    if (!progressData) return
+    setIsSharing(true)
+    try {
+      const element = previewRef.current?.getElement() ?? null
+      const blob = await generateImage(element)
+      if (!blob) return
+      const file = new File([blob], 'complexo-progresso.png', { type: 'image/png' })
+      if (canShareFiles) {
+        await share({ files: [file] })
+      } else {
+        downloadImage(blob, `complexo-progresso-${Date.now()}.png`)
+        setTimeout(() => { window.location.href = 'instagram-stories://share' }, 500)
+      }
+    } finally { setIsSharing(false) }
+  }
+
   const handleShare = async () => {
     const progressData = getProgressData()
     if (!progressData) return
@@ -106,7 +122,7 @@ export default function CompartilharProgressoPage() {
       const blob = await generateImage(element)
 
       if (blob) {
-        const file = new File([blob], `felicefit-progresso.png`, { type: 'image/png' })
+        const file = new File([blob], 'complexo-progresso.png', { type: 'image/png' })
         const text = generateShareText('progress', progressData as unknown as Record<string, unknown>)
 
         if (canShareFiles) {
@@ -116,7 +132,7 @@ export default function CompartilharProgressoPage() {
             files: [file],
           })
         } else {
-          downloadImage(blob, `felicefit-progresso-${Date.now()}.png`)
+          downloadImage(blob, `complexo-progresso-${Date.now()}.png`)
         }
       }
     } finally {
@@ -130,7 +146,7 @@ export default function CompartilharProgressoPage() {
       const element = previewRef.current?.getElement() ?? null
       const blob = await generateImage(element)
       if (blob) {
-        downloadImage(blob, `felicefit-progresso-${Date.now()}.png`)
+        downloadImage(blob, `complexo-progresso-${Date.now()}.png`)
       }
     } finally {
       setIsSharing(false)
@@ -166,14 +182,13 @@ export default function CompartilharProgressoPage() {
         <main className="container px-4 py-6 space-y-6">
           {/* Preview */}
           <div className="flex justify-center">
-            <div className="transform scale-[0.5] origin-top">
+            <div className="w-[270px]">
               <SharePreview
                 ref={previewRef}
                 type="progress"
                 data={progressData}
                 theme={theme}
-                format={format}
-                showStats={showStats}
+                format="story"
               />
             </div>
           </div>
@@ -182,38 +197,53 @@ export default function CompartilharProgressoPage() {
           <div className="bg-muted/30 rounded-xl p-4">
             <CardCustomizer
               theme={theme}
-              format={format}
               onThemeChange={setTheme}
-              onFormatChange={setFormat}
-              showStats={showStats}
-              onShowStatsChange={setShowStats}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3">
             <button
-              onClick={handleDownload}
+              onClick={handleInstagramShare}
               disabled={isSharing}
               className={cn(
-                'flex-1 py-3 rounded-xl font-semibold border',
-                'hover:bg-muted transition-colors',
+                'flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.97]',
                 isSharing && 'opacity-50 cursor-not-allowed'
               )}
+              style={{
+                background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)',
+                color: '#fff',
+              }}
             >
-              Baixar
+              <Instagram className="w-5 h-5" />
+              {isSharing ? 'Gerando imagem...' : 'Postar nos Stories'}
             </button>
-            <button
-              onClick={handleShare}
-              disabled={isSharing}
-              className={cn(
-                'flex-1 py-3 rounded-xl font-semibold',
-                'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors',
-                isSharing && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              {isSharing ? 'Gerando...' : 'Compartilhar'}
-            </button>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleShare}
+                disabled={isSharing}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border',
+                  'hover:bg-muted transition-colors',
+                  isSharing && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <Share2 className="w-4 h-4" />
+                Compartilhar
+              </button>
+              <button
+                onClick={handleDownload}
+                disabled={isSharing}
+                className={cn(
+                  'flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm border',
+                  'hover:bg-muted transition-colors',
+                  isSharing && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </main>
       </div>
@@ -237,7 +267,7 @@ export default function CompartilharProgressoPage() {
           <div className="text-center py-12">
             <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
-              Voce precisa de pelo menos 2 fotos de progresso
+              Você precisa de pelo menos 2 fotos de progresso
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               Adicione fotos na aba de progresso para poder comparar

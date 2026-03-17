@@ -400,18 +400,18 @@ export default function WorkoutSummaryPage() {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-background-elevated/50 rounded-lg p-2">
-                    <span className="text-xs text-foreground-muted block">Duracao</span>
+                    <span className="text-xs text-foreground-muted block">Duração</span>
                     <span className="text-foreground font-semibold">{cardio.duracao_minutos} min</span>
                   </div>
                   {cardio.distancia_km && (
                     <div className="bg-background-elevated/50 rounded-lg p-2">
-                      <span className="text-xs text-foreground-muted block">Distancia</span>
+                      <span className="text-xs text-foreground-muted block">Distância</span>
                       <span className="text-foreground font-semibold">{cardio.distancia_km.toFixed(2)} km</span>
                     </div>
                   )}
                   {cardio.velocidade_media && (
                     <div className="bg-background-elevated/50 rounded-lg p-2">
-                      <span className="text-xs text-foreground-muted block">Vel. Media</span>
+                      <span className="text-xs text-foreground-muted block">Vel. Média</span>
                       <span className="text-foreground font-semibold">{cardio.velocidade_media} km/h</span>
                     </div>
                   )}
@@ -423,25 +423,25 @@ export default function WorkoutSummaryPage() {
                   )}
                   {cardio.inclinacao && cardio.inclinacao > 0 && (
                     <div className="bg-background-elevated/50 rounded-lg p-2">
-                      <span className="text-xs text-foreground-muted block">Inclinacao</span>
+                      <span className="text-xs text-foreground-muted block">Inclinação</span>
                       <span className="text-foreground font-semibold">{cardio.inclinacao}%</span>
                     </div>
                   )}
                   {cardio.resistencia && (
                     <div className="bg-background-elevated/50 rounded-lg p-2">
-                      <span className="text-xs text-foreground-muted block">Resistencia</span>
+                      <span className="text-xs text-foreground-muted block">Resistência</span>
                       <span className="text-foreground font-semibold">{cardio.resistencia}/20</span>
                     </div>
                   )}
                   {cardio.frequencia_cardiaca_media && (
                     <div className="bg-background-elevated/50 rounded-lg p-2">
-                      <span className="text-xs text-foreground-muted block">FC Media</span>
+                      <span className="text-xs text-foreground-muted block">FC Média</span>
                       <span className="text-red-400 font-semibold">{cardio.frequencia_cardiaca_media} bpm</span>
                     </div>
                   )}
                   {cardio.frequencia_cardiaca_max && (
                     <div className="bg-background-elevated/50 rounded-lg p-2">
-                      <span className="text-xs text-foreground-muted block">FC Max</span>
+                      <span className="text-xs text-foreground-muted block">FC Máx</span>
                       <span className="text-red-400 font-semibold">{cardio.frequencia_cardiaca_max} bpm</span>
                     </div>
                   )}

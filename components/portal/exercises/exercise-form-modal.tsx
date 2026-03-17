@@ -24,14 +24,14 @@ interface ExerciseFormModalProps {
 }
 
 const MUSCLE_GROUPS = [
-  'Peito', 'Costas', 'Ombros', 'Biceps', 'Triceps',
-  'Pernas', 'Gluteos', 'Abdomen', 'Antebraco', 'Panturrilha', 'Core', 'Full Body',
+  'Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps',
+  'Pernas', 'Glúteos', 'Abdômen', 'Antebraço', 'Panturrilha', 'Core', 'Full Body',
 ]
 
-const DIFFICULTIES = ['Iniciante', 'Intermediario', 'Avancado']
+const DIFFICULTIES = ['Iniciante', 'Intermediário', 'Avançado']
 
 const EQUIPMENT = [
-  'Barra', 'Haltere', 'Maquina', 'Cabo', 'Peso Corporal',
+  'Barra', 'Haltere', 'Máquina', 'Cabo', 'Peso Corporal',
   'Kettlebell', 'Elástico', 'Bola', 'TRX', 'Outro',
 ]
 
@@ -69,7 +69,7 @@ export function ExerciseFormModal({ isOpen, onClose, onSave, initialData, saving
       <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="text-lg font-semibold text-foreground">
-            {initialData ? 'Editar Exercicio' : 'Novo Exercicio'}
+            {initialData ? 'Editar Exercício' : 'Novo Exercício'}
           </h3>
           <button onClick={onClose} className="p-2 hover:bg-background-elevated rounded-lg">
             <X className="w-5 h-5 text-foreground-secondary" />
@@ -137,7 +137,7 @@ export function ExerciseFormModal({ isOpen, onClose, onSave, initialData, saving
 
           {/* Video URL */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Video YouTube (URL)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Vídeo YouTube (URL)</label>
             <input
               type="text"
               value={form.video_url || ''}
@@ -147,15 +147,15 @@ export function ExerciseFormModal({ isOpen, onClose, onSave, initialData, saving
             />
           </div>
 
-          {/* Instrucoes */}
+          {/* Instruções */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Instrucoes</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Instruções</label>
             <textarea
               value={form.instructions || ''}
               onChange={(e) => updateField('instructions', e.target.value)}
               rows={4}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
-              placeholder="Descreva como executar o exercicio..."
+              placeholder="Descreva como executar o exercício..."
             />
           </div>
 
@@ -167,7 +167,7 @@ export function ExerciseFormModal({ isOpen, onClose, onSave, initialData, saving
               onChange={(e) => updateField('is_composto', e.target.checked)}
               className="rounded border-border text-dourado focus:ring-dourado"
             />
-            <span className="text-sm text-foreground">Exercicio composto (multiarticular)</span>
+            <span className="text-sm text-foreground">Exercício composto (multiarticular)</span>
           </label>
 
           <div className="flex gap-3 pt-2">

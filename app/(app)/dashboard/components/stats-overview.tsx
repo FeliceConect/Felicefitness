@@ -14,8 +14,8 @@ interface StatsOverviewProps {
 export function StatsOverview({ stats }: StatsOverviewProps) {
   const statsData = [
     { icon: '🏋️', value: stats.totalTreinos, label: 'treinos' },
-    { icon: '📅', value: stats.streakAtual, label: 'streak' },
-    { icon: '🏆', value: stats.prsEsteMes, label: 'PRs mês' }
+    { icon: '📅', value: stats.streakAtual, label: 'Sequência' },
+    { icon: '🏆', value: stats.prsEsteMes, label: 'Recordes' }
   ]
 
   return (

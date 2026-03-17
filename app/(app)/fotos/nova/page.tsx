@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from 'react'
+import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Camera, ImageIcon, Check, Star } from 'lucide-react'
@@ -83,11 +84,11 @@ export default function NovaFotoPage() {
       if (savedPhoto) {
         router.push('/fotos')
       } else {
-        alert('Erro ao salvar foto. Tente novamente.')
+        toast.error('Erro ao salvar foto. Tente novamente.')
       }
     } catch (error) {
       console.error('Erro ao salvar foto:', error)
-      alert('Erro ao salvar foto. Tente novamente.')
+      toast.error('Erro ao salvar foto. Tente novamente.')
     } finally {
       setIsSaving(false)
     }

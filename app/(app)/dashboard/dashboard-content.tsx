@@ -203,8 +203,8 @@ export function DashboardContent() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">
                     {pendingFormsCount === 1
-                      ? 'Voce tem 1 formulario pendente'
-                      : `Voce tem ${pendingFormsCount} formularios pendentes`}
+                      ? 'Você tem 1 formulário pendente'
+                      : `Você tem ${pendingFormsCount} formulários pendentes`}
                   </p>
                   <p className="text-xs text-foreground-secondary">Toque para preencher</p>
                 </div>
@@ -336,7 +336,7 @@ export function DashboardContent() {
                     totalCalories: 0,
                     totalSets: 0,
                     prsSet: 0,
-                    highlights: [`+${weeklyRecap.points} pontos`, `Streak: ${weeklyRecap.streak}`],
+                    highlights: [`+${weeklyRecap.points} pontos`, `Sequência: ${weeklyRecap.streak}`],
                   }}
                   variant="icon"
                   className="text-foreground-muted hover:text-dourado -mr-1"
@@ -383,7 +383,7 @@ export function DashboardContent() {
           </button>
           <Link href="/alimentacao/refeicao/nova" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
             <Utensils className="w-5 h-5 text-dourado" />
-            <span className="text-xs text-foreground-secondary">Refeicao</span>
+            <span className="text-xs text-foreground-secondary">Refeição</span>
           </Link>
           <Link href="/treino" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
             <Dumbbell className="w-5 h-5 text-vinho" />

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { X, Pause, Loader2, Zap, Play } from 'lucide-react'
+import { X, Pause, Loader2, Zap, Info } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { useWorkoutExecution } from '@/hooks/use-workout-execution'
@@ -46,6 +46,7 @@ export default function WorkoutExecutionPage() {
   const [editingSet, setEditingSet] = useState<{ exerciseId: string; setNumber: number; weight: number; reps: number; exerciseName: string } | null>(null)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [exerciseVideoUrls, setExerciseVideoUrls] = useState<Record<string, string>>({})
+  const [exerciseInstructions, setExerciseInstructions] = useState<Record<string, string>>({})
 
   // Find workout from real data via useWorkouts hook
   const { getWorkoutById, loading } = useWorkouts()
@@ -87,19 +88,25 @@ export default function WorkoutExecutionPage() {
     const exerciseNames = workout.exercicios?.map((e: { exercise_id?: string; nome: string }) => e.exercise_id || e.nome) || []
     if (exerciseNames.length === 0) return
 
-    // Fetch exercises that have video_url
+    // Fetch exercises with video_url and instrucoes
     fetch(`/api/portal/exercises?limit=100`)
       .then(r => r.json())
       .then(data => {
         if (data.success && data.exercises) {
           const urls: Record<string, string> = {}
+          const instructions: Record<string, string> = {}
           for (const ex of data.exercises) {
             if (ex.video_url) {
               urls[ex.id] = ex.video_url
               urls[ex.nome?.toLowerCase()] = ex.video_url
             }
+            if (ex.instrucoes) {
+              instructions[ex.id] = ex.instrucoes
+              instructions[ex.nome?.toLowerCase()] = ex.instrucoes
+            }
           }
           setExerciseVideoUrls(urls)
+          setExerciseInstructions(instructions)
         }
       })
       .catch(() => {})
@@ -351,20 +358,17 @@ export default function WorkoutExecutionPage() {
               <p className="text-sm text-dourado mb-1">
                 Exercício {state.currentExerciseIndex + 1} de {workout.exercicios.length}
               </p>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <h2 className="text-2xl font-bold text-foreground">
-                  {currentExercise.nome}
-                </h2>
-                {(exerciseVideoUrls[currentExercise.exercise_id] || exerciseVideoUrls[currentExercise.nome?.toLowerCase()]) && (
-                  <button
-                    onClick={() => setShowVideoModal(true)}
-                    className="p-2 rounded-full bg-dourado/10 hover:bg-dourado/20 transition-colors"
-                    title="Ver video"
-                  >
-                    <Play className="w-4 h-4 text-dourado" fill="currentColor" />
-                  </button>
-                )}
-              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                {currentExercise.nome}
+              </h2>
+              {/* Como Fazer button — always visible */}
+              <button
+                onClick={() => setShowVideoModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-dourado/10 hover:bg-dourado/20 transition-colors mb-2"
+              >
+                <Info className="w-3.5 h-3.5 text-dourado" />
+                <span className="text-xs font-semibold text-dourado">Como fazer</span>
+              </button>
               {lastWeight && (
                 <p className="text-sm text-foreground-secondary">
                   Última vez: {lastWeight.weight}kg × {lastWeight.reps}
@@ -459,7 +463,7 @@ export default function WorkoutExecutionPage() {
               className="w-full"
               onClick={() => setShowSetInput(true)}
             >
-              Concluir Serie
+              Concluir Série
             </Button>
 
             <div className="flex gap-3">
@@ -469,7 +473,7 @@ export default function WorkoutExecutionPage() {
                 className="flex-1"
                 onClick={skipSet}
               >
-                Pular Serie
+                Pular Série
               </Button>
               <Button
                 variant="outline"
@@ -477,7 +481,7 @@ export default function WorkoutExecutionPage() {
                 className="flex-1"
                 onClick={skipExercise}
               >
-                Pular Exercicio
+                Pular Exercício
               </Button>
             </div>
 
@@ -540,13 +544,14 @@ export default function WorkoutExecutionPage() {
         />
       )}
 
-      {/* Exercise video modal */}
+      {/* Exercise video/instructions modal */}
       {currentExercise && (
         <ExerciseVideoModal
           isOpen={showVideoModal}
           onClose={() => setShowVideoModal(false)}
           videoUrl={exerciseVideoUrls[currentExercise.exercise_id] || exerciseVideoUrls[currentExercise.nome?.toLowerCase()] || ''}
           exerciseName={currentExercise.nome}
+          instructions={exerciseInstructions[currentExercise.exercise_id] || exerciseInstructions[currentExercise.nome?.toLowerCase()] || ''}
         />
       )}
 

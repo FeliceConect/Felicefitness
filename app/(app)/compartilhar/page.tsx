@@ -16,7 +16,7 @@ interface ShareOption {
 const shareOptions: ShareOption[] = [
   {
     id: 'checkin',
-    title: 'Check-in Diario',
+    title: 'Check-in Diário',
     description: 'Compartilhe sua jornada wellness — Vivendo Felice!',
     icon: <Heart className="w-6 h-6" />,
     href: '/compartilhar/checkin',
@@ -25,7 +25,7 @@ const shareOptions: ShareOption[] = [
   {
     id: 'workout',
     title: 'Treino',
-    description: 'Compartilhe seu treino concluido',
+    description: 'Compartilhe seu treino concluído',
     icon: <Dumbbell className="w-6 h-6" />,
     href: '/compartilhar/treino',
     color: 'bg-violet-500/10 text-violet-500',
@@ -40,8 +40,8 @@ const shareOptions: ShareOption[] = [
   },
   {
     id: 'streak',
-    title: 'Sequencia',
-    description: 'Exiba sua sequencia de treinos',
+    title: 'Sequência',
+    description: 'Exiba sua sequência de treinos',
     icon: <Flame className="w-6 h-6" />,
     href: '/compartilhar/streak',
     color: 'bg-orange-500/10 text-orange-500',
@@ -80,9 +80,9 @@ export default function CompartilharPage() {
       <main className="container px-4 py-6">
         {/* Intro */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">O que voce quer compartilhar?</h2>
+          <h2 className="text-2xl font-bold mb-2">O que você quer compartilhar?</h2>
           <p className="text-muted-foreground">
-            Escolha o tipo de conteudo para criar um card personalizado
+            Escolha o tipo de conteúdo para criar um card personalizado
           </p>
         </div>
 
@@ -115,7 +115,7 @@ export default function CompartilharPage() {
           <div className="text-center py-8 text-muted-foreground">
             <p>Nenhum compartilhamento recente</p>
             <p className="text-sm mt-1">
-              Seus cards compartilhados aparecerao aqui
+              Seus cards compartilhados aparecerão aqui
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from 'sonner'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -166,11 +167,11 @@ export default function FormsPage() {
         setActiveTab('sent')
         fetchAssignments()
       } else {
-        alert(data.error || 'Erro ao enviar formulário')
+        toast.error(data.error || 'Erro ao enviar formulário')
       }
     } catch (error) {
       console.error('Erro ao enviar formulário:', error)
-      alert('Erro ao enviar formulário')
+      toast.error('Erro ao enviar formulário')
     } finally {
       setSending(false)
     }

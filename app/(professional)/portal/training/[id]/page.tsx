@@ -21,6 +21,7 @@ import {
   Pencil
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
+import { toast } from 'sonner'
 
 interface Exercise {
   id?: string
@@ -227,13 +228,13 @@ export default function TrainingProgramDetailPage() {
       const data = await response.json()
       if (data.success) {
         setHasChanges(false)
-        alert('Programa salvo com sucesso!')
+        toast.success('Programa salvo com sucesso!')
       } else {
-        alert('Erro ao salvar: ' + (data.error || 'Erro desconhecido'))
+        toast.error('Erro ao salvar: ' + (data.error || 'Erro desconhecido'))
       }
     } catch (error) {
       console.error('Erro ao salvar programa:', error)
-      alert('Erro ao salvar programa')
+      toast.error('Erro ao salvar programa')
     } finally {
       setSaving(false)
     }
@@ -377,13 +378,13 @@ export default function TrainingProgramDetailPage() {
           client: updatedProgram.client || undefined
         })
         setShowClientModal(false)
-        alert('Cliente atualizado com sucesso!')
+        toast.success('Cliente atualizado com sucesso!')
       } else {
-        alert('Erro ao atribuir cliente: ' + (data.error || 'Erro desconhecido'))
+        toast.error('Erro ao atribuir cliente: ' + (data.error || 'Erro desconhecido'))
       }
     } catch (error) {
       console.error('Erro ao atribuir cliente:', error)
-      alert('Erro ao atribuir cliente')
+      toast.error('Erro ao atribuir cliente')
     }
   }
 

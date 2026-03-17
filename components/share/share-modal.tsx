@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { X, Download, Share2, Copy, Check, Instagram, MessageCircle } from 'lucide-react'
+import { X, Download, Share2, Instagram } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { ShareType, ShareFormat, ShareTheme, ShareCardData } from '@/types/share'
+import type { ShareType, ShareTheme, ShareCardData } from '@/types/share'
 import { SharePreview, SharePreviewHandle } from './share-preview'
-import { generateShareText } from '@/lib/share/messages'
+import { useShareImage } from '@/hooks/use-share-image'
+import { useWebShare } from '@/hooks/use-web-share'
 
 interface ShareModalProps {
   open: boolean
@@ -13,135 +14,80 @@ interface ShareModalProps {
   type: ShareType
   data: ShareCardData
   initialTheme?: ShareTheme
-  initialFormat?: ShareFormat
 }
-
-type ShareDestination = 'native' | 'instagram' | 'whatsapp' | 'download' | 'copy'
-
-const THEMES: { id: ShareTheme; name: string; preview: string }[] = [
-  { id: 'power', name: 'Escuro', preview: 'bg-[#1a1615]' },
-  { id: 'light', name: 'Claro', preview: 'bg-[#f7f2ed]' },
-  { id: 'gradient', name: 'Vinho', preview: 'bg-gradient-to-br from-[#663739] to-[#322b29]' },
-  { id: 'fire', name: 'Dourado', preview: 'bg-gradient-to-br from-[#c29863] to-[#663739]' },
-]
-
-const FORMATS: { id: ShareFormat; name: string; label: string }[] = [
-  { id: 'square', name: 'Post', label: '1:1' },
-  { id: 'story', name: 'Story', label: '9:16' },
-  { id: 'wide', name: 'Wide', label: '16:9' },
-]
 
 export function ShareModal({
   open,
   onClose,
   type,
   data,
-  initialTheme = 'power',
-  initialFormat = 'square',
+  initialTheme = 'light',
 }: ShareModalProps) {
   const [theme, setTheme] = useState<ShareTheme>(initialTheme)
-  const [format, setFormat] = useState<ShareFormat>(initialFormat)
-  const [showStats, setShowStats] = useState(true)
-  const [showDate, setShowDate] = useState(true)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
 
   const previewRef = useRef<SharePreviewHandle>(null)
+  const { generateImage, downloadImage } = useShareImage()
+  const { share, canShareFiles } = useWebShare()
 
-  const generateImage = useCallback(async (): Promise<Blob | null> => {
-    const element = previewRef.current?.getElement()
-    if (!element) return null
+  const getBlob = useCallback(async () => {
+    const element = previewRef.current?.getElement() ?? null
+    return generateImage(element)
+  }, [generateImage])
 
+  const handleInstagramShare = async () => {
+    setIsSharing(true)
     try {
-      const { toPng } = await import('html-to-image')
-      const dataUrl = await toPng(element, {
-        quality: 1,
-        pixelRatio: 2,
-        cacheBust: true,
-      })
-      const res = await fetch(dataUrl)
-      return await res.blob()
-    } catch (error) {
-      console.error('Error generating image:', error)
-      return null
-    }
-  }, [])
+      const blob = await getBlob()
+      if (!blob) return
 
-  const handleShare = async (destination: ShareDestination) => {
-    setIsGenerating(true)
+      const file = new File([blob], `complexo-${type}.png`, { type: 'image/png' })
 
-    try {
-      const blob = await generateImage()
-      if (!blob) throw new Error('Failed to generate image')
-
-      const file = new File([blob], `complexo-wellness-${type}.png`, { type: 'image/png' })
-      const shareText = generateShareText(type, data as unknown as Record<string, unknown>)
-
-      switch (destination) {
-        case 'native':
-          if (navigator.share && navigator.canShare?.({ files: [file] })) {
-            await navigator.share({
-              title: 'Complexo Wellness',
-              text: shareText,
-              files: [file],
-            })
-          } else {
-            downloadImage(blob)
-          }
-          break
-
-        case 'instagram':
-          if (navigator.share && navigator.canShare?.({ files: [file] })) {
-            await navigator.share({ files: [file] })
-          } else {
-            downloadImage(blob)
-          }
-          break
-
-        case 'whatsapp':
-          if (navigator.share && navigator.canShare?.({ files: [file] })) {
-            await navigator.share({ text: shareText, files: [file] })
-          } else {
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
-            window.open(whatsappUrl, '_blank')
-            downloadImage(blob)
-          }
-          break
-
-        case 'download':
-          downloadImage(blob)
-          break
-
-        case 'copy':
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob }),
-            ])
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-          } catch {
-            await navigator.clipboard.writeText(shareText)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-          }
-          break
+      if (canShareFiles) {
+        await share({ files: [file] })
+      } else {
+        downloadImage(blob, `complexo-${type}-${Date.now()}.png`)
+        setTimeout(() => {
+          window.location.href = 'instagram-stories://share'
+        }, 500)
       }
-    } catch (error) {
-      console.error('Share error:', error)
     } finally {
-      setIsGenerating(false)
+      setIsSharing(false)
     }
   }
 
-  const downloadImage = (blob: Blob) => {
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `complexo-wellness-${type}-${Date.now()}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+  const handleShare = async () => {
+    setIsSharing(true)
+    try {
+      const blob = await getBlob()
+      if (!blob) return
+
+      const file = new File([blob], `complexo-${type}.png`, { type: 'image/png' })
+
+      if (canShareFiles) {
+        await share({
+          title: 'Complexo Wellness',
+          text: '#VivendoFelice',
+          files: [file],
+        })
+      } else {
+        downloadImage(blob, `complexo-${type}-${Date.now()}.png`)
+      }
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    setIsSharing(true)
+    try {
+      const blob = await getBlob()
+      if (blob) {
+        downloadImage(blob, `complexo-${type}-${Date.now()}.png`)
+      }
+    } finally {
+      setIsSharing(false)
+    }
   }
 
   if (!open) return null
@@ -169,173 +115,108 @@ export function ShareModal({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          {/* Card Preview — always visible with explicit width */}
+          {/* Card Preview — 270px for 1080px capture at 4x */}
           <div className="p-4 flex justify-center bg-background-elevated/30">
-            <div className="w-[280px]">
+            <div className="w-[270px]">
               <SharePreview
                 ref={previewRef}
                 type={type}
                 data={data}
                 theme={theme}
-                format={format}
-                showStats={showStats}
-                showDate={showDate}
+                format="story"
               />
             </div>
           </div>
 
-          {/* Customization — inline below preview */}
-          <div className="px-4 py-3 space-y-4 border-t border-border">
-            {/* Theme */}
-            <div>
-              <p className="text-xs text-foreground-muted uppercase tracking-wide mb-2">Tema</p>
-              <div className="flex gap-2">
-                {THEMES.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    className={cn(
-                      'flex-1 flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all',
-                      theme === t.id
-                        ? 'border-dourado bg-dourado/5'
-                        : 'border-border hover:border-foreground-muted'
-                    )}
-                  >
-                    <div className={cn('w-8 h-8 rounded-lg', t.preview)} />
-                    <span className="text-[10px] text-foreground-secondary">{t.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Format */}
-            <div>
-              <p className="text-xs text-foreground-muted uppercase tracking-wide mb-2">Formato</p>
-              <div className="flex gap-2">
-                {FORMATS.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setFormat(f.id)}
-                    className={cn(
-                      'flex-1 py-2 rounded-xl border-2 text-center transition-all',
-                      format === f.id
-                        ? 'border-dourado bg-dourado/5 text-dourado font-medium'
-                        : 'border-border text-foreground-secondary hover:border-foreground-muted'
-                    )}
-                  >
-                    <span className="text-sm">{f.name}</span>
-                    <span className="text-[10px] block text-foreground-muted">{f.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Toggles */}
-            <div className="flex gap-3">
+          {/* Theme toggle — only Claro and Vinho */}
+          <div className="px-4 py-3 border-t border-border">
+            <p className="text-xs text-foreground-muted uppercase tracking-wide mb-2">Tema</p>
+            <div className="flex gap-2">
               <button
-                onClick={() => setShowStats(!showStats)}
+                onClick={() => setTheme('light')}
                 className={cn(
-                  'flex-1 py-2 rounded-xl border text-sm transition-all',
-                  showStats
-                    ? 'border-dourado bg-dourado/10 text-dourado'
-                    : 'border-border text-foreground-muted'
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all',
+                  theme === 'light'
+                    ? 'border-dourado bg-dourado/5'
+                    : 'border-border hover:border-foreground-muted'
                 )}
               >
-                {showStats ? 'Stats: On' : 'Stats: Off'}
+                <div className="w-6 h-6 rounded-full bg-[#f7f2ed] border border-black/5" />
+                <span className={cn(
+                  'text-sm font-medium',
+                  theme === 'light' ? 'text-dourado' : 'text-foreground-secondary'
+                )}>
+                  Claro
+                </span>
               </button>
               <button
-                onClick={() => setShowDate(!showDate)}
+                onClick={() => setTheme('gradient')}
                 className={cn(
-                  'flex-1 py-2 rounded-xl border text-sm transition-all',
-                  showDate
-                    ? 'border-dourado bg-dourado/10 text-dourado'
-                    : 'border-border text-foreground-muted'
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all',
+                  theme === 'gradient'
+                    ? 'border-dourado bg-dourado/5'
+                    : 'border-border hover:border-foreground-muted'
                 )}
               >
-                {showDate ? 'Data: On' : 'Data: Off'}
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#663739] to-[#322b29]" />
+                <span className={cn(
+                  'text-sm font-medium',
+                  theme === 'gradient' ? 'text-dourado' : 'text-foreground-secondary'
+                )}>
+                  Vinho
+                </span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Share Destinations — fixed at bottom */}
+        {/* Actions — fixed at bottom */}
         <div className="border-t border-border p-4 space-y-3 bg-white">
-          {/* Quick Share Buttons */}
-          <div className="flex justify-center gap-4">
-            <ShareDestinationButton
-              icon={<Share2 className="w-5 h-5" />}
-              label="Enviar"
-              onClick={() => handleShare('native')}
-              disabled={isGenerating}
-            />
-            <ShareDestinationButton
-              icon={<Instagram className="w-5 h-5" />}
-              label="Instagram"
-              onClick={() => handleShare('instagram')}
-              disabled={isGenerating}
-            />
-            <ShareDestinationButton
-              icon={<MessageCircle className="w-5 h-5" />}
-              label="WhatsApp"
-              onClick={() => handleShare('whatsapp')}
-              disabled={isGenerating}
-            />
-            <ShareDestinationButton
-              icon={copied ? <Check className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5" />}
-              label={copied ? 'Copiado!' : 'Copiar'}
-              onClick={() => handleShare('copy')}
-              disabled={isGenerating}
-            />
-          </div>
-
-          {/* Download Button */}
+          {/* Primary: Instagram Stories */}
           <button
-            onClick={() => handleShare('download')}
-            disabled={isGenerating}
+            onClick={handleInstagramShare}
+            disabled={isSharing}
             className={cn(
-              'w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all',
-              'bg-dourado text-white hover:bg-dourado/90',
-              isGenerating && 'opacity-50 cursor-not-allowed'
+              'w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.97]',
+              isSharing && 'opacity-50 cursor-not-allowed'
             )}
+            style={{
+              background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)',
+              color: '#fff',
+            }}
           >
-            {isGenerating ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Gerando...
-              </>
-            ) : (
-              <>
-                <Download className="w-5 h-5" />
-                Baixar Imagem
-              </>
-            )}
+            <Instagram className="w-5 h-5" />
+            {isSharing ? 'Gerando imagem...' : 'Postar nos Stories'}
           </button>
+
+          {/* Secondary row */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Share2 className="w-4 h-4" />
+              Compartilhar
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={isSharing}
+              className={cn(
+                'flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  )
-}
-
-interface ShareDestinationButtonProps {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-  disabled?: boolean
-}
-
-function ShareDestinationButton({ icon, label, onClick, disabled }: ShareDestinationButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'flex flex-col items-center gap-1 p-2.5 rounded-xl transition-colors',
-        'hover:bg-background-elevated',
-        disabled && 'opacity-50 cursor-not-allowed'
-      )}
-    >
-      <div className="text-foreground-secondary">{icon}</div>
-      <span className="text-[10px] text-foreground-muted">{label}</span>
-    </button>
   )
 }

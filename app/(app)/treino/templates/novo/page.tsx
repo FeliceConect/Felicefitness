@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Trash2, GripVertical, Loader2, Clock, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -106,7 +107,7 @@ export default function NovoTemplatePage() {
 
   const handleSubmit = async () => {
     if (!nome.trim()) {
-      alert('Digite o nome do treino')
+      toast.error('Digite o nome do treino')
       return
     }
 
@@ -135,7 +136,7 @@ export default function NovoTemplatePage() {
       router.push('/treino/templates')
     } catch (error) {
       console.error('Erro ao criar template:', error)
-      alert('Erro ao criar treino. Tente novamente.')
+      toast.error('Erro ao criar treino. Tente novamente.')
     } finally {
       setLoading(false)
     }

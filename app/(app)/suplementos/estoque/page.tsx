@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useSupplementStock } from '@/hooks/use-supplement-stock'
 import { AppHeader } from '@/components/layout/app-header'
 import { BottomNav } from '@/components/layout/bottom-nav'
@@ -52,7 +53,7 @@ export default function EstoquePage() {
       navigator.share({ title: 'Lista de Compras', text })
     } else {
       navigator.clipboard.writeText(text)
-      alert('Lista copiada para a área de transferência!')
+      toast.success('Lista copiada para a área de transferência!')
     }
   }
 

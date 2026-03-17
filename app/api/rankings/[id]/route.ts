@@ -21,7 +21,7 @@ export async function GET(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -38,7 +38,7 @@ export async function GET(
       .single()
 
     if (rankError || !ranking) {
-      return NextResponse.json({ success: false, error: 'Ranking nao encontrado' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Ranking não encontrado' }, { status: 404 })
     }
 
     // Get participants ordered by points
@@ -135,7 +135,7 @@ export async function PATCH(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -188,7 +188,7 @@ export async function DELETE(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()

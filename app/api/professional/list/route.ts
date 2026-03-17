@@ -10,7 +10,7 @@ export async function GET() {
 
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'Nao autorizado' },
+        { success: false, error: 'Não autorizado' },
         { status: 401 }
       )
     }

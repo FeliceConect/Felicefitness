@@ -22,7 +22,7 @@ export async function GET(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -80,7 +80,7 @@ export async function POST(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -89,7 +89,7 @@ export async function POST(
     const { content } = body
 
     if (!content?.trim()) {
-      return NextResponse.json({ success: false, error: 'Conteudo obrigatorio' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Conteúdo obrigatório' }, { status: 400 })
     }
 
     const { data: comment, error: insertError } = await supabaseAdmin

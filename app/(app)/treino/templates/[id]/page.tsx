@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Plus, Trash2, GripVertical, Loader2, Clock, ChevronDown, Save } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
@@ -178,7 +179,7 @@ export default function EditTemplatePage() {
 
   const handleSubmit = async () => {
     if (!nome.trim()) {
-      alert('Digite o nome do treino')
+      toast.error('Digite o nome do treino')
       return
     }
 
@@ -195,7 +196,7 @@ export default function EditTemplatePage() {
       router.push('/treino/templates')
     } catch (error) {
       console.error('Erro ao atualizar template:', error)
-      alert('Erro ao salvar treino. Tente novamente.')
+      toast.error('Erro ao salvar treino. Tente novamente.')
     } finally {
       setSaving(false)
     }

@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from 'sonner'
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -663,11 +664,11 @@ export default function CreateTemplatePage() {
       if (data.success) {
         router.push('/portal/forms')
       } else {
-        alert(data.error || 'Erro ao salvar template')
+        toast.error(data.error || 'Erro ao salvar template')
       }
     } catch (error) {
       console.error('Erro ao salvar template:', error)
-      alert('Erro ao salvar template')
+      toast.error('Erro ao salvar template')
     } finally {
       setSaving(false)
     }

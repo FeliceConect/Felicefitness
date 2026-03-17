@@ -834,7 +834,7 @@ export default function FeedPage() {
               {newPostType === 'meal' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] text-foreground-muted block mb-1.5">Tipo de refeicao</label>
+                    <label className="text-[11px] text-foreground-muted block mb-1.5">Tipo de refeição</label>
                     <div className="flex gap-2">
                       {MEAL_TYPE_OPTIONS.map(mt => (
                         <button
@@ -968,7 +968,7 @@ export default function FeedPage() {
                 className="w-full px-3 py-3 rounded-lg border border-border bg-background-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 resize-none"
                 placeholder={
                   newPostType === 'workout' ? 'Notas sobre o treino (opcional)...' :
-                  newPostType === 'meal' ? 'Notas sobre a refeicao (opcional)...' :
+                  newPostType === 'meal' ? 'Notas sobre a refeição (opcional)...' :
                   newPostType === 'achievement' ? 'Celebre sua conquista!' :
                   newPostType === 'check_in' ? 'Algo mais que queira compartilhar? (opcional)' :
                   'O que você quer compartilhar?'

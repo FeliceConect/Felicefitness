@@ -90,7 +90,7 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   light: 'Leve'
 }
 
-const DAY_NAMES = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado']
+const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 export default function ImportarTreinoPage() {
   const router = useRouter()
@@ -367,7 +367,7 @@ export default function ImportarTreinoPage() {
                       <Clock className="h-4 w-4 text-amber-500" />
                     </div>
                     <p className="text-lg font-bold">{parsedPlan.session_duration}</p>
-                    <p className="text-xs text-muted-foreground">min/sessao</p>
+                    <p className="text-xs text-muted-foreground">min/sessão</p>
                   </div>
                   <div className="p-2 bg-muted rounded-lg">
                     <div className="flex items-center justify-center gap-1 mb-1">

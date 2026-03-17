@@ -56,21 +56,21 @@ interface PointTransaction {
 const LEVEL_NAMES = [
   '',
   'Iniciante', 'Aprendiz', 'Dedicado', 'Focado', 'Guerreiro',
-  'Atleta', 'Elite', 'Campeao', 'Lenda', 'Imortal'
+  'Atleta', 'Elite', 'Campeão', 'Lenda', 'Imortal'
 ]
 
 const LEVEL_COLORS = [
   '',
-  'from-gray-400 to-gray-500',
-  'from-green-400 to-green-500',
-  'from-blue-400 to-blue-500',
-  'from-purple-400 to-purple-500',
-  'from-orange-400 to-orange-500',
-  'from-red-400 to-red-500',
-  'from-pink-400 to-pink-500',
-  'from-teal-400 to-teal-500',
-  'from-amber-400 to-amber-500',
-  'from-yellow-400 to-yellow-500'
+  'from-[#cac2b9] to-[#ae9b89]',
+  'from-[#ae9b89] to-[#c29863]',
+  'from-[#c29863] to-[#c29863]',
+  'from-[#c29863] to-[#663739]',
+  'from-[#663739] to-[#322b29]',
+  'from-[#663739] to-[#322b29]',
+  'from-[#663739] to-[#322b29]',
+  'from-[#663739] to-[#322b29]',
+  'from-[#663739] to-[#322b29]',
+  'from-[#663739] to-[#322b29]'
 ]
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -82,8 +82,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 const TIER_CONFIG: Record<string, { label: string; color: string; icon: string; bg: string }> = {
   bronze: { label: 'Bronze', color: 'text-amber-700', icon: '🥉', bg: 'from-amber-700/10 to-amber-600/5 border-amber-700/20' },
   prata: { label: 'Prata', color: 'text-gray-500', icon: '🥈', bg: 'from-gray-400/10 to-gray-300/5 border-gray-400/20' },
-  ouro: { label: 'Ouro', color: 'text-yellow-500', icon: '🥇', bg: 'from-yellow-400/10 to-yellow-300/5 border-yellow-400/20' },
-  platina: { label: 'Platina', color: 'text-cyan-400', icon: '💎', bg: 'from-cyan-400/10 to-cyan-300/5 border-cyan-400/20' },
+  ouro: { label: 'Ouro', color: 'text-dourado', icon: '🥇', bg: 'from-dourado/10 to-dourado/5 border-dourado/20' },
+  platina: { label: 'Platina', color: 'text-vinho', icon: '💎', bg: 'from-vinho/10 to-vinho/5 border-vinho/20' },
 }
 
 const TIER_THRESHOLDS = [
@@ -251,7 +251,7 @@ export default function RankingPage() {
             Ranking
           </h1>
           <p className="text-sm text-foreground-secondary">
-            {activeRanking ? activeRanking.name : 'Compete e suba de nivel!'}
+            {activeRanking ? activeRanking.name : 'Compete e suba de nível!'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -274,7 +274,7 @@ export default function RankingPage() {
       {/* Settings Panel */}
       {showSettings && (
         <div className="bg-white rounded-xl border border-border p-4 space-y-4">
-          <h3 className="text-foreground font-medium">Configuracoes do Ranking</h3>
+          <h3 className="text-foreground font-medium">Configurações do Ranking</h3>
           <div>
             <label className="block text-sm text-foreground-secondary mb-1">Apelido (opcional)</label>
             <input
@@ -289,7 +289,7 @@ export default function RankingPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-foreground">Aparecer no ranking</p>
-              <p className="text-xs text-foreground-secondary">Outros podem ver sua posicao</p>
+              <p className="text-xs text-foreground-secondary">Outros podem ver sua posição</p>
             </div>
             <button
               onClick={() => setRankingVisivel(!rankingVisivel)}
@@ -316,10 +316,10 @@ export default function RankingPage() {
         </div>
         <div className="bg-white rounded-xl border border-border p-3 text-center">
           <p className="text-2xl font-bold text-foreground">{pointsSummary.monthTotal}</p>
-          <p className="text-xs text-foreground-secondary">Este mes</p>
+          <p className="text-xs text-foreground-secondary">Este mês</p>
         </div>
         <div className="bg-white rounded-xl border border-border p-3 text-center">
-          <p className="text-2xl font-bold text-green-600">+{pointsSummary.todayTotal}</p>
+          <p className="text-2xl font-bold text-success">+{pointsSummary.todayTotal}</p>
           <p className="text-xs text-foreground-secondary">Hoje</p>
         </div>
       </div>
@@ -343,7 +343,7 @@ export default function RankingPage() {
                       {pointsSummary.totalPoints}/{nextTier.points} pts para {nextTier.label}
                     </p>
                   ) : (
-                    <p className="text-xs text-foreground-secondary">Tier maximo alcancado!</p>
+                    <p className="text-xs text-foreground-secondary">Tier máximo alcançado!</p>
                   )}
                 </div>
               </div>
@@ -501,7 +501,7 @@ export default function RankingPage() {
         <div className="bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-xl border border-dourado/30 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-foreground-secondary">Sua posicao</p>
+              <p className="text-sm text-foreground-secondary">Sua posição</p>
               <p className="text-3xl font-bold text-foreground">#{activeRanking.user_position}</p>
               <p className="text-xs text-foreground-muted">de {activeRanking.total_participants} participantes</p>
             </div>
@@ -570,13 +570,13 @@ export default function RankingPage() {
                   <div className="flex-1 min-w-0">
                     <span className={`font-medium truncate block ${entry.is_current_user ? 'text-dourado' : 'text-foreground'}`}>
                       {entry.display_name}
-                      {entry.is_current_user && ' (voce)'}
+                      {entry.is_current_user && ' (você)'}
                     </span>
                     <div className="flex items-center gap-3 text-sm text-foreground-secondary">
                       <span>{LEVEL_NAMES[entry.nivel]}</span>
                       {entry.streak > 0 && (
                         <span className="flex items-center gap-1">
-                          <Flame className="w-3 h-3 text-orange-400" />
+                          <Flame className="w-3 h-3 text-dourado" />
                           {entry.streak}
                         </span>
                       )}
@@ -630,7 +630,7 @@ export default function RankingPage() {
       {/* Info */}
       <div className="bg-background-elevated/30 rounded-xl p-4 border border-border">
         <p className="text-sm text-foreground-secondary text-center">
-          Complete atividades para ganhar pontos e subir no ranking! Voce pode configurar seu apelido e visibilidade nas configuracoes.
+          Complete atividades para ganhar pontos e subir no ranking! Você pode configurar seu apelido e visibilidade nas configurações.
         </p>
       </div>
     </div>

@@ -101,7 +101,7 @@ export function WidgetWorkout({ size, data, onStart, onClick }: WidgetWorkoutPro
             <div className="flex items-center gap-2">
               <Dumbbell className="w-4 h-4 text-purple-400" />
               <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                Proximo Treino
+                Próximo Treino
               </span>
             </div>
             {getStatusIcon()}
@@ -160,7 +160,7 @@ export function WidgetWorkout({ size, data, onStart, onClick }: WidgetWorkoutPro
           <div className="flex items-center gap-2">
             <Dumbbell className="w-5 h-5 text-purple-400" />
             <span className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
-              Proximo Treino
+              Próximo Treino
             </span>
           </div>
           <div

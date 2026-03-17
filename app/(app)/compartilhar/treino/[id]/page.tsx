@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Instagram, Share2, Download } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { SharePreview, SharePreviewHandle } from '@/components/share/share-preview'
 import { CardCustomizer } from '@/components/share/card-customizer'
-import type { ShareFormat, ShareTheme, WorkoutShareData } from '@/types/share'
+import type { ShareTheme, WorkoutShareData } from '@/types/share'
 import { useShareImage } from '@/hooks/use-share-image'
 import { useWebShare } from '@/hooks/use-web-share'
-import { generateShareText } from '@/lib/share/messages'
 import { cn } from '@/lib/utils'
 
 export default function CompartilharTreinoIdPage() {
@@ -19,10 +18,7 @@ export default function CompartilharTreinoIdPage() {
 
   const [workout, setWorkout] = useState<WorkoutShareData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [theme, setTheme] = useState<ShareTheme>('power')
-  const [format, setFormat] = useState<ShareFormat>('square')
-  const [showStats, setShowStats] = useState(true)
-  const [showDate, setShowDate] = useState(true)
+  const [theme, setTheme] = useState<ShareTheme>('light')
   const [isSharing, setIsSharing] = useState(false)
 
   const previewRef = useRef<SharePreviewHandle>(null)
@@ -73,26 +69,47 @@ export default function CompartilharTreinoIdPage() {
     setLoading(false)
   }
 
+  const handleInstagramShare = async () => {
+    if (!workout) return
+    setIsSharing(true)
+    try {
+      const element = previewRef.current?.getElement() ?? null
+      const blob = await generateImage(element)
+      if (!blob) return
+
+      const file = new File([blob], 'complexo-treino.png', { type: 'image/png' })
+
+      if (canShareFiles) {
+        await share({ files: [file] })
+      } else {
+        downloadImage(blob, `complexo-treino-${Date.now()}.png`)
+        setTimeout(() => {
+          window.location.href = 'instagram-stories://share'
+        }, 500)
+      }
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
   const handleShare = async () => {
     if (!workout) return
-
     setIsSharing(true)
     try {
       const element = previewRef.current?.getElement() ?? null
       const blob = await generateImage(element)
 
       if (blob) {
-        const file = new File([blob], `felicefit-treino.png`, { type: 'image/png' })
-        const text = generateShareText('workout', workout as unknown as Record<string, unknown>)
+        const file = new File([blob], 'complexo-treino.png', { type: 'image/png' })
 
         if (canShareFiles) {
           await share({
             title: 'Complexo Wellness',
-            text,
+            text: '#VivendoFelice',
             files: [file],
           })
         } else {
-          downloadImage(blob, `felicefit-treino-${Date.now()}.png`)
+          downloadImage(blob, `complexo-treino-${Date.now()}.png`)
         }
       }
     } finally {
@@ -106,7 +123,7 @@ export default function CompartilharTreinoIdPage() {
       const element = previewRef.current?.getElement() ?? null
       const blob = await generateImage(element)
       if (blob) {
-        downloadImage(blob, `felicefit-treino-${Date.now()}.png`)
+        downloadImage(blob, `complexo-treino-${Date.now()}.png`)
       }
     } finally {
       setIsSharing(false)
@@ -129,7 +146,7 @@ export default function CompartilharTreinoIdPage() {
             <Link href="/compartilhar/treino" className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-lg font-semibold">Treino nao encontrado</h1>
+            <h1 className="text-lg font-semibold">Treino não encontrado</h1>
           </div>
         </header>
       </div>
@@ -137,7 +154,7 @@ export default function CompartilharTreinoIdPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-28">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
         <div className="container flex items-center gap-4 h-14 px-4">
@@ -148,60 +165,73 @@ export default function CompartilharTreinoIdPage() {
         </div>
       </header>
 
-      <main className="container px-4 py-6 space-y-6">
-        {/* Preview */}
+      <main className="container px-4 py-6 space-y-5">
+        {/* Preview — always story format */}
         <div className="flex justify-center">
-          <div className="transform scale-[0.6] origin-top">
+          <div className="w-[270px]">
             <SharePreview
               ref={previewRef}
               type="workout"
               data={workout}
               theme={theme}
-              format={format}
-              showStats={showStats}
-              showDate={showDate}
+              format="story"
             />
           </div>
         </div>
 
-        {/* Customizer */}
+        {/* Theme only */}
         <div className="bg-muted/30 rounded-xl p-4">
           <CardCustomizer
             theme={theme}
-            format={format}
             onThemeChange={setTheme}
-            onFormatChange={setFormat}
-            showStats={showStats}
-            showDate={showDate}
-            onShowStatsChange={setShowStats}
-            onShowDateChange={setShowDate}
           />
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3">
+          {/* Primary: Instagram Stories */}
           <button
-            onClick={handleDownload}
+            onClick={handleInstagramShare}
             disabled={isSharing}
             className={cn(
-              'flex-1 py-3 rounded-xl font-semibold border',
-              'hover:bg-muted transition-colors',
+              'flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.97]',
               isSharing && 'opacity-50 cursor-not-allowed'
             )}
+            style={{
+              background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)',
+              color: '#fff',
+            }}
           >
-            Baixar
+            <Instagram className="w-5 h-5" />
+            {isSharing ? 'Gerando imagem...' : 'Postar nos Stories'}
           </button>
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className={cn(
-              'flex-1 py-3 rounded-xl font-semibold',
-              'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors',
-              isSharing && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            {isSharing ? 'Gerando...' : 'Compartilhar'}
-          </button>
+
+          {/* Secondary row */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Share2 className="w-4 h-4" />
+              Compartilhar
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={isSharing}
+              className={cn(
+                'flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </main>
     </div>

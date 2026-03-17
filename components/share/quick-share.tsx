@@ -124,15 +124,17 @@ export function QuickShare({
           <p className="text-sm text-white/50 mt-1">{subtitle}</p>
         </div>
 
-        {/* Card Preview — story format */}
-        <div className="w-[160px] flex-shrink-0">
-          <SharePreview
-            ref={previewRef}
-            type={type}
-            data={data}
-            theme={selectedTheme}
-            format="story"
-          />
+        {/* Card Preview — rendered at 270px for 1080px capture at 4x, scaled down visually */}
+        <div className="flex-shrink-0" style={{ width: 180, height: 320, overflow: 'hidden' }}>
+          <div style={{ transform: 'scale(0.6667)', transformOrigin: 'top left', width: 270 }}>
+            <SharePreview
+              ref={previewRef}
+              type={type}
+              data={data}
+              theme={selectedTheme}
+              format="story"
+            />
+          </div>
         </div>
 
         {/* Theme toggle */}
@@ -171,7 +173,7 @@ export function QuickShare({
           className="mt-2.5 flex items-center gap-1.5 text-[11px] text-white/35 hover:text-white/60 transition-colors"
         >
           <Settings2 className="w-3 h-3" />
-          Mais opcoes
+          Mais opções
         </button>
 
         {/* Action buttons */}

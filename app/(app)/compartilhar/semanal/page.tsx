@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Instagram, Share2, Download } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { SharePreview, SharePreviewHandle } from '@/components/share/share-preview'
 import { CardCustomizer } from '@/components/share/card-customizer'
-import type { ShareFormat, ShareTheme, WeeklyShareData } from '@/types/share'
+import type { ShareTheme, WeeklyShareData } from '@/types/share'
 import { useShareImage } from '@/hooks/use-share-image'
 import { useWebShare } from '@/hooks/use-web-share'
 import { generateShareText } from '@/lib/share/messages'
@@ -17,9 +17,7 @@ import { ptBR } from 'date-fns/locale'
 export default function CompartilharSemanalPage() {
   const [weeklyData, setWeeklyData] = useState<WeeklyShareData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [theme, setTheme] = useState<ShareTheme>('gradient')
-  const [formatType, setFormatType] = useState<ShareFormat>('square')
-  const [showDate, setShowDate] = useState(true)
+  const [theme, setTheme] = useState<ShareTheme>('light')
   const [isSharing, setIsSharing] = useState(false)
 
   const previewRef = useRef<SharePreviewHandle>(null)
@@ -91,6 +89,23 @@ export default function CompartilharSemanalPage() {
     setLoading(false)
   }
 
+  const handleInstagramShare = async () => {
+    if (!weeklyData) return
+    setIsSharing(true)
+    try {
+      const element = previewRef.current?.getElement() ?? null
+      const blob = await generateImage(element)
+      if (!blob) return
+      const file = new File([blob], 'complexo-semanal.png', { type: 'image/png' })
+      if (canShareFiles) {
+        await share({ files: [file] })
+      } else {
+        downloadImage(blob, `complexo-semanal-${Date.now()}.png`)
+        setTimeout(() => { window.location.href = 'instagram-stories://share' }, 500)
+      }
+    } finally { setIsSharing(false) }
+  }
+
   const handleShare = async () => {
     if (!weeklyData) return
 
@@ -100,7 +115,7 @@ export default function CompartilharSemanalPage() {
       const blob = await generateImage(element)
 
       if (blob) {
-        const file = new File([blob], `felicefit-semanal.png`, { type: 'image/png' })
+        const file = new File([blob], 'complexo-semanal.png', { type: 'image/png' })
         const text = generateShareText('weekly', weeklyData as unknown as Record<string, unknown>)
 
         if (canShareFiles) {
@@ -110,7 +125,7 @@ export default function CompartilharSemanalPage() {
             files: [file],
           })
         } else {
-          downloadImage(blob, `felicefit-semanal-${Date.now()}.png`)
+          downloadImage(blob, `complexo-semanal-${Date.now()}.png`)
         }
       }
     } finally {
@@ -124,7 +139,7 @@ export default function CompartilharSemanalPage() {
       const element = previewRef.current?.getElement() ?? null
       const blob = await generateImage(element)
       if (blob) {
-        downloadImage(blob, `felicefit-semanal-${Date.now()}.png`)
+        downloadImage(blob, `complexo-semanal-${Date.now()}.png`)
       }
     } finally {
       setIsSharing(false)
@@ -175,14 +190,13 @@ export default function CompartilharSemanalPage() {
       <main className="container px-4 py-6 space-y-6">
         {/* Preview */}
         <div className="flex justify-center">
-          <div className="transform scale-[0.55] origin-top">
+          <div className="w-[270px]">
             <SharePreview
               ref={previewRef}
               type="weekly"
               data={weeklyData}
               theme={theme}
-              format={formatType}
-              showDate={showDate}
+              format="story"
             />
           </div>
         </div>
@@ -191,38 +205,53 @@ export default function CompartilharSemanalPage() {
         <div className="bg-muted/30 rounded-xl p-4">
           <CardCustomizer
             theme={theme}
-            format={formatType}
             onThemeChange={setTheme}
-            onFormatChange={setFormatType}
-            showDate={showDate}
-            onShowDateChange={setShowDate}
           />
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3">
           <button
-            onClick={handleDownload}
+            onClick={handleInstagramShare}
             disabled={isSharing}
             className={cn(
-              'flex-1 py-3 rounded-xl font-semibold border',
-              'hover:bg-muted transition-colors',
+              'flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.97]',
               isSharing && 'opacity-50 cursor-not-allowed'
             )}
+            style={{
+              background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)',
+              color: '#fff',
+            }}
           >
-            Baixar
+            <Instagram className="w-5 h-5" />
+            {isSharing ? 'Gerando imagem...' : 'Postar nos Stories'}
           </button>
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className={cn(
-              'flex-1 py-3 rounded-xl font-semibold',
-              'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors',
-              isSharing && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            {isSharing ? 'Gerando...' : 'Compartilhar'}
-          </button>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Share2 className="w-4 h-4" />
+              Compartilhar
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={isSharing}
+              className={cn(
+                'flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm border',
+                'hover:bg-muted transition-colors',
+                isSharing && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </main>
     </div>

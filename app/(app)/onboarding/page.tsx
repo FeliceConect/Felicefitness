@@ -126,8 +126,8 @@ export default function OnboardingPage() {
     },
     {
       id: 'notifications',
-      title: 'Notificacoes',
-      description: 'Receba lembretes e motivacao para manter seu progresso.',
+      title: 'Notificações',
+      description: 'Receba lembretes e motivação para manter seu progresso.',
       icon: <Bell className="w-12 h-12 text-dourado" />,
       content: (
         <div className="space-y-4 mt-6">
@@ -141,8 +141,8 @@ export default function OnboardingPage() {
           >
             <Bell className={`w-8 h-8 ${notificationsEnabled ? 'text-dourado' : 'text-foreground-secondary'}`} />
             <div className="flex-1">
-              <p className="font-medium text-white">Ativar notificacoes</p>
-              <p className="text-sm text-foreground-secondary">Receba lembretes de treino, agua e muito mais</p>
+              <p className="font-medium text-white">Ativar notificações</p>
+              <p className="text-sm text-foreground-secondary">Receba lembretes de treino, água e muito mais</p>
             </div>
             {notificationsEnabled && <Check className="w-5 h-5 text-dourado" />}
           </div>
@@ -156,8 +156,8 @@ export default function OnboardingPage() {
           >
             <Bell className={`w-8 h-8 ${!notificationsEnabled ? 'text-dourado' : 'text-foreground-secondary'}`} />
             <div className="flex-1">
-              <p className="font-medium text-white">Nao, obrigado</p>
-              <p className="text-sm text-foreground-secondary">Voce pode ativar depois nas configuracoes</p>
+              <p className="font-medium text-white">Não, obrigado</p>
+              <p className="text-sm text-foreground-secondary">Você pode ativar depois nas configurações</p>
             </div>
             {!notificationsEnabled && <Check className="w-5 h-5 text-dourado" />}
           </div>

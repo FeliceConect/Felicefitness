@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'Nao autorizado' },
+        { success: false, error: 'Não autorizado' },
         { status: 401 }
       )
     }
@@ -121,9 +121,9 @@ export async function GET(request: NextRequest) {
     const { data: meals, error } = await query
 
     if (error) {
-      console.error('Erro ao buscar refeicoes:', error)
+      console.error('Erro ao buscar refeições:', error)
       return NextResponse.json(
-        { success: false, error: 'Erro ao buscar refeicoes' },
+        { success: false, error: 'Erro ao buscar refeições' },
         { status: 500 }
       )
     }
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erro ao processar requisicao:', error)
+    console.error('Erro ao processar requisição:', error)
     return NextResponse.json(
       { success: false, error: 'Erro interno do servidor' },
       { status: 500 }

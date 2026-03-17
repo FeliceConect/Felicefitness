@@ -18,9 +18,9 @@ interface NoteCardProps {
 }
 
 const NOTE_TYPE_CONFIG: Record<string, { label: string; icon: typeof FileText; color: string; bg: string }> = {
-  observation: { label: 'Observacao', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
-  evolution: { label: 'Evolucao', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
-  action_plan: { label: 'Plano de Acao', icon: ClipboardList, color: 'text-dourado', bg: 'bg-amber-50 border-amber-200' },
+  observation: { label: 'Observação', icon: FileText, color: 'text-vinho', bg: 'bg-vinho/10 border-vinho/20' },
+  evolution: { label: 'Evolução', icon: TrendingUp, color: 'text-dourado', bg: 'bg-dourado/10 border-dourado/20' },
+  action_plan: { label: 'Plano de Ação', icon: ClipboardList, color: 'text-dourado', bg: 'bg-dourado/10 border-dourado/20' },
   alert: { label: 'Alerta', icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
 }
 

@@ -36,19 +36,19 @@ interface EnrichedNote {
 
 const NOTE_TYPE_CONFIG: Record<string, { label: string; color: string; bgColor: string; borderColor: string }> = {
   observation: {
-    label: 'Observacao',
+    label: 'Observação',
     color: 'text-blue-400',
     bgColor: 'bg-blue-500/20',
     borderColor: 'border-blue-500/30',
   },
   evolution: {
-    label: 'Evolucao',
+    label: 'Evolução',
     color: 'text-green-400',
     bgColor: 'bg-green-500/20',
     borderColor: 'border-green-500/30',
   },
   action_plan: {
-    label: 'Plano de Acao',
+    label: 'Plano de Ação',
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/20',
     borderColor: 'border-purple-500/30',
@@ -167,7 +167,7 @@ export default function ProntuarioPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Prontuario</h1>
+        <h1 className="text-2xl font-bold text-foreground">Prontuário</h1>
         <p className="text-foreground-secondary">Notas dos profissionais sobre pacientes</p>
       </div>
 
@@ -183,9 +183,10 @@ export default function ProntuarioPage() {
             className="w-full sm:w-auto px-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
           >
             <option value="">Todos os tipos</option>
-            <option value="observation">Observacao</option>
-            <option value="evolution">Evolucao</option>
-            <option value="action_plan">Plano de Acao</option>
+            <option value="observation">Observação</option>
+            <option value="evolution">Evolução</option>
+            <option value="action_plan">Plano de Ação</option>
+
             <option value="alert">Alerta</option>
           </select>
 
@@ -209,7 +210,7 @@ export default function ProntuarioPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por paciente, profissional ou conteudo..."
+              placeholder="Buscar por paciente, profissional ou conteúdo..."
               className="w-full pl-10 pr-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
             />
           </div>
@@ -337,7 +338,7 @@ export default function ProntuarioPage() {
                       <div className="flex items-center gap-1.5 mt-2">
                         <Clock className="w-3.5 h-3.5 text-foreground-muted" />
                         <span className="text-xs text-foreground-muted">
-                          {formatDate(note.created_at)} as {formatTime(note.created_at)}
+                          {formatDate(note.created_at)} às {formatTime(note.created_at)}
                         </span>
                       </div>
                     </div>

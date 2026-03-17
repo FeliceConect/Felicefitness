@@ -21,7 +21,7 @@ export async function DELETE(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -35,7 +35,7 @@ export async function DELETE(
       .single()
 
     if (!post) {
-      return NextResponse.json({ success: false, error: 'Post nao encontrado' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Post não encontrado' }, { status: 404 })
     }
 
     const { data: profile } = await supabaseAdmin

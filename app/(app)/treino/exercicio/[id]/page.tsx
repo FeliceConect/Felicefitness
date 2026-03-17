@@ -46,18 +46,18 @@ function getMockExerciseInfo(id: string): ExerciseInfo {
       id: 'ex-leg-press',
       nome: 'Leg Press',
       grupoMuscular: 'Pernas',
-      descricao: 'Exercicio composto para desenvolvimento de quadriceps, gluteos e posterior de coxa.',
+      descricao: 'Exercício composto para desenvolvimento de quadríceps, glúteos e posterior de coxa.',
       instrucoes: [
-        'Sente-se na maquina com as costas apoiadas no encosto',
-        'Posicione os pes na plataforma na largura dos ombros',
-        'Empurre a plataforma estendendo as pernas (nao trave os joelhos)',
-        'Desca controladamente ate 90 graus de flexao',
-        'Repita o movimento mantendo a tensao'
+        'Sente-se na máquina com as costas apoiadas no encosto',
+        'Posicione os pés na plataforma na largura dos ombros',
+        'Empurre a plataforma estendendo as pernas (não trave os joelhos)',
+        'Desça controladamente até 90 graus de flexão',
+        'Repita o movimento mantendo a tensão'
       ],
       dicas: [
-        'Nao trave os joelhos no topo do movimento',
+        'Não trave os joelhos no topo do movimento',
         'Mantenha as costas sempre apoiadas no encosto',
-        'Controle a descida - nao deixe o peso cair',
+        'Controle a descida - não deixe o peso cair',
         'Respire: expire ao empurrar, inspire ao descer'
       ]
     },
@@ -65,28 +65,28 @@ function getMockExerciseInfo(id: string): ExerciseInfo {
       id: 'ex-agach-goblet',
       nome: 'Agachamento Goblet',
       grupoMuscular: 'Pernas',
-      descricao: 'Variacao de agachamento com haltere que ajuda na postura e ativacao do core.',
+      descricao: 'Variação de agachamento com haltere que ajuda na postura e ativação do core.',
       instrucoes: [
         'Segure o haltere na altura do peito',
-        'Pes na largura dos ombros, pontas ligeiramente para fora',
-        'Desca mantendo o tronco ereto',
-        'Desca ate as coxas ficarem paralelas ao chao',
-        'Suba empurrando o chao com os calcanhares'
+        'Pés na largura dos ombros, pontas ligeiramente para fora',
+        'Desça mantendo o tronco ereto',
+        'Desça até as coxas ficarem paralelas ao chão',
+        'Suba empurrando o chão com os calcanhares'
       ],
       dicas: [
         'Mantenha os cotovelos apontando para baixo',
-        'Joelhos devem seguir a direcao dos pes',
-        'Core contraido durante todo o movimento',
-        'Se necessario, use elevacao nos calcanhares'
+        'Joelhos devem seguir a direção dos pés',
+        'Core contraído durante todo o movimento',
+        'Se necessário, use elevação nos calcanhares'
       ]
     }
   }
 
   return exercises[id] || {
     id,
-    nome: 'Exercicio',
+    nome: 'Exercício',
     grupoMuscular: 'Geral',
-    descricao: 'Descricao nao disponivel',
+    descricao: 'Descrição não disponível',
     instrucoes: [],
     dicas: []
   }
@@ -254,7 +254,7 @@ export default function ExerciseDetailPage() {
             </div>
             <div className="bg-white border border-border rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-dourado">{stats.totalSessions}</p>
-              <p className="text-xs text-foreground-secondary">sessoes</p>
+              <p className="text-xs text-foreground-secondary">sessões</p>
             </div>
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function ExerciseDetailPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-dourado" />
-            Evolucao
+            Evolução
           </h2>
           <div className="flex bg-white rounded-lg p-1">
             {metricButtons.map(({ key, label }) => (
@@ -297,7 +297,7 @@ export default function ExerciseDetailPage() {
         >
           <div className="flex items-center gap-3">
             <Info className="w-5 h-5 text-dourado" />
-            <span className="text-foreground font-medium">Instrucoes do exercicio</span>
+            <span className="text-foreground font-medium">Instruções do exercício</span>
           </div>
           <motion.span animate={{ rotate: showInstructions ? 180 : 0 }} className="text-foreground-secondary">
             ▼
@@ -347,7 +347,7 @@ export default function ExerciseDetailPage() {
       <div className="px-4 mt-6">
         <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-dourado" />
-          Historico recente
+          Histórico recente
         </h2>
         <div className="space-y-2">
           {history.slice(-5).reverse().map((session, index) => (

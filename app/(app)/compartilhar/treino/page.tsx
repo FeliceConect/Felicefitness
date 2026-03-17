@@ -135,7 +135,7 @@ export default function CompartilharTreinoPage() {
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>{formatDuration(workout.duracao_minutos)}</span>
-                  <span>{workout.exercises_count} exercicios</span>
+                  <span>{workout.exercises_count} exercícios</span>
                   <span>{workout.calorias_estimadas}kcal</span>
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">

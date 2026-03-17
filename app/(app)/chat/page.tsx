@@ -792,7 +792,7 @@ export default function ChatPage() {
         <div className="mx-3 mt-4 mb-2">
           <div className="bg-background-elevated/50 rounded-xl p-4 border border-border">
             <p className="text-xs text-foreground-muted text-center leading-relaxed">
-              As mensagens sao atualizadas automaticamente. Voce tambem pode puxar para atualizar.
+              As mensagens são atualizadas automaticamente. Você também pode puxar para atualizar.
             </p>
           </div>
         </div>
@@ -840,10 +840,10 @@ export default function ChatPage() {
                     <User className="w-7 h-7 text-foreground-muted" />
                   </div>
                   <p className="text-foreground-secondary font-medium mb-1">
-                    Nenhum profissional disponivel
+                    Nenhum profissional disponível
                   </p>
                   <p className="text-sm text-foreground-muted max-w-xs mx-auto">
-                    Voce ja tem conversas com todos os seus profissionais, ou nenhum profissional foi atribuido a voce ainda.
+                    Você já tem conversas com todos os seus profissionais, ou nenhum profissional foi atribuído a você ainda.
                   </p>
                 </div>
               ) : (

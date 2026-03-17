@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import { FileText, Plus, User } from 'lucide-react'
 import type { Note } from '@/components/portal/notes/note-card'
 import { ConsultationEditor } from '@/components/portal/notes/consultation-editor'
@@ -40,12 +41,14 @@ export default function ProntuarioPage() {
     async function fetchClients() {
       try {
         const res = await fetch('/api/professional/clients')
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         if (data.success) {
           setClients(data.clients || [])
         }
       } catch (error) {
         console.error('Erro ao buscar clientes:', error)
+        toast.error('Erro ao carregar lista de pacientes')
       } finally {
         setLoadingClients(false)
       }
@@ -62,12 +65,14 @@ export default function ProntuarioPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/portal/notes?patientId=${selectedClient}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       if (data.success) {
         setNotes(data.notes || [])
       }
     } catch (error) {
       console.error('Erro ao buscar notas:', error)
+      toast.error('Erro ao carregar prontuário')
     } finally {
       setLoading(false)
     }
@@ -90,10 +95,15 @@ export default function ProntuarioPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ note_type: 'consultation', content }),
         })
-        if ((await res.json()).success) {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const result = await res.json()
+        if (result.success) {
+          toast.success('Registro atualizado com sucesso')
           setShowEditor(false)
           setEditingConsultation(null)
           await fetchNotes()
+        } else {
+          toast.error(result.error || 'Erro ao atualizar registro')
         }
       } else {
         const res = await fetch('/api/portal/notes', {
@@ -101,14 +111,20 @@ export default function ProntuarioPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ patient_id: selectedClient, note_type: 'consultation', content }),
         })
-        if ((await res.json()).success) {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const result = await res.json()
+        if (result.success) {
+          toast.success('Registro salvo com sucesso')
           setShowEditor(false)
           setEditingConsultation(null)
           await fetchNotes()
+        } else {
+          toast.error(result.error || 'Erro ao salvar registro')
         }
       }
     } catch (error) {
       console.error('Erro ao salvar:', error)
+      toast.error('Erro ao salvar registro')
     } finally {
       setSaving(false)
     }
@@ -116,10 +132,13 @@ export default function ProntuarioPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`/api/portal/notes/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/portal/notes/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setNotes(prev => prev.filter(n => n.id !== id))
+      toast.success('Registro removido')
     } catch (error) {
       console.error('Erro ao deletar:', error)
+      toast.error('Erro ao remover registro')
     }
   }
 

@@ -189,7 +189,8 @@ export default function TrainingPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all"
+          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)' }}
         >
           <Plus className="w-5 h-5" />
           Novo Programa
@@ -292,7 +293,8 @@ export default function TrainingPage() {
           {!searchTerm && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)' }}
             >
               <Plus className="w-5 h-5" />
               Criar Programa
@@ -682,7 +684,8 @@ function CreateProgramModal({
             <button
               type="submit"
               disabled={saving || !formData.name.trim()}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)' }}
             >
               {saving ? (
                 <>

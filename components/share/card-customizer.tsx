@@ -95,7 +95,7 @@ export function CardCustomizer({
       {/* Options */}
       {(onShowStatsChange || onShowDateChange) && (
         <div>
-          <h4 className="text-sm font-medium mb-3">Opcoes</h4>
+          <h4 className="text-sm font-medium mb-3">Opções</h4>
           <div className="space-y-2">
             {onShowStatsChange && (
               <label className="flex items-center gap-3 cursor-pointer">
@@ -105,7 +105,7 @@ export function CardCustomizer({
                   onChange={(e) => onShowStatsChange(e.target.checked)}
                   className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                 />
-                <span className="text-sm">Mostrar estatisticas</span>
+                <span className="text-sm">Mostrar estatísticas</span>
               </label>
             )}
             {onShowDateChange && (

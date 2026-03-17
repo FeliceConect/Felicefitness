@@ -21,7 +21,7 @@ export async function GET(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -44,7 +44,7 @@ export async function GET(
       .single()
 
     if (error || !note) {
-      return NextResponse.json({ success: false, error: 'Nota nao encontrada' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Nota não encontrada' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, note })
@@ -63,7 +63,7 @@ export async function PATCH(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -85,7 +85,7 @@ export async function PATCH(
       const validTypes = ['observation', 'evolution', 'action_plan', 'alert', 'consultation']
       if (!validTypes.includes(body.note_type)) {
         return NextResponse.json(
-          { success: false, error: 'Tipo de nota invalido. Use: observation, evolution, action_plan, alert' },
+          { success: false, error: 'Tipo de nota inválido. Use: observation, evolution, action_plan, alert' },
           { status: 400 }
         )
       }
@@ -101,7 +101,7 @@ export async function PATCH(
       .single()
 
     if (error || !note) {
-      return NextResponse.json({ success: false, error: 'Nota nao encontrada' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Nota não encontrada' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, note })
@@ -120,7 +120,7 @@ export async function DELETE(
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()

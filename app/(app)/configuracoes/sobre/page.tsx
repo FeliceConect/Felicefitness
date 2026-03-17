@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { ArrowLeft, Heart, ExternalLink, Bug, MessageSquare, Star, Globe } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -135,7 +136,7 @@ export default function SobrePage() {
             <button
               onClick={() => {
                 // Would open app store rating
-                alert('Obrigado! Avaliação em breve disponível.')
+                toast.success('Obrigado! Avaliação em breve disponível.')
               }}
               className="w-full flex items-center gap-3 p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
             >

@@ -20,6 +20,7 @@ import {
   ArrowRightLeft
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
+import { toast } from 'sonner'
 
 interface Food {
   name: string
@@ -168,13 +169,13 @@ export default function MealPlanDetailPage() {
           client: updatedPlan.client || undefined
         })
         setShowClientModal(false)
-        alert('Cliente atualizado com sucesso!')
+        toast.success('Cliente atualizado com sucesso!')
       } else {
-        alert('Erro ao atribuir cliente: ' + (data.error || 'Erro desconhecido'))
+        toast.error('Erro ao atribuir cliente: ' + (data.error || 'Erro desconhecido'))
       }
     } catch (error) {
       console.error('Erro ao atribuir cliente:', error)
-      alert('Erro ao atribuir cliente')
+      toast.error('Erro ao atribuir cliente')
     }
   }
 
@@ -428,7 +429,8 @@ export default function MealPlanDetailPage() {
         <button
           onClick={savePlan}
           disabled={saving || !hasChanges}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
         >
           {saving ? (
             <>
@@ -970,7 +972,8 @@ function AddFoodModal({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
             >
               <Check className="w-4 h-4" />
               Adicionar

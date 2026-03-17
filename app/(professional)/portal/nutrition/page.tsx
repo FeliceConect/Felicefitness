@@ -190,7 +190,8 @@ export default function NutritionPage() {
           </Link>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-all"
+            style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
           >
             <Plus className="w-5 h-5" />
             Novo Plano
@@ -294,7 +295,8 @@ export default function NutritionPage() {
           {!searchTerm && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-colors"
+              style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
             >
               <Plus className="w-5 h-5" />
               Criar Plano
@@ -719,7 +721,8 @@ function CreatePlanModal({
               form?.requestSubmit()
             }}
             disabled={saving || !formData.name.trim()}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
           >
             {saving ? (
               <>

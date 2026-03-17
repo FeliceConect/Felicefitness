@@ -139,7 +139,7 @@ export function RestTimerModal({
             {/* Next exercise hint */}
             {nextExercise && (
               <p className="mt-6 text-white/30 text-sm">
-                Proximo: {nextExercise}
+                Próximo: {nextExercise}
               </p>
             )}
           </motion.div>

@@ -7,9 +7,9 @@ export interface ConsultationSection {
 }
 
 const NUTRI_SECTIONS: ConsultationSection[] = [
-  { key: 'anamnese', label: 'Anamnese Nutricional', placeholder: 'Queixa principal, historico alimentar, habitos, alergias, intolerâncias...' },
+  { key: 'anamnese', label: 'Anamnese Nutricional', placeholder: 'Queixa principal, histórico alimentar, hábitos, alergias, intolerâncias...' },
   { key: 'exames', label: 'Exames Laboratoriais', placeholder: 'Resultados de exames, valores de referência, observações...' },
-  { key: 'diagnostico', label: 'Diagnostico Nutricional', placeholder: 'Diagnostico nutricional baseado na avaliação...' },
+  { key: 'diagnostico', label: 'Diagnóstico Nutricional', placeholder: 'Diagnóstico nutricional baseado na avaliação...' },
   { key: 'conduta', label: 'Conduta', placeholder: 'Plano de ação, orientações, prescrições, retorno...' },
 ]
 

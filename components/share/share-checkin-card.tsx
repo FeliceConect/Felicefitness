@@ -17,6 +17,7 @@ export function ShareCheckinCard({ data, theme, format }: ShareCheckinCardProps)
   const dimensions = [
     { key: 'treino', label: 'Treino', icon: '💪', done: data.treino },
     { key: 'nutricao', label: 'Nutrição', icon: '🥗', done: data.nutricao },
+
     { key: 'hidratacao', label: 'Água', icon: '💧', done: data.hidratacao },
     { key: 'sono', label: 'Sono', icon: '🌙', done: data.sono },
   ]

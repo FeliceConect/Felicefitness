@@ -186,14 +186,14 @@ export default function CompartilharCheckinPage() {
           <Link href="/compartilhar" className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-lg font-semibold">Check-in Diario</h1>
+          <h1 className="text-lg font-semibold">Check-in Diário</h1>
         </div>
       </header>
 
       <main className="container px-4 py-6 space-y-5">
         {/* Preview — always story format */}
         <div className="flex justify-center">
-          <div className="w-[260px]">
+          <div className="w-[270px]">
             <SharePreview
               ref={previewRef}
               type="checkin"

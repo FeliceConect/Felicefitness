@@ -18,8 +18,8 @@ interface Exercise {
 }
 
 const MUSCLE_GROUPS = [
-  'Peito', 'Costas', 'Ombros', 'Biceps', 'Triceps',
-  'Pernas', 'Gluteos', 'Abdomen', 'Panturrilha', 'Core', 'Full Body',
+  'Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps',
+  'Pernas', 'Glúteos', 'Abdômen', 'Panturrilha', 'Core', 'Full Body',
 ]
 
 export default function ExercisesPage() {
@@ -46,7 +46,7 @@ export default function ExercisesPage() {
         setTotal(data.total || 0)
       }
     } catch (error) {
-      console.error('Erro ao buscar exercicios:', error)
+      console.error('Erro ao buscar exercícios:', error)
     } finally {
       setLoading(false)
     }
@@ -83,14 +83,14 @@ export default function ExercisesPage() {
         }
       }
     } catch (error) {
-      console.error('Erro ao salvar exercicio:', error)
+      console.error('Erro ao salvar exercício:', error)
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Remover este exercicio?')) return
+    if (!confirm('Remover este exercício?')) return
     try {
       const res = await fetch(`/api/portal/exercises/${id}`, { method: 'DELETE' })
       if ((await res.json()).success) {
@@ -113,10 +113,10 @@ export default function ExercisesPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Library className="w-6 h-6 text-dourado" />
-            Biblioteca de Exercicios
+            Biblioteca de Exercícios
           </h1>
           <p className="text-foreground-secondary text-sm mt-1">
-            {total} exercicios cadastrados
+            {total} exercícios cadastrados
           </p>
         </div>
         <button
@@ -137,7 +137,7 @@ export default function ExercisesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
-            placeholder="Buscar exercicio..."
+            placeholder="Buscar exercício..."
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -173,7 +173,7 @@ export default function ExercisesPage() {
       ) : exercises.length === 0 ? (
         <div className="text-center py-12">
           <Library className="w-12 h-12 text-foreground-muted mx-auto mb-3" />
-          <p className="text-foreground-secondary">Nenhum exercicio encontrado</p>
+          <p className="text-foreground-secondary">Nenhum exercício encontrado</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

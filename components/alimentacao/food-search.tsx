@@ -202,7 +202,7 @@ function FoodItem({ food, onClick }: FoodItemProps) {
           )}
         </div>
         <p className="text-sm text-foreground-secondary">
-          {food.porcao_padrao}{food.unidade} • {food.calorias} kcal • {food.proteinas}g prot
+          {food.porcao_padrao} {food.unidade} • {food.calorias} kcal • {food.proteinas}g prot
         </p>
       </div>
     </motion.button>

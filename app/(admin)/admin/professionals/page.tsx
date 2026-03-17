@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from 'sonner'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -111,7 +112,7 @@ export default function ProfessionalsPage() {
 
   const handleAddProfessional = async () => {
     if (!formData.userId) {
-      alert('Selecione um usuário')
+      toast.error('Selecione um usuário')
       return
     }
 
@@ -130,11 +131,11 @@ export default function ProfessionalsPage() {
         setShowAddModal(false)
         resetForm()
       } else {
-        alert(data.error || 'Erro ao criar profissional')
+        toast.error(data.error || 'Erro ao criar profissional')
       }
     } catch (error) {
       console.error('Erro ao criar profissional:', error)
-      alert('Erro ao criar profissional')
+      toast.error('Erro ao criar profissional')
     } finally {
       setSaving(false)
     }
@@ -167,11 +168,11 @@ export default function ProfessionalsPage() {
         setSelectedProfessional(null)
         resetForm()
       } else {
-        alert(data.error || 'Erro ao atualizar profissional')
+        toast.error(data.error || 'Erro ao atualizar profissional')
       }
     } catch (error) {
       console.error('Erro ao atualizar profissional:', error)
-      alert('Erro ao atualizar profissional')
+      toast.error('Erro ao atualizar profissional')
     } finally {
       setSaving(false)
     }
@@ -193,11 +194,11 @@ export default function ProfessionalsPage() {
       if (data.success) {
         fetchProfessionals()
       } else {
-        alert(data.error || 'Erro ao remover profissional')
+        toast.error(data.error || 'Erro ao remover profissional')
       }
     } catch (error) {
       console.error('Erro ao remover profissional:', error)
-      alert('Erro ao remover profissional')
+      toast.error('Erro ao remover profissional')
     }
   }
 
@@ -217,7 +218,7 @@ export default function ProfessionalsPage() {
       if (data.success) {
         fetchProfessionals()
       } else {
-        alert(data.error || 'Erro ao atualizar status')
+        toast.error(data.error || 'Erro ao atualizar status')
       }
     } catch (error) {
       console.error('Erro ao atualizar status:', error)
@@ -323,13 +324,13 @@ export default function ProfessionalsPage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione uma imagem válida')
+      toast.error('Por favor, selecione uma imagem válida')
       return
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 5MB')
+      toast.error('A imagem deve ter no máximo 5MB')
       return
     }
 
@@ -359,7 +360,7 @@ export default function ProfessionalsPage() {
       setFormData(prev => ({ ...prev, avatarUrl: urlWithTimestamp }))
     } catch (error) {
       console.error('Erro ao fazer upload da foto:', error)
-      alert('Erro ao fazer upload da foto')
+      toast.error('Erro ao fazer upload da foto')
     } finally {
       setUploading(false)
     }

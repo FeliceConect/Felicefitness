@@ -83,7 +83,7 @@ interface Stats {
 }
 
 const statusLabels: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  'completed': { label: 'Concluido', color: 'text-green-600', icon: <CheckCircle className="w-4 h-4" /> },
+  'completed': { label: 'Concluído', color: 'text-green-600', icon: <CheckCircle className="w-4 h-4" /> },
   'in_progress': { label: 'Em andamento', color: 'text-yellow-600', icon: <Timer className="w-4 h-4" /> },
   'skipped': { label: 'Pulado', color: 'text-red-500', icon: <XCircle className="w-4 h-4" /> }
 }
@@ -304,7 +304,7 @@ export default function PortalWorkoutsPage() {
               className="px-3 py-2 rounded-lg bg-white border border-border text-foreground text-sm focus:outline-none focus:border-dourado min-w-[120px]"
             >
               <option value="">Todos status</option>
-              <option value="completed">Concluidos</option>
+              <option value="completed">Concluídos</option>
               <option value="in_progress">Em andamento</option>
               <option value="skipped">Pulados</option>
             </select>
@@ -349,7 +349,7 @@ export default function PortalWorkoutsPage() {
             <div className="bg-green-50 border border-green-200 rounded-xl p-4">
               <div className="flex items-center gap-2 text-green-700 mb-1">
                 <CheckCircle className="w-4 h-4" />
-                <span className="text-xs">Concluidos</span>
+                <span className="text-xs">Concluídos</span>
               </div>
               <p className="text-2xl font-bold text-green-800">{stats.completedWorkouts}</p>
               <p className="text-xs text-foreground-muted">de {stats.totalWorkouts} treinos</p>
@@ -361,7 +361,7 @@ export default function PortalWorkoutsPage() {
                 <span className="text-xs">Tempo Total</span>
               </div>
               <p className="text-2xl font-bold text-blue-800">{formatDuration(stats.totalDuration)}</p>
-              <p className="text-xs text-foreground-muted">media {stats.avgDuration}min</p>
+              <p className="text-xs text-foreground-muted">média {stats.avgDuration}min</p>
             </div>
 
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
@@ -504,7 +504,7 @@ export default function PortalWorkoutsPage() {
                             {/* Stats do treino */}
                             <div className="mt-4 grid grid-cols-4 gap-2">
                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                                <p className="text-xs text-blue-600">Duracao</p>
+                                <p className="text-xs text-blue-600">Duração</p>
                                 <p className="text-lg font-bold text-blue-700">{formatDuration(workout.duration_minutes)}</p>
                               </div>
                               <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
@@ -512,7 +512,7 @@ export default function PortalWorkoutsPage() {
                                 <p className="text-lg font-bold text-orange-700">{workout.calories_burned || 0}</p>
                               </div>
                               <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                                <p className="text-xs text-green-600">Series</p>
+                                <p className="text-xs text-green-600">Séries</p>
                                 <p className="text-lg font-bold text-green-700">{workout.total_sets || 0}</p>
                               </div>
                               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
@@ -548,10 +548,10 @@ export default function PortalWorkoutsPage() {
                               </div>
                             )}
 
-                            {/* Exercicios */}
+                            {/* Exercícios */}
                             {workout.exercises && workout.exercises.length > 0 && (
                               <div className="mt-4">
-                                <h4 className="text-sm font-semibold text-foreground-secondary mb-2">Exercicios</h4>
+                                <h4 className="text-sm font-semibold text-foreground-secondary mb-2">Exercícios</h4>
                                 <div className="space-y-2">
                                   {workout.exercises.map((exercise, idx) => (
                                     <div
@@ -561,7 +561,7 @@ export default function PortalWorkoutsPage() {
                                       <div className="flex items-center justify-between">
                                         <p className="font-medium text-foreground">{exercise.exercise_name}</p>
                                         <p className="text-sm text-foreground-secondary">
-                                          {exercise.sets_completed} series
+                                          {exercise.sets_completed} séries
                                         </p>
                                       </div>
                                       {exercise.sets_data && exercise.sets_data.length > 0 && (
@@ -586,13 +586,13 @@ export default function PortalWorkoutsPage() {
                               </div>
                             )}
 
-                            {/* Esforco e avaliacao */}
+                            {/* Esforço e avaliação */}
                             <div className="mt-4 flex gap-4">
                               {workout.perceived_effort && (
                                 <div className="flex items-center gap-2">
                                   <Target className="w-4 h-4 text-red-500" />
                                   <span className="text-sm text-foreground-secondary">
-                                    Esforco: <span className="text-foreground font-medium">{workout.perceived_effort}/10</span>
+                                    Esforço: <span className="text-foreground font-medium">{workout.perceived_effort}/10</span>
                                   </span>
                                 </div>
                               )}
@@ -600,7 +600,7 @@ export default function PortalWorkoutsPage() {
                                 <div className="flex items-center gap-2">
                                   <Zap className="w-4 h-4 text-amber-500" />
                                   <span className="text-sm text-foreground-secondary">
-                                    Avaliacao: <span className="text-foreground font-medium">{workout.rating}/5</span>
+                                    Avaliação: <span className="text-foreground font-medium">{workout.rating}/5</span>
                                   </span>
                                 </div>
                               )}
@@ -609,7 +609,7 @@ export default function PortalWorkoutsPage() {
                             {/* Notas */}
                             {workout.notes && (
                               <div className="mt-4 p-3 bg-background-elevated rounded-lg">
-                                <h4 className="text-sm font-semibold text-foreground-secondary mb-1">Observacoes</h4>
+                                <h4 className="text-sm font-semibold text-foreground-secondary mb-1">Observações</h4>
                                 <p className="text-sm text-foreground">{workout.notes}</p>
                               </div>
                             )}

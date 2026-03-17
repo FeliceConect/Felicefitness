@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -97,14 +97,14 @@ export async function POST(request: NextRequest) {
 
     if (!patient_id || !note_type || !content) {
       return NextResponse.json(
-        { success: false, error: 'patient_id, note_type e content sao obrigatorios' },
+        { success: false, error: 'patient_id, note_type e content são obrigatórios' },
         { status: 400 }
       )
     }
 
     const validTypes = ['observation', 'evolution', 'action_plan', 'alert', 'consultation']
     if (!validTypes.includes(note_type)) {
-      return NextResponse.json({ success: false, error: 'note_type invalido' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'note_type inválido' }, { status: 400 })
     }
 
     // Verify patient is assigned to this professional

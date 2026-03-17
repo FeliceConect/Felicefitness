@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from 'sonner'
 import { useEffect, useState, useCallback } from 'react'
 import {
   Search,
@@ -107,11 +108,11 @@ export default function UsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newUser.email || !newUser.password) {
-      alert('Email e senha são obrigatórios')
+      toast.error('Email e senha são obrigatórios')
       return
     }
     if (newUser.password.length < 6) {
-      alert('A senha deve ter pelo menos 6 caracteres')
+      toast.error('A senha deve ter pelo menos 6 caracteres')
       return
     }
 
@@ -132,13 +133,13 @@ export default function UsersPage() {
         setShowPassword(false)
         // Recarregar lista
         fetchUsers()
-        alert('Usuário criado com sucesso!')
+        toast.success('Usuário criado com sucesso!')
       } else {
-        alert(data.error || 'Erro ao criar usuário')
+        toast.error(data.error || 'Erro ao criar usuário')
       }
     } catch (error) {
       console.error('Erro ao criar usuário:', error)
-      alert('Erro ao criar usuário')
+      toast.error('Erro ao criar usuário')
     } finally {
       setCreating(false)
     }
@@ -168,11 +169,11 @@ export default function UsersPage() {
         setShowRoleModal(false)
         setSelectedUser(null)
       } else {
-        alert(data.error || 'Erro ao atualizar role')
+        toast.error(data.error || 'Erro ao atualizar role')
       }
     } catch (error) {
       console.error('Erro ao atualizar role:', error)
-      alert('Erro ao atualizar role')
+      toast.error('Erro ao atualizar role')
     } finally {
       setUpdatingRole(false)
     }
@@ -198,13 +199,13 @@ export default function UsersPage() {
         setUsers(prev => prev.map(u =>
           u.id === user.id ? { ...u, is_active: action === 'activate' } : u
         ))
-        alert(data.message)
+        toast.success(data.message)
       } else {
-        alert(data.error || `Erro ao ${actionLabel} usuário`)
+        toast.error(data.error || `Erro ao ${actionLabel} usuário`)
       }
     } catch (error) {
       console.error(`Erro ao ${actionLabel} usuário:`, error)
-      alert(`Erro ao ${actionLabel} usuário`)
+      toast.error(`Erro ao ${actionLabel} usuário`)
     }
   }
 
@@ -231,13 +232,13 @@ export default function UsersPage() {
         }
         setShowDeleteModal(false)
         setSelectedUser(null)
-        alert(data.message)
+        toast.success(data.message)
       } else {
-        alert(data.error || 'Erro ao processar ação')
+        toast.error(data.error || 'Erro ao processar ação')
       }
     } catch (error) {
       console.error('Erro ao processar ação:', error)
-      alert('Erro ao processar ação')
+      toast.error('Erro ao processar ação')
     } finally {
       setDeleting(false)
     }

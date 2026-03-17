@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from 'sonner'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -171,7 +172,7 @@ export default function ClientDetailPage() {
     const data = await res.json()
     if (data.success) {
       setShowPointsModal(false)
-      alert(`${points} pontos atribuidos!`)
+      toast.success(`${points} pontos atribuídos!`)
     }
   }
 

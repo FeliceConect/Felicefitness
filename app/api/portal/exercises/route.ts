@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -54,10 +54,10 @@ export async function GET(request: NextRequest) {
       query = query.or(`nome.ilike.%${sanitizedSearch}%,nome_en.ilike.%${sanitizedSearch}%`)
     }
     if (muscleGroup) {
-      query = query.eq('grupo_muscular', muscleGroup)
+      query = query.ilike('grupo_muscular', muscleGroup)
     }
     if (difficulty) {
-      query = query.eq('dificuldade', difficulty)
+      query = query.ilike('dificuldade', difficulty)
     }
 
     query = query.range(offset, offset + limit - 1)
@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
     const { data: exercises, count, error } = await query
 
     if (error) {
-      console.error('Erro ao buscar exercicios:', error)
-      return NextResponse.json({ success: false, error: 'Erro ao buscar exercicios' }, { status: 500 })
+      console.error('Erro ao buscar exercícios:', error)
+      return NextResponse.json({ success: false, error: 'Erro ao buscar exercícios' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       limit,
     })
   } catch (error) {
-    console.error('Erro na API de exercicios:', error)
+    console.error('Erro na API de exercícios:', error)
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
   }
 }
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     const { nome, grupo_muscular, video_url, instructions, dificuldade, equipamento, tipo, is_composto, nome_en, musculos_secundarios } = body
 
     if (!nome || !grupo_muscular) {
-      return NextResponse.json({ success: false, error: 'nome e grupo_muscular obrigatorios' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'nome e grupo_muscular obrigatórios' }, { status: 400 })
     }
 
     // Auto-generate thumbnail from video_url
@@ -135,13 +135,13 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (insertError) {
-      console.error('Erro ao criar exercicio:', insertError)
-      return NextResponse.json({ success: false, error: 'Erro ao criar exercicio' }, { status: 500 })
+      console.error('Erro ao criar exercício:', insertError)
+      return NextResponse.json({ success: false, error: 'Erro ao criar exercício' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, exercise })
   } catch (error) {
-    console.error('Erro na API de exercicios:', error)
+    console.error('Erro na API de exercícios:', error)
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
   }
 }

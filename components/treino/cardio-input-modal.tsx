@@ -17,7 +17,7 @@ interface CardioInputModalProps {
 const CARDIO_TYPES: { value: CardioExerciseType; label: string; icon: string; hasDistance: boolean; hasIncline: boolean; hasResistance: boolean }[] = [
   { value: 'esteira', label: 'Esteira', icon: '🏃', hasDistance: true, hasIncline: true, hasResistance: false },
   { value: 'bicicleta', label: 'Bicicleta', icon: '🚴', hasDistance: true, hasIncline: false, hasResistance: true },
-  { value: 'eliptico', label: 'Eliptico', icon: '🔄', hasDistance: true, hasIncline: true, hasResistance: true },
+  { value: 'eliptico', label: 'Elíptico', icon: '🔄', hasDistance: true, hasIncline: true, hasResistance: true },
   { value: 'transport', label: 'Transport', icon: '🚶', hasDistance: false, hasIncline: false, hasResistance: true },
   { value: 'step', label: 'Step', icon: '🪜', hasDistance: false, hasIncline: false, hasResistance: false },
   { value: 'remo', label: 'Remo', icon: '🚣', hasDistance: true, hasIncline: false, hasResistance: true },
@@ -28,9 +28,9 @@ const CARDIO_TYPES: { value: CardioExerciseType; label: string; icon: string; ha
 
 const INTENSITY_OPTIONS: { value: CardioIntensity; label: string; emoji: string; description: string }[] = [
   { value: 'leve', label: 'Leve', emoji: '😊', description: 'Consegue conversar' },
-  { value: 'moderado', label: 'Moderado', emoji: '😤', description: 'Fala com esforco' },
-  { value: 'intenso', label: 'Intenso', emoji: '🥵', description: 'Dificil falar' },
-  { value: 'muito_intenso', label: 'Maximo', emoji: '🔥', description: 'Nao consegue falar' },
+  { value: 'moderado', label: 'Moderado', emoji: '😤', description: 'Fala com esforço' },
+  { value: 'intenso', label: 'Intenso', emoji: '🥵', description: 'Difícil falar' },
+  { value: 'muito_intenso', label: 'Máximo', emoji: '🔥', description: 'Não consegue falar' },
 ]
 
 // MET values baseados em tipo, velocidade e intensidade
@@ -131,7 +131,7 @@ const calculatePace = (distanceKm: number, durationMinutes: number): string => {
 
 export function CardioInputModal({
   isOpen,
-  userWeight = 75, // Default 75kg se nao informado
+  userWeight = 75, // Default 75kg se não informado
   onComplete,
   onCancel
 }: CardioInputModalProps) {
@@ -242,7 +242,7 @@ export function CardioInputModal({
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
               {/* Tipo de cardio */}
               <div>
-                <label className="text-sm text-foreground-secondary block mb-2">Tipo de exercicio</label>
+                <label className="text-sm text-foreground-secondary block mb-2">Tipo de exercício</label>
                 <div className="grid grid-cols-3 gap-2">
                   {CARDIO_TYPES.map((cardioType) => (
                     <button
@@ -287,11 +287,11 @@ export function CardioInputModal({
                 </div>
               </div>
 
-              {/* Duracao */}
+              {/* Duração */}
               <div>
                 <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                   <Timer className="w-4 h-4" />
-                  Duracao
+                  Duração
                 </label>
                 <div className="flex items-center justify-center gap-2">
                   <button
@@ -329,12 +329,12 @@ export function CardioInputModal({
                 </div>
               </div>
 
-              {/* Distancia - se o tipo suportar */}
+              {/* Distância - se o tipo suportar */}
               {selectedType.hasDistance && (
                 <div>
                   <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <Route className="w-4 h-4" />
-                    Distancia (km)
+                    Distância (km)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
@@ -363,12 +363,12 @@ export function CardioInputModal({
                 </div>
               )}
 
-              {/* Velocidade manual (se nao tiver distancia) */}
+              {/* Velocidade manual (se não tiver distância) */}
               {selectedType.hasDistance && distancia === 0 && (
                 <div>
                   <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <Gauge className="w-4 h-4" />
-                    Velocidade media (km/h)
+                    Velocidade média (km/h)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
@@ -407,12 +407,12 @@ export function CardioInputModal({
                 </div>
               )}
 
-              {/* Inclinacao - se o tipo suportar */}
+              {/* Inclinação - se o tipo suportar */}
               {selectedType.hasIncline && (
                 <div>
                   <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <TrendingUp className="w-4 h-4" />
-                    Inclinacao (%)
+                    Inclinação (%)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
@@ -451,12 +451,12 @@ export function CardioInputModal({
                 </div>
               )}
 
-              {/* Resistencia - se o tipo suportar */}
+              {/* Resistência - se o tipo suportar */}
               {selectedType.hasResistance && (
                 <div>
                   <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-2">
                     <Gauge className="w-4 h-4" />
-                    Resistencia (nivel)
+                    Resistência (nível)
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <button
@@ -479,15 +479,15 @@ export function CardioInputModal({
                 </div>
               )}
 
-              {/* Frequencia Cardiaca */}
+              {/* Frequência Cardíaca */}
               <div className="bg-background-elevated/30 rounded-xl p-3">
                 <label className="text-sm text-foreground-secondary flex items-center gap-1 mb-3">
                   <Heart className="w-4 h-4 text-red-400" />
-                  Frequencia Cardiaca (opcional)
+                  Frequência Cardíaca (opcional)
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="text-xs text-foreground-muted block mb-1">FC Media</span>
+                    <span className="text-xs text-foreground-muted block mb-1">FC Média</span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setFcMedia(prev => Math.max(0, prev - 5))}
@@ -508,7 +508,7 @@ export function CardioInputModal({
                     </div>
                   </div>
                   <div>
-                    <span className="text-xs text-foreground-muted block mb-1">FC Max</span>
+                    <span className="text-xs text-foreground-muted block mb-1">FC Máx</span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setFcMax(prev => Math.max(0, prev - 5))}
@@ -545,30 +545,30 @@ export function CardioInputModal({
                 {/* Resumo dos dados */}
                 <div className="mt-3 pt-3 border-t border-orange-500/20 grid grid-cols-3 gap-2 text-center text-xs">
                   <div>
-                    <span className="text-foreground-muted block">Duracao</span>
+                    <span className="text-foreground-muted block">Duração</span>
                     <span className="text-foreground font-medium">{duracao} min</span>
                   </div>
                   {distancia > 0 && (
                     <div>
-                      <span className="text-foreground-muted block">Distancia</span>
+                      <span className="text-foreground-muted block">Distância</span>
                       <span className="text-foreground font-medium">{distancia.toFixed(1)} km</span>
                     </div>
                   )}
                   {velocidadeFinal > 0 && (
                     <div>
-                      <span className="text-foreground-muted block">Vel. Media</span>
+                      <span className="text-foreground-muted block">Vel. Média</span>
                       <span className="text-foreground font-medium">{velocidadeFinal} km/h</span>
                     </div>
                   )}
                   {inclinacao > 0 && (
                     <div>
-                      <span className="text-foreground-muted block">Inclinacao</span>
+                      <span className="text-foreground-muted block">Inclinação</span>
                       <span className="text-foreground font-medium">{inclinacao}%</span>
                     </div>
                   )}
                   {fcMedia > 0 && (
                     <div>
-                      <span className="text-foreground-muted block">FC Media</span>
+                      <span className="text-foreground-muted block">FC Média</span>
                       <span className="text-foreground font-medium">{fcMedia} bpm</span>
                     </div>
                   )}

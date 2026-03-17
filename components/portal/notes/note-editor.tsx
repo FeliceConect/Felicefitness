@@ -12,9 +12,9 @@ interface NoteEditorProps {
 }
 
 const NOTE_TYPES = [
-  { value: 'observation', label: 'Observacao' },
-  { value: 'evolution', label: 'Evolucao' },
-  { value: 'action_plan', label: 'Plano de Acao' },
+  { value: 'observation', label: 'Observação' },
+  { value: 'evolution', label: 'Evolução' },
+  { value: 'action_plan', label: 'Plano de Ação' },
   { value: 'alert', label: 'Alerta' },
 ]
 
@@ -69,7 +69,7 @@ export function NoteEditor({ isOpen, onClose, onSave, initialData, saving }: Not
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Conteudo</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Conteúdo</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}

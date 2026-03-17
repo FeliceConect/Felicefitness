@@ -33,8 +33,8 @@ export default function WellnessPage() {
                 <SmilePlus className="w-6 h-6 text-dourado" />
               </div>
               <div className="flex-1">
-                <h2 className="font-heading font-bold text-foreground">Check-in Diario</h2>
-                <p className="text-sm text-foreground-secondary">Como voce esta se sentindo hoje?</p>
+                <h2 className="font-heading font-bold text-foreground">Check-in Diário</h2>
+                <p className="text-sm text-foreground-secondary">Como você está se sentindo hoje?</p>
               </div>
               <Heart className="w-5 h-5 text-foreground-muted" />
             </div>
@@ -49,8 +49,8 @@ export default function WellnessPage() {
                 <History className="w-6 h-6 text-secondary" />
               </div>
               <div className="flex-1">
-                <h2 className="font-heading font-bold text-foreground">Historico</h2>
-                <p className="text-sm text-foreground-secondary">Veja sua evolucao de bem-estar</p>
+                <h2 className="font-heading font-bold text-foreground">Histórico</h2>
+                <p className="text-sm text-foreground-secondary">Veja sua evolução de bem-estar</p>
               </div>
             </div>
           </div>

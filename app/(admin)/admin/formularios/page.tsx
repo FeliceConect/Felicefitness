@@ -164,8 +164,8 @@ export default function AdminFormulariosPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Formularios</h1>
-        <p className="text-foreground-secondary">Formularios preenchidos pelos pacientes</p>
+        <h1 className="text-2xl font-bold text-foreground">Formulários</h1>
+        <p className="text-foreground-secondary">Formulários preenchidos pelos pacientes</p>
       </div>
 
       {/* Stats */}
@@ -198,7 +198,7 @@ export default function AdminFormulariosPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por paciente, formulario ou profissional..."
+              placeholder="Buscar por paciente, formulário ou profissional..."
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-border rounded-lg text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado/50"
             />
           </div>
@@ -262,11 +262,11 @@ export default function AdminFormulariosPage() {
           /* Empty State */
           <div className="text-center py-12 text-foreground-secondary">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-lg font-medium">Nenhum formulario encontrado</p>
+            <p className="text-lg font-medium">Nenhum formulário encontrado</p>
             <p className="text-sm text-foreground-muted mt-1">
               {search || statusFilter || specialtyFilter
                 ? 'Tente ajustar os filtros de busca'
-                : 'Nenhum formulario foi enviado ainda'}
+                : 'Nenhum formulário foi enviado ainda'}
             </p>
           </div>
         ) : (
@@ -327,7 +327,7 @@ export default function AdminFormulariosPage() {
                         <td className="px-6 py-4">
                           <div>
                             <p className="text-foreground text-sm">
-                              {assignment.template?.name || 'Formulario'}
+                              {assignment.template?.name || 'Formulário'}
                             </p>
                             <p className="text-xs text-foreground-muted">
                               {assignment.template?.form_type
@@ -450,7 +450,7 @@ export default function AdminFormulariosPage() {
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-foreground-muted" />
                         <span className="text-sm text-foreground">
-                          {assignment.template?.name || 'Formulario'}
+                          {assignment.template?.name || 'Formulário'}
                         </span>
                       </div>
                       {assignment.template?.form_type && (
@@ -512,7 +512,7 @@ export default function AdminFormulariosPage() {
         {/* Result count */}
         {!loading && filteredAssignments.length > 0 && (
           <div className="px-6 py-3 border-t border-border text-sm text-foreground-secondary">
-            {filteredAssignments.length} formulario(s) encontrado(s)
+            {filteredAssignments.length} formulário(s) encontrado(s)
             {(search || statusFilter || specialtyFilter) &&
               ` de ${assignments.length} total`}
           </div>

@@ -163,7 +163,7 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
             {/* Porcao e Unidade */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm text-foreground-secondary block mb-2">Porcao</label>
+                <label className="text-sm text-foreground-secondary block mb-2">Porção</label>
                 <input
                   type="number"
                   value={porcao}
@@ -189,7 +189,7 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
             {/* Macros */}
             <div>
               <label className="text-sm text-foreground-secondary block mb-2">
-                Informacoes nutricionais (por porcao)
+                Informações nutricionais (por porção)
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {/* Calorias */}
@@ -212,7 +212,7 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
                 <div className="bg-background border border-border rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Beef className="w-4 h-4 text-red-400" />
-                    <span className="text-xs text-foreground-secondary">Proteinas</span>
+                    <span className="text-xs text-foreground-secondary">Proteínas</span>
                   </div>
                   <input
                     type="number"
@@ -262,7 +262,7 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
             </div>
 
             <p className="text-xs text-foreground-muted">
-              Dica: Se nao souber os valores exatos, pesquise na internet ou use valores aproximados.
+              Dica: Se não souber os valores exatos, pesquise na internet ou use valores aproximados.
             </p>
 
             {/* Success message */}

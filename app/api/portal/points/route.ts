@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
     if (!clientId) {
-      return NextResponse.json({ success: false, error: 'clientId obrigatorio' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'clientId obrigatório' }, { status: 400 })
     }
 
     const { data: points, error } = await supabaseAdmin
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 })
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseAdmin = getAdminClient()
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     if (!clientId || !points || !reason) {
       return NextResponse.json(
-        { success: false, error: 'clientId, points e reason sao obrigatorios' },
+        { success: false, error: 'clientId, points e reason são obrigatórios' },
         { status: 400 }
       )
     }
