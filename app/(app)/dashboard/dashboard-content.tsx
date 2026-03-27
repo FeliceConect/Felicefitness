@@ -381,7 +381,7 @@ export function DashboardContent() {
             <Droplets className="w-5 h-5 text-blue-500" />
             <span className="text-xs text-foreground-secondary">+250ml</span>
           </button>
-          <Link href="/alimentacao/refeicao/nova" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
+          <Link href="/alimentacao" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
             <Utensils className="w-5 h-5 text-dourado" />
             <span className="text-xs text-foreground-secondary">Refeição</span>
           </Link>

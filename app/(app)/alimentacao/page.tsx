@@ -151,20 +151,7 @@ export default function AlimentacaoPage() {
         </div>
       )}
 
-      {/* Today's Meals */}
-      {mealPlan && meals.length > 0 && (
-        <div className="px-4 mb-6">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide mb-3">
-            Refeições Registradas Hoje
-          </h2>
-          <MealTimeline
-            meals={meals}
-            plannedMeals={[]}
-            nextMeal={null}
-            onAddMeal={handleAddMeal}
-          />
-        </div>
-      )}
+      {/* Today's Meals - placeholder removed, plan card handles completion */}
 
       {/* Spacer */}
       <div className="mb-4" />
