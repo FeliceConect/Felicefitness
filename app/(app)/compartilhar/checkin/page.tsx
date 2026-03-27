@@ -78,16 +78,16 @@ export default function CompartilharCheckinPage() {
   const setFallbackData = () => {
     const level = getLevelFromXP(0)
     setCheckinData({
-      journeyDays: 42,
-      streak: 7,
-      treino: true,
-      nutricao: true,
+      journeyDays: 1,
+      streak: 0,
+      treino: false,
+      nutricao: false,
       hidratacao: false,
-      sono: true,
+      sono: false,
       level: level.level,
       levelName: level.name,
       levelEmoji: getLevelEmoji(level),
-      todayScore: 75,
+      todayScore: undefined,
     })
     setLoading(false)
   }

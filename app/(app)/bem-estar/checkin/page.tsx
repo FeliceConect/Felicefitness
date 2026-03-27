@@ -18,6 +18,7 @@ import { getMoodLevel } from '@/lib/wellness/moods'
 import { toast as sonnerToast } from 'sonner'
 import { QuickShare } from '@/components/share/quick-share'
 import { getLevelFromXP, getLevelEmoji } from '@/lib/gamification/level-system'
+import { createClient } from '@/lib/supabase/client'
 import type { CheckinShareData } from '@/types/share'
 
 export default function CheckinPage() {
@@ -59,19 +60,61 @@ export default function CheckinPage() {
         notes: notes.trim() || undefined,
       })
 
-      // Build share card data
-      const level = getLevelFromXP(0) // Will use real XP when user_stats table exists
+      // Fetch real user stats for share card
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      let journeyDays = 1
+      let streak = 1
+      let totalXp = 0
+      let treino = false
+      let nutricao = false
+      let hidratacao = false
+      let sono = false
+      let todayScore: number | undefined
+
+      if (user) {
+        const { data: stats } = await supabase
+          .from('user_stats')
+          .select('current_streak, total_xp, join_date')
+          .eq('user_id', user.id)
+          .single() as { data: { current_streak: number; total_xp: number; join_date: string } | null }
+
+        if (stats?.join_date) {
+          const joinDate = new Date(stats.join_date)
+          const now = new Date()
+          journeyDays = Math.max(1, Math.floor((now.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+        }
+        streak = stats?.current_streak || 1
+        totalXp = stats?.total_xp || 0
+
+        const today = new Date().toISOString().split('T')[0]
+        const { data: dayLog } = await supabase
+          .from('fitness_daily_logs')
+          .select('workout_completed, meals_logged, water_consumed, water_goal, sleep_logged, daily_score')
+          .eq('user_id', user.id)
+          .eq('date', today)
+          .single() as { data: { workout_completed: boolean; meals_logged: number; water_consumed: number; water_goal: number; sleep_logged: boolean; daily_score: number } | null }
+
+        treino = dayLog?.workout_completed || false
+        nutricao = (dayLog?.meals_logged || 0) > 0
+        hidratacao = (dayLog?.water_consumed || 0) >= (dayLog?.water_goal || 2000)
+        sono = dayLog?.sleep_logged || false
+        todayScore = dayLog?.daily_score
+      }
+
+      const level = getLevelFromXP(totalXp)
       setShareData({
-        journeyDays: 1,
-        streak: 1,
-        treino: false,
-        nutricao: false,
-        hidratacao: false,
-        sono: false,
+        journeyDays,
+        streak,
+        treino,
+        nutricao,
+        hidratacao,
+        sono,
         level: level.level,
         levelName: level.name,
         levelEmoji: getLevelEmoji(level),
-        todayScore: undefined,
+        todayScore,
       })
 
       sonnerToast.success('Check-in salvo!')
