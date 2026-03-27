@@ -2,6 +2,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // POST - Registrar refeição do plano como completada
 export async function POST(request: NextRequest) {
@@ -15,6 +16,11 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
+
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     const body = await request.json()
     const {
@@ -33,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar a refeição do plano para obter os dados
-    const { data: planMeal, error: mealError } = await supabase
+    const { data: planMeal, error: mealError } = await admin
       .from('fitness_meal_plan_meals')
       .select(`
         *,
@@ -72,7 +78,7 @@ export async function POST(request: NextRequest) {
     const totalFat = foodsToRegister.reduce((sum: number, f: { fat?: number }) => sum + (f.fat || 0), 0)
 
     // Criar refeição no fitness_meals
-    const { data: meal, error: createError } = await supabase
+    const { data: meal, error: createError } = await admin
       .from('fitness_meals')
       .insert({
         user_id: user.id,
@@ -98,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     // Criar itens da refeição
     for (const food of foodsToRegister) {
-      await supabase
+      await admin
         .from('fitness_meal_items')
         .insert({
           meal_id: meal.id,
@@ -140,11 +146,16 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
     // Buscar refeições completadas nesta data COM os itens (alimentos reais consumidos)
-    const { data: completedMeals, error } = await supabase
+    const { data: completedMeals, error } = await admin
       .from('fitness_meals')
       .select(`
         id,

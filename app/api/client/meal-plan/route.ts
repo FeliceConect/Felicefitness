@@ -2,10 +2,12 @@
 // @ts-nocheck
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // GET - Buscar plano alimentar ativo do cliente
 export async function GET() {
   try {
+    // Auth: verificar sessão do usuário
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -16,17 +18,16 @@ export async function GET() {
       )
     }
 
+    // Usar service role para bypass RLS (dados já filtrados por user.id)
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
     // Buscar plano alimentar ativo do cliente
-    const { data: plan, error: planError } = await supabase
+    const { data: plan, error: planError } = await admin
       .from('fitness_meal_plans')
-      .select(`
-        *,
-        professional:fitness_professionals!professional_id(
-          id,
-          display_name,
-          specialty
-        )
-      `)
+      .select('*')
       .eq('client_id', user.id)
       .eq('is_active', true)
       .single()
@@ -47,8 +48,19 @@ export async function GET() {
       })
     }
 
+    // Buscar profissional
+    let professional = null
+    if (plan.professional_id) {
+      const { data: prof } = await admin
+        .from('fitness_professionals')
+        .select('id, display_name, specialty')
+        .eq('id', plan.professional_id)
+        .single()
+      professional = prof
+    }
+
     // Buscar dias do plano
-    const { data: days } = await supabase
+    const { data: days } = await admin
       .from('fitness_meal_plan_days')
       .select('*')
       .eq('meal_plan_id', plan.id)
@@ -57,7 +69,7 @@ export async function GET() {
     // Buscar refeições de cada dia
     const daysWithMeals = await Promise.all(
       (days || []).map(async (day) => {
-        const { data: meals } = await supabase
+        const { data: meals } = await admin
           .from('fitness_meal_plan_meals')
           .select('*')
           .eq('meal_plan_day_id', day.id)
@@ -74,6 +86,7 @@ export async function GET() {
       success: true,
       plan: {
         ...plan,
+        professional,
         days: daysWithMeals
       }
     })
