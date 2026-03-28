@@ -10,34 +10,25 @@
     <!-- Background seda -->
     <rect width="512" height="512" fill="#ddd5c7"/>
 
-    <!-- Outer decorative ring -->
-    <circle cx="256" cy="256" r="225" fill="none" stroke="#ae9b89" stroke-width="1.8" opacity=".5"/>
-    <!-- Inner ring -->
-    <circle cx="256" cy="256" r="210" fill="none" stroke="#ae9b89" stroke-width=".8" opacity=".3"/>
+    <!-- FELICE — large, café, spaced, top area -->
+    <text x="256" y="108" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" fill="#322b29" letter-spacing="14" font-weight="400">FELICE</text>
 
-    <!-- FELICE — vinho for max contrast on seda -->
-    <text x="256" y="118" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="26" fill="#322b29" letter-spacing="12" font-weight="400">FELICE</text>
+    <!-- Thin gold separator line -->
+    <line x1="156" y1="128" x2="356" y2="128" stroke="#c29863" stroke-width="1.2" opacity=".6"/>
 
-    <!-- Triquetra symbol — vinho strokes, thicker for small sizes -->
-    <g transform="translate(256,248)">
+    <!-- Triquetra symbol — large, centered, vinho -->
+    <g transform="translate(256,278)">
       <!-- Leaf 1 — top -->
-      <path d="M0,-82 C23,-50 30,-20 0,0 C-30,-20 -23,-50 0,-82Z" fill="none" stroke="#663739" stroke-width="3.2"/>
+      <path d="M0,-110 C30,-68 40,-26 0,0 C-40,-26 -30,-68 0,-110Z" fill="none" stroke="#663739" stroke-width="3.8"/>
       <!-- Leaf 2 — lower-right -->
-      <path d="M0,-82 C23,-50 30,-20 0,0 C-30,-20 -23,-50 0,-82Z" fill="none" stroke="#663739" stroke-width="3.2" transform="rotate(120)"/>
+      <path d="M0,-110 C30,-68 40,-26 0,0 C-40,-26 -30,-68 0,-110Z" fill="none" stroke="#663739" stroke-width="3.8" transform="rotate(120)"/>
       <!-- Leaf 3 — lower-left -->
-      <path d="M0,-82 C23,-50 30,-20 0,0 C-30,-20 -23,-50 0,-82Z" fill="none" stroke="#663739" stroke-width="3.2" transform="rotate(240)"/>
+      <path d="M0,-110 C30,-68 40,-26 0,0 C-40,-26 -30,-68 0,-110Z" fill="none" stroke="#663739" stroke-width="3.8" transform="rotate(240)"/>
       <!-- Central dot — dourado -->
-      <circle r="6.4" fill="#c29863" opacity=".9"/>
-      <!-- Apex rays -->
-      <line x1="0" y1="-90" x2="0" y2="-108" stroke="#ae9b89" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
-      <line x1="0" y1="-90" x2="0" y2="-108" stroke="#ae9b89" stroke-width="1.5" stroke-linecap="round" opacity=".5" transform="rotate(120)"/>
-      <line x1="0" y1="-90" x2="0" y2="-108" stroke="#ae9b89" stroke-width="1.5" stroke-linecap="round" opacity=".5" transform="rotate(240)"/>
+      <circle r="8" fill="#c29863"/>
     </g>
 
-    <!-- WELLNESS — vinho, bold for readability -->
-    <text x="256" y="348" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" fill="#663739" letter-spacing="10" font-weight="400">WELLNESS</text>
-
-    <!-- CORPO · MENTE · ALMA — café for contrast -->
-    <text x="256" y="385" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="13" fill="#663739" letter-spacing="5" opacity=".7">CORPO · MENTE · ALMA</text>
+    <!-- WELLNESS — large, vinho, bottom area -->
+    <text x="256" y="462" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="48" fill="#663739" letter-spacing="8" font-weight="400">WELLNESS</text>
   </g>
 </svg>
