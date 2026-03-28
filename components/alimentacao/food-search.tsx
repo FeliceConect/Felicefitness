@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Star, Clock, X, Plus } from 'lucide-react'
+import { Search, Star, Clock, X, Plus, Loader2 } from 'lucide-react'
 import type { Food, FoodCategory } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { useFoods } from '@/hooks/use-foods'
@@ -17,25 +17,19 @@ interface FoodSearchProps {
 export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAddCustom = true }: FoodSearchProps) {
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | null>(null)
-  const { favorites, recent, search, getByCategory } = useFoods()
+  const { favorites, recent, search, searchResults, searchLoading, getByCategory } = useFoods()
 
-  // Search results - busca por texto ou por categoria
-  const searchResults = useMemo(() => {
-    if (selectedCategory) {
-      return getByCategory(selectedCategory).filter(f => !excludeIds.includes(f.id))
-    }
-    if (!query.trim()) return []
-    return search(query).filter(f => !excludeIds.includes(f.id))
-  }, [query, selectedCategory, search, getByCategory, excludeIds])
+  // Trigger search when query changes
+  useEffect(() => {
+    if (selectedCategory) return
+    search(query)
+  }, [query, selectedCategory, search])
 
-  // Filtered favorites and recent
-  const filteredFavorites = useMemo(() => {
-    return favorites.filter(f => !excludeIds.includes(f.id))
-  }, [favorites, excludeIds])
+  // Filter out excluded IDs from results
+  const filteredResults = searchResults.filter(f => !excludeIds.includes(f.id))
 
-  const filteredRecent = useMemo(() => {
-    return recent.filter(f => !excludeIds.includes(f.id))
-  }, [recent, excludeIds])
+  const filteredFavorites = favorites.filter(f => !excludeIds.includes(f.id))
+  const filteredRecent = recent.filter(f => !excludeIds.includes(f.id))
 
   const handleSelect = (food: Food) => {
     onSelect(food)
@@ -46,6 +40,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
   const handleCategoryClick = (category: FoodCategory) => {
     setSelectedCategory(category)
     setQuery('')
+    getByCategory(category)
   }
 
   const clearSearch = () => {
@@ -53,7 +48,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
     setSelectedCategory(null)
   }
 
-  const isSearching = query.trim() || selectedCategory
+  const isSearching = query.trim().length >= 2 || selectedCategory
 
   return (
     <div className="space-y-4">
@@ -67,7 +62,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
             setSelectedCategory(null)
             setQuery(e.target.value)
           }}
-          placeholder="Buscar alimento..."
+          placeholder="Buscar alimento... (6.000+ alimentos)"
           className="w-full bg-white border border-border rounded-xl pl-10 pr-10 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
         />
         {(query || selectedCategory) && (
@@ -77,6 +72,9 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
           >
             <X className="w-4 h-4 text-foreground-muted" />
           </button>
+        )}
+        {searchLoading && (
+          <Loader2 className="absolute right-10 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dourado animate-spin" />
         )}
       </div>
 
@@ -89,8 +87,10 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
             exit={{ opacity: 0, height: 0 }}
             className="space-y-2"
           >
-            <h4 className="text-sm font-medium text-foreground-secondary">Resultados</h4>
-            {searchResults.length === 0 ? (
+            <h4 className="text-sm font-medium text-foreground-secondary">
+              Resultados {filteredResults.length > 0 && `(${filteredResults.length})`}
+            </h4>
+            {!searchLoading && filteredResults.length === 0 ? (
               <div className="py-4 text-center space-y-3">
                 <p className="text-sm text-foreground-muted">
                   Nenhum alimento encontrado para &ldquo;{query || selectedCategory}&rdquo;
@@ -107,7 +107,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {searchResults.map((food) => (
+                {filteredResults.map((food) => (
                   <FoodItem key={food.id} food={food} onClick={handleSelect} />
                 ))}
               </div>
@@ -188,7 +188,7 @@ function FoodItem({ food, onClick }: FoodItemProps) {
           : 'bg-white/50 hover:bg-white'
       }`}
     >
-      <span className="text-xl">{categoryInfo.icon}</span>
+      <span className="text-xl">{categoryInfo?.icon || '🍴'}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-foreground font-medium truncate">{food.nome}</p>
@@ -202,7 +202,7 @@ function FoodItem({ food, onClick }: FoodItemProps) {
           )}
         </div>
         <p className="text-sm text-foreground-secondary">
-          {food.porcao_padrao} {food.unidade} • {food.calorias} kcal • {food.proteinas}g prot
+          {food.porcao_padrao}{food.unidade} • {Math.round(food.calorias)} kcal • {food.proteinas}g prot
         </p>
       </div>
     </motion.button>

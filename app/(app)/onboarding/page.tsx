@@ -112,7 +112,7 @@ export default function OnboardingPage() {
                 }`}
               >
                 <Icon className={`w-6 h-6 ${isSelected ? 'text-dourado' : 'text-foreground-secondary'}`} />
-                <span className={`text-sm text-center ${isSelected ? 'text-white' : 'text-foreground-secondary'}`}>
+                <span className={`text-sm text-center ${isSelected ? 'text-foreground font-medium' : 'text-foreground-secondary'}`}>
                   {goal.label}
                 </span>
                 {isSelected && (
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
           >
             <Bell className={`w-8 h-8 ${notificationsEnabled ? 'text-dourado' : 'text-foreground-secondary'}`} />
             <div className="flex-1">
-              <p className="font-medium text-white">Ativar notificações</p>
+              <p className="font-medium text-foreground">Ativar notificações</p>
               <p className="text-sm text-foreground-secondary">Receba lembretes de treino, água e muito mais</p>
             </div>
             {notificationsEnabled && <Check className="w-5 h-5 text-dourado" />}
@@ -156,7 +156,7 @@ export default function OnboardingPage() {
           >
             <Bell className={`w-8 h-8 ${!notificationsEnabled ? 'text-dourado' : 'text-foreground-secondary'}`} />
             <div className="flex-1">
-              <p className="font-medium text-white">Não, obrigado</p>
+              <p className="font-medium text-foreground">Não, obrigado</p>
               <p className="text-sm text-foreground-secondary">Você pode ativar depois nas configurações</p>
             </div>
             {!notificationsEnabled && <Check className="w-5 h-5 text-dourado" />}
@@ -185,7 +185,7 @@ export default function OnboardingPage() {
               {acceptedTerms && <Check className="w-4 h-4 text-white" />}
             </div>
             <div className="flex-1">
-              <p className="font-medium text-white">Termos de Uso</p>
+              <p className="font-medium text-foreground">Termos de Uso</p>
               <p className="text-sm text-foreground-secondary mt-1">
                 Li e aceito os{' '}
                 <a href="/termos" target="_blank" className="text-dourado underline">
@@ -210,7 +210,7 @@ export default function OnboardingPage() {
               {acceptedPrivacy && <Check className="w-4 h-4 text-white" />}
             </div>
             <div className="flex-1">
-              <p className="font-medium text-white">Politica de Privacidade</p>
+              <p className="font-medium text-foreground">Politica de Privacidade</p>
               <p className="text-sm text-foreground-secondary mt-1">
                 Li e aceito a{' '}
                 <a href="/privacidade" target="_blank" className="text-dourado underline">

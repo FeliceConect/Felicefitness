@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Search, Plus, Star, Heart, Clock, Filter, X, Pencil, Check } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Star, Heart, Clock, Filter, X, Pencil, Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useFoods } from '@/hooks/use-foods'
 import type { FoodCategory, Food } from '@/lib/nutrition/types'
@@ -27,7 +27,7 @@ const categories: FoodCategory[] = [
 
 export default function FoodDatabasePage() {
   const router = useRouter()
-  const { foods, favorites, recent, userFoods, toggleFavorite, deleteFood, updateFood } = useFoods()
+  const { foods, favorites, recent, userFoods, search, searchResults, searchLoading, getByCategory, toggleFavorite, deleteFood, updateFood } = useFoods()
 
   const [activeTab, setActiveTab] = useState<Tab>('todos')
   const [searchQuery, setSearchQuery] = useState('')
@@ -35,6 +35,17 @@ export default function FoodDatabasePage() {
   const [sortBy, setSortBy] = useState<SortBy>('nome')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
+
+  // Trigger server-side search when in "todos" tab
+  useEffect(() => {
+    if (activeTab === 'todos') {
+      if (selectedCategory) {
+        getByCategory(selectedCategory)
+      } else if (searchQuery.trim().length >= 2) {
+        search(searchQuery)
+      }
+    }
+  }, [activeTab, searchQuery, selectedCategory, search, getByCategory])
 
   // Filtrar e ordenar alimentos
   const filteredFoods = useMemo(() => {
@@ -52,11 +63,12 @@ export default function FoodDatabasePage() {
         result = userFoods
         break
       default:
-        result = foods
+        // Tab "todos" usa resultados da busca server-side
+        result = searchResults
     }
 
-    // Aplicar busca
-    if (searchQuery.trim()) {
+    // Aplicar busca local para tabs que não são "todos"
+    if (activeTab !== 'todos' && searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase()
       result = result.filter(
         f =>
@@ -65,8 +77,8 @@ export default function FoodDatabasePage() {
       )
     }
 
-    // Aplicar filtro de categoria
-    if (selectedCategory) {
+    // Aplicar filtro de categoria local (para tabs que não são "todos")
+    if (activeTab !== 'todos' && selectedCategory) {
       result = result.filter(f => f.categoria === selectedCategory)
     }
 
@@ -83,7 +95,7 @@ export default function FoodDatabasePage() {
     })
 
     return result
-  }, [activeTab, foods, favorites, recent, userFoods, searchQuery, selectedCategory, sortBy])
+  }, [activeTab, searchResults, favorites, recent, userFoods, searchQuery, selectedCategory, sortBy])
 
   // Agrupar por categoria
   const groupedFoods = useMemo(() => {
@@ -128,7 +140,7 @@ export default function FoodDatabasePage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Banco de Alimentos</h1>
-            <p className="text-foreground-secondary text-sm">{foods.length} alimentos cadastrados</p>
+            <p className="text-foreground-secondary text-sm">6.000+ alimentos disponíveis</p>
           </div>
           <Button
             variant="gradient"
@@ -150,9 +162,12 @@ export default function FoodDatabasePage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar alimento..."
+            placeholder="Buscar entre 6.000+ alimentos..."
             className="w-full bg-white border border-border rounded-xl pl-10 pr-10 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
           />
+          {searchLoading && (
+            <Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 text-dourado animate-spin" />
+          )}
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
@@ -284,7 +299,9 @@ export default function FoodDatabasePage() {
         {filteredFoods.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-foreground-secondary mb-4">
-              {searchQuery
+              {searchLoading
+                ? 'Buscando...'
+                : searchQuery
                 ? 'Nenhum alimento encontrado'
                 : activeTab === 'meus'
                 ? 'Você ainda não cadastrou nenhum alimento'
@@ -292,6 +309,8 @@ export default function FoodDatabasePage() {
                 ? 'Nenhum alimento favorito'
                 : activeTab === 'recentes'
                 ? 'Nenhum alimento recente'
+                : activeTab === 'todos'
+                ? 'Digite para buscar entre 6.000+ alimentos'
                 : 'Nenhum alimento'}
             </p>
             {activeTab === 'meus' && (
