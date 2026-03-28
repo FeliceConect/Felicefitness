@@ -11,24 +11,33 @@
     <rect width="512" height="512" fill="#322b29"/>
 
     <!-- Outer decorative ring -->
-    <circle cx="256" cy="256" r="225" fill="none" stroke="#c29863" stroke-width="2.3" opacity=".45"/>
+    <circle cx="256" cy="256" r="225" fill="none" stroke="#c29863" stroke-width="1.8" opacity=".45"/>
     <!-- Inner ring -->
-    <circle cx="256" cy="256" r="210" fill="none" stroke="#c29863" stroke-width="1" opacity=".25"/>
+    <circle cx="256" cy="256" r="210" fill="none" stroke="#c29863" stroke-width=".8" opacity=".25"/>
+
+    <!-- FELICE — maximum contrast -->
+    <text x="256" y="118" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="26" fill="#ddd5c7" letter-spacing="12" font-weight="400">FELICE</text>
 
     <!-- Triquetra symbol — centred -->
-    <g transform="translate(256,256)">
+    <g transform="translate(256,248)">
       <!-- Leaf 1 — top -->
-      <path d="M0,-92 C26,-56 33,-23 0,0 C-33,-23 -26,-56 0,-92Z" fill="none" stroke="#c29863" stroke-width="2.8"/>
+      <path d="M0,-82 C23,-50 30,-20 0,0 C-30,-20 -23,-50 0,-82Z" fill="none" stroke="#c29863" stroke-width="2.6"/>
       <!-- Leaf 2 — lower-right -->
-      <path d="M0,-92 C26,-56 33,-23 0,0 C-33,-23 -26,-56 0,-92Z" fill="none" stroke="#c29863" stroke-width="2.8" transform="rotate(120)"/>
+      <path d="M0,-82 C23,-50 30,-20 0,0 C-30,-20 -23,-50 0,-82Z" fill="none" stroke="#c29863" stroke-width="2.6" transform="rotate(120)"/>
       <!-- Leaf 3 — lower-left -->
-      <path d="M0,-92 C26,-56 33,-23 0,0 C-33,-23 -26,-56 0,-92Z" fill="none" stroke="#c29863" stroke-width="2.8" transform="rotate(240)"/>
+      <path d="M0,-82 C23,-50 30,-20 0,0 C-30,-20 -23,-50 0,-82Z" fill="none" stroke="#c29863" stroke-width="2.6" transform="rotate(240)"/>
       <!-- Central dot -->
-      <circle r="7" fill="#c29863" opacity=".9"/>
+      <circle r="6.4" fill="#c29863" opacity=".9"/>
       <!-- Apex rays -->
-      <line x1="0" y1="-102" x2="0" y2="-120" stroke="#c29863" stroke-width="1.8" stroke-linecap="round" opacity=".45"/>
-      <line x1="0" y1="-102" x2="0" y2="-120" stroke="#c29863" stroke-width="1.8" stroke-linecap="round" opacity=".45" transform="rotate(120)"/>
-      <line x1="0" y1="-102" x2="0" y2="-120" stroke="#c29863" stroke-width="1.8" stroke-linecap="round" opacity=".45" transform="rotate(240)"/>
+      <line x1="0" y1="-90" x2="0" y2="-108" stroke="#c29863" stroke-width="1.5" stroke-linecap="round" opacity=".45"/>
+      <line x1="0" y1="-90" x2="0" y2="-108" stroke="#c29863" stroke-width="1.5" stroke-linecap="round" opacity=".45" transform="rotate(120)"/>
+      <line x1="0" y1="-90" x2="0" y2="-108" stroke="#c29863" stroke-width="1.5" stroke-linecap="round" opacity=".45" transform="rotate(240)"/>
     </g>
+
+    <!-- WELLNESS — maximum contrast -->
+    <text x="256" y="348" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" fill="#d4ad72" letter-spacing="10" font-weight="300">WELLNESS</text>
+
+    <!-- CORPO · MENTE · ALMA — high contrast -->
+    <text x="256" y="385" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="13" fill="#cac2b9" letter-spacing="5">CORPO · MENTE · ALMA</text>
   </g>
 </svg>
