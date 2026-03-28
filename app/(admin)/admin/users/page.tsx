@@ -71,6 +71,7 @@ export default function UsersPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteAction, setDeleteAction] = useState<'deactivate' | 'hard_delete'>('deactivate')
+  const [currentUserRole, setCurrentUserRole] = useState<string>('')
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -88,6 +89,7 @@ export default function UsersPage() {
       if (data.success) {
         setUsers(data.users || [])
         setPagination(data.pagination)
+        if (data.currentUserRole) setCurrentUserRole(data.currentUserRole)
       }
     } catch (error) {
       console.error('Erro ao buscar usuários:', error)
@@ -99,6 +101,7 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -222,10 +225,8 @@ export default function UsersPage() {
 
       if (data.success) {
         if (deleteAction === 'hard_delete') {
-          // Remover da lista
           setUsers(prev => prev.filter(u => u.id !== selectedUser.id))
         } else {
-          // Atualizar status
           setUsers(prev => prev.map(u =>
             u.id === selectedUser.id ? { ...u, is_active: false } : u
           ))
@@ -651,21 +652,23 @@ export default function UsersPage() {
                   </div>
                 </button>
 
-                {/* Botão Excluir Permanentemente */}
-                <button
-                  onClick={() => {
-                    setShowRoleModal(false)
-                    setDeleteAction('hard_delete')
-                    setShowDeleteModal(true)
-                  }}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-                >
-                  <Trash2 className="w-5 h-5 text-red-400" />
-                  <div className="text-left flex-1">
-                    <p className="font-medium text-red-400">Excluir Permanentemente</p>
-                    <p className="text-xs text-foreground-muted">Remove o usuário e todos os seus dados. Esta ação é irreversível!</p>
-                  </div>
-                </button>
+                {/* Botão Excluir Permanentemente — apenas super_admin */}
+                {currentUserRole === 'super_admin' && (
+                  <button
+                    onClick={() => {
+                      setShowRoleModal(false)
+                      setDeleteAction('hard_delete')
+                      setShowDeleteModal(true)
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5 text-red-400" />
+                    <div className="text-left flex-1">
+                      <p className="font-medium text-red-400">Excluir Permanentemente</p>
+                      <p className="text-xs text-foreground-muted">Remove o usuário e todos os seus dados. Esta ação é irreversível!</p>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -693,9 +696,13 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
-                <p className="text-red-400 text-sm">
-                  <strong>Atenção:</strong> Esta ação é irreversível! O usuário e todos os seus dados (treinos, refeições, metas, etc.) serão permanentemente excluídos.
+              <div className={`${deleteAction === 'hard_delete' ? 'bg-red-500/10 border-red-500/30' : 'bg-yellow-500/10 border-yellow-500/30'} border rounded-lg p-4 mb-4`}>
+                <p className={`${deleteAction === 'hard_delete' ? 'text-red-600' : 'text-yellow-700'} text-sm`}>
+                  {deleteAction === 'hard_delete' ? (
+                    <><strong>Atenção:</strong> Esta ação é irreversível! O usuário e todos os seus dados (treinos, refeições, metas, etc.) serão permanentemente excluídos.</>
+                  ) : (
+                    <><strong>Atenção:</strong> O usuário será desativado e não poderá mais acessar o sistema. Os dados serão mantidos e você poderá reativá-lo depois.</>
+                  )}
                 </p>
               </div>
 

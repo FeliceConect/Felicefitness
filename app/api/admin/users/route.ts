@@ -146,6 +146,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       users: usersWithAssignments,
+      currentUserRole: profile.role,
       pagination: {
         total: count || 0,
         page,
@@ -463,9 +464,38 @@ export async function DELETE(request: NextRequest) {
       .eq('id', userId)
       .single()
 
+    // Se não tem profile, criar um profile desativado ou verificar auth
     if (!targetUser) {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId)
+      if (!authUser?.user) {
+        return NextResponse.json(
+          { success: false, error: 'Usuário não encontrado' },
+          { status: 404 }
+        )
+      }
+
+      if (action === 'deactivate') {
+        // Criar profile desativado para users que só existem no auth
+        await supabaseAdmin.from('fitness_profiles').upsert({
+          id: userId,
+          nome: authUser.user.user_metadata?.name || authUser.user.email?.split('@')[0] || 'Sem nome',
+          email: authUser.user.email || '',
+          role: 'client',
+          is_active: false,
+          deactivated_at: new Date().toISOString()
+        })
+
+        // Banir no auth para impedir login
+        await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: '876600h' })
+
+        return NextResponse.json({
+          success: true,
+          message: `Usuário ${authUser.user.email} desativado com sucesso`
+        })
+      }
+
       return NextResponse.json(
-        { success: false, error: 'Usuário não encontrado' },
+        { success: false, error: 'Usuário não encontrado no sistema' },
         { status: 404 }
       )
     }
@@ -478,14 +508,53 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // Hard delete só para super_admin
+    if (action === 'hard_delete' && profile.role !== 'super_admin') {
+      return NextResponse.json(
+        { success: false, error: 'Apenas super_admin pode excluir permanentemente' },
+        { status: 403 }
+      )
+    }
+
     if (action === 'hard_delete') {
       // Hard delete - remove permanentemente
+      // 1. Deletar dados relacionados (FK constraints podem bloquear auth.admin.deleteUser)
+      const tablesToClean = [
+        'fitness_meal_items',
+        'fitness_meal_plan_adherence',
+        'fitness_wellness_checkins',
+        'fitness_water_logs',
+        'fitness_meals',
+        'fitness_workouts',
+        'fitness_user_foods',
+        'user_stats',
+        'user_achievements',
+        'fitness_push_subscriptions',
+        'fitness_notifications',
+      ]
+
+      for (const table of tablesToClean) {
+        try {
+          await supabaseAdmin.from(table).delete().eq('user_id', userId)
+        } catch {
+          // Tabela pode não existir, ignorar
+        }
+      }
+
+      // 2. Deletar profile
+      try {
+        await supabaseAdmin.from('fitness_profiles').delete().eq('id', userId)
+      } catch {
+        // Ignorar se falhar
+      }
+
+      // 3. Deletar do auth
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
       if (deleteError) {
-        console.error('Erro ao deletar usuário:', deleteError)
+        console.error('Erro ao deletar usuário do auth:', deleteError)
         return NextResponse.json(
-          { success: false, error: 'Erro ao deletar usuário' },
+          { success: false, error: `Erro ao deletar usuário: ${deleteError.message}` },
           { status: 500 }
         )
       }
@@ -536,9 +605,12 @@ export async function DELETE(request: NextRequest) {
         )
       }
 
+      // Banir no auth para impedir login
+      await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: '876600h' })
+
       return NextResponse.json({
         success: true,
-        message: `Usuário ${targetUser.nome || targetUser.email} inativado com sucesso`
+        message: `Usuário ${targetUser.nome || targetUser.email} desativado com sucesso`
       })
     }
 
