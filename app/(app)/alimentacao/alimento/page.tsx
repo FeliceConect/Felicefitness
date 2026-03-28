@@ -27,7 +27,7 @@ const categories: FoodCategory[] = [
 
 export default function FoodDatabasePage() {
   const router = useRouter()
-  const { foods, favorites, recent, userFoods, search, searchResults, searchLoading, getByCategory, toggleFavorite, deleteFood, updateFood } = useFoods()
+  const { favorites, recent, userFoods, search, searchResults, searchLoading, getByCategory, toggleFavorite, deleteFood, updateFood } = useFoods()
 
   const [activeTab, setActiveTab] = useState<Tab>('todos')
   const [searchQuery, setSearchQuery] = useState('')
