@@ -405,6 +405,7 @@ export function getNotificationTypeIcon(type: NotificationType): string {
     chat_message: '💬',
     feed_reaction: '👍',
     feed_comment: '💬',
+    feed_new_post: '📣',
     streak_risk: '🔥'
   }
   return icons[type] || '📱'
@@ -428,6 +429,7 @@ export function getNotificationTypeColor(type: NotificationType): string {
     chat_message: '#c29863', // dourado
     feed_reaction: '#c29863', // dourado
     feed_comment: '#c29863', // dourado
+    feed_new_post: '#c29863', // dourado
     streak_risk: '#EF4444' // red
   }
   return colors[type] || '#6B7280'
