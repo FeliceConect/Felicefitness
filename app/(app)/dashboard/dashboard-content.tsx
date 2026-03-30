@@ -140,11 +140,16 @@ export function DashboardContent() {
       .catch(() => {})
 
     // Fetch recent feed posts count (last 7 days)
-    fetch('/api/feed?limit=5')
+    fetch('/api/feed?limit=100&offset=0')
       .then(r => r.json())
       .then(data => {
         if (data.success && data.posts) {
-          setFeedCount(data.posts.length)
+          const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+          const recentCount = data.posts.filter(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (p: any) => new Date(p.created_at).getTime() > sevenDaysAgo
+          ).length
+          setFeedCount(recentCount)
         }
       })
       .catch(() => {})
