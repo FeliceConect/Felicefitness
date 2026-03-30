@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
-import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList, SmilePlus, BarChart3, Flame, Zap } from 'lucide-react'
+import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList, SmilePlus, BarChart3, Flame, Zap, Moon } from 'lucide-react'
 import Link from 'next/link'
 import {
   GreetingHeader,
@@ -377,26 +377,30 @@ export function DashboardContent() {
         <StatsOverview stats={stats} />
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-5 gap-2">
           <button
             onClick={() => handleAddWater(250)}
             disabled={isAddingWater}
-            className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95"
+            className="flex flex-col items-center gap-1.5 py-3 px-1 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95"
           >
             <Droplets className="w-5 h-5 text-blue-500" />
-            <span className="text-xs text-foreground-secondary">+250ml</span>
+            <span className="text-[10px] text-foreground-secondary">+250ml</span>
           </button>
-          <Link href="/alimentacao" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
+          <Link href="/alimentacao" className="flex flex-col items-center gap-1.5 py-3 px-1 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
             <Utensils className="w-5 h-5 text-dourado" />
-            <span className="text-xs text-foreground-secondary">Refeição</span>
+            <span className="text-[10px] text-foreground-secondary">Refeição</span>
           </Link>
-          <Link href="/treino" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
+          <Link href="/treino" className="flex flex-col items-center gap-1.5 py-3 px-1 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
             <Dumbbell className="w-5 h-5 text-vinho" />
-            <span className="text-xs text-foreground-secondary">Treinar</span>
+            <span className="text-[10px] text-foreground-secondary">Treinar</span>
           </Link>
-          <Link href="/bem-estar/checkin" className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
+          <Link href="/sono" className="flex flex-col items-center gap-1.5 py-3 px-1 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
+            <Moon className="w-5 h-5 text-indigo-500" />
+            <span className="text-[10px] text-foreground-secondary">Sono</span>
+          </Link>
+          <Link href="/bem-estar/checkin" className="flex flex-col items-center gap-1.5 py-3 px-1 bg-white border border-border rounded-2xl hover:border-dourado/30 hover:shadow-md transition-all shadow-sm active:scale-95">
             <SmilePlus className="w-5 h-5 text-purple-500" />
-            <span className="text-xs text-foreground-secondary">Check-in</span>
+            <span className="text-[10px] text-foreground-secondary">Check-in</span>
           </Link>
         </div>
       </main>
