@@ -509,9 +509,14 @@ CREATE TABLE fitness_community_comments (
 | Comentar/reagir no feed | 1 pt | Automático |
 | Streak 7 dias consecutivos | 15 pts bônus | Automático |
 | Streak 30 dias consecutivos | 50 pts bônus | Automático |
-| Bônus profissional | 5-50 pts (config) | Manual por qualquer profissional |
+| Bônus profissional | 5-10 pts (config) | Manual por qualquer profissional |
+| Post no Instagram com #vivendofelice | 5 pts | Manual — admin ou superadmin |
 | Desafio especial | Variável | Configurável pelo superadmin |
 | Preencher formulário pré-consulta | 5 pts | Automático |
+
+**Pontuação de post no Instagram:**
+- Paciente posta no Instagram com a hashtag **#vivendofelice**
+- Admin ou superadmin valida e atribui os 5 pts manualmente
 
 **Pontuação de presença em consulta:**
 - Profissional marca "compareceu" no app → 20pts automáticos para o paciente
