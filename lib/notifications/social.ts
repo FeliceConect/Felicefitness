@@ -204,7 +204,7 @@ export async function notifyNewPost(
 
     // Deduplicate user IDs
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userIds = [...new Set((subscriptions as any[]).map((s: any) => s.user_id))]
+    const userIds = Array.from(new Set((subscriptions as any[]).map((s: any) => s.user_id)))
 
     const prefix = userInfo.isProfessional ? `${userInfo.roleLabel} ` : ''
     const action = POST_TYPE_LABELS[postType] || 'publicou no feed'
