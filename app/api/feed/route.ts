@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { notifyNewPost } from '@/lib/notifications/social'
 
 function getAdminClient() {
   return createAdminClient(
@@ -177,6 +178,9 @@ export async function POST(request: NextRequest) {
         source: 'automatic',
         reference_id: post.id,
       })
+
+    // Notify other users about new post (fire-and-forget)
+    notifyNewPost(user.id, post_type).catch(() => {})
 
     return NextResponse.json({ success: true, post })
   } catch (error) {

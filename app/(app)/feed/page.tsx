@@ -14,8 +14,10 @@ import {
   CheckCircle,
   PenLine,
   Camera,
+  ArrowUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useUnreadFeed } from '@/hooks/use-unread-feed'
 
 const TIER_ICONS: Record<string, string> = {
   bronze: '🥉',
@@ -143,6 +145,75 @@ export default function FeedPage() {
   // Filter
   const [filterType, setFilterType] = useState('')
 
+  // Active users today (stories-style avatars)
+  interface ActiveUser {
+    user_id: string
+    name: string
+    initial: string
+    role: string
+    tier: string
+    foto_url: string | null
+    last_post_type: string
+    post_count: number
+    is_self: boolean
+  }
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([])
+
+  // Unread feed badge + new posts banner
+  const { markAsRead, details: unreadDetails, refetch: refetchUnread } = useUnreadFeed()
+  const [newPostsBannerCount, setNewPostsBannerCount] = useState(0)
+  const latestPostTimestamp = useRef<string | null>(null)
+  const [interactionsBanner, setInteractionsBanner] = useState<string | null>(null)
+
+  // Mark feed as read on mount + fetch active users
+  useEffect(() => {
+    // Show interactions banner before marking as read
+    const parts: string[] = []
+    if (unreadDetails.new_comments > 0) {
+      parts.push(`${unreadDetails.new_comments} ${unreadDetails.new_comments === 1 ? 'comentário novo' : 'comentários novos'}`)
+    }
+    if (unreadDetails.new_reactions > 0) {
+      parts.push(`${unreadDetails.new_reactions} ${unreadDetails.new_reactions === 1 ? 'reação nova' : 'reações novas'}`)
+    }
+    if (parts.length > 0) {
+      setInteractionsBanner(`Seus posts receberam ${parts.join(' e ')}`)
+    }
+
+    markAsRead()
+    refetchUnread()
+    // Fetch active users for stories bar
+    fetch('/api/feed/active-today')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setActiveUsers(data.active_users || [])
+      })
+      .catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Poll for new posts while on the feed page (for the banner)
+  useEffect(() => {
+    const checkNewPosts = async () => {
+      if (!latestPostTimestamp.current) return
+      try {
+        const res = await fetch(`/api/feed/unread-count?since=${encodeURIComponent(latestPostTimestamp.current)}`)
+        const data = await res.json()
+        if (data.success && data.count > 0) {
+          setNewPostsBannerCount(data.count)
+        }
+      } catch {
+        // Silent fail
+      }
+    }
+    const interval = setInterval(checkNewPosts, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleLoadNewPosts = () => {
+    setNewPostsBannerCount(0)
+    fetchPosts(true)
+    markAsRead()
+  }
+
   const fetchPosts = useCallback(async (reset = false) => {
     if (reset) setLoading(true)
     else setLoadingMore(true)
@@ -158,6 +229,10 @@ export default function FeedPage() {
       if (data.success) {
         if (reset) {
           setPosts(data.posts || [])
+          // Track the newest post timestamp for "new posts" banner
+          if (data.posts?.length > 0) {
+            latestPostTimestamp.current = data.posts[0].created_at
+          }
         } else {
           setPosts(prev => [...prev, ...(data.posts || [])])
         }
@@ -417,6 +492,87 @@ export default function FeedPage() {
         </div>
       </div>
 
+      {/* Interactions banner - comments/reactions on your posts */}
+      {interactionsBanner && (
+        <div className="mx-4 mt-3 mb-1">
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100">
+            <div className="flex items-center gap-2">
+              <span className="text-base">❤️</span>
+              <p className="text-xs text-foreground-secondary font-medium">{interactionsBanner}</p>
+            </div>
+            <button
+              onClick={() => setInteractionsBanner(null)}
+              className="text-foreground-muted hover:text-foreground-secondary p-0.5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Active users today - Stories-style avatars */}
+      {activeUsers.length > 0 && (
+        <div className="bg-white border-b border-border px-4 pt-3 pb-3 overflow-visible">
+          <div className="flex gap-4 overflow-x-auto pb-1 pt-1">
+            {activeUsers.map(u => {
+              const isProfessional = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach'].includes(u.role)
+              return (
+                <button
+                  key={u.user_id}
+                  onClick={() => {
+                    // Find the first post by this user and scroll to it
+                    const postIndex = posts.findIndex(p => p.user_id === u.user_id)
+                    if (postIndex !== -1) {
+                      const postEl = document.getElementById(`post-${posts[postIndex].id}`)
+                      if (postEl) postEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1.5 min-w-[64px] flex-shrink-0"
+                >
+                  <div className={`p-[3px] rounded-full ${
+                    isProfessional
+                      ? 'bg-gradient-to-br from-dourado via-yellow-400 to-dourado'
+                      : 'bg-gradient-to-br from-nude to-fendi'
+                  }`}>
+                    <div className="w-12 h-12 rounded-full bg-white p-[2px]">
+                      {u.foto_url ? (
+                        <img
+                          src={u.foto_url}
+                          alt={u.name}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className={`w-full h-full rounded-full flex items-center justify-center ${
+                          isProfessional ? 'bg-gradient-to-br from-dourado to-vinho' : 'bg-gradient-to-br from-nude to-cafe/60'
+                        }`}>
+                          <span className="text-white font-bold text-sm">{u.initial}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-foreground-secondary truncate max-w-[64px] text-center leading-tight">
+                    {u.is_self ? 'Você' : u.name}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* New posts banner */}
+      {newPostsBannerCount > 0 && (
+        <div className="sticky top-[105px] z-40 flex justify-center px-4 pt-2">
+          <button
+            onClick={handleLoadNewPosts}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-dourado text-white text-sm font-medium shadow-lg shadow-dourado/30 hover:bg-dourado/90 transition-all active:scale-95"
+          >
+            <ArrowUp className="w-4 h-4" />
+            {newPostsBannerCount} {newPostsBannerCount === 1 ? 'novo post' : 'novos posts'}
+          </button>
+        </div>
+      )}
+
       {/* Posts */}
       <div className="p-4 space-y-4">
         {loading ? (
@@ -437,7 +593,7 @@ export default function FeedPage() {
         ) : (
           <>
             {posts.map(post => (
-              <div key={post.id} className="bg-white rounded-xl border border-border overflow-hidden">
+              <div key={post.id} id={`post-${post.id}`} className="bg-white rounded-xl border border-border overflow-hidden">
                 {/* Post header */}
                 <div className="flex items-center gap-3 p-4 pb-2">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">

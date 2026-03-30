@@ -170,6 +170,69 @@ export async function notifyComment(
   })
 }
 
+const POST_TYPE_LABELS: Record<string, string> = {
+  free_text: 'publicou no feed',
+  workout: 'compartilhou um treino',
+  meal: 'compartilhou uma refeição',
+  achievement: 'desbloqueou uma conquista',
+  check_in: 'fez um check-in',
+  level_up: 'subiu de nível',
+}
+
+/** Notify all other users that someone posted in the feed (fire-and-forget) */
+export async function notifyNewPost(
+  authorId: string,
+  postType: string,
+): Promise<void> {
+  try {
+    if (!validatePushConfig()) return
+
+    const userInfo = await getUserInfo(authorId)
+    if (!userInfo) return
+
+    const db = getAdminClient()
+
+    // Get all distinct user IDs with active push subscriptions (except the author)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: subscriptions } = await (db as any)
+      .from('fitness_push_subscriptions')
+      .select('user_id')
+      .neq('user_id', authorId)
+      .eq('active', true)
+
+    if (!subscriptions || subscriptions.length === 0) return
+
+    // Deduplicate user IDs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userIds = [...new Set((subscriptions as any[]).map((s: any) => s.user_id))]
+
+    const prefix = userInfo.isProfessional ? `${userInfo.roleLabel} ` : ''
+    const action = POST_TYPE_LABELS[postType] || 'publicou no feed'
+    const emoji = userInfo.isProfessional ? '⭐' : '📣'
+
+    const payload = {
+      title: `${emoji} Nova atividade no Feed`,
+      body: `${prefix}${userInfo.displayName} ${action}`,
+      type: 'feed_new_post' as const,
+      url: '/feed',
+      tag: 'feed-new-post',
+      data: {
+        authorId,
+        postType,
+        isProfessional: userInfo.isProfessional,
+        role: userInfo.role,
+      },
+    }
+
+    // Send to each user via sendToUser (handles subscription lookup + history)
+    await Promise.allSettled(
+      userIds.map((userId: string) => sendToUser(userId, payload))
+    )
+  } catch (err) {
+    console.error('Notify new post error:', err)
+  }
+}
+
 /** Notify user their streak is at risk (no activity today) — called from cron */
 export async function notifyStreakRisk(userId: string, currentStreak: number): Promise<void> {
   await sendToUser(userId, {

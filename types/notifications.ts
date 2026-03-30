@@ -14,6 +14,7 @@ export type NotificationType =
   | 'chat_message'
   | 'feed_reaction'
   | 'feed_comment'
+  | 'feed_new_post'
   | 'streak_risk'
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent'
