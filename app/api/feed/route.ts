@@ -96,6 +96,50 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Check if any super_admin/admin reacted to each post
+    const adminReactedPosts: Set<string> = new Set()
+    if (postIds.length > 0) {
+      const { data: adminProfiles } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id')
+        .in('role', ['super_admin', 'admin'])
+
+      const adminIds = (adminProfiles || []).map(p => p.id)
+      if (adminIds.length > 0) {
+        const { data: adminReactions } = await supabaseAdmin
+          .from('fitness_community_reactions')
+          .select('post_id')
+          .in('post_id', postIds)
+          .in('user_id', adminIds)
+
+        for (const r of (adminReactions || [])) {
+          adminReactedPosts.add(r.post_id)
+        }
+      }
+    }
+
+    // Get weekly highlight post ID for badge
+    let highlightPostUserId: string | null = null
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    const { data: weekPosts } = await supabaseAdmin
+      .from('fitness_community_posts')
+      .select('id, user_id, reactions_count, comments_count')
+      .eq('is_visible', true)
+      .gte('created_at', weekAgo.toISOString())
+
+    if (weekPosts && weekPosts.length > 0) {
+      let bestScore = 0
+      for (const wp of weekPosts) {
+        const rTotal = Object.values(wp.reactions_count || {}).reduce((s, c) => s + (c as number), 0)
+        const score = rTotal + (wp.comments_count || 0) * 2
+        if (score > bestScore && score >= 3) {
+          bestScore = score
+          highlightPostUserId = wp.user_id
+        }
+      }
+    }
+
     const enrichedPosts = (posts || []).map(post => {
       const profile = profileMap[post.user_id]
       const displayName = profile?.display_name || profile?.apelido_ranking || profile?.nome?.split(' ')[0] || 'Anonimo'
@@ -109,6 +153,8 @@ export async function GET(request: NextRequest) {
         is_own: post.user_id === user.id,
         user_reactions: userReactions[post.id] || [],
         comment_count: commentCounts[post.id] || post.comments_count || 0,
+        admin_reacted: adminReactedPosts.has(post.id),
+        is_highlight_author: post.user_id === highlightPostUserId,
       }
     })
 

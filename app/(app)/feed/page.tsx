@@ -15,6 +15,9 @@ import {
   PenLine,
   Camera,
   ArrowUp,
+  Sparkles,
+  Star,
+  ChevronLeft,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUnreadFeed } from '@/hooks/use-unread-feed'
@@ -44,6 +47,8 @@ interface Post {
   user_reactions: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any> | null
+  admin_reacted?: boolean
+  is_highlight_author?: boolean
 }
 
 const PROFESSIONAL_ROLES: Record<string, { label: string; color: string }> = {
@@ -114,6 +119,23 @@ const MEAL_TYPE_OPTIONS = [
   { value: 'jantar', label: 'Jantar', emoji: '🌙' },
 ]
 
+const TEMPLATE_BACKGROUNDS = [
+  { id: 'cafe_dourado', label: 'Elegante', gradient: 'linear-gradient(135deg, #322b29 0%, #c29863 100%)' },
+  { id: 'vinho_dourado', label: 'Premium', gradient: 'linear-gradient(135deg, #663739 0%, #c29863 100%)' },
+  { id: 'nude_seda', label: 'Suave', gradient: 'linear-gradient(135deg, #ae9b89 0%, #ddd5c7 100%)' },
+  { id: 'azul_cafe', label: 'Oceano', gradient: 'linear-gradient(135deg, #1e3a5f 0%, #322b29 100%)' },
+  { id: 'roxo_vinho', label: 'Noite', gradient: 'linear-gradient(135deg, #4c1d6e 0%, #663739 100%)' },
+  { id: 'verde_cafe', label: 'Natural', gradient: 'linear-gradient(135deg, #1a4731 0%, #322b29 100%)' },
+]
+
+interface CommunityStats {
+  active_today: number
+  posts_week: number
+  workouts_week: number
+  reactions_week: number
+  user_posted_today: boolean
+}
+
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -145,25 +167,20 @@ export default function FeedPage() {
   // Filter
   const [filterType, setFilterType] = useState('')
 
-  // Active users today (stories-style avatars)
-  interface ActiveUser {
-    user_id: string
-    name: string
-    initial: string
-    role: string
-    tier: string
-    foto_url: string | null
-    last_post_type: string
-    post_count: number
-    is_self: boolean
-  }
-  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([])
+  // Active users today (kept for potential future use)
+  const [, setActiveUsers] = useState<{ user_id: string; name: string; role: string }[]>([])
 
   // Unread feed badge + new posts banner
   const { markAsRead, details: unreadDetails, refetch: refetchUnread } = useUnreadFeed()
   const [newPostsBannerCount, setNewPostsBannerCount] = useState(0)
   const latestPostTimestamp = useRef<string | null>(null)
   const [interactionsBanner, setInteractionsBanner] = useState<string | null>(null)
+
+  // Community stats + weekly highlight + masonry
+  const [communityStats, setCommunityStats] = useState<CommunityStats | null>(null)
+  const [weeklyHighlight, setWeeklyHighlight] = useState<Post | null>(null)
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
 
   // Mark feed as read on mount + fetch active users
   useEffect(() => {
@@ -186,6 +203,20 @@ export default function FeedPage() {
       .then(res => res.json())
       .then(data => {
         if (data.success) setActiveUsers(data.active_users || [])
+      })
+      .catch(() => {})
+    // Fetch community stats
+    fetch('/api/feed/community-stats')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setCommunityStats(data.stats)
+      })
+      .catch(() => {})
+    // Fetch weekly highlight
+    fetch('/api/feed/weekly-highlight')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.highlight) setWeeklyHighlight(data.highlight)
       })
       .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -250,6 +281,23 @@ export default function FeedPage() {
     fetchPosts(true)
   }, [filterType]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-load comments when fullscreen modal opens
+  useEffect(() => {
+    if (selectedPostId && !comments[selectedPostId]) {
+      setLoadingComments(selectedPostId)
+      fetch(`/api/feed/${selectedPostId}/comments`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setComments(prev => ({ ...prev, [selectedPostId]: data.comments || [] }))
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoadingComments(null))
+    }
+    setNewComment('')
+  }, [selectedPostId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -286,6 +334,7 @@ export default function FeedPage() {
     setNewPostContent('')
     setNewPostType('free_text')
     setPostMetadata({})
+    setSelectedTemplate(null)
     removeImage()
   }
 
@@ -318,7 +367,7 @@ export default function FeedPage() {
           post_type: newPostType,
           content: newPostContent.trim(),
           image_url: imageUrl,
-          metadata: hasMetadata ? postMetadata : null,
+          metadata: (hasMetadata || selectedTemplate) ? { ...postMetadata, ...(selectedTemplate ? { template_bg: selectedTemplate } : {}) } : null,
         }),
       })
       const data = await res.json()
@@ -365,6 +414,7 @@ export default function FeedPage() {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const toggleComments = async (postId: string) => {
     if (expandedComments === postId) {
       setExpandedComments(null)
@@ -454,12 +504,298 @@ export default function FeedPage() {
     return Object.values(reactions).reduce((sum, count) => sum + count, 0)
   }
 
+  const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) || weeklyHighlight : null
+
+  // Masonry card renderer
+  const renderMasonryCard = (post: Post) => {
+    const totalReactions = getTotalReactions(post.reactions_count)
+    const hasInteractions = totalReactions > 0 || post.comment_count > 0
+
+    const cardFooter = (textColor: string, bgColor: string) => (
+      <div className={`px-3 pb-3 flex items-center justify-between ${textColor}`}>
+        <div className="flex items-center gap-1.5">
+          <div className={`w-5 h-5 rounded-full ${bgColor} flex items-center justify-center`}>
+            <span className={`text-[9px] font-bold ${textColor}`}>{post.author_initial}</span>
+          </div>
+          <span className="text-[11px] font-medium truncate max-w-[80px]">{post.author_name}</span>
+          {post.is_highlight_author && <span className="text-[10px]">⭐</span>}
+          {post.author_tier && post.author_tier !== 'bronze' && (
+            <span className="text-[10px]">{TIER_ICONS[post.author_tier]}</span>
+          )}
+        </div>
+        {hasInteractions && (
+          <div className="flex items-center gap-1.5 text-[10px] opacity-70">
+            {totalReactions > 0 && <span>❤️ {totalReactions}</span>}
+            {post.comment_count > 0 && <span>💬 {post.comment_count}</span>}
+          </div>
+        )}
+      </div>
+    )
+
+    const adminBadge = post.admin_reacted ? (
+      <div className="px-3 pt-2.5">
+        <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-dourado/20 text-dourado font-semibold">
+          <Sparkles className="w-2.5 h-2.5" /> Equipe Felice
+        </span>
+      </div>
+    ) : null
+
+    // WORKOUT CARD
+    if (post.post_type === 'workout') {
+      return (
+        <div
+          onClick={() => setSelectedPostId(post.id)}
+          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #322b29 100%)' }}
+        >
+          {adminBadge}
+          <div className="p-3.5 pb-2">
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Dumbbell className="w-3.5 h-3.5 text-white/60" />
+              <span className="text-[9px] font-semibold text-white/60 uppercase tracking-widest">Treino</span>
+            </div>
+            {post.metadata?.duracao_min && (
+              <p className="font-heading text-3xl font-bold text-white leading-none">
+                {post.metadata.duracao_min}<span className="text-base text-white/50 ml-0.5">min</span>
+              </p>
+            )}
+            <div className="flex gap-3 mt-1.5">
+              {post.metadata?.exercicios && (
+                <span className="text-[11px] text-white/60">{post.metadata.exercicios} exerc.</span>
+              )}
+              {post.metadata?.calorias && (
+                <span className="text-[11px] text-white/60">{post.metadata.calorias} kcal</span>
+              )}
+            </div>
+            {post.metadata?.energia && (
+              <div className="mt-2">
+                <span className="text-sm">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
+              </div>
+            )}
+          </div>
+          {post.content && (
+            <p className="px-3.5 pb-1.5 text-white/60 text-[11px] line-clamp-2">{post.content}</p>
+          )}
+          {post.image_url && (
+            <div className="px-3 pb-2">
+              <img src={post.image_url} alt="" className="w-full rounded-lg object-cover max-h-32" />
+            </div>
+          )}
+          {cardFooter('text-white/80', 'bg-white/20')}
+        </div>
+      )
+    }
+
+    // MEAL CARD
+    if (post.post_type === 'meal') {
+      if (post.image_url) {
+        return (
+          <div
+            onClick={() => setSelectedPostId(post.id)}
+            className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] bg-white border border-border"
+          >
+            <div className="relative">
+              <img src={post.image_url} alt="" className="w-full object-cover" style={{ maxHeight: '180px' }} />
+              {post.metadata && Object.keys(post.metadata).length > 0 && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6">
+                  <div className="flex gap-2">
+                    {post.metadata.calorias && (
+                      <span className="text-[10px] text-white font-semibold bg-white/20 px-1.5 py-0.5 rounded">{post.metadata.calorias} kcal</span>
+                    )}
+                    {post.metadata.proteinas && (
+                      <span className="text-[10px] text-white font-semibold bg-white/20 px-1.5 py-0.5 rounded">{post.metadata.proteinas}g prot</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {adminBadge}
+            {post.content && (
+              <p className="px-3 pt-2 pb-1 text-foreground text-[11px] line-clamp-2">{post.content}</p>
+            )}
+            {cardFooter('text-foreground-secondary', 'bg-foreground-muted/20')}
+          </div>
+        )
+      }
+      return (
+        <div
+          onClick={() => setSelectedPostId(post.id)}
+          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, #2d5a3d 0%, #322b29 100%)' }}
+        >
+          {adminBadge}
+          <div className="p-3.5 pb-2">
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Coffee className="w-3.5 h-3.5 text-white/60" />
+              <span className="text-[9px] font-semibold text-white/60 uppercase tracking-widest">
+                {MEAL_TYPE_OPTIONS.find(m => m.value === post.metadata?.tipo_refeicao)?.label || 'Refeição'}
+              </span>
+            </div>
+            {post.metadata && (
+              <div className="grid grid-cols-2 gap-1.5">
+                {post.metadata.calorias && (
+                  <div className="bg-white/10 rounded-lg py-1.5 px-2 text-center">
+                    <p className="font-heading text-lg font-bold text-white">{post.metadata.calorias}</p>
+                    <p className="text-[8px] text-white/50">kcal</p>
+                  </div>
+                )}
+                {post.metadata.proteinas && (
+                  <div className="bg-white/10 rounded-lg py-1.5 px-2 text-center">
+                    <p className="font-heading text-lg font-bold text-white">{post.metadata.proteinas}g</p>
+                    <p className="text-[8px] text-white/50">proteina</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {post.content && (
+            <p className="px-3.5 pb-1.5 text-white/60 text-[11px] line-clamp-2">{post.content}</p>
+          )}
+          {cardFooter('text-white/80', 'bg-white/20')}
+        </div>
+      )
+    }
+
+    // ACHIEVEMENT CARD
+    if (post.post_type === 'achievement') {
+      return (
+        <div
+          onClick={() => setSelectedPostId(post.id)}
+          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] animate-pulse-glow"
+          style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)' }}
+        >
+          {adminBadge}
+          <div className="p-4 text-center">
+            <span className="text-3xl">🏆</span>
+            {post.metadata?.titulo && (
+              <p className="font-heading text-base font-bold text-white mt-2 leading-tight">{post.metadata.titulo}</p>
+            )}
+            <p className="text-[9px] text-white/60 mt-1 uppercase tracking-widest">Conquista Desbloqueada</p>
+          </div>
+          {post.content && (
+            <p className="px-3.5 pb-1.5 text-white/70 text-[11px] line-clamp-2 text-center">{post.content}</p>
+          )}
+          {cardFooter('text-white/80', 'bg-white/20')}
+        </div>
+      )
+    }
+
+    // LEVEL UP CARD
+    if (post.post_type === 'level_up') {
+      return (
+        <div
+          onClick={() => setSelectedPostId(post.id)}
+          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, #663739 0%, #c29863 100%)' }}
+        >
+          <div className="p-4 text-center">
+            <span className="text-3xl">⬆️</span>
+            {post.metadata?.nivel && (
+              <p className="font-heading text-2xl font-bold text-white mt-1">Nível {post.metadata.nivel}</p>
+            )}
+            {post.metadata?.nome_nivel && (
+              <p className="text-sm text-white/80 font-medium">{post.metadata.nome_nivel}</p>
+            )}
+            <p className="text-[9px] text-white/50 mt-1 uppercase tracking-widest">Level Up!</p>
+          </div>
+          {post.content && (
+            <p className="px-3.5 pb-1.5 text-white/70 text-[11px] line-clamp-2 text-center">{post.content}</p>
+          )}
+          {cardFooter('text-white/80', 'bg-white/20')}
+        </div>
+      )
+    }
+
+    // CHECK-IN CARD
+    if (post.post_type === 'check_in') {
+      return (
+        <div
+          onClick={() => setSelectedPostId(post.id)}
+          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, #4c1d6e 0%, #322b29 100%)' }}
+        >
+          {adminBadge}
+          <div className="p-3.5">
+            <span className="text-[9px] font-semibold text-white/60 uppercase tracking-widest">Check-in</span>
+            <div className="flex items-center justify-center gap-4 mt-3 mb-1">
+              {post.metadata?.humor && (
+                <div className="text-center">
+                  <span className="text-2xl">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.emoji}</span>
+                  <p className="text-[9px] text-white/60 mt-0.5">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.label}</p>
+                </div>
+              )}
+              {post.metadata?.energia && (
+                <div className="text-center">
+                  <span className="text-2xl">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
+                  <p className="text-[9px] text-white/60 mt-0.5">Energia</p>
+                </div>
+              )}
+            </div>
+          </div>
+          {post.content && (
+            <p className="px-3.5 pb-1.5 text-white/60 text-[11px] line-clamp-2">{post.content}</p>
+          )}
+          {cardFooter('text-white/80', 'bg-white/20')}
+        </div>
+      )
+    }
+
+    // FREE TEXT / DEFAULT CARD
+    const templateBg = post.metadata?.template_bg
+    const template = templateBg ? TEMPLATE_BACKGROUNDS.find(t => t.id === templateBg) : null
+
+    if (template) {
+      // Template card with gradient background
+      return (
+        <div
+          onClick={() => setSelectedPostId(post.id)}
+          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
+          style={{ background: template.gradient }}
+        >
+          {adminBadge}
+          <div className="p-4 min-h-[120px] flex flex-col justify-center">
+            {post.content && (
+              <p className="text-white text-sm font-medium leading-relaxed text-center italic">
+                &ldquo;{post.content}&rdquo;
+              </p>
+            )}
+          </div>
+          {post.image_url && (
+            <div className="px-3 pb-2">
+              <img src={post.image_url} alt="" className="w-full rounded-lg object-cover max-h-32" />
+            </div>
+          )}
+          {cardFooter('text-white/80', 'bg-white/20')}
+        </div>
+      )
+    }
+
+    // Plain free text card (white)
+    return (
+      <div
+        onClick={() => setSelectedPostId(post.id)}
+        className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] bg-white border border-border"
+      >
+        {adminBadge}
+        {post.image_url && (
+          <img src={post.image_url} alt="" className="w-full object-cover" style={{ maxHeight: '200px' }} />
+        )}
+        <div className="p-3.5">
+          {post.content && (
+            <p className="text-foreground text-[13px] leading-relaxed whitespace-pre-wrap line-clamp-4">{post.content}</p>
+          )}
+        </div>
+        {cardFooter('text-foreground-secondary', 'bg-foreground-muted/20')}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-border">
         <div className="flex items-center justify-between p-4">
-          <h1 className="font-heading font-bold text-lg text-foreground">Feed</h1>
+          <h1 className="font-heading font-bold text-lg text-foreground">Comunidade</h1>
           <button
             onClick={() => setShowCreate(true)}
             className="p-2 rounded-full bg-dourado text-white hover:bg-dourado/90 transition-colors"
@@ -492,9 +828,40 @@ export default function FeedPage() {
         </div>
       </div>
 
+      {/* Community Live Bar */}
+      {communityStats && (
+        <div className="mx-3 mt-3 mb-1">
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-border overflow-x-auto">
+            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="font-heading font-bold text-foreground">{communityStats.active_today}</span>
+              <span className="text-foreground-muted">ativos</span>
+            </div>
+            <div className="w-px h-4 bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 text-xs whitespace-nowrap">
+              <span className="text-sm">💪</span>
+              <span className="font-heading font-bold text-foreground">{communityStats.workouts_week}</span>
+              <span className="text-foreground-muted">treinos</span>
+            </div>
+            <div className="w-px h-4 bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 text-xs whitespace-nowrap">
+              <span className="text-sm">🔥</span>
+              <span className="font-heading font-bold text-foreground">{communityStats.reactions_week}</span>
+              <span className="text-foreground-muted">reações</span>
+            </div>
+            <div className="w-px h-4 bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 text-xs whitespace-nowrap">
+              <span className="text-sm">📝</span>
+              <span className="font-heading font-bold text-foreground">{communityStats.posts_week}</span>
+              <span className="text-foreground-muted">posts</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Interactions banner - comments/reactions on your posts */}
       {interactionsBanner && (
-        <div className="mx-4 mt-3 mb-1">
+        <div className="mx-3 mt-2 mb-1">
           <div className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100">
             <div className="flex items-center gap-2">
               <span className="text-base">❤️</span>
@@ -510,52 +877,65 @@ export default function FeedPage() {
         </div>
       )}
 
-      {/* Active users today - Stories-style avatars */}
-      {activeUsers.length > 0 && (
-        <div className="bg-white border-b border-border px-4 pt-3 pb-3 overflow-visible">
-          <div className="flex gap-4 overflow-x-auto pb-1 pt-1">
-            {activeUsers.map(u => {
-              const isProfessional = ['super_admin', 'admin', 'nutritionist', 'trainer', 'coach'].includes(u.role)
-              return (
-                <button
-                  key={u.user_id}
-                  onClick={() => {
-                    // Find the first post by this user and scroll to it
-                    const postIndex = posts.findIndex(p => p.user_id === u.user_id)
-                    if (postIndex !== -1) {
-                      const postEl = document.getElementById(`post-${posts[postIndex].id}`)
-                      if (postEl) postEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    }
-                  }}
-                  className="flex flex-col items-center gap-1.5 min-w-[64px] flex-shrink-0"
-                >
-                  <div className={`p-[3px] rounded-full ${
-                    isProfessional
-                      ? 'bg-gradient-to-br from-dourado via-yellow-400 to-dourado'
-                      : 'bg-gradient-to-br from-nude to-fendi'
-                  }`}>
-                    <div className="w-12 h-12 rounded-full bg-white p-[2px]">
-                      {u.foto_url ? (
-                        <img
-                          src={u.foto_url}
-                          alt={u.name}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className={`w-full h-full rounded-full flex items-center justify-center ${
-                          isProfessional ? 'bg-gradient-to-br from-dourado to-vinho' : 'bg-gradient-to-br from-nude to-cafe/60'
-                        }`}>
-                          <span className="text-white font-bold text-sm">{u.initial}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-foreground-secondary truncate max-w-[64px] text-center leading-tight">
-                    {u.is_self ? 'Você' : u.name}
-                  </span>
-                </button>
-              )
-            })}
+      {/* Auto-suggest banner - if user hasn't posted today */}
+      {communityStats && !communityStats.user_posted_today && !loading && (
+        <div className="mx-3 mt-2 mb-1">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-dourado/10 to-dourado/5 border border-dourado/20 text-left transition-all active:scale-[0.99]"
+          >
+            <span className="text-xl">✨</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Compartilhe seu dia!</p>
+              <p className="text-[11px] text-foreground-muted">Mostre sua evolução para a comunidade</p>
+            </div>
+            <Plus className="w-5 h-5 text-dourado" />
+          </button>
+        </div>
+      )}
+
+      {/* Weekly Highlight */}
+      {weeklyHighlight && (
+        <div className="mx-3 mt-3 mb-1">
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <Star className="w-3.5 h-3.5 text-dourado" />
+            <span className="text-[11px] font-semibold text-dourado uppercase tracking-wider">Destaque da Semana</span>
+          </div>
+          <div
+            onClick={() => setSelectedPostId(weeklyHighlight.id)}
+            className="rounded-2xl overflow-hidden border-2 border-dourado/30 cursor-pointer shadow-[0_2px_16px_rgba(194,152,99,0.12)] active:scale-[0.99] transition-transform"
+            style={{ background: 'linear-gradient(135deg, rgba(194,152,99,0.08) 0%, #ffffff 100%)' }}
+          >
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-dourado to-vinho flex items-center justify-center flex-shrink-0 ring-2 ring-dourado/30">
+                <span className="text-white font-bold text-sm">{weeklyHighlight.author_initial}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">⭐</span>
+                  <p className="font-heading font-bold text-foreground text-sm">{weeklyHighlight.author_name}</p>
+                  {weeklyHighlight.author_tier && weeklyHighlight.author_tier !== 'bronze' && (
+                    <span className="text-xs">{TIER_ICONS[weeklyHighlight.author_tier]}</span>
+                  )}
+                </div>
+                {weeklyHighlight.content && (
+                  <p className="text-xs text-foreground-secondary line-clamp-2 mt-0.5">{weeklyHighlight.content}</p>
+                )}
+                <div className="flex items-center gap-3 mt-1.5">
+                  {getTotalReactions(weeklyHighlight.reactions_count) > 0 && (
+                    <span className="text-[11px] text-foreground-muted">❤️ {getTotalReactions(weeklyHighlight.reactions_count)}</span>
+                  )}
+                  {weeklyHighlight.comment_count > 0 && (
+                    <span className="text-[11px] text-foreground-muted">💬 {weeklyHighlight.comment_count}</span>
+                  )}
+                  {POST_TYPE_LABELS[weeklyHighlight.post_type] && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${POST_TYPE_LABELS[weeklyHighlight.post_type].color}`}>
+                      {POST_TYPE_LABELS[weeklyHighlight.post_type].label}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -573,8 +953,8 @@ export default function FeedPage() {
         </div>
       )}
 
-      {/* Posts */}
-      <div className="p-4 space-y-4">
+      {/* Masonry Feed */}
+      <div className="px-3 pt-3 pb-4">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 text-dourado animate-spin" />
@@ -592,285 +972,13 @@ export default function FeedPage() {
           </div>
         ) : (
           <>
-            {posts.map(post => (
-              <div key={post.id} id={`post-${post.id}`} className="bg-white rounded-xl border border-border overflow-hidden">
-                {/* Post header */}
-                <div className="flex items-center gap-3 p-4 pb-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{post.author_initial}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-medium text-foreground text-sm truncate">{post.author_name}</p>
-                      {post.author_tier && post.author_tier !== 'bronze' && (
-                        <span className="text-xs" title={post.author_tier}>{TIER_ICONS[post.author_tier]}</span>
-                      )}
-                      {post.author_role && PROFESSIONAL_ROLES[post.author_role] && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[post.author_role].color}`}>
-                          {PROFESSIONAL_ROLES[post.author_role].label}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-foreground-muted">{formatDate(post.created_at)}</span>
-                      {POST_TYPE_LABELS[post.post_type] && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${POST_TYPE_LABELS[post.post_type].color}`}>
-                          {POST_TYPE_LABELS[post.post_type].label}
-                        </span>
-                      )}
-                      {post.is_auto_generated && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-dourado/10 text-dourado font-medium">
-                          Auto
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {post.is_own && (
-                    <button
-                      onClick={() => handleDeletePost(post.id)}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-foreground-muted hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+            <div style={{ columns: 2, columnGap: '10px' }}>
+              {posts.map(post => (
+                <div key={post.id} id={`post-${post.id}`} className="break-inside-avoid mb-2.5">
+                  {renderMasonryCard(post)}
                 </div>
-
-                {/* Type-specific card */}
-                {post.post_type === 'workout' && post.metadata && Object.keys(post.metadata).length > 0 && (
-                  <div className="mx-4 mb-2 p-3 rounded-lg bg-blue-50/60 border border-blue-100">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Dumbbell className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wide">Treino Concluido</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      {post.metadata.duracao_min && (
-                        <div className="bg-white/70 rounded-lg py-1.5">
-                          <p className="text-base font-heading font-bold text-foreground">{post.metadata.duracao_min}</p>
-                          <p className="text-[9px] text-foreground-muted">minutos</p>
-                        </div>
-                      )}
-                      {post.metadata.exercicios && (
-                        <div className="bg-white/70 rounded-lg py-1.5">
-                          <p className="text-base font-heading font-bold text-foreground">{post.metadata.exercicios}</p>
-                          <p className="text-[9px] text-foreground-muted">exercicios</p>
-                        </div>
-                      )}
-                      {post.metadata.calorias && (
-                        <div className="bg-white/70 rounded-lg py-1.5">
-                          <p className="text-base font-heading font-bold text-foreground">{post.metadata.calorias}</p>
-                          <p className="text-[9px] text-foreground-muted">kcal</p>
-                        </div>
-                      )}
-                    </div>
-                    {post.metadata.energia && (
-                      <div className="mt-2 flex items-center justify-center gap-1">
-                        <span className="text-[10px] text-foreground-muted">Energia:</span>
-                        <span className="text-sm">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
-                        <span className="text-[10px] text-blue-600 font-medium">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.label}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {post.post_type === 'meal' && post.metadata && Object.keys(post.metadata).length > 0 && (
-                  <div className="mx-4 mb-2 p-3 rounded-lg bg-green-50/60 border border-green-100">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Coffee className="w-3.5 h-3.5 text-green-600" />
-                      <span className="text-[11px] font-semibold text-green-600 uppercase tracking-wide">
-                        {MEAL_TYPE_OPTIONS.find(m => m.value === post.metadata?.tipo_refeicao)?.label || 'Refeição'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-1.5 text-center">
-                      {post.metadata.calorias && (
-                        <div className="bg-white/70 rounded-lg py-1.5">
-                          <p className="text-sm font-heading font-bold text-dourado">{post.metadata.calorias}</p>
-                          <p className="text-[9px] text-foreground-muted">kcal</p>
-                        </div>
-                      )}
-                      {post.metadata.proteinas && (
-                        <div className="bg-white/70 rounded-lg py-1.5">
-                          <p className="text-sm font-heading font-bold text-foreground">{post.metadata.proteinas}g</p>
-                          <p className="text-[9px] text-foreground-muted">proteina</p>
-                        </div>
-                      )}
-                      {post.metadata.carboidratos && (
-                        <div className="bg-white/70 rounded-lg py-1.5">
-                          <p className="text-sm font-heading font-bold text-foreground">{post.metadata.carboidratos}g</p>
-                          <p className="text-[9px] text-foreground-muted">carbos</p>
-                        </div>
-                      )}
-                      {post.metadata.gorduras && (
-                        <div className="bg-white/70 rounded-lg py-1.5">
-                          <p className="text-sm font-heading font-bold text-foreground">{post.metadata.gorduras}g</p>
-                          <p className="text-[9px] text-foreground-muted">gordura</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {post.post_type === 'achievement' && post.metadata?.titulo && (
-                  <div className="mx-4 mb-2 p-3 rounded-lg bg-gradient-to-br from-dourado/10 to-yellow-50 border border-dourado/20">
-                    <div className="text-center">
-                      <span className="text-2xl">🏆</span>
-                      <p className="text-sm font-heading font-bold text-dourado mt-1">{post.metadata.titulo}</p>
-                      <p className="text-[10px] text-foreground-muted mt-0.5 uppercase tracking-wider">Conquista Desbloqueada</p>
-                    </div>
-                  </div>
-                )}
-
-                {post.post_type === 'level_up' && post.metadata && (
-                  <div className="mx-4 mb-2 p-4 rounded-lg bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 border border-red-100">
-                    <div className="text-center">
-                      <span className="text-3xl">⬆️</span>
-                      <p className="text-lg font-heading font-bold text-vinho mt-1">
-                        Nível {post.metadata.nivel}
-                      </p>
-                      <p className="text-sm font-medium text-dourado">{post.metadata.nome_nivel}</p>
-                      <p className="text-[10px] text-foreground-muted mt-1 uppercase tracking-wider">Level Up!</p>
-                    </div>
-                  </div>
-                )}
-
-                {post.post_type === 'check_in' && post.metadata && Object.keys(post.metadata).length > 0 && (
-                  <div className="mx-4 mb-2 p-3 rounded-lg bg-purple-50/60 border border-purple-100">
-                    <div className="flex items-center justify-center gap-4">
-                      {post.metadata.humor && (
-                        <div className="text-center">
-                          <span className="text-2xl">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.emoji}</span>
-                          <p className="text-[10px] text-purple-600 font-medium mt-0.5">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.label}</p>
-                        </div>
-                      )}
-                      {post.metadata.energia && (
-                        <div className="text-center">
-                          <span className="text-2xl">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
-                          <p className="text-[10px] text-purple-600 font-medium mt-0.5">Energia {ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.label}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Content */}
-                {post.content && (
-                  <div className="px-4 pb-3">
-                    <p className="text-foreground text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
-                  </div>
-                )}
-
-                {/* Image */}
-                {post.image_url && (
-                  <div className="px-4 pb-3">
-                    <img
-                      src={post.image_url}
-                      alt="Post"
-                      className="w-full rounded-lg object-contain"
-                    />
-                  </div>
-                )}
-
-                {/* Reactions bar */}
-                <div className="px-4 pb-2">
-                  <div className="flex items-center gap-1">
-                    {REACTIONS.map(r => {
-                      const count = post.reactions_count[r.type] || 0
-                      const isActive = post.user_reactions.includes(r.type)
-                      return (
-                        <button
-                          key={r.type}
-                          onClick={() => handleReaction(post.id, r.type)}
-                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition-all ${
-                            isActive
-                              ? 'bg-dourado/15 border border-dourado/30'
-                              : 'bg-background-elevated hover:bg-background-elevated/80 border border-transparent'
-                          }`}
-                        >
-                          <span className="text-sm">{r.emoji}</span>
-                          {count > 0 && (
-                            <span className={`font-medium ${isActive ? 'text-dourado' : 'text-foreground-secondary'}`}>
-                              {count}
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Stats bar */}
-                <div className="px-4 pb-2 flex items-center gap-4">
-                  {getTotalReactions(post.reactions_count) > 0 && (
-                    <span className="text-xs text-foreground-muted">
-                      {getTotalReactions(post.reactions_count)} reacoes
-                    </span>
-                  )}
-                  <button
-                    onClick={() => toggleComments(post.id)}
-                    className="text-xs text-foreground-muted hover:text-foreground flex items-center gap-1"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    {post.comment_count > 0 ? `${post.comment_count} comentarios` : 'Comentar'}
-                  </button>
-                </div>
-
-                {/* Comments section */}
-                {expandedComments === post.id && (
-                  <div className="border-t border-border bg-background-elevated/30">
-                    {loadingComments === post.id ? (
-                      <div className="p-4 flex justify-center">
-                        <Loader2 className="w-5 h-5 text-dourado animate-spin" />
-                      </div>
-                    ) : (
-                      <>
-                        {(comments[post.id] || []).map(comment => {
-                          const isProfessional = comment.author_role && PROFESSIONAL_ROLES[comment.author_role]
-                          return (
-                          <div key={comment.id} className={`px-4 py-2.5 flex gap-2.5 ${isProfessional ? 'bg-dourado/5 border-l-2 border-l-dourado' : ''}`}>
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isProfessional ? 'bg-gradient-to-br from-dourado to-vinho' : 'bg-gradient-to-br from-foreground-muted/30 to-foreground-muted/10'}`}>
-                              <span className={`text-xs font-medium ${isProfessional ? 'text-white' : 'text-foreground-secondary'}`}>
-                                {comment.author_name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-xs font-medium ${isProfessional ? 'text-dourado' : 'text-foreground'}`}>{comment.author_name}</span>
-                                {isProfessional && (
-                                  <span className={`text-[8px] px-1 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[comment.author_role!].color}`}>
-                                    {PROFESSIONAL_ROLES[comment.author_role!].label}
-                                  </span>
-                                )}
-                                <span className="text-[10px] text-foreground-muted">{formatDate(comment.created_at)}</span>
-                              </div>
-                              <p className="text-xs text-foreground-secondary leading-relaxed">{comment.content}</p>
-                            </div>
-                          </div>
-                          )
-                        })}
-
-                        {/* Add comment */}
-                        <div className="p-3 flex items-center gap-2 border-t border-border">
-                          <input
-                            type="text"
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !submittingComment && handleComment(post.id)}
-                            className="flex-1 px-3 py-2 rounded-full bg-white border border-border text-sm text-foreground placeholder-foreground-muted focus:outline-none focus:ring-1 focus:ring-dourado/50"
-                            placeholder="Comentar..."
-                          />
-                          <button
-                            onClick={() => handleComment(post.id)}
-                            disabled={!newComment.trim() || submittingComment}
-                            className="p-2 rounded-full bg-dourado text-white disabled:opacity-50 hover:bg-dourado/90 transition-colors"
-                          >
-                            <Send className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
 
             {/* Load more */}
             {hasMore && (
@@ -889,6 +997,297 @@ export default function FeedPage() {
           </>
         )}
       </div>
+
+      {/* Fullscreen Post Modal */}
+      {selectedPost && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPostId(null)}>
+          <div
+            className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-3xl overflow-hidden flex flex-col animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center gap-3 p-4 border-b border-border flex-shrink-0">
+              <button
+                onClick={() => setSelectedPostId(null)}
+                className="p-1.5 rounded-lg hover:bg-background-elevated transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-foreground-secondary" />
+              </button>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-dourado to-vinho flex items-center justify-center">
+                <span className="text-white font-bold text-xs">{selectedPost.author_initial}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-medium text-foreground text-sm truncate">{selectedPost.author_name}</p>
+                  {selectedPost.is_highlight_author && <span className="text-xs">⭐</span>}
+                  {selectedPost.author_tier && selectedPost.author_tier !== 'bronze' && (
+                    <span className="text-xs">{TIER_ICONS[selectedPost.author_tier]}</span>
+                  )}
+                  {selectedPost.author_role && PROFESSIONAL_ROLES[selectedPost.author_role] && (
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[selectedPost.author_role].color}`}>
+                      {PROFESSIONAL_ROLES[selectedPost.author_role].label}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-foreground-muted">{formatDate(selectedPost.created_at)}</span>
+                  {POST_TYPE_LABELS[selectedPost.post_type] && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${POST_TYPE_LABELS[selectedPost.post_type].color}`}>
+                      {POST_TYPE_LABELS[selectedPost.post_type].label}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {selectedPost.is_own && (
+                <button
+                  onClick={() => { handleDeletePost(selectedPost.id); setSelectedPostId(null); }}
+                  className="p-1.5 rounded-lg hover:bg-red-50 text-foreground-muted hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Modal content - scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Admin reacted badge */}
+              {selectedPost.admin_reacted && (
+                <div className="px-4 pt-3">
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full bg-dourado/10 text-dourado font-semibold border border-dourado/20">
+                    <Sparkles className="w-3 h-3" /> Aprovado pela Equipe Felice
+                  </span>
+                </div>
+              )}
+
+              {/* Type-specific card in modal */}
+              {selectedPost.post_type === 'workout' && selectedPost.metadata && Object.keys(selectedPost.metadata).length > 0 && (
+                <div className="mx-4 mt-3 p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #322b29 100%)' }}>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Dumbbell className="w-3.5 h-3.5 text-white/70" />
+                    <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wide">Treino Completo</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {selectedPost.metadata.duracao_min && (
+                      <div className="bg-white/10 rounded-lg py-2">
+                        <p className="text-xl font-heading font-bold text-white">{selectedPost.metadata.duracao_min}</p>
+                        <p className="text-[9px] text-white/50">minutos</p>
+                      </div>
+                    )}
+                    {selectedPost.metadata.exercicios && (
+                      <div className="bg-white/10 rounded-lg py-2">
+                        <p className="text-xl font-heading font-bold text-white">{selectedPost.metadata.exercicios}</p>
+                        <p className="text-[9px] text-white/50">exercicios</p>
+                      </div>
+                    )}
+                    {selectedPost.metadata.calorias && (
+                      <div className="bg-white/10 rounded-lg py-2">
+                        <p className="text-xl font-heading font-bold text-white">{selectedPost.metadata.calorias}</p>
+                        <p className="text-[9px] text-white/50">kcal</p>
+                      </div>
+                    )}
+                  </div>
+                  {selectedPost.metadata.energia && (
+                    <div className="mt-2 flex items-center justify-center gap-1">
+                      <span className="text-sm">{ENERGY_LEVELS.find(e => e.value === selectedPost.metadata?.energia)?.emoji}</span>
+                      <span className="text-[11px] text-white/60 font-medium">{ENERGY_LEVELS.find(e => e.value === selectedPost.metadata?.energia)?.label}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedPost.post_type === 'meal' && selectedPost.metadata && Object.keys(selectedPost.metadata).length > 0 && (
+                <div className="mx-4 mt-3 p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #2d5a3d 0%, #322b29 100%)' }}>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Coffee className="w-3.5 h-3.5 text-white/70" />
+                    <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wide">
+                      {MEAL_TYPE_OPTIONS.find(m => m.value === selectedPost.metadata?.tipo_refeicao)?.label || 'Refeição'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 text-center">
+                    {selectedPost.metadata.calorias && (
+                      <div className="bg-white/10 rounded-lg py-1.5">
+                        <p className="text-sm font-heading font-bold text-white">{selectedPost.metadata.calorias}</p>
+                        <p className="text-[8px] text-white/50">kcal</p>
+                      </div>
+                    )}
+                    {selectedPost.metadata.proteinas && (
+                      <div className="bg-white/10 rounded-lg py-1.5">
+                        <p className="text-sm font-heading font-bold text-white">{selectedPost.metadata.proteinas}g</p>
+                        <p className="text-[8px] text-white/50">proteina</p>
+                      </div>
+                    )}
+                    {selectedPost.metadata.carboidratos && (
+                      <div className="bg-white/10 rounded-lg py-1.5">
+                        <p className="text-sm font-heading font-bold text-white">{selectedPost.metadata.carboidratos}g</p>
+                        <p className="text-[8px] text-white/50">carbos</p>
+                      </div>
+                    )}
+                    {selectedPost.metadata.gorduras && (
+                      <div className="bg-white/10 rounded-lg py-1.5">
+                        <p className="text-sm font-heading font-bold text-white">{selectedPost.metadata.gorduras}g</p>
+                        <p className="text-[8px] text-white/50">gordura</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {selectedPost.post_type === 'achievement' && selectedPost.metadata?.titulo && (
+                <div className="mx-4 mt-3 p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)' }}>
+                  <div className="text-center">
+                    <span className="text-3xl">🏆</span>
+                    <p className="text-base font-heading font-bold text-white mt-1">{selectedPost.metadata.titulo}</p>
+                    <p className="text-[10px] text-white/60 mt-0.5 uppercase tracking-wider">Conquista Desbloqueada</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedPost.post_type === 'level_up' && selectedPost.metadata && (
+                <div className="mx-4 mt-3 p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, #663739 0%, #c29863 100%)' }}>
+                  <div className="text-center">
+                    <span className="text-3xl">⬆️</span>
+                    <p className="text-xl font-heading font-bold text-white mt-1">Nível {selectedPost.metadata.nivel}</p>
+                    <p className="text-sm text-white/80 font-medium">{selectedPost.metadata.nome_nivel}</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedPost.post_type === 'check_in' && selectedPost.metadata && Object.keys(selectedPost.metadata).length > 0 && (
+                <div className="mx-4 mt-3 p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #4c1d6e 0%, #322b29 100%)' }}>
+                  <div className="flex items-center justify-center gap-6">
+                    {selectedPost.metadata.humor && (
+                      <div className="text-center">
+                        <span className="text-3xl">{MOOD_OPTIONS.find(m => m.value === selectedPost.metadata?.humor)?.emoji}</span>
+                        <p className="text-[10px] text-white/60 font-medium mt-0.5">{MOOD_OPTIONS.find(m => m.value === selectedPost.metadata?.humor)?.label}</p>
+                      </div>
+                    )}
+                    {selectedPost.metadata.energia && (
+                      <div className="text-center">
+                        <span className="text-3xl">{ENERGY_LEVELS.find(e => e.value === selectedPost.metadata?.energia)?.emoji}</span>
+                        <p className="text-[10px] text-white/60 font-medium mt-0.5">Energia</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Template background for free_text */}
+              {selectedPost.post_type === 'free_text' && selectedPost.metadata?.template_bg && (
+                <div
+                  className="mx-4 mt-3 p-6 rounded-lg min-h-[100px] flex items-center justify-center"
+                  style={{ background: TEMPLATE_BACKGROUNDS.find(t => t.id === selectedPost.metadata?.template_bg)?.gradient || '' }}
+                >
+                  {selectedPost.content && (
+                    <p className="text-white text-base font-medium leading-relaxed text-center italic">
+                      &ldquo;{selectedPost.content}&rdquo;
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Content text (if no template) */}
+              {selectedPost.content && !(selectedPost.post_type === 'free_text' && selectedPost.metadata?.template_bg) && (
+                <div className="px-4 pt-3">
+                  <p className="text-foreground text-sm whitespace-pre-wrap leading-relaxed">{selectedPost.content}</p>
+                </div>
+              )}
+
+              {/* Image */}
+              {selectedPost.image_url && (
+                <div className="px-4 pt-3">
+                  <img src={selectedPost.image_url} alt="Post" className="w-full rounded-lg object-contain" />
+                </div>
+              )}
+
+              {/* Reactions bar */}
+              <div className="px-4 pt-3 pb-2">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {REACTIONS.map(r => {
+                    const count = selectedPost.reactions_count[r.type] || 0
+                    const isActive = selectedPost.user_reactions.includes(r.type)
+                    return (
+                      <button
+                        key={r.type}
+                        onClick={() => handleReaction(selectedPost.id, r.type)}
+                        className={`flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-all ${
+                          isActive
+                            ? 'bg-dourado/15 border border-dourado/30'
+                            : 'bg-background-elevated hover:bg-background-elevated/80 border border-transparent'
+                        }`}
+                      >
+                        <span className="text-sm">{r.emoji}</span>
+                        {count > 0 && (
+                          <span className={`font-medium ${isActive ? 'text-dourado' : 'text-foreground-secondary'}`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Comments section - always visible in modal */}
+              <div className="border-t border-border mt-2">
+                <div className="px-4 py-2.5">
+                  <p className="text-xs font-semibold text-foreground-secondary">
+                    {selectedPost.comment_count > 0 ? `${selectedPost.comment_count} comentários` : 'Comentários'}
+                  </p>
+                </div>
+                {loadingComments === selectedPost.id ? (
+                  <div className="p-4 flex justify-center">
+                    <Loader2 className="w-5 h-5 text-dourado animate-spin" />
+                  </div>
+                ) : (
+                  (comments[selectedPost.id] || []).map(comment => {
+                    const isProfessional = comment.author_role && PROFESSIONAL_ROLES[comment.author_role]
+                    return (
+                      <div key={comment.id} className={`px-4 py-2.5 flex gap-2.5 ${isProfessional ? 'bg-dourado/5 border-l-2 border-l-dourado' : ''}`}>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isProfessional ? 'bg-gradient-to-br from-dourado to-vinho' : 'bg-gradient-to-br from-foreground-muted/30 to-foreground-muted/10'}`}>
+                          <span className={`text-xs font-medium ${isProfessional ? 'text-white' : 'text-foreground-secondary'}`}>
+                            {comment.author_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-xs font-medium ${isProfessional ? 'text-dourado' : 'text-foreground'}`}>{comment.author_name}</span>
+                            {isProfessional && (
+                              <span className={`text-[8px] px-1 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[comment.author_role!].color}`}>
+                                {PROFESSIONAL_ROLES[comment.author_role!].label}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-foreground-muted">{formatDate(comment.created_at)}</span>
+                          </div>
+                          <p className="text-xs text-foreground-secondary leading-relaxed">{comment.content}</p>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+
+                {/* Add comment input */}
+                <div className="p-3 flex items-center gap-2 border-t border-border">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !submittingComment && handleComment(selectedPost.id)}
+                    className="flex-1 px-3 py-2 rounded-full bg-background-input border border-border text-sm text-foreground placeholder-foreground-muted focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                    placeholder="Comentar..."
+                  />
+                  <button
+                    onClick={() => handleComment(selectedPost.id)}
+                    disabled={!newComment.trim() || submittingComment}
+                    className="p-2 rounded-full bg-dourado text-white disabled:opacity-50 hover:bg-dourado/90 transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Post Modal */}
       {showCreate && (
@@ -925,6 +1324,36 @@ export default function FeedPage() {
                   )
                 })}
               </div>
+
+              {/* Template selector for free text posts */}
+              {newPostType === 'free_text' && (
+                <div>
+                  <label className="text-[11px] text-foreground-muted block mb-2">Fundo do post (opcional)</label>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTemplate(null)}
+                      className={`w-12 h-12 rounded-xl border-2 flex-shrink-0 flex items-center justify-center text-xs font-medium transition-all ${
+                        !selectedTemplate ? 'border-dourado bg-white text-foreground' : 'border-border bg-background-elevated text-foreground-muted'
+                      }`}
+                    >
+                      Aa
+                    </button>
+                    {TEMPLATE_BACKGROUNDS.map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setSelectedTemplate(t.id)}
+                        className={`w-12 h-12 rounded-xl border-2 flex-shrink-0 transition-all ${
+                          selectedTemplate === t.id ? 'border-dourado scale-110 shadow-md' : 'border-transparent'
+                        }`}
+                        style={{ background: t.gradient }}
+                        title={t.label}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Type-specific fields */}
               {newPostType === 'workout' && (
