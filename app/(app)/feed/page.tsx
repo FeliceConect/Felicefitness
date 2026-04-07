@@ -158,7 +158,6 @@ export default function FeedPage() {
   const [postMetadata, setPostMetadata] = useState<Record<string, any>>({})
 
   // Comments
-  const [expandedComments, setExpandedComments] = useState<string | null>(null)
   const [comments, setComments] = useState<Record<string, Comment[]>>({})
   const [loadingComments, setLoadingComments] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
@@ -166,9 +165,6 @@ export default function FeedPage() {
 
   // Filter
   const [filterType, setFilterType] = useState('')
-
-  // Active users today (kept for potential future use)
-  const [, setActiveUsers] = useState<{ user_id: string; name: string; role: string }[]>([])
 
   // Unread feed badge + new posts banner
   const { markAsRead, details: unreadDetails, refetch: refetchUnread } = useUnreadFeed()
@@ -198,13 +194,6 @@ export default function FeedPage() {
 
     markAsRead()
     refetchUnread()
-    // Fetch active users for stories bar
-    fetch('/api/feed/active-today')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setActiveUsers(data.active_users || [])
-      })
-      .catch(() => {})
     // Fetch community stats
     fetch('/api/feed/community-stats')
       .then(res => res.json())
@@ -407,34 +396,22 @@ export default function FeedPage() {
             user_reactions: newUserReactions,
           }
         }))
+        // Also update weeklyHighlight if it matches
+        setWeeklyHighlight(prev => {
+          if (!prev || prev.id !== postId) return prev
+          const newUserReactions = data.added
+            ? [...prev.user_reactions, reactionType]
+            : prev.user_reactions.filter(r => r !== reactionType)
+          return {
+            ...prev,
+            reactions_count: data.reactions_count,
+            user_reactions: newUserReactions,
+          }
+        })
       }
     } catch (error) {
       console.error('Erro:', error)
       toast.error('Erro ao reagir')
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const toggleComments = async (postId: string) => {
-    if (expandedComments === postId) {
-      setExpandedComments(null)
-      return
-    }
-    setExpandedComments(postId)
-    setNewComment('')
-    if (!comments[postId]) {
-      setLoadingComments(postId)
-      try {
-        const res = await fetch(`/api/feed/${postId}/comments`)
-        const data = await res.json()
-        if (data.success) {
-          setComments(prev => ({ ...prev, [postId]: data.comments || [] }))
-        }
-      } catch (error) {
-        console.error('Erro:', error)
-      } finally {
-        setLoadingComments(null)
-      }
     }
   }
 
@@ -458,6 +435,10 @@ export default function FeedPage() {
         setPosts(prev => prev.map(p =>
           p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p
         ))
+        // Also update weeklyHighlight if it matches
+        setWeeklyHighlight(prev => (
+          prev && prev.id === postId ? { ...prev, comment_count: prev.comment_count + 1 } : prev
+        ))
         toast.success('Comentario enviado! +1 pt')
       } else {
         toast.error(data.error || 'Erro ao comentar')
@@ -477,6 +458,8 @@ export default function FeedPage() {
       const data = await res.json()
       if (data.success) {
         setPosts(prev => prev.filter(p => p.id !== postId))
+        // Also clear weeklyHighlight if it's the deleted post
+        setWeeklyHighlight(prev => (prev && prev.id === postId ? null : prev))
         toast.success('Post removido')
       }
     } catch (error) {
@@ -1002,7 +985,8 @@ export default function FeedPage() {
       {selectedPost && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPostId(null)}>
           <div
-            className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-3xl overflow-hidden flex flex-col animate-slide-up"
+            className="absolute inset-x-0 max-h-[88vh] bg-white rounded-t-3xl overflow-hidden flex flex-col animate-slide-up"
+            style={{ bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -1291,7 +1275,7 @@ export default function FeedPage() {
 
       {/* Create Post Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center pb-16 sm:pb-0">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center sm:pb-0" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
           <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[75vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
               <h3 className="text-lg font-semibold text-foreground">Novo Post</h3>
