@@ -25,6 +25,17 @@ interface Patient {
   created_at: string
 }
 
+interface RecordInfo {
+  program_name: string
+  assigned_super_admin_id: string | null
+  assigned_name: string | null
+}
+
+interface SuperAdmin {
+  id: string
+  name: string
+}
+
 interface Pagination {
   total: number
   page: number
@@ -43,6 +54,9 @@ export default function PacientesPage() {
   })
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [recordsMap, setRecordsMap] = useState<Record<string, RecordInfo>>({})
+  const [superAdmins, setSuperAdmins] = useState<SuperAdmin[]>([])
+  const [assignedFilter, setAssignedFilter] = useState<string>('')
 
   const fetchPatients = useCallback(async () => {
     setLoading(true)
@@ -71,6 +85,32 @@ export default function PacientesPage() {
   useEffect(() => {
     fetchPatients()
   }, [fetchPatients])
+
+  useEffect(() => {
+    async function loadExtras() {
+      try {
+        const [mapRes, admRes] = await Promise.all([
+          fetch('/api/admin/medical-records/list'),
+          fetch('/api/admin/super-admins'),
+        ])
+        const mapJson = await mapRes.json()
+        const admJson = await admRes.json()
+        if (mapJson.success) setRecordsMap(mapJson.map || {})
+        if (admJson.success) setSuperAdmins(admJson.superAdmins || [])
+      } catch (err) {
+        console.error('Erro ao carregar dados de prontuário:', err)
+      }
+    }
+    loadExtras()
+  }, [])
+
+  // Filtro client-side por superadmin responsável
+  const filteredPatients = patients.filter(p => {
+    if (!assignedFilter) return true
+    const rec = recordsMap[p.id]
+    if (assignedFilter === 'unassigned') return !rec?.assigned_super_admin_id
+    return rec?.assigned_super_admin_id === assignedFilter
+  })
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -106,6 +146,17 @@ export default function PacientesPage() {
               className="w-full pl-10 pr-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
             />
           </div>
+          <select
+            value={assignedFilter}
+            onChange={(e) => setAssignedFilter(e.target.value)}
+            className="px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
+          >
+            <option value="">Todos responsáveis</option>
+            {superAdmins.map(sa => (
+              <option key={sa.id} value={sa.id}>{sa.name}</option>
+            ))}
+            <option value="unassigned">Não atribuídos</option>
+          </select>
           <button
             type="submit"
             className="px-6 py-2.5 bg-dourado hover:bg-dourado/90 text-foreground rounded-lg transition-colors font-medium"
@@ -126,7 +177,7 @@ export default function PacientesPage() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-10 h-10 text-dourado animate-spin" />
           </div>
-        ) : patients.length === 0 ? (
+        ) : filteredPatients.length === 0 ? (
           <div className="text-center py-12 text-foreground-secondary">
             <UserCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Nenhum paciente encontrado</p>
@@ -159,7 +210,7 @@ export default function PacientesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {patients.map((patient) => (
+                  {filteredPatients.map((patient) => (
                     <tr
                       key={patient.id}
                       className="hover:bg-background-elevated cursor-pointer transition-colors"
@@ -191,7 +242,18 @@ export default function PacientesPage() {
                         {formatDate(patient.created_at)}
                       </td>
                       <td className="px-6 py-4 text-sm text-foreground-muted">
-                        {patient.objetivo || '-'}
+                        <div className="flex flex-col gap-1">
+                          <span>{patient.objetivo || '-'}</span>
+                          {recordsMap[patient.id]?.assigned_name ? (
+                            <span className="inline-flex items-center w-fit px-2 py-0.5 rounded text-[10px] font-medium bg-dourado/20 text-dourado border border-dourado/30">
+                              {recordsMap[patient.id].assigned_name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center w-fit px-2 py-0.5 rounded text-[10px] font-medium bg-background-elevated text-foreground-muted border border-border">
+                              Sem responsável
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         {patient.streak_atual ? (
@@ -233,7 +295,7 @@ export default function PacientesPage() {
 
             {/* Mobile Cards */}
             <div className="md:hidden divide-y divide-border">
-              {patients.map((patient) => (
+              {filteredPatients.map((patient) => (
                 <button
                   key={patient.id}
                   onClick={() => router.push(`/admin/pacientes/${patient.id}`)}
@@ -276,6 +338,11 @@ export default function PacientesPage() {
                       <Trophy className="w-3 h-3" />
                       Nível {patient.nivel || 1}
                     </span>
+                    {recordsMap[patient.id]?.assigned_name && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-dourado/20 text-dourado border border-dourado/30">
+                        {recordsMap[patient.id].assigned_name}
+                      </span>
+                    )}
                   </div>
                 </button>
               ))}

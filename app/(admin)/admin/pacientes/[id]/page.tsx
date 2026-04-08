@@ -26,6 +26,10 @@ import {
   TrendingDown,
   Minus,
 } from 'lucide-react'
+import { ProgramHeader } from '@/components/admin/patient/program-header'
+import { FichaVivaSection } from '@/components/admin/patient/ficha-viva-section'
+import { NewConsultationModal } from '@/components/admin/patient/new-consultation-modal'
+import { SuperadminConsultationsSection } from '@/components/admin/patient/superadmin-consultations-section'
 
 // === Types ===
 
@@ -330,6 +334,8 @@ export default function PatientDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
+  const [consultationModalOpen, setConsultationModalOpen] = useState(false)
+  const [consultationsRefresh, setConsultationsRefresh] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -471,6 +477,26 @@ export default function PatientDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Prontuário Superadmin — Programa, Ficha Viva, Consultas */}
+      <ProgramHeader
+        userId={patientId}
+        onOpenNewConsultation={() => setConsultationModalOpen(true)}
+      />
+
+      <FichaVivaSection userId={patientId} />
+
+      <SuperadminConsultationsSection
+        userId={patientId}
+        refreshKey={consultationsRefresh}
+      />
+
+      <NewConsultationModal
+        userId={patientId}
+        open={consultationModalOpen}
+        onClose={() => setConsultationModalOpen(false)}
+        onCreated={() => setConsultationsRefresh((n) => n + 1)}
+      />
 
       {/* Resumo Rápido */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
