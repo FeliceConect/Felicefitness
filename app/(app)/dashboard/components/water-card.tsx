@@ -65,7 +65,7 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
       className={cn(
-        'bg-white border rounded-2xl p-4 transition-all shadow-sm',
+        'bg-white border rounded-2xl p-4 transition-all shadow-sm overflow-hidden min-w-0',
         isComplete
           ? 'border-success/40 bg-gradient-to-br from-emerald-50 to-white'
           : 'border-border'
@@ -115,7 +115,7 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
         </div>
 
         {/* Quick Add Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           {quickAddOptions.map((option) => (
             <motion.button
               key={option.ml}
@@ -124,16 +124,16 @@ export function WaterCard({ currentMl, goalMl, onAddWater, isAdding = false }: W
               onClick={(e) => handleAddWater(option.ml, e)}
               disabled={isAdding}
               className={cn(
-                'flex-1 flex flex-col items-center justify-center',
-                'bg-background hover:bg-background-elevated rounded-xl py-2 px-1',
+                'flex-1 min-w-0 flex flex-col items-center justify-center',
+                'bg-background hover:bg-background-elevated rounded-xl py-2 px-0.5',
                 'border border-transparent hover:border-dourado/30',
                 'transition-colors duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 animatingAdd === option.ml && 'bg-dourado/10 border-dourado/40'
               )}
             >
-              <span className="text-base mb-0.5">{option.icon}</span>
-              <span className="text-xs text-foreground-secondary">+{option.label}</span>
+              <span className="text-sm mb-0.5">{option.icon}</span>
+              <span className="text-[11px] text-foreground-secondary whitespace-nowrap">+{option.label}</span>
             </motion.button>
           ))}
         </div>
