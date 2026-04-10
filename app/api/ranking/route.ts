@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+
+function getAdminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 interface ProfileRanking {
   id: string
@@ -61,11 +70,12 @@ export async function GET(request: NextRequest) {
       console.error('Erro ao chamar RPC get_user_ranking:', e)
     }
 
-    // Obter leaderboard
+    // Obter leaderboard usando admin client para bypass RLS
+    const supabaseAdmin = getAdminClient()
     let leaderboardData: LeaderboardEntry[] = []
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: leaderboard, error: leaderboardError } = await (supabase as any)
+      const { data: leaderboard, error: leaderboardError } = await (supabaseAdmin as any)
         .rpc('get_ranking_leaderboard', {
           p_limit: limit,
           p_offset: offset
@@ -73,20 +83,20 @@ export async function GET(request: NextRequest) {
 
       if (leaderboardError) {
         console.error('Erro ao obter leaderboard:', leaderboardError)
-        // Fallback: buscar direto da tabela
-        const { data: fallbackData, error: fallbackError } = await supabase
+        // Fallback: buscar direto da tabela (ranking_visivel is null or true — null conta como visível)
+        const { data: fallbackData, error: fallbackError } = await supabaseAdmin
           .from('fitness_profiles')
-          .select('id, xp_total, nivel, streak_atual, apelido_ranking')
+          .select('id, xp_total, nivel, streak_atual, apelido_ranking, ranking_visivel, display_name, nome')
           .gt('xp_total', 0)
-          .eq('ranking_visivel', true)
+          .or('ranking_visivel.is.null,ranking_visivel.eq.true')
           .order('xp_total', { ascending: false })
           .range(offset, offset + limit - 1)
 
         if (fallbackError) throw fallbackError
 
-        leaderboardData = ((fallbackData || []) as ProfileRanking[]).map((p, index) => ({
+        leaderboardData = ((fallbackData || []) as (ProfileRanking & { display_name?: string; nome?: string })[]).map((p, index) => ({
           posicao: offset + index + 1,
-          apelido: p.apelido_ranking || `Atleta #${p.id.substring(0, 4)}`,
+          apelido: p.apelido_ranking || p.display_name || p.nome?.split(' ')[0] || `Atleta #${p.id.substring(0, 4)}`,
           xp_total: p.xp_total || 0,
           nivel: p.nivel || 1,
           streak_atual: p.streak_atual || 0,
