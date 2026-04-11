@@ -62,8 +62,6 @@ function AnalysisContent() {
   const { addMeal } = useDailyMeals()
 
   const initialType = (searchParams.get('tipo') as MealType) || 'almoco'
-  const planMealId = searchParams.get('planMealId') || null
-  const existingMealId = searchParams.get('mealId') || null
 
   const [selectedType, setSelectedType] = useState<MealType>(initialType)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
