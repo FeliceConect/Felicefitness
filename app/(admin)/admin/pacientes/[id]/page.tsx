@@ -26,6 +26,7 @@ import {
   TrendingDown,
   Minus,
 } from 'lucide-react'
+import { useUserRole } from '@/hooks/use-user-role'
 import { ProgramHeader } from '@/components/admin/patient/program-header'
 import { FichaVivaSection } from '@/components/admin/patient/ficha-viva-section'
 import { NewConsultationModal } from '@/components/admin/patient/new-consultation-modal'
@@ -329,6 +330,10 @@ export default function PatientDetailPage() {
   const router = useRouter()
   const params = useParams()
   const patientId = params.id as string
+  const { role, adminType } = useUserRole()
+
+  // secretary não vê dados clínicos/corporais
+  const isSecretary = role === 'admin' && adminType === 'secretary'
 
   const [data, setData] = useState<PatientData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -478,25 +483,29 @@ export default function PatientDetailPage() {
         </div>
       </div>
 
-      {/* Prontuário Superadmin — Programa, Ficha Viva, Consultas */}
-      <ProgramHeader
-        userId={patientId}
-        onOpenNewConsultation={() => setConsultationModalOpen(true)}
-      />
+      {/* Prontuário Superadmin — Programa, Ficha Viva, Consultas (oculto para secretary) */}
+      {!isSecretary && (
+        <>
+          <ProgramHeader
+            userId={patientId}
+            onOpenNewConsultation={() => setConsultationModalOpen(true)}
+          />
 
-      <FichaVivaSection userId={patientId} />
+          <FichaVivaSection userId={patientId} />
 
-      <SuperadminConsultationsSection
-        userId={patientId}
-        refreshKey={consultationsRefresh}
-      />
+          <SuperadminConsultationsSection
+            userId={patientId}
+            refreshKey={consultationsRefresh}
+          />
 
-      <NewConsultationModal
-        userId={patientId}
-        open={consultationModalOpen}
-        onClose={() => setConsultationModalOpen(false)}
-        onCreated={() => setConsultationsRefresh((n) => n + 1)}
-      />
+          <NewConsultationModal
+            userId={patientId}
+            open={consultationModalOpen}
+            onClose={() => setConsultationModalOpen(false)}
+            onCreated={() => setConsultationsRefresh((n) => n + 1)}
+          />
+        </>
+      )}
 
       {/* Resumo Rápido */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -759,8 +768,8 @@ export default function PatientDetailPage() {
         )}
       </Section>
 
-      {/* Corpo & Evolução */}
-      <Section title="Corpo & Evolução" icon={Scale}>
+      {/* Corpo & Evolução (oculto para secretary) */}
+      {!isSecretary && <Section title="Corpo & Evolução" icon={Scale}>
         {bodyComposition.length > 0 ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -860,7 +869,7 @@ export default function PatientDetailPage() {
             </div>
           </div>
         )}
-      </Section>
+      </Section>}
 
       {/* Hidratação & Sono */}
       <Section title="Hidratação & Sono" icon={Droplets}>
@@ -936,8 +945,8 @@ export default function PatientDetailPage() {
         )}
       </Section>
 
-      {/* Prontuário */}
-      <Section title="Prontuário (Notas Profissionais)" icon={FileText}>
+      {/* Prontuário (oculto para secretary) */}
+      {!isSecretary && <Section title="Prontuário (Notas Profissionais)" icon={FileText}>
         {notes.length > 0 ? (
           notesByProfType && Object.keys(notesByProfType).length > 0 ? (
             <div className="space-y-6">
@@ -1032,7 +1041,7 @@ export default function PatientDetailPage() {
         ) : (
           <p className="text-foreground-secondary text-sm">Nenhuma nota registrada</p>
         )}
-      </Section>
+      </Section>}
 
       {/* Ranking & Pontuação */}
       <Section title="Ranking & Pontuação" icon={Trophy}>

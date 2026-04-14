@@ -29,7 +29,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
-  const { role, loading, isAdmin, email } = useUserRole()
+  const { role, adminType, loading, isAdmin, email } = useUserRole()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -66,19 +66,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     : email === 'marinella.guimaraes@gmail.com' ? 'Marinella'
     : email?.split('@')[0] || 'Admin'
 
-  const menuItems = [
-    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda' },
-    { href: '/admin/pacientes', icon: UserSearch, label: 'Pacientes' },
-    { href: '/admin/users', icon: Users, label: 'Usuários' },
-    { href: '/admin/professionals', icon: UserCog, label: 'Profissionais' },
-    { href: '/admin/assignments', icon: Link2, label: 'Atribuições' },
-    { href: '/admin/rankings', icon: Trophy, label: 'Rankings' },
-    { href: '/admin/formularios', icon: ClipboardList, label: 'Formulários' },
-    { href: '/admin/prontuario', icon: FileText, label: 'Prontuário' },
-    { href: '/admin/costs', icon: DollarSign, label: 'Custos API' },
-    { href: '/admin/settings', icon: Settings, label: 'Configurações' },
+  // Menu completo — filtrado por admin_type (secretary/support)
+  // super_admin e admin sem admin_type veem tudo
+  const allMenuItems = [
+    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', access: 'all' },
+    { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda', access: 'all' },
+    { href: '/admin/pacientes', icon: UserSearch, label: 'Pacientes', access: 'all' },
+    { href: '/admin/users', icon: Users, label: 'Usuários', access: 'all' },
+    { href: '/admin/professionals', icon: UserCog, label: 'Profissionais', access: 'all' },
+    { href: '/admin/assignments', icon: Link2, label: 'Atribuições', access: 'all' },
+    { href: '/admin/rankings', icon: Trophy, label: 'Rankings', access: 'super_admin' },
+    { href: '/admin/formularios', icon: ClipboardList, label: 'Formulários', access: 'all' },
+    { href: '/admin/prontuario', icon: FileText, label: 'Prontuário', access: 'super_admin' },
+    { href: '/admin/costs', icon: DollarSign, label: 'Custos API', access: 'super_admin' },
+    { href: '/admin/settings', icon: Settings, label: 'Configurações', access: 'super_admin' },
   ]
+
+  const menuItems = allMenuItems.filter(item => {
+    // super_admin vê tudo
+    if (role === 'super_admin') return true
+    // admin sem admin_type (legado) vê tudo
+    if (!adminType) return true
+    // secretary e support veem apenas itens com access 'all'
+    return item.access === 'all'
+  })
 
   return (
     <div className="min-h-screen bg-background">

@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email, password, nome, role } = body
+    const { email, password, nome, role, admin_type } = body
 
     if (!email || !password) {
       return NextResponse.json(
@@ -208,6 +208,16 @@ export async function POST(request: NextRequest) {
     if (!validRoles.includes(userRole)) {
       return NextResponse.json(
         { success: false, error: 'Role inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Validar admin_type (somente para role 'admin')
+    const validAdminTypes = ['secretary', 'support', null]
+    const adminType = userRole === 'admin' ? (admin_type || null) : null
+    if (adminType && !validAdminTypes.includes(adminType)) {
+      return NextResponse.json(
+        { success: false, error: 'Tipo de admin inválido' },
         { status: 400 }
       )
     }
@@ -284,6 +294,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Se admin com admin_type, salvar o admin_type no perfil
+    if (adminType) {
+      await supabaseAdmin
+        .from('fitness_profiles')
+        .update({ admin_type: adminType })
+        .eq('id', newUser.user.id)
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Usuário criado com sucesso',
@@ -291,7 +309,8 @@ export async function POST(request: NextRequest) {
         id: newUser.user.id,
         email,
         nome: userName,
-        role: userRole
+        role: userRole,
+        admin_type: adminType
       }
     })
 
@@ -333,7 +352,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, role: newRole } = body
+    const { userId, role: newRole, admin_type } = body
 
     if (!userId || !newRole) {
       return NextResponse.json(
@@ -371,9 +390,17 @@ export async function PATCH(request: NextRequest) {
       }
     )
 
+    // Se mudar para admin, salvar admin_type; se sair de admin, limpar
+    const updateData: Record<string, unknown> = { role: newRole }
+    if (newRole === 'admin') {
+      updateData.admin_type = admin_type || null
+    } else {
+      updateData.admin_type = null
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from('fitness_profiles')
-      .update({ role: newRole })
+      .update(updateData)
       .eq('id', userId)
 
     if (updateError) {

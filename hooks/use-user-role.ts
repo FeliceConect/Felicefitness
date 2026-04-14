@@ -4,8 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import type { UserRole } from '@/lib/admin/types'
 import { isAdmin, isProfessional, hasPermission } from '@/lib/admin/types'
 
+export type AdminType = 'secretary' | 'support' | null
+
 interface UseUserRoleReturn {
   role: UserRole
+  adminType: AdminType
   userId: string | null
   email: string | null
   loading: boolean
@@ -19,6 +22,7 @@ interface UseUserRoleReturn {
 
 export function useUserRole(): UseUserRoleReturn {
   const [role, setRole] = useState<UserRole>('client')
+  const [adminType, setAdminType] = useState<AdminType>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -34,11 +38,13 @@ export function useUserRole(): UseUserRoleReturn {
 
       if (data.success) {
         setRole(data.role || 'client')
+        setAdminType(data.admin_type || null)
         setUserId(data.user_id || null)
         setEmail(data.email || null)
       } else {
         // Se não autenticado, define como client (padrão)
         setRole('client')
+        setAdminType(null)
         setUserId(null)
         setEmail(null)
       }
@@ -63,6 +69,7 @@ export function useUserRole(): UseUserRoleReturn {
 
   return {
     role,
+    adminType,
     userId,
     email,
     loading,

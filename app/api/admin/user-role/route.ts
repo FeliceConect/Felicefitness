@@ -19,7 +19,7 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile, error: profileError } = await (supabase as any)
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
@@ -28,6 +28,7 @@ export async function GET() {
       return NextResponse.json({
         success: true,
         role: 'client' as UserRole,
+        admin_type: null,
         user_id: user.id,
         email: user.email
       })
@@ -39,6 +40,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       role,
+      admin_type: profile?.admin_type || null,
       user_id: user.id,
       email: user.email
     })

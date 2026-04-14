@@ -808,7 +808,7 @@ export default function ChatPage() {
           />
 
           {/* Sheet */}
-          <div className="relative w-full max-w-lg max-h-[75vh] bg-white rounded-t-3xl border-t border-border animate-slide-up flex flex-col">
+          <div className="relative w-full max-w-lg max-h-[85vh] bg-white rounded-t-3xl border-t border-border animate-slide-up flex flex-col">
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
               <div className="w-10 h-1 rounded-full bg-border" />
@@ -829,7 +829,7 @@ export default function ChatPage() {
             </div>
 
             {/* Content */}
-            <div className="px-5 pb-8 overflow-y-auto flex-1">
+            <div className="px-5 pb-24 overflow-y-auto flex-1">
               {loadingProfessionals ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 text-dourado animate-spin" />

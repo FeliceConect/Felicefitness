@@ -39,8 +39,8 @@ export function MealsCard({
   // Encontrar próxima refeição pendente
   const nextMealIndex = meals.findIndex(m => m.status === 'pendente')
 
-  const handleMealClick = (tipo: string) => {
-    router.push(`/alimentacao/refeicao/nova?tipo=${tipo}`)
+  const handleMealClick = () => {
+    router.push('/alimentacao')
   }
 
   return (
@@ -91,7 +91,7 @@ export function MealsCard({
           return (
             <motion.button
               key={meal.tipo}
-              onClick={() => handleMealClick(meal.tipo)}
+              onClick={handleMealClick}
               className={cn(
                 'w-full flex items-center justify-between py-1.5 px-2 rounded-lg',
                 'transition-colors duration-200',

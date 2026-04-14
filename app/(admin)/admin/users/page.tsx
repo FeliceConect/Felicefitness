@@ -27,11 +27,17 @@ interface User {
   nome: string
   email: string
   role: UserRole | null
+  admin_type?: string | null
   created_at: string
   avatar_url?: string
   is_active?: boolean
   deactivated_at?: string
   professionals?: Array<{ type: string; name: string }>
+}
+
+const adminTypeLabels: Record<string, string> = {
+  secretary: 'Secretaria',
+  support: 'Suporte',
 }
 
 interface Pagination {
@@ -64,7 +70,8 @@ export default function UsersPage() {
     nome: '',
     email: '',
     password: '',
-    role: 'client' as UserRole
+    role: 'client' as UserRole,
+    admin_type: '' as string
   })
 
   // Estados para ações de usuário
@@ -131,7 +138,7 @@ export default function UsersPage() {
 
       if (data.success) {
         // Limpar form e fechar modal
-        setNewUser({ nome: '', email: '', password: '', role: 'client' })
+        setNewUser({ nome: '', email: '', password: '', role: 'client', admin_type: '' })
         setShowCreateModal(false)
         setShowPassword(false)
         // Recarregar lista
@@ -411,10 +418,17 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
-                          <Shield className="w-3 h-3" />
-                          {roleLabels[user.role || 'client']}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
+                            <Shield className="w-3 h-3" />
+                            {roleLabels[user.role || 'client']}
+                          </span>
+                          {user.role === 'admin' && user.admin_type && (
+                            <span className="px-2 py-0.5 rounded text-xs bg-dourado/15 text-dourado border border-dourado/30">
+                              {adminTypeLabels[user.admin_type] || user.admin_type}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         {user.professionals && user.professionals.length > 0 ? (
@@ -492,6 +506,11 @@ export default function UsersPage() {
                       <Shield className="w-3 h-3" />
                       {roleLabels[user.role || 'client']}
                     </span>
+                    {user.role === 'admin' && user.admin_type && (
+                      <span className="px-2 py-0.5 rounded text-xs bg-dourado/15 text-dourado border border-dourado/30">
+                        {adminTypeLabels[user.admin_type] || user.admin_type}
+                      </span>
+                    )}
                     {user.professionals && user.professionals.map((prof, idx) => (
                       <span
                         key={idx}
@@ -749,7 +768,7 @@ export default function UsersPage() {
               <button
                 onClick={() => {
                   setShowCreateModal(false)
-                  setNewUser({ nome: '', email: '', password: '', role: 'client' })
+                  setNewUser({ nome: '', email: '', password: '', role: 'client', admin_type: '' })
                   setShowPassword(false)
                 }}
                 className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
@@ -832,13 +851,38 @@ export default function UsersPage() {
                 </select>
               </div>
 
+              {/* Admin Type (only when role is admin) */}
+              {newUser.role === 'admin' && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">
+                    Tipo de Admin
+                  </label>
+                  <select
+                    value={newUser.admin_type}
+                    onChange={(e) => setNewUser({ ...newUser, admin_type: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                  >
+                    <option value="">Selecione o tipo</option>
+                    <option value="secretary">Secretaria</option>
+                    <option value="support">Suporte (Tec. Enfermagem / Esteticista)</option>
+                  </select>
+                  <p className="text-xs text-foreground-muted mt-1">
+                    {newUser.admin_type === 'secretary'
+                      ? 'Cadastro, agenda, comunicacao — sem acesso a dados clinicos'
+                      : newUser.admin_type === 'support'
+                        ? 'Tudo da secretaria + antropometria, bioimpedancia e fotos'
+                        : 'Selecione o tipo de acesso deste administrador'}
+                  </p>
+                </div>
+              )}
+
               {/* Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false)
-                    setNewUser({ nome: '', email: '', password: '', role: 'client' })
+                    setNewUser({ nome: '', email: '', password: '', role: 'client', admin_type: '' })
                     setShowPassword(false)
                   }}
                   className="flex-1 py-2.5 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
