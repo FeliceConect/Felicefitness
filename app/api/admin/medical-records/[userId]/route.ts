@@ -108,12 +108,32 @@ export async function PUT(
     }
     allowed.updated_by = user.id
 
-    const { data: record, error } = await supabaseAdmin
+    // Tentar update com todos os campos; se falhar por coluna inexistente, retry sem ela
+    let record = null
+    let error = null
+
+    const result1 = await supabaseAdmin
       .from('fitness_medical_records')
       .update(allowed)
       .eq('user_id', userId)
       .select()
       .single()
+
+    if (result1.error && result1.error.message?.includes('clinical_impressions')) {
+      // Coluna clinical_impressions pode não existir ainda — retry sem ela
+      delete allowed.clinical_impressions
+      const result2 = await supabaseAdmin
+        .from('fitness_medical_records')
+        .update(allowed)
+        .eq('user_id', userId)
+        .select()
+        .single()
+      record = result2.data
+      error = result2.error
+    } else {
+      record = result1.data
+      error = result1.error
+    }
 
     if (error) {
       console.error('Erro ao atualizar ficha:', error)
