@@ -58,6 +58,7 @@ export default function AssignmentsPage() {
   const [loading, setLoading] = useState(true)
   const [professionalFilter, setProfessionalFilter] = useState('')
   const [activeFilter, setActiveFilter] = useState<string>('true')
+  const [clientSearch, setClientSearch] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set())
@@ -300,9 +301,18 @@ export default function AssignmentsPage() {
       map.get(clientId)!.assignments.push(a)
     })
     // Ordenar por nome do cliente
-    return Array.from(map.values()).sort((a, b) =>
+    let result = Array.from(map.values()).sort((a, b) =>
       (a.client.nome || '').localeCompare(b.client.nome || '')
     )
+    // Filtrar por busca de nome
+    if (clientSearch.trim()) {
+      const search = clientSearch.trim().toLowerCase()
+      result = result.filter(g =>
+        (g.client.nome || '').toLowerCase().includes(search) ||
+        (g.client.email || '').toLowerCase().includes(search)
+      )
+    }
+    return result
   })()
 
   // Profissionais já atribuídos ao cliente selecionado
@@ -356,6 +366,17 @@ export default function AssignmentsPage() {
             <option value="true">Ativas</option>
             <option value="false">Inativas</option>
           </select>
+
+          <div className="relative flex-1 sm:flex-none sm:min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-secondary" />
+            <input
+              type="text"
+              value={clientSearch}
+              onChange={(e) => setClientSearch(e.target.value)}
+              placeholder="Buscar paciente..."
+              className="w-full pl-9 pr-4 py-2 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+            />
+          </div>
         </div>
       </div>
 
@@ -377,7 +398,7 @@ export default function AssignmentsPage() {
             </button>
           </div>
         ) : (
-          groupedByClient.map((group) => {
+          groupedByClient.map((group, index) => {
             const isExpanded = expandedClients.has(group.client.id)
             const activeAssignments = group.assignments.filter(a => a.is_active)
             const inactiveAssignments = group.assignments.filter(a => !a.is_active)
@@ -390,6 +411,9 @@ export default function AssignmentsPage() {
                   className="w-full flex items-center justify-between p-4 hover:bg-background-elevated transition-colors"
                 >
                   <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold text-foreground-muted w-6 text-right flex-shrink-0">
+                      {index + 1}
+                    </span>
                     <div className="w-11 h-11 rounded-full bg-dourado/20 flex items-center justify-center flex-shrink-0">
                       <span className="text-dourado font-medium">
                         {(group.client.nome || '?').charAt(0).toUpperCase()}

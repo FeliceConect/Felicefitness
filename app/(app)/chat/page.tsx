@@ -487,7 +487,7 @@ export default function ChatPage() {
     const TypeIcon = professionalTypeIcon(activeConversation.participant.type)
 
     return (
-      <div className="flex flex-col h-[calc(100dvh-8rem)] bg-background">
+      <div className="flex flex-col bg-background" style={{ height: 'calc(100dvh - 56px - 80px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))' }}>
         {/* Thread header */}
         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-border">
           <div className="flex items-center gap-3 px-4 py-3">

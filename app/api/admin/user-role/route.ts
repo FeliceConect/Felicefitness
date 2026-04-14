@@ -15,11 +15,11 @@ export async function GET() {
       )
     }
 
-    // Buscar perfil com role
+    // Buscar perfil completo (select * é seguro mesmo se admin_type não existir)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile, error: profileError } = await (supabase as any)
       .from('fitness_profiles')
-      .select('role, admin_type')
+      .select('*')
       .eq('id', user.id)
       .single()
 

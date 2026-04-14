@@ -168,9 +168,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo
-    if (!['nutritionist', 'trainer', 'coach', 'physiotherapist'].includes(type)) {
+    if (!['nutritionist', 'trainer', 'coach', 'physiotherapist', 'super_admin'].includes(type)) {
       return NextResponse.json(
-        { success: false, error: 'Tipo inválido. Use "nutritionist", "trainer", "coach" ou "physiotherapist"' },
+        { success: false, error: 'Tipo inválido' },
         { status: 400 }
       )
     }
@@ -404,7 +404,13 @@ export async function DELETE(request: NextRequest) {
       .eq('id', professionalId)
       .single()
 
-    // Deletar profissional (as atribuições serão deletadas em cascata)
+    // Deletar appointments que referenciam este profissional (FK sem CASCADE, coluna NOT NULL)
+    await supabaseAdmin
+      .from('fitness_appointments')
+      .delete()
+      .eq('professional_id', professionalId)
+
+    // Deletar profissional (as demais atribuições serão deletadas em cascata)
     const { error: deleteError } = await supabaseAdmin
       .from('fitness_professionals')
       .delete()

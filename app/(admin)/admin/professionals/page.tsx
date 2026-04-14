@@ -61,7 +61,7 @@ export default function ProfessionalsPage() {
   // Form state
   const [formData, setFormData] = useState({
     userId: '',
-    type: 'trainer' as 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist',
+    type: 'trainer' as 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist' | 'super_admin',
     registration: '',
     specialty: '',
     bio: '',
@@ -93,11 +93,13 @@ export default function ProfessionalsPage() {
     fetchProfessionals()
   }, [fetchProfessionals])
 
-  const fetchAvailableUsers = async () => {
+  const fetchAvailableUsers = async (typeOverride?: string) => {
     setLoadingUsers(true)
     try {
-      // Buscar usuários que não são profissionais ainda (exclui quem já está cadastrado como profissional)
-      const response = await fetch('/api/admin/users?role=not_admin&excludeProfessionals=true&limit=100')
+      // Se tipo Líder, buscar superadmins; senão, buscar users que não são admin/profissional
+      const currentType = typeOverride || formData.type
+      const roleParam = currentType === 'super_admin' ? 'super_admin' : 'not_admin'
+      const response = await fetch(`/api/admin/users?role=${roleParam}&excludeProfessionals=true&limit=100`)
       const data = await response.json()
 
       if (data.success) {
@@ -241,7 +243,7 @@ export default function ProfessionalsPage() {
 
   const openAddModal = () => {
     resetForm()
-    fetchAvailableUsers()
+    fetchAvailableUsers('trainer')
     setShowAddModal(true)
   }
 
@@ -270,6 +272,7 @@ export default function ProfessionalsPage() {
       case 'nutritionist': return 'Nutricionista'
       case 'coach': return 'Coach'
       case 'physiotherapist': return 'Fisioterapeuta'
+      case 'super_admin': return 'Líder'
       default: return 'Personal Trainer'
     }
   }
@@ -279,6 +282,7 @@ export default function ProfessionalsPage() {
       case 'nutritionist': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'coach': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
       case 'physiotherapist': return 'bg-teal-500/20 text-teal-400 border-teal-500/30'
+      case 'super_admin': return 'bg-dourado/20 text-dourado border-dourado/30'
       default: return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
     }
   }
@@ -404,6 +408,7 @@ export default function ProfessionalsPage() {
             <option value="nutritionist">Nutricionistas</option>
             <option value="coach">Coaches</option>
             <option value="physiotherapist">Fisioterapeutas</option>
+            <option value="super_admin">Líderes</option>
           </select>
         </div>
       </div>
@@ -538,16 +543,22 @@ export default function ProfessionalsPage() {
               {/* Tipo */}
               <div>
                 <label className="block text-sm text-foreground-secondary mb-2">Tipo de Profissional</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {([
                     { value: 'trainer' as const, label: 'Personal Trainer', emoji: '💪', borderColor: 'border-blue-500', bgColor: 'bg-blue-500/10', textColor: 'text-blue-400' },
                     { value: 'nutritionist' as const, label: 'Nutricionista', emoji: '🥗', borderColor: 'border-green-500', bgColor: 'bg-green-500/10', textColor: 'text-green-400' },
                     { value: 'coach' as const, label: 'Coach', emoji: '🧠', borderColor: 'border-yellow-500', bgColor: 'bg-yellow-500/10', textColor: 'text-yellow-400' },
                     { value: 'physiotherapist' as const, label: 'Fisioterapeuta', emoji: '🦴', borderColor: 'border-teal-500', bgColor: 'bg-teal-500/10', textColor: 'text-teal-400' },
+                    { value: 'super_admin' as const, label: 'Líder', emoji: '👑', borderColor: 'border-dourado', bgColor: 'bg-dourado/10', textColor: 'text-dourado' },
                   ]).map((opt) => (
                     <button
                       key={opt.value}
-                      onClick={() => setFormData(prev => ({ ...prev, type: opt.value }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, type: opt.value, userId: '' }))
+                        setSearchUser('')
+                        // Recarregar lista de usuários quando tipo muda (Líder busca superadmins)
+                        fetchAvailableUsers(opt.value)
+                      }}
                       className={`p-3 rounded-lg border transition-colors ${
                         formData.type === opt.value
                           ? `${opt.borderColor} ${opt.bgColor}`

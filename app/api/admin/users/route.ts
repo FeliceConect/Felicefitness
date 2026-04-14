@@ -521,6 +521,22 @@ export async function DELETE(request: NextRequest) {
         })
       }
 
+      if (action === 'hard_delete') {
+        // Profile já foi deletado (tentativa anterior parcial) — deletar do auth
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+        if (deleteError) {
+          console.error('Erro ao deletar usuário órfão do auth:', deleteError)
+          return NextResponse.json(
+            { success: false, error: `Erro ao deletar: ${deleteError.message}` },
+            { status: 500 }
+          )
+        }
+        return NextResponse.json({
+          success: true,
+          message: `Usuário ${authUser.user.email} excluído permanentemente`
+        })
+      }
+
       return NextResponse.json(
         { success: false, error: 'Usuário não encontrado no sistema' },
         { status: 404 }
@@ -545,7 +561,50 @@ export async function DELETE(request: NextRequest) {
 
     if (action === 'hard_delete') {
       // Hard delete - remove permanentemente
-      // 1. Deletar dados relacionados (FK constraints podem bloquear auth.admin.deleteUser)
+      // Estratégia: limpar TUDO que referencia este user (auth.users ou fitness_profiles)
+      // antes de deletar o profile e o auth user.
+
+      // Helper para executar query ignorando erros (tabela pode não existir)
+      const safeDelete = async (table: string, column: string) => {
+        try { await supabaseAdmin.from(table).delete().eq(column, userId) } catch { /* ignorar */ }
+      }
+      const safeNullify = async (table: string, column: string) => {
+        try { await supabaseAdmin.from(table).update({ [column]: null }).eq(column, userId) } catch { /* ignorar */ }
+      }
+
+      // 1. Deletar profissional se existir (e seus appointments/notes vinculados)
+      try {
+        const { data: prof } = await supabaseAdmin
+          .from('fitness_professionals')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if (prof) {
+          await safeDelete('fitness_appointments', 'professional_id')
+          await safeDelete('fitness_professional_notes', 'professional_id')
+          await safeDelete('fitness_client_assignments', 'professional_id')
+          await supabaseAdmin.from('fitness_professionals').delete().eq('id', prof.id)
+        }
+      } catch { /* ignorar */ }
+
+      // 2. Deletar appointments onde é paciente ou criador
+      await safeDelete('fitness_appointments', 'patient_id')
+      await safeNullify('fitness_appointments', 'created_by')
+
+      // 3. Nullificar referências em tabelas que usam SET NULL ou sem CASCADE
+      await safeNullify('fitness_medical_records', 'updated_by')
+      await safeNullify('fitness_medical_records', 'assigned_super_admin_id')
+      await safeNullify('fitness_medical_consultations', 'created_by')
+      await safeNullify('fitness_rankings', 'created_by')
+      await safeNullify('fitness_point_transactions', 'awarded_by')
+      await safeNullify('fitness_broadcast_messages', 'sender_id')
+
+      // 4. Deletar community posts (reactions/comments cascade via post_id)
+      await safeDelete('fitness_community_reactions', 'user_id')
+      await safeDelete('fitness_community_comments', 'user_id')
+      await safeDelete('fitness_community_posts', 'user_id')
+
+      // 5. Deletar todas as tabelas com user_id referenciando auth.users ou fitness_profiles
       const tablesToClean = [
         'fitness_meal_items',
         'fitness_meal_plan_adherence',
@@ -554,28 +613,52 @@ export async function DELETE(request: NextRequest) {
         'fitness_meals',
         'fitness_workouts',
         'fitness_user_foods',
-        'user_stats',
-        'user_achievements',
         'fitness_push_subscriptions',
         'fitness_notifications',
+        'fitness_activities',
+        'fitness_sleep_logs',
+        'fitness_body_composition',
+        'fitness_client_assignments',
+        'fitness_professional_notes',
+        'fitness_chat_messages',
+        'fitness_chat_conversations',
+        'fitness_ranking_participants',
+        'fitness_point_transactions',
+        'fitness_challenge_participants',
+        'fitness_form_responses',
+        'fitness_form_assignments',
+        'fitness_broadcast_recipients',
+        'fitness_medical_consultations',
+        'fitness_medical_records',
+        'fitness_onboarding',
+        'fitness_terms_acceptance',
+        'user_stats',
+        'user_achievements',
+        'user_insights',
+        'user_health_reports',
       ]
 
       for (const table of tablesToClean) {
-        try {
-          await supabaseAdmin.from(table).delete().eq('user_id', userId)
-        } catch {
-          // Tabela pode não existir, ignorar
-        }
+        await safeDelete(table, 'user_id')
       }
 
-      // 2. Deletar profile
+      // 6. Tabelas com client_id em vez de user_id
+      await safeDelete('fitness_form_assignments', 'client_id')
+      await safeDelete('fitness_form_responses', 'client_id')
+      await safeDelete('fitness_chat_conversations', 'client_id')
+      await safeDelete('fitness_client_assignments', 'client_id')
+      await safeDelete('fitness_nutrition_plans', 'client_id')
+      await safeDelete('fitness_training_programs', 'client_id')
+      await safeDelete('fitness_meal_plan_adherence', 'client_id')
+
+      // 4. Deletar profile
       try {
         await supabaseAdmin.from('fitness_profiles').delete().eq('id', userId)
       } catch {
         // Ignorar se falhar
       }
 
-      // 3. Deletar do auth
+      // 5. Deletar do auth
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
       if (deleteError) {
