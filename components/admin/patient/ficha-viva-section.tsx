@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { ClipboardList, ChevronDown, ChevronUp, Save, Heart, Activity, AlertTriangle, Target } from 'lucide-react'
+import { ClipboardList, ChevronDown, ChevronUp, Save, Heart, Activity, AlertTriangle, Target, Stethoscope } from 'lucide-react'
 
 interface MedicalRecord {
   id: string
@@ -59,6 +59,7 @@ export function FichaVivaSection({ userId }: FichaVivaSectionProps) {
   const [health, setHealth] = useState<JsonObj>({})
   const [lifestyle, setLifestyle] = useState<JsonObj>({})
   const [difficulties, setDifficulties] = useState<JsonObj>({})
+  const [clinicalImpressions, setClinicalImpressions] = useState<JsonObj>({})
 
   useEffect(() => {
     async function load() {
@@ -72,6 +73,7 @@ export function FichaVivaSection({ userId }: FichaVivaSectionProps) {
           setHealth((json.record.health_history || {}) as JsonObj)
           setLifestyle((json.record.lifestyle || {}) as JsonObj)
           setDifficulties((json.record.difficulties || {}) as JsonObj)
+          setClinicalImpressions((json.record.clinical_impressions || {}) as JsonObj)
         }
       } catch (err) {
         console.error('Erro ao carregar ficha:', err)
@@ -89,6 +91,7 @@ export function FichaVivaSection({ userId }: FichaVivaSectionProps) {
   const setHlt = setField(setHealth)
   const setLif = setField(setLifestyle)
   const setDif = setField(setDifficulties)
+  const setCli = setField(setClinicalImpressions)
 
   const save = async () => {
     setSaving(true)
@@ -101,6 +104,7 @@ export function FichaVivaSection({ userId }: FichaVivaSectionProps) {
           health_history: health,
           lifestyle,
           difficulties,
+          clinical_impressions: clinicalImpressions,
         }),
       })
       const json = await res.json()
@@ -172,6 +176,10 @@ export function FichaVivaSection({ userId }: FichaVivaSectionProps) {
                 <TextArea label="Maiores dificuldades percebidas pelo paciente" value={difficulties.main || ''} onChange={setDif('main')} />
                 <TextArea label="Gatilhos emocionais (ansiedade → comida?)" value={difficulties.triggers || ''} onChange={setDif('triggers')} />
                 <TextArea label="Rede de apoio familiar" value={difficulties.support || ''} onChange={setDif('support')} rows={2} />
+              </SubBlock>
+
+              <SubBlock title="Impressões Clínicas e Observações" icon={Stethoscope}>
+                <TextArea label="Impressões gerais do profissional sobre o paciente" value={clinicalImpressions.general || ''} onChange={setCli('general')} rows={20} />
               </SubBlock>
 
               <div className="flex justify-end">

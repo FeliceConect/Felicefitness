@@ -46,7 +46,7 @@ export const APPOINTMENT_STATUS_COLORS: Record<AppointmentStatus, string> = {
 // TIPO DO PROFISSIONAL
 // ============================================
 
-export type ProfessionalType = 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist' | 'super_admin'
+export type ProfessionalType = 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist' | 'super_admin' | 'medico_integrativo'
 
 export const PROFESSIONAL_TYPE_LABELS: Record<ProfessionalType, string> = {
   nutritionist: 'Nutricionista',
@@ -54,6 +54,7 @@ export const PROFESSIONAL_TYPE_LABELS: Record<ProfessionalType, string> = {
   coach: 'Coach',
   physiotherapist: 'Fisioterapeuta',
   super_admin: 'Líder',
+  medico_integrativo: 'Médico Integrativo',
 }
 
 // ============================================

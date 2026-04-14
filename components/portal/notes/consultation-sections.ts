@@ -34,11 +34,19 @@ const PHYSIO_SECTIONS: ConsultationSection[] = [
   { key: 'conduta', label: 'Conduta Terapêutica', placeholder: 'Plano de tratamento, técnicas, exercícios, frequência, retorno...' },
 ]
 
+const MEDICO_INTEGRATIVO_SECTIONS: ConsultationSection[] = [
+  { key: 'anamnese', label: 'Anamnese / Queixa Principal', placeholder: 'Motivo da consulta, queixa principal, histórico da doença atual, antecedentes pessoais e familiares...' },
+  { key: 'exames', label: 'Exame Físico / Exames Complementares', placeholder: 'Sinais vitais (PA, FC, FR, Temp), achados do exame físico, resultados de exames laboratoriais e de imagem...' },
+  { key: 'diagnostico', label: 'Hipótese Diagnóstica', placeholder: 'Diagnóstico integrativo, correlações entre achados clínicos, laboratoriais e de estilo de vida...' },
+  { key: 'conduta', label: 'Conduta / Prescrição', placeholder: 'Tratamentos prescritos, suplementação, fitoterápicos, encaminhamentos, orientações, retorno...' },
+]
+
 export function getSectionsForType(professionalType?: string): ConsultationSection[] {
   switch (professionalType) {
     case 'coach': return COACH_SECTIONS
     case 'trainer': return TRAINER_SECTIONS
     case 'physiotherapist': return PHYSIO_SECTIONS
+    case 'medico_integrativo': return MEDICO_INTEGRATIVO_SECTIONS
     case 'nutritionist':
     default: return NUTRI_SECTIONS
   }
@@ -49,6 +57,7 @@ export function getConsultationLabel(professionalType?: string): string {
     case 'coach': return 'Sessão'
     case 'trainer': return 'Avaliação'
     case 'physiotherapist': return 'Atendimento'
+    case 'medico_integrativo': return 'Consulta Médica'
     case 'nutritionist':
     default: return 'Consulta'
   }

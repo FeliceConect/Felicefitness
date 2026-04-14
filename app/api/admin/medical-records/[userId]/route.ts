@@ -101,6 +101,7 @@ export async function PUT(
       'health_history',
       'lifestyle',
       'difficulties',
+      'clinical_impressions',
     ]
     for (const f of fields) {
       if (f in body) allowed[f] = body[f]

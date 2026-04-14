@@ -30,6 +30,7 @@ import {
   TabPlanoAlimentar,
   TabFormularios,
 } from '@/components/portal/client-detail'
+import { TabExames } from '@/components/portal/client-detail/tab-exames'
 
 interface ClientDetails {
   id: string
@@ -117,12 +118,12 @@ interface Bioimpedance {
   metabolismo_basal: number | null
 }
 
-type TabKey = 'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'prontuario' | 'bioimpedancia' | 'antropometria' | 'plano-alimentar' | 'formularios'
+type TabKey = 'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'prontuario' | 'bioimpedancia' | 'antropometria' | 'plano-alimentar' | 'exames' | 'formularios'
 
 export default function ClientDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { professional, isNutritionist, isTrainer, isCoach, isPhysiotherapist } = useProfessional()
+  const { professional, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isMedicoIntegrativo } = useProfessional()
   const [client, setClient] = useState<ClientDetails | null>(null)
   const [weekStats, setWeekStats] = useState<WeekStats | null>(null)
   const [recentMeals, setRecentMeals] = useState<Meal[]>([])
@@ -236,6 +237,7 @@ export default function ClientDetailPage() {
     { key: 'bioimpedancia', label: 'Bioimpedância', show: !isCoach && !isPhysiotherapist },
     { key: 'antropometria', label: 'Antropometria', show: !isCoach && !isPhysiotherapist },
     { key: 'plano-alimentar', label: 'Plano Alimentar', show: isNutritionist },
+    { key: 'exames', label: 'Exames', show: isMedicoIntegrativo },
     { key: 'formularios', label: 'Formulários', show: true },
   ]
 
@@ -826,6 +828,10 @@ export default function ClientDetailPage() {
 
       {activeTab === 'plano-alimentar' && (
         <TabPlanoAlimentar patientId={params.id as string} />
+      )}
+
+      {activeTab === 'exames' && professional && (
+        <TabExames patientId={params.id as string} professionalId={professional.id} />
       )}
 
       {activeTab === 'formularios' && (

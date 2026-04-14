@@ -67,13 +67,33 @@ export function LoginForm() {
         const professional = professionalData as { id: string; type: string; is_active: boolean } | null
 
         if (professional) {
-          // Profissional vai direto para o portal
-          redirectPath = "/portal"
-          toast({
-            variant: "success",
-            title: `Bem-vindo, ${professional.type === 'trainer' ? 'Personal' : 'Nutricionista'}!`,
-            description: "Acessando o Portal Profissional.",
-          })
+          // Médico integrativo pode ser paciente também — não redirecionar para portal no celular
+          const profLabels: Record<string, string> = {
+            trainer: 'Personal',
+            nutritionist: 'Nutricionista',
+            coach: 'Coach',
+            physiotherapist: 'Fisioterapeuta',
+            medico_integrativo: 'Dr.',
+            super_admin: 'Líder',
+          }
+          const profLabel = profLabels[professional.type] || 'Profissional'
+
+          if (professional.type === 'medico_integrativo') {
+            // Médico integrativo acessa o app como paciente (portal só pelo desktop)
+            redirectPath = "/"
+            toast({
+              variant: "success",
+              title: `Bem-vindo, ${profLabel}!`,
+              description: "Login realizado com sucesso.",
+            })
+          } else {
+            redirectPath = "/portal"
+            toast({
+              variant: "success",
+              title: `Bem-vindo, ${profLabel}!`,
+              description: "Acessando o Portal Profissional.",
+            })
+          }
         } else {
           toast({
             variant: "success",

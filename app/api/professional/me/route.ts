@@ -31,7 +31,7 @@ export async function GET() {
       .from('fitness_professionals')
       .select('*')
       .eq('user_id', user.id)
-      .in('type', ['nutritionist', 'trainer', 'coach', 'physiotherapist'])
+      .in('type', ['nutritionist', 'trainer', 'coach', 'physiotherapist', 'medico_integrativo'])
       .single()
 
     if (error && error.code !== 'PGRST116') {

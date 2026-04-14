@@ -9,6 +9,7 @@ const ROLE_VISIBILITY: Record<string, string[]> = {
   nutritionist: ['nutritionist', 'super_admin'],
   trainer: ['trainer', 'super_admin'],
   physiotherapist: ['physiotherapist', 'super_admin'],
+  medico_integrativo: ['medico_integrativo', 'super_admin'],
 }
 
 function getAdminClient() {

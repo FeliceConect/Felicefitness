@@ -61,7 +61,7 @@ export default function ProfessionalsPage() {
   // Form state
   const [formData, setFormData] = useState({
     userId: '',
-    type: 'trainer' as 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist' | 'super_admin',
+    type: 'trainer' as 'nutritionist' | 'trainer' | 'coach' | 'physiotherapist' | 'medico_integrativo' | 'super_admin',
     registration: '',
     specialty: '',
     bio: '',
@@ -272,6 +272,7 @@ export default function ProfessionalsPage() {
       case 'nutritionist': return 'Nutricionista'
       case 'coach': return 'Coach'
       case 'physiotherapist': return 'Fisioterapeuta'
+      case 'medico_integrativo': return 'Médico Integrativo'
       case 'super_admin': return 'Líder'
       default: return 'Personal Trainer'
     }
@@ -282,6 +283,7 @@ export default function ProfessionalsPage() {
       case 'nutritionist': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'coach': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
       case 'physiotherapist': return 'bg-teal-500/20 text-teal-400 border-teal-500/30'
+      case 'medico_integrativo': return 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30'
       case 'super_admin': return 'bg-dourado/20 text-dourado border-dourado/30'
       default: return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
     }
@@ -408,6 +410,7 @@ export default function ProfessionalsPage() {
             <option value="nutritionist">Nutricionistas</option>
             <option value="coach">Coaches</option>
             <option value="physiotherapist">Fisioterapeutas</option>
+            <option value="medico_integrativo">Médicos Integrativos</option>
             <option value="super_admin">Líderes</option>
           </select>
         </div>
@@ -549,6 +552,7 @@ export default function ProfessionalsPage() {
                     { value: 'nutritionist' as const, label: 'Nutricionista', emoji: '🥗', borderColor: 'border-green-500', bgColor: 'bg-green-500/10', textColor: 'text-green-400' },
                     { value: 'coach' as const, label: 'Coach', emoji: '🧠', borderColor: 'border-yellow-500', bgColor: 'bg-yellow-500/10', textColor: 'text-yellow-400' },
                     { value: 'physiotherapist' as const, label: 'Fisioterapeuta', emoji: '🦴', borderColor: 'border-teal-500', bgColor: 'bg-teal-500/10', textColor: 'text-teal-400' },
+                    { value: 'medico_integrativo' as const, label: 'Médico Integrativo', emoji: '🩺', borderColor: 'border-emerald-500', bgColor: 'bg-emerald-500/10', textColor: 'text-emerald-500' },
                     { value: 'super_admin' as const, label: 'Líder', emoji: '👑', borderColor: 'border-dourado', bgColor: 'bg-dourado/10', textColor: 'text-dourado' },
                   ]).map((opt) => (
                     <button

@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo
-    if (!['nutritionist', 'trainer', 'coach', 'physiotherapist', 'super_admin'].includes(type)) {
+    if (!['nutritionist', 'trainer', 'coach', 'physiotherapist', 'medico_integrativo', 'super_admin'].includes(type)) {
       return NextResponse.json(
         { success: false, error: 'Tipo inválido' },
         { status: 400 }
@@ -238,11 +238,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Atualizar role do usuário
-    await supabaseAdmin
-      .from('fitness_profiles')
-      .update({ role: type })
-      .eq('id', userId)
+    // Atualizar role do usuário (exceto medico_integrativo — ele pode ser paciente e médico ao mesmo tempo)
+    if (type !== 'medico_integrativo') {
+      await supabaseAdmin
+        .from('fitness_profiles')
+        .update({ role: type })
+        .eq('id', userId)
+    }
 
     return NextResponse.json({
       success: true,
