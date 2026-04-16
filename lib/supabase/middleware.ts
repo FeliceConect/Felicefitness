@@ -72,14 +72,15 @@ export async function updateSession(request: NextRequest) {
   let isProfessional = false
   let isAdminUser = false
   let isSuperAdmin = false
-  let profile: { role: string; onboarding_completed: boolean } | null = null
+  let isRestrictedAdmin = false // admin_type secretary/support — sem acesso ao app
+  let profile: { role: string; onboarding_completed: boolean; admin_type?: string | null } | null = null
 
   const professionalRoles = ['nutritionist', 'trainer', 'coach', 'physiotherapist']
 
   if (user) {
     const { data: profileData } = await supabase
       .from('fitness_profiles')
-      .select('role, onboarding_completed')
+      .select('role, onboarding_completed, admin_type')
       .eq('id', user.id)
       .single()
 
@@ -90,6 +91,9 @@ export async function updateSession(request: NextRequest) {
       isAdminUser = true
     } else if (profile?.role === 'admin') {
       isAdminUser = true
+      if (profile.admin_type === 'secretary' || profile.admin_type === 'support') {
+        isRestrictedAdmin = true
+      }
     }
 
     // Detectar profissional pelo role no perfil OU pela tabela fitness_professionals
@@ -110,11 +114,26 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // Landing page apropriada para cada tipo de usuário
+  const getLanding = (): string => {
+    if (isRestrictedAdmin) {
+      return profile?.admin_type === 'secretary' ? '/admin/agenda' : '/admin/pacientes'
+    }
+    if (isProfessional && !isSuperAdmin) return '/portal'
+    return '/dashboard'
+  }
+
   // Se está autenticado e tentando acessar rota pública (login/registro)
   if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/registro'))) {
     const url = request.nextUrl.clone()
-    // Profissionais vão direto para o portal, super_admin vai para dashboard
-    url.pathname = (isProfessional && !isSuperAdmin) ? '/portal' : '/dashboard'
+    url.pathname = getLanding()
+    return NextResponse.redirect(url)
+  }
+
+  // Admin secretary/support tentando acessar rotas do app (paciente) → painel admin
+  if (user && isRestrictedAdmin && isAppRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = getLanding()
     return NextResponse.redirect(url)
   }
 
@@ -125,8 +144,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Admin secretary/support tentando acessar portal → painel admin
+  if (user && isRestrictedAdmin && isPortalRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = getLanding()
+    return NextResponse.redirect(url)
+  }
+
   // Cliente (não profissional e não super_admin) tentando acessar portal → app
-  if (user && !isProfessional && !isSuperAdmin && isPortalRoute) {
+  if (user && !isProfessional && !isSuperAdmin && !isAdminUser && isPortalRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
