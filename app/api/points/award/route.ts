@@ -108,62 +108,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao atribuir pontos' }, { status: 500 })
     }
 
-    // Auto-join user to all active rankings they're not part of
-    const { data: activeRankings } = await supabaseAdmin
-      .from('fitness_rankings')
-      .select('id, type, category')
-      .eq('is_active', true)
+    // Atualiza rankings atomicamente via RPC (fitness_award_points_to_user,
+    // migration 20260418). Substitui o read-then-update que sofria de race
+    // condition com operações concorrentes.
+    //
+    // Mapa tx.category → ranking.category(ies) que aquela transação deve
+    // pontuar. Categorias não listadas contribuem apenas para rankings
+    // globais (type != 'category').
+    const TX_TO_RANKING_CATEGORIES: Record<string, string[]> = {
+      nutrition: ['nutrition'],
+      workout: ['workout'],
+      consistency: ['consistency'],
+      sleep: ['consistency'],
+      wellness: ['consistency'],
+      hydration: ['consistency'],
+    }
+    const allowedRankingCategories = TX_TO_RANKING_CATEGORIES[config.category] || null
 
-    if (activeRankings && activeRankings.length > 0) {
-      for (const ranking of activeRankings) {
-        // Check if user already participant
-        const { data: existing } = await supabaseAdmin
-          .from('fitness_ranking_participants')
-          .select('id')
-          .eq('ranking_id', ranking.id)
-          .eq('user_id', user.id)
-          .limit(1)
-
-        if (!existing || existing.length === 0) {
-          await supabaseAdmin
-            .from('fitness_ranking_participants')
-            .insert({
-              ranking_id: ranking.id,
-              user_id: user.id,
-              total_points: 0,
-            })
-        }
-      }
-
-      // Update points in relevant rankings
-      for (const ranking of activeRankings) {
-        // For category rankings, only add if category matches
-        if (ranking.type === 'category' && ranking.category) {
-          const categoryMap: Record<string, string[]> = {
-            nutrition: ['nutrition'],
-            workout: ['workout'],
-            consistency: ['consistency', 'sleep', 'wellness', 'hydration'],
-          }
-          const matchingCategories = categoryMap[ranking.category] || []
-          if (!matchingCategories.includes(config.category)) continue
-        }
-
-        // Increment total_points - direct read + update
-        const { data: participant } = await supabaseAdmin
-          .from('fitness_ranking_participants')
-          .select('total_points')
-          .eq('ranking_id', ranking.id)
-          .eq('user_id', user.id)
-          .single()
-
-        if (participant) {
-          await supabaseAdmin
-            .from('fitness_ranking_participants')
-            .update({ total_points: (participant.total_points || 0) + config.points })
-            .eq('ranking_id', ranking.id)
-            .eq('user_id', user.id)
-        }
-      }
+    const { error: rpcError } = await supabaseAdmin.rpc('fitness_award_points_to_user', {
+      p_user_id: user.id,
+      p_delta: config.points,
+      p_allowed_ranking_categories: allowedRankingCategories,
+    })
+    if (rpcError) {
+      console.error('fitness_award_points_to_user falhou:', rpcError)
     }
 
     // Update challenge scores for active challenges the user has joined

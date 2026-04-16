@@ -161,48 +161,29 @@ export async function recalculateChainFrom(
   return recomputed
 }
 
-/** Incrementa total_points em todos os rankings ativos do usuário (criando participant se preciso) */
+/**
+ * Incrementa total_points atomicamente via RPC SQL
+ * (fitness_award_points_to_user, migration 20260418_atomic_ranking_points.sql).
+ *
+ * Bioimpedância só pontua em rankings GLOBAIS — por isso passamos null em
+ * p_allowed_ranking_categories. A RPC ignora rankings de categoria nesse caso.
+ *
+ * Comparado ao padrão anterior (read-then-update), este incremento é imune
+ * a race conditions concorrentes e é 1 roundtrip em vez de 2 por ranking.
+ */
 async function incrementRankingPoints(
   supabaseAdmin: AdminClient,
   userId: string,
   delta: number
 ): Promise<void> {
-  const { data: activeRankings } = await supabaseAdmin
-    .from('fitness_rankings')
-    .select('id, type, category')
-    .eq('is_active', true)
-
-  if (!activeRankings || activeRankings.length === 0) return
-
-  for (const ranking of activeRankings) {
-    // Rankings de categoria: só aplica se a categoria 'bioimpedance' estiver mapeada.
-    // O categoryMap original não inclui bioimpedance — aplicamos apenas em rankings globais.
-    if (ranking.type === 'category' && ranking.category) continue
-
-    // Garante participant
-    const { data: existing } = await supabaseAdmin
-      .from('fitness_ranking_participants')
-      .select('id, total_points')
-      .eq('ranking_id', ranking.id)
-      .eq('user_id', userId)
-      .maybeSingle()
-
-    if (!existing) {
-      await supabaseAdmin
-        .from('fitness_ranking_participants')
-        .insert({
-          ranking_id: ranking.id,
-          user_id: userId,
-          total_points: Math.max(0, delta), // não cria com negativo
-        })
-      continue
-    }
-
-    const newTotal = Math.max(0, (existing.total_points || 0) + delta)
-    await supabaseAdmin
-      .from('fitness_ranking_participants')
-      .update({ total_points: newTotal })
-      .eq('id', existing.id)
+  if (delta === 0) return
+  const { error } = await supabaseAdmin.rpc('fitness_award_points_to_user', {
+    p_user_id: userId,
+    p_delta: delta,
+    p_allowed_ranking_categories: null,
+  })
+  if (error) {
+    console.error('fitness_award_points_to_user falhou:', error)
   }
 }
 
