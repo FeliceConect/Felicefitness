@@ -117,6 +117,50 @@ export async function awardBioimpedancePoints(
   return breakdown
 }
 
+/**
+ * Recalcula em cadeia os pontos de TODAS as medições do paciente com data >= fromDate.
+ *
+ * Motivação: quando uma medição antiga é editada ou deletada, as medições posteriores
+ * que usaram o anterior dela como base têm seus deltas alterados. Essa função zera e
+ * recalcula a cadeia inteira a partir daquele ponto.
+ *
+ * IMPORTANTE: se fromDate = data da editada, ela própria é recalculada também — chame
+ * esta função APÓS ter chamado `awardBioimpedancePoints` na editada, passando a data
+ * do dia SEGUINTE (ou passe a data da editada e deixe recalcular tudo, idempotente).
+ */
+export async function recalculateChainFrom(
+  supabaseAdmin: AdminClient,
+  patientId: string,
+  fromDate: string
+): Promise<number> {
+  const { data: chain } = await supabaseAdmin
+    .from('fitness_body_compositions')
+    .select('id, data, peso, massa_muscular_esqueletica_kg, gordura_visceral')
+    .eq('user_id', patientId)
+    .gte('data', fromDate)
+    .order('data', { ascending: true })
+    .order('created_at', { ascending: true })
+
+  if (!chain || chain.length === 0) return 0
+
+  let recomputed = 0
+  for (const row of chain) {
+    await removeBioimpedanceTransaction(supabaseAdmin, row.id)
+    await awardBioimpedancePoints(supabaseAdmin, {
+      patientId,
+      recordId: row.id,
+      currentDate: row.data,
+      current: {
+        peso: row.peso,
+        massa_muscular_esqueletica_kg: row.massa_muscular_esqueletica_kg,
+        gordura_visceral: row.gordura_visceral,
+      },
+    })
+    recomputed++
+  }
+  return recomputed
+}
+
 /** Incrementa total_points em todos os rankings ativos do usuário (criando participant se preciso) */
 async function incrementRankingPoints(
   supabaseAdmin: AdminClient,

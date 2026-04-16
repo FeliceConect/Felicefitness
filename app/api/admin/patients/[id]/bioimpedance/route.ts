@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { awardBioimpedancePoints } from '@/lib/bioimpedance/award'
+import { awardBioimpedancePoints, recalculateChainFrom } from '@/lib/bioimpedance/award'
 import { notifyBioimpedanceRegistered } from '@/lib/notifications/bioimpedance'
 
 function getAdminClient() {
@@ -202,6 +202,26 @@ export async function POST(
         gordura_visceral: record.gordura_visceral,
       },
     })
+
+    // Se o novo registro foi inserido com data ANTERIOR à última medição existente
+    // (ex: lançando um histórico), as medições posteriores passam a ter um novo
+    // "anterior" e precisam ter pontos recalculados.
+    try {
+      const { data: nextRecord } = await supabaseAdmin
+        .from('fitness_body_compositions')
+        .select('id, data')
+        .eq('user_id', patientId)
+        .gt('data', record.data)
+        .order('data', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (nextRecord?.data) {
+        // Recalcula a partir da próxima medição (ela e todas depois dela)
+        await recalculateChainFrom(supabaseAdmin, patientId, nextRecord.data)
+      }
+    } catch (recalcErr) {
+      console.error('Falha no recálculo em cadeia (POST):', recalcErr)
+    }
 
     // Notifica o paciente (fire-and-forget)
     notifyBioimpedanceRegistered(patientId, record.id, breakdown).catch(() => {})

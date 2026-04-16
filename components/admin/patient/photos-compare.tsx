@@ -32,7 +32,29 @@ export function PhotosCompare({ patientId, patientName }: PhotosCompareProps) {
   const [momentoB, setMomentoB] = useState<string>('')
   const [posicao, setPosicao] = useState<string>('frontal')
   const [exporting, setExporting] = useState(false)
+  const [dataUrlA, setDataUrlA] = useState<string | null>(null)
+  const [dataUrlB, setDataUrlB] = useState<string | null>(null)
+  const [loadingImages, setLoadingImages] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
+
+  // Baixa uma imagem via proxy e converte para data URL (base64).
+  // Necessário para exportar via html-to-image sem CORS/tainted canvas.
+  const fetchAsDataUrl = async (url: string): Promise<string | null> => {
+    try {
+      const proxyUrl = `/api/admin/patients/${patientId}/progress-photos/image-proxy?url=${encodeURIComponent(url)}`
+      const res = await fetch(proxyUrl)
+      if (!res.ok) return null
+      const blob = await res.blob()
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } catch {
+      return null
+    }
+  }
 
   useEffect(() => {
     if (!open) return
@@ -70,6 +92,33 @@ export function PhotosCompare({ patientId, patientName }: PhotosCompareProps) {
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-BR')
 
+  // Pré-carrega as duas fotos como data URL (same-origin via proxy) sempre que
+  // a seleção mudar. Assim o <img> tem src base64 e o html-to-image não gera
+  // tainted canvas (independente do CORS do bucket).
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      setLoadingImages(true)
+      const [a, b] = await Promise.all([
+        photoA?.foto_url ? fetchAsDataUrl(photoA.foto_url) : Promise.resolve(null),
+        photoB?.foto_url ? fetchAsDataUrl(photoB.foto_url) : Promise.resolve(null),
+      ])
+      if (!cancelled) {
+        setDataUrlA(a)
+        setDataUrlB(b)
+        setLoadingImages(false)
+      }
+    }
+    if (photoA || photoB) {
+      load()
+    } else {
+      setDataUrlA(null)
+      setDataUrlB(null)
+    }
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoA?.foto_url, photoB?.foto_url])
+
   const handleExport = async () => {
     if (!canvasRef.current) return
     setExporting(true)
@@ -78,7 +127,7 @@ export function PhotosCompare({ patientId, patientName }: PhotosCompareProps) {
       const dataUrl = await toPng(canvasRef.current, {
         pixelRatio: 2,
         backgroundColor: '#ffffff',
-        cacheBust: true,
+        cacheBust: false, // não precisa — já estamos usando data URL
       })
       const a = document.createElement('a')
       const safeName = (patientName || 'paciente').toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -172,21 +221,25 @@ export function PhotosCompare({ patientId, patientName }: PhotosCompareProps) {
 
                 {/* Par de fotos */}
                 <div className="grid grid-cols-2 gap-4">
-                  {[{ m: momentoA, p: photoA, label: 'ANTES' }, { m: momentoB, p: photoB, label: 'DEPOIS' }].map((side, i) => (
+                  {[
+                    { m: momentoA, p: photoA, label: 'ANTES', src: dataUrlA },
+                    { m: momentoB, p: photoB, label: 'DEPOIS', src: dataUrlB },
+                  ].map((side, i) => (
                     <div key={i} className="flex flex-col">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest">{side.label}</span>
                         <span className="text-sm font-heading font-bold text-dourado">{side.m || '—'}</span>
                       </div>
-                      <div className="aspect-[3/4] w-full bg-background-elevated rounded-lg overflow-hidden border border-border">
-                        {side.p ? (
+                      <div className="aspect-[3/4] w-full bg-background-elevated rounded-lg overflow-hidden border border-border flex items-center justify-center">
+                        {side.p && side.src ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={side.p.foto_url}
+                            src={side.src}
                             alt={`${side.m} ${posicao}`}
                             className="w-full h-full object-cover"
-                            crossOrigin="anonymous"
                           />
+                        ) : side.p && loadingImages ? (
+                          <Loader2 className="w-5 h-5 animate-spin text-foreground-muted" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-foreground-muted text-xs text-center px-2">
                             Foto não cadastrada para este momento/posição
@@ -211,11 +264,11 @@ export function PhotosCompare({ patientId, patientName }: PhotosCompareProps) {
               <div className="flex justify-end">
                 <button
                   onClick={handleExport}
-                  disabled={exporting || (!photoA && !photoB)}
+                  disabled={exporting || loadingImages || (!dataUrlA && !dataUrlB)}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-dourado hover:bg-dourado/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {exporting ? 'Gerando PNG...' : 'Exportar PNG'}
+                  {exporting ? 'Gerando PNG...' : loadingImages ? 'Carregando fotos...' : 'Exportar PNG'}
                 </button>
               </div>
             </>

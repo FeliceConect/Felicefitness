@@ -650,6 +650,27 @@ export interface Database {
           impedancia_dados: Json | null
           foto_url: string | null
           notas: string | null
+          fonte: string | null
+          idade_metabolica: number | null
+          circ_torax: number | null
+          circ_cintura: number | null
+          circ_abdome: number | null
+          circ_quadril: number | null
+          circ_braco_d: number | null
+          circ_braco_e: number | null
+          circ_braco_contraido_d: number | null
+          circ_braco_contraido_e: number | null
+          circ_antebraco_d: number | null
+          circ_antebraco_e: number | null
+          circ_coxa_d: number | null
+          circ_coxa_e: number | null
+          circ_coxa_medial_d: number | null
+          circ_coxa_medial_e: number | null
+          circ_panturrilha_d: number | null
+          circ_panturrilha_e: number | null
+          momento_avaliacao: string | null
+          avaliador_id: string | null
+          horario_coleta: string | null
           created_at: string
         }
         Insert: {
@@ -701,6 +722,27 @@ export interface Database {
           impedancia_dados?: Json | null
           foto_url?: string | null
           notas?: string | null
+          fonte?: string | null
+          idade_metabolica?: number | null
+          circ_torax?: number | null
+          circ_cintura?: number | null
+          circ_abdome?: number | null
+          circ_quadril?: number | null
+          circ_braco_d?: number | null
+          circ_braco_e?: number | null
+          circ_braco_contraido_d?: number | null
+          circ_braco_contraido_e?: number | null
+          circ_antebraco_d?: number | null
+          circ_antebraco_e?: number | null
+          circ_coxa_d?: number | null
+          circ_coxa_e?: number | null
+          circ_coxa_medial_d?: number | null
+          circ_coxa_medial_e?: number | null
+          circ_panturrilha_d?: number | null
+          circ_panturrilha_e?: number | null
+          momento_avaliacao?: string | null
+          avaliador_id?: string | null
+          horario_coleta?: string | null
           created_at?: string
         }
         Update: {
@@ -752,6 +794,27 @@ export interface Database {
           impedancia_dados?: Json | null
           foto_url?: string | null
           notas?: string | null
+          fonte?: string | null
+          idade_metabolica?: number | null
+          circ_torax?: number | null
+          circ_cintura?: number | null
+          circ_abdome?: number | null
+          circ_quadril?: number | null
+          circ_braco_d?: number | null
+          circ_braco_e?: number | null
+          circ_braco_contraido_d?: number | null
+          circ_braco_contraido_e?: number | null
+          circ_antebraco_d?: number | null
+          circ_antebraco_e?: number | null
+          circ_coxa_d?: number | null
+          circ_coxa_e?: number | null
+          circ_coxa_medial_d?: number | null
+          circ_coxa_medial_e?: number | null
+          circ_panturrilha_d?: number | null
+          circ_panturrilha_e?: number | null
+          momento_avaliacao?: string | null
+          avaliador_id?: string | null
+          horario_coleta?: string | null
         }
       }
       fitness_progress_photos: {
@@ -765,6 +828,8 @@ export interface Database {
           percentual_gordura_no_dia: number | null
           notas: string | null
           is_favorita: boolean
+          momento_avaliacao: string | null
+          posicao: string | null
           created_at: string
         }
         Insert: {
@@ -777,6 +842,8 @@ export interface Database {
           percentual_gordura_no_dia?: number | null
           notas?: string | null
           is_favorita?: boolean
+          momento_avaliacao?: string | null
+          posicao?: string | null
           created_at?: string
         }
         Update: {
@@ -789,6 +856,8 @@ export interface Database {
           percentual_gordura_no_dia?: number | null
           notas?: string | null
           is_favorita?: boolean
+          momento_avaliacao?: string | null
+          posicao?: string | null
         }
       }
       fitness_daily_notes: {
@@ -2805,49 +2874,6 @@ export interface Database {
           notas?: string | null
         }
       }
-      fitness_bioimpedance: {
-        Row: {
-          id: string
-          user_id: string
-          data: string
-          peso: number | null
-          percentual_gordura: number | null
-          massa_muscular: number | null
-          agua_corporal: number | null
-          gordura_visceral: number | null
-          taxa_metabolica_basal: number | null
-          pontuacao_inbody: number | null
-          notas: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          data: string
-          peso?: number | null
-          percentual_gordura?: number | null
-          massa_muscular?: number | null
-          agua_corporal?: number | null
-          gordura_visceral?: number | null
-          taxa_metabolica_basal?: number | null
-          pontuacao_inbody?: number | null
-          notas?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          data?: string
-          peso?: number | null
-          percentual_gordura?: number | null
-          massa_muscular?: number | null
-          agua_corporal?: number | null
-          gordura_visceral?: number | null
-          taxa_metabolica_basal?: number | null
-          pontuacao_inbody?: number | null
-          notas?: string | null
-        }
-      }
     }
     Views: {
       [_ in never]: never
@@ -3198,6 +3224,3 @@ export type TrainingAdherenceInsert = Database['public']['Tables']['fitness_trai
 
 export type WeightHistory = Database['public']['Tables']['fitness_weight_history']['Row']
 export type WeightHistoryInsert = Database['public']['Tables']['fitness_weight_history']['Insert']
-
-export type Bioimpedance = Database['public']['Tables']['fitness_bioimpedance']['Row']
-export type BioimpedanceInsert = Database['public']['Tables']['fitness_bioimpedance']['Insert']

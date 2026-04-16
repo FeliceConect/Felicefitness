@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-  getMockMeasurements,
-  getLatestMeasurement,
   calculateBodyStats,
   calculateBodySummary,
   LEONARDO_GOALS,

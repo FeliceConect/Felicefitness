@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { awardBioimpedancePoints, removeBioimpedanceTransaction } from '@/lib/bioimpedance/award'
+import { removeBioimpedanceTransaction, recalculateChainFrom } from '@/lib/bioimpedance/award'
 
 function getAdminClient() {
   return createAdminClient(
@@ -111,10 +111,10 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Nenhum campo para atualizar' }, { status: 400 })
     }
 
-    // Valida ownership
+    // Valida ownership + captura data original (para recálculo em cadeia)
     const { data: existing } = await supabaseAdmin
       .from('fitness_body_compositions')
-      .select('id, user_id')
+      .select('id, user_id, data')
       .eq('id', recordId)
       .single()
 
@@ -134,18 +134,27 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Erro ao atualizar: ' + error.message }, { status: 500 })
     }
 
-    // Recalcula pontos: remove transação antiga + recomputa
-    await removeBioimpedanceTransaction(supabaseAdmin, recordId)
-    const breakdown = await awardBioimpedancePoints(supabaseAdmin, {
-      patientId,
-      recordId: record.id,
-      currentDate: record.data,
-      current: {
-        peso: record.peso,
-        massa_muscular_esqueletica_kg: record.massa_muscular_esqueletica_kg,
-        gordura_visceral: record.gordura_visceral,
-      },
-    })
+    // Recálculo em cadeia: a partir da data anterior (caso a data tenha sido alterada)
+    // OU da data nova (caso não tenha mudado). Usamos a MENOR das duas para cobrir
+    // ambos os cenários. Resiliente: se falha, loga mas não aborta o PUT.
+    const fromDate = record.data < existing.data ? record.data : existing.data
+    let breakdown = null
+    try {
+      await recalculateChainFrom(supabaseAdmin, patientId, fromDate)
+      // Recupera o breakdown do record atual para retornar à UI
+      const { data: currentTx } = await supabaseAdmin
+        .from('fitness_point_transactions')
+        .select('points, reason')
+        .eq('reference_id', record.id)
+        .eq('category', 'bioimpedance')
+        .maybeSingle()
+      if (currentTx) {
+        breakdown = { total: currentTx.points, reason: currentTx.reason }
+      }
+    } catch (recalcErr) {
+      console.error('Falha no recálculo em cadeia (PUT):', recalcErr)
+      // Registro salvo com sucesso; pontuação pode estar inconsistente — reportar mas não falhar
+    }
 
     return NextResponse.json({ success: true, record, points: breakdown })
   } catch (error) {
@@ -167,7 +176,7 @@ export async function DELETE(
 
     const { data: existing } = await supabaseAdmin
       .from('fitness_body_compositions')
-      .select('id, user_id, foto_url')
+      .select('id, user_id, foto_url, data')
       .eq('id', recordId)
       .single()
 
@@ -178,6 +187,7 @@ export async function DELETE(
     // Remove pontos relacionados (reverte ranking)
     await removeBioimpedanceTransaction(supabaseAdmin, recordId)
 
+    const deletedDate = existing.data
     const { error } = await supabaseAdmin
       .from('fitness_body_compositions')
       .delete()
@@ -186,6 +196,13 @@ export async function DELETE(
     if (error) {
       console.error('Erro ao deletar bioimpedância:', error)
       return NextResponse.json({ success: false, error: 'Erro ao deletar' }, { status: 500 })
+    }
+
+    // Recalcula pontos das medições futuras (o "anterior" delas mudou)
+    try {
+      await recalculateChainFrom(supabaseAdmin, patientId, deletedDate)
+    } catch (recalcErr) {
+      console.error('Falha no recálculo em cadeia (DELETE):', recalcErr)
     }
 
     // Tenta remover foto do Storage (best-effort)
