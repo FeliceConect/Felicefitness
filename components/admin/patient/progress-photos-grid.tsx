@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { Camera, Upload, Loader2, X, Check, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { resizeImage, blobToFile } from '@/lib/photos/processing'
 
 interface ProgressPhoto {
   id: string
@@ -63,15 +64,35 @@ export function ProgressPhotosGrid({ patientId }: ProgressPhotosGridProps) {
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !pendingCell.current) return
+    const originalFile = e.target.files?.[0]
+    if (!originalFile || !pendingCell.current) return
     const { momento, posicao, replacePhotoId } = pendingCell.current
     const cellKey = `${momento}_${posicao}`
 
     setUploadingCell(cellKey)
     try {
+      // Pré-resize client-side para evitar 413 do Vercel (4.5 MB por request).
+      // HEIC/HEIF não é renderizável pelo <img>, então mandamos cru (sharp no server converte).
+      let fileToUpload: File = originalFile
+      const isHeic = /heic|heif/i.test(originalFile.type) || /\.(heic|heif)$/i.test(originalFile.name)
+      const tooLarge = originalFile.size > 3 * 1024 * 1024 // > 3 MB
+
+      if (!isHeic && tooLarge) {
+        try {
+          const resizedBlob = await resizeImage(originalFile, 2000, 2000)
+          fileToUpload = blobToFile(resizedBlob, originalFile.name.replace(/\.[^.]+$/, '.jpg'))
+        } catch (resizeErr) {
+          console.error('Falha ao redimensionar, enviando original:', resizeErr)
+        }
+      }
+
+      if (fileToUpload.size > 4 * 1024 * 1024) {
+        toast.error('Imagem muito grande. Tente uma foto menor (máx. ~4 MB).')
+        return
+      }
+
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', fileToUpload)
 
       let url: string
       let method: 'POST' | 'PUT'
@@ -86,12 +107,25 @@ export function ProgressPhotosGrid({ patientId }: ProgressPhotosGridProps) {
       }
 
       const res = await fetch(url, { method, body: formData })
-      const json = await res.json()
+
+      // Response pode não ser JSON (ex.: 413 da plataforma retorna HTML)
+      let json: { success?: boolean; error?: string } = {}
+      try {
+        json = await res.json()
+      } catch {
+        if (res.status === 413) {
+          toast.error('Imagem muito grande para envio. Use uma foto menor.')
+          return
+        }
+        toast.error(`Erro ${res.status} ao enviar foto`)
+        return
+      }
+
       if (json.success) {
         toast.success(`Foto ${momento} — ${posicao} ${replacePhotoId ? 'substituída' : 'salva'}`)
         await fetchPhotos()
       } else {
-        toast.error(json.error || 'Erro ao enviar foto')
+        toast.error(json.error || `Erro ao enviar foto (HTTP ${res.status})`)
       }
     } catch (err) {
       console.error('Erro upload foto:', err)
