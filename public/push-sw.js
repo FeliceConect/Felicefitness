@@ -83,9 +83,6 @@ self.addEventListener('notificationclick', (event) => {
       case 'ver-conquista':
         urlToOpen = '/conquistas'
         break
-      case 'checkin':
-        urlToOpen = '/bem-estar/checkin'
-        break
       case 'treinar':
         urlToOpen = '/treino'
         break

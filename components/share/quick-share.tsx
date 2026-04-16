@@ -101,7 +101,7 @@ export function QuickShare({
 
   const handleCustomize = () => {
     onClose()
-    router.push(`/compartilhar/${type === 'checkin' ? 'checkin' : type}`)
+    router.push(`/compartilhar/${type}`)
   }
 
   return (

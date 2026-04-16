@@ -26,7 +26,6 @@ export {
   awardMealsPoints,
   awardWaterGoalPoints,
   awardSleepPoints,
-  awardWellnessCheckinPoints,
   awardPRPoints,
   awardFormCompletedPoints,
   awardStreak7Points,
@@ -48,6 +47,5 @@ export {
   autoPostAchievement,
   autoPostLevelUp,
   autoPostMeal,
-  autoPostCheckin,
   autoPostStreakMilestone,
 } from './auto-post'

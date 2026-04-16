@@ -18,7 +18,6 @@ const POINT_VALUES: Record<string, { points: number; category: string; reason: s
   all_meals_logged: { points: 10, category: 'nutrition', reason: 'Todas refeicoes registradas' },
   water_goal_met: { points: 5, category: 'hydration', reason: 'Meta de agua atingida' },
   sleep_logged: { points: 3, category: 'sleep', reason: 'Sono registrado' },
-  wellness_checkin: { points: 3, category: 'wellness', reason: 'Check-in de bem-estar' },
   pr_achieved: { points: 10, category: 'workout', reason: 'Personal Record' },
   post_created: { points: 2, category: 'social', reason: 'Post no feed' },
   comment_or_reaction: { points: 1, category: 'social', reason: 'Interacao no feed' },

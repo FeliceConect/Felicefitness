@@ -46,18 +46,16 @@ export async function GET(request: NextRequest) {
 
     for (const profile of profiles) {
       // Check if user had any activity today
-      const [workouts, water, meals, checkins] = await Promise.all([
+      const [workouts, water, meals] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (db as any).from('fitness_workouts').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('data', today),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (db as any).from('fitness_water_logs').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).gte('created_at', today + 'T00:00:00'),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (db as any).from('fitness_meals').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('data', today),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (db as any).from('fitness_wellness_checkins').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('data', today),
       ])
 
-      const hasActivity = (workouts.count || 0) > 0 || (water.count || 0) > 0 || (meals.count || 0) > 0 || (checkins.count || 0) > 0
+      const hasActivity = (workouts.count || 0) > 0 || (water.count || 0) > 0 || (meals.count || 0) > 0
 
       if (!hasActivity) {
         await notifyStreakRisk(profile.id, profile.streak_atual)

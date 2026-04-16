@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Dumbbell, Trophy, Flame, TrendingUp, BarChart3, Heart } from 'lucide-react'
+import { ArrowLeft, Dumbbell, Trophy, Flame, TrendingUp, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
@@ -14,14 +14,6 @@ interface ShareOption {
 }
 
 const shareOptions: ShareOption[] = [
-  {
-    id: 'checkin',
-    title: 'Check-in Diário',
-    description: 'Compartilhe sua jornada wellness — Vivendo Felice!',
-    icon: <Heart className="w-6 h-6" />,
-    href: '/compartilhar/checkin',
-    color: 'bg-amber-500/10 text-amber-500',
-  },
   {
     id: 'workout',
     title: 'Treino',

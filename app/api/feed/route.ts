@@ -182,13 +182,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { post_type, content, image_url, related_id, is_auto_generated, metadata } = body
 
-    if (!post_type || (!content?.trim() && !image_url && !metadata)) {
-      return NextResponse.json({ success: false, error: 'Conteúdo, imagem ou dados são obrigatórios' }, { status: 400 })
+    if (!post_type) {
+      return NextResponse.json({ success: false, error: 'Tipo de post é obrigatório' }, { status: 400 })
     }
 
-    const validTypes = ['meal', 'workout', 'achievement', 'free_text', 'check_in', 'level_up']
+    const validTypes = ['meal', 'workout', 'achievement', 'free_text', 'level_up']
     if (!validTypes.includes(post_type)) {
       return NextResponse.json({ success: false, error: 'Tipo de post inválido' }, { status: 400 })
+    }
+
+    // Posts criados pelo usuário precisam de foto. Posts automáticos (sistema) são permitidos sem foto.
+    if (!is_auto_generated && !image_url) {
+      return NextResponse.json({ success: false, error: 'A foto é obrigatória para publicar no feed' }, { status: 400 })
     }
 
     const { data: post, error: insertError } = await supabaseAdmin

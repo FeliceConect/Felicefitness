@@ -1,6 +1,6 @@
 // Share Types
 
-export type ShareType = 'workout' | 'pr' | 'achievement' | 'streak' | 'progress' | 'weekly' | 'checkin'
+export type ShareType = 'workout' | 'pr' | 'achievement' | 'streak' | 'progress' | 'weekly'
 
 export type ShareFormat = 'square' | 'story' | 'wide'
 
@@ -25,7 +25,7 @@ export interface WebShareData {
 }
 
 // Union type for card data
-export type ShareCardData = WorkoutShareData | PRShareData | AchievementShareData | StreakShareData | ProgressShareData | WeeklyShareData | CheckinShareData
+export type ShareCardData = WorkoutShareData | PRShareData | AchievementShareData | StreakShareData | ProgressShareData | WeeklyShareData
 
 // Card Data Types
 
@@ -88,23 +88,6 @@ export interface WeeklyShareData {
   prsSet: number
   highlights?: string[]
   userName?: string
-}
-
-export interface CheckinShareData {
-  // Journey
-  journeyDays: number
-  streak: number
-  // Today's wellness dimensions
-  treino: boolean
-  nutricao: boolean
-  hidratacao: boolean
-  sono: boolean
-  // Gamification level
-  level: number
-  levelName: string
-  levelEmoji: string
-  // Optional
-  todayScore?: number
 }
 
 // Template Types

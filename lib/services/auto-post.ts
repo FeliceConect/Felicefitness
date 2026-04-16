@@ -171,26 +171,6 @@ export function autoPostMeal(data: {
   )
 }
 
-/** Auto-post when a wellness check-in is completed */
-export function autoPostCheckin(data: {
-  humor: number
-  energia: number
-  stress: number
-}): void {
-  const moodEmoji = ['😢', '😕', '😐', '🙂', '😊'][data.humor - 1] || '😐'
-  const energyEmoji = ['😴', '😐', '🙂', '😊', '🔥'][data.energia - 1] || '😐'
-
-  postInBackground(
-    'check_in',
-    `Check-in de bem-estar: ${moodEmoji} humor, ${energyEmoji} energia`,
-    {
-      humor: data.humor,
-      energia: data.energia,
-      stress: data.stress,
-    }
-  )
-}
-
 /** Auto-post when a streak milestone is reached */
 export function autoPostStreakMilestone(streak: number): void {
   const messages: Record<number, string> = {

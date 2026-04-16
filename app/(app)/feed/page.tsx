@@ -11,12 +11,10 @@ import {
   Dumbbell,
   Award,
   Coffee,
-  CheckCircle,
   PenLine,
   Camera,
   ArrowUp,
   Sparkles,
-  Star,
   ChevronLeft,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -75,7 +73,6 @@ const POST_TYPES = [
   { value: 'workout', label: 'Treino', icon: Dumbbell },
   { value: 'meal', label: 'Refeição', icon: Coffee },
   { value: 'achievement', label: 'Conquista', icon: Award },
-  { value: 'check_in', label: 'Check-in', icon: CheckCircle },
 ]
 
 const REACTIONS = [
@@ -91,7 +88,6 @@ const POST_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   workout: { label: 'Treino', color: 'bg-blue-50 text-blue-600' },
   meal: { label: 'Refeição', color: 'bg-green-50 text-green-600' },
   achievement: { label: 'Conquista', color: 'bg-yellow-50 text-yellow-600' },
-  check_in: { label: 'Check-in', color: 'bg-purple-50 text-purple-600' },
   level_up: { label: 'Level Up', color: 'bg-red-50 text-red-600' },
 }
 
@@ -101,15 +97,6 @@ const ENERGY_LEVELS = [
   { value: 3, emoji: '🙂', label: 'Boa' },
   { value: 4, emoji: '😊', label: 'Alta' },
   { value: 5, emoji: '🔥', label: 'Máxima' },
-]
-
-const MOOD_OPTIONS = [
-  { value: 'triste', emoji: '😢', label: 'Triste' },
-  { value: 'cansado', emoji: '😩', label: 'Cansado' },
-  { value: 'normal', emoji: '😐', label: 'Normal' },
-  { value: 'bem', emoji: '🙂', label: 'Bem' },
-  { value: 'feliz', emoji: '😊', label: 'Feliz' },
-  { value: 'incrivel', emoji: '🤩', label: 'Incrivel' },
 ]
 
 const MEAL_TYPE_OPTIONS = [
@@ -172,9 +159,8 @@ export default function FeedPage() {
   const latestPostTimestamp = useRef<string | null>(null)
   const [interactionsBanner, setInteractionsBanner] = useState<string | null>(null)
 
-  // Community stats + weekly highlight + masonry
+  // Community stats + masonry
   const [communityStats, setCommunityStats] = useState<CommunityStats | null>(null)
-  const [weeklyHighlight, setWeeklyHighlight] = useState<Post | null>(null)
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
 
@@ -199,13 +185,6 @@ export default function FeedPage() {
       .then(res => res.json())
       .then(data => {
         if (data.success) setCommunityStats(data.stats)
-      })
-      .catch(() => {})
-    // Fetch weekly highlight
-    fetch('/api/feed/weekly-highlight')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.highlight) setWeeklyHighlight(data.highlight)
       })
       .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -317,7 +296,8 @@ export default function FeedPage() {
   }
 
   const hasMetadata = Object.keys(postMetadata).length > 0
-  const canPost = newPostContent.trim() || selectedImage || hasMetadata
+  // Foto é obrigatória em todos os posts do usuário
+  const canPost = !!selectedImage && (newPostContent.trim() || hasMetadata || true)
 
   const resetForm = () => {
     setNewPostContent('')
@@ -396,18 +376,6 @@ export default function FeedPage() {
             user_reactions: newUserReactions,
           }
         }))
-        // Also update weeklyHighlight if it matches
-        setWeeklyHighlight(prev => {
-          if (!prev || prev.id !== postId) return prev
-          const newUserReactions = data.added
-            ? [...prev.user_reactions, reactionType]
-            : prev.user_reactions.filter(r => r !== reactionType)
-          return {
-            ...prev,
-            reactions_count: data.reactions_count,
-            user_reactions: newUserReactions,
-          }
-        })
       }
     } catch (error) {
       console.error('Erro:', error)
@@ -435,10 +403,6 @@ export default function FeedPage() {
         setPosts(prev => prev.map(p =>
           p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p
         ))
-        // Also update weeklyHighlight if it matches
-        setWeeklyHighlight(prev => (
-          prev && prev.id === postId ? { ...prev, comment_count: prev.comment_count + 1 } : prev
-        ))
         toast.success('Comentario enviado! +1 pt')
       } else {
         toast.error(data.error || 'Erro ao comentar')
@@ -458,8 +422,6 @@ export default function FeedPage() {
       const data = await res.json()
       if (data.success) {
         setPosts(prev => prev.filter(p => p.id !== postId))
-        // Also clear weeklyHighlight if it's the deleted post
-        setWeeklyHighlight(prev => (prev && prev.id === postId ? null : prev))
         toast.success('Post removido')
       }
     } catch (error) {
@@ -487,7 +449,7 @@ export default function FeedPage() {
     return Object.values(reactions).reduce((sum, count) => sum + count, 0)
   }
 
-  const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) || weeklyHighlight : null
+  const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) || null : null
 
   // Masonry card renderer
   const renderMasonryCard = (post: Post) => {
@@ -689,40 +651,6 @@ export default function FeedPage() {
       )
     }
 
-    // CHECK-IN CARD
-    if (post.post_type === 'check_in') {
-      return (
-        <div
-          onClick={() => setSelectedPostId(post.id)}
-          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
-          style={{ background: 'linear-gradient(135deg, #4c1d6e 0%, #322b29 100%)' }}
-        >
-          {adminBadge}
-          <div className="p-3.5">
-            <span className="text-[9px] font-semibold text-white/60 uppercase tracking-widest">Check-in</span>
-            <div className="flex items-center justify-center gap-4 mt-3 mb-1">
-              {post.metadata?.humor && (
-                <div className="text-center">
-                  <span className="text-2xl">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.emoji}</span>
-                  <p className="text-[9px] text-white/60 mt-0.5">{MOOD_OPTIONS.find(m => m.value === post.metadata?.humor)?.label}</p>
-                </div>
-              )}
-              {post.metadata?.energia && (
-                <div className="text-center">
-                  <span className="text-2xl">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
-                  <p className="text-[9px] text-white/60 mt-0.5">Energia</p>
-                </div>
-              )}
-            </div>
-          </div>
-          {post.content && (
-            <p className="px-3.5 pb-1.5 text-white/60 text-[11px] line-clamp-2">{post.content}</p>
-          )}
-          {cardFooter('text-white/80', 'bg-white/20')}
-        </div>
-      )
-    }
-
     // FREE TEXT / DEFAULT CARD
     const templateBg = post.metadata?.template_bg
     const template = templateBg ? TEMPLATE_BACKGROUNDS.find(t => t.id === templateBg) : null
@@ -874,52 +802,6 @@ export default function FeedPage() {
             </div>
             <Plus className="w-5 h-5 text-dourado" />
           </button>
-        </div>
-      )}
-
-      {/* Weekly Highlight */}
-      {weeklyHighlight && (
-        <div className="mx-3 mt-3 mb-1">
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <Star className="w-3.5 h-3.5 text-dourado" />
-            <span className="text-[11px] font-semibold text-dourado uppercase tracking-wider">Destaque da Semana</span>
-          </div>
-          <div
-            onClick={() => setSelectedPostId(weeklyHighlight.id)}
-            className="rounded-2xl overflow-hidden border-2 border-dourado/30 cursor-pointer shadow-[0_2px_16px_rgba(194,152,99,0.12)] active:scale-[0.99] transition-transform"
-            style={{ background: 'linear-gradient(135deg, rgba(194,152,99,0.08) 0%, #ffffff 100%)' }}
-          >
-            <div className="p-4 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-dourado to-vinho flex items-center justify-center flex-shrink-0 ring-2 ring-dourado/30">
-                <span className="text-white font-bold text-sm">{weeklyHighlight.author_initial}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">⭐</span>
-                  <p className="font-heading font-bold text-foreground text-sm">{weeklyHighlight.author_name}</p>
-                  {weeklyHighlight.author_tier && weeklyHighlight.author_tier !== 'bronze' && (
-                    <span className="text-xs">{TIER_ICONS[weeklyHighlight.author_tier]}</span>
-                  )}
-                </div>
-                {weeklyHighlight.content && (
-                  <p className="text-xs text-foreground-secondary line-clamp-2 mt-0.5">{weeklyHighlight.content}</p>
-                )}
-                <div className="flex items-center gap-3 mt-1.5">
-                  {getTotalReactions(weeklyHighlight.reactions_count) > 0 && (
-                    <span className="text-[11px] text-foreground-muted">❤️ {getTotalReactions(weeklyHighlight.reactions_count)}</span>
-                  )}
-                  {weeklyHighlight.comment_count > 0 && (
-                    <span className="text-[11px] text-foreground-muted">💬 {weeklyHighlight.comment_count}</span>
-                  )}
-                  {POST_TYPE_LABELS[weeklyHighlight.post_type] && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${POST_TYPE_LABELS[weeklyHighlight.post_type].color}`}>
-                      {POST_TYPE_LABELS[weeklyHighlight.post_type].label}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -1132,25 +1014,6 @@ export default function FeedPage() {
                     <span className="text-3xl">⬆️</span>
                     <p className="text-xl font-heading font-bold text-white mt-1">Nível {selectedPost.metadata.nivel}</p>
                     <p className="text-sm text-white/80 font-medium">{selectedPost.metadata.nome_nivel}</p>
-                  </div>
-                </div>
-              )}
-
-              {selectedPost.post_type === 'check_in' && selectedPost.metadata && Object.keys(selectedPost.metadata).length > 0 && (
-                <div className="mx-4 mt-3 p-3 rounded-lg" style={{ background: 'linear-gradient(135deg, #4c1d6e 0%, #322b29 100%)' }}>
-                  <div className="flex items-center justify-center gap-6">
-                    {selectedPost.metadata.humor && (
-                      <div className="text-center">
-                        <span className="text-3xl">{MOOD_OPTIONS.find(m => m.value === selectedPost.metadata?.humor)?.emoji}</span>
-                        <p className="text-[10px] text-white/60 font-medium mt-0.5">{MOOD_OPTIONS.find(m => m.value === selectedPost.metadata?.humor)?.label}</p>
-                      </div>
-                    )}
-                    {selectedPost.metadata.energia && (
-                      <div className="text-center">
-                        <span className="text-3xl">{ENERGY_LEVELS.find(e => e.value === selectedPost.metadata?.energia)?.emoji}</span>
-                        <p className="text-[10px] text-white/60 font-medium mt-0.5">Energia</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -1484,51 +1347,6 @@ export default function FeedPage() {
                 </div>
               )}
 
-              {newPostType === 'check_in' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[11px] text-foreground-muted block mb-1.5">Como você está?</label>
-                    <div className="flex gap-1.5">
-                      {MOOD_OPTIONS.map(m => (
-                        <button
-                          key={m.value}
-                          type="button"
-                          onClick={() => setPostMetadata(prev => ({ ...prev, humor: m.value }))}
-                          className={`flex-1 py-2 rounded-lg text-center transition-all ${
-                            postMetadata.humor === m.value
-                              ? 'bg-dourado/15 border-2 border-dourado/40 scale-105'
-                              : 'bg-background-elevated border border-transparent'
-                          }`}
-                        >
-                          <span className="text-lg">{m.emoji}</span>
-                          <p className="text-[9px] text-foreground-muted mt-0.5">{m.label}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-foreground-muted block mb-1.5">Nivel de energia</label>
-                    <div className="flex gap-1.5">
-                      {ENERGY_LEVELS.map(e => (
-                        <button
-                          key={e.value}
-                          type="button"
-                          onClick={() => setPostMetadata(prev => ({ ...prev, energia: e.value }))}
-                          className={`flex-1 py-2 rounded-lg text-center transition-all ${
-                            postMetadata.energia === e.value
-                              ? 'bg-dourado/15 border-2 border-dourado/40 scale-105'
-                              : 'bg-background-elevated border border-transparent'
-                          }`}
-                        >
-                          <span className="text-lg">{e.emoji}</span>
-                          <p className="text-[9px] text-foreground-muted mt-0.5">{e.label}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Content */}
               <textarea
                 value={newPostContent}
@@ -1539,7 +1357,6 @@ export default function FeedPage() {
                   newPostType === 'workout' ? 'Notas sobre o treino (opcional)...' :
                   newPostType === 'meal' ? 'Notas sobre a refeição (opcional)...' :
                   newPostType === 'achievement' ? 'Celebre sua conquista!' :
-                  newPostType === 'check_in' ? 'Algo mais que queira compartilhar? (opcional)' :
                   'O que você quer compartilhar?'
                 }
                 autoFocus={newPostType === 'free_text'}
@@ -1571,10 +1388,10 @@ export default function FeedPage() {
               ) : (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-3 rounded-lg border border-dashed border-border text-foreground-secondary hover:border-dourado hover:text-dourado transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-lg border-2 border-dashed border-dourado/40 bg-dourado/5 text-dourado hover:bg-dourado/10 transition-colors"
                 >
                   <Camera className="w-5 h-5" />
-                  <span className="text-sm font-medium">Adicionar foto</span>
+                  <span className="text-sm font-semibold">Adicionar foto (obrigatória)</span>
                 </button>
               )}
 

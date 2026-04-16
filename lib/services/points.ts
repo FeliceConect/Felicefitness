@@ -11,7 +11,6 @@
  * - Refeicoes do dia (>=3): 10pts
  * - Meta agua atingida: 5pts
  * - Sono registrado: 3pts
- * - Check-in bem-estar: 3pts
  * - PR alcancado: 10pts
  * - Post no feed: 4pts (handled by feed API)
  * - Reacao/comentario: 1pt (handled by feed API)
@@ -25,7 +24,6 @@ export type PointAction =
   | 'all_meals_logged'
   | 'water_goal_met'
   | 'sleep_logged'
-  | 'wellness_checkin'
   | 'pr_achieved'
   | 'post_created'
   | 'comment_or_reaction'
@@ -129,14 +127,6 @@ export function awardWaterGoalPoints(): Promise<AwardPointsResult> {
  */
 export function awardSleepPoints(): Promise<AwardPointsResult> {
   return awardPoints('sleep_logged')
-}
-
-/**
- * Award points for a wellness check-in.
- * 3 points per day.
- */
-export function awardWellnessCheckinPoints(): Promise<AwardPointsResult> {
-  return awardPoints('wellness_checkin')
 }
 
 /**

@@ -2586,46 +2586,6 @@ export interface Database {
           total_participantes?: number | null
         }
       }
-      fitness_wellness_checkins: {
-        Row: {
-          id: string
-          user_id: string
-          data: string
-          horario: string | null
-          humor: number
-          stress: number
-          energia: number
-          fatores_positivos: string[] | null
-          fatores_negativos: string[] | null
-          notas: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          data: string
-          horario?: string | null
-          humor: number
-          stress: number
-          energia: number
-          fatores_positivos?: string[] | null
-          fatores_negativos?: string[] | null
-          notas?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          data?: string
-          horario?: string | null
-          humor?: number
-          stress?: number
-          energia?: number
-          fatores_positivos?: string[] | null
-          fatores_negativos?: string[] | null
-          notas?: string | null
-        }
-      }
       fitness_broadcast_messages: {
         Row: {
           id: string
@@ -3218,10 +3178,6 @@ export type XpHistoryInsert = Database['public']['Tables']['fitness_xp_history']
 
 export type RankingSnapshot = Database['public']['Tables']['fitness_ranking_snapshots']['Row']
 export type RankingSnapshotInsert = Database['public']['Tables']['fitness_ranking_snapshots']['Insert']
-
-export type WellnessCheckinRow = Database['public']['Tables']['fitness_wellness_checkins']['Row']
-export type WellnessCheckinInsert = Database['public']['Tables']['fitness_wellness_checkins']['Insert']
-export type WellnessCheckinUpdate = Database['public']['Tables']['fitness_wellness_checkins']['Update']
 
 export type BroadcastMessage = Database['public']['Tables']['fitness_broadcast_messages']['Row']
 export type BroadcastMessageInsert = Database['public']['Tables']['fitness_broadcast_messages']['Insert']

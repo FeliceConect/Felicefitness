@@ -608,7 +608,6 @@ export async function DELETE(request: NextRequest) {
       const tablesToClean = [
         'fitness_meal_items',
         'fitness_meal_plan_adherence',
-        'fitness_wellness_checkins',
         'fitness_water_logs',
         'fitness_meals',
         'fitness_workouts',

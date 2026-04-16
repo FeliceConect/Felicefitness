@@ -243,7 +243,6 @@ export async function notifyStreakRisk(userId: string, currentStreak: number): P
     priority: 'high',
     tag: `streak-risk-${userId}`,
     actions: [
-      { action: 'checkin', title: 'Fazer Check-in' },
       { action: 'treinar', title: 'Treinar' },
     ],
   })

@@ -53,7 +53,7 @@ export async function updateSession(request: NextRequest) {
   const isPortalRoute = request.nextUrl.pathname.startsWith('/portal')
 
   // Rotas do app (exclusivas para pacientes)
-  const appRoutes = ['/dashboard', '/treino', '/alimentacao', '/hidratacao', '/agua', '/fotos', '/bioimpedancia', '/sono', '/bem-estar', '/perfil', '/configuracoes', '/relatorios', '/agenda', '/feed', '/ranking', '/chat', '/mensagens', '/compartilhar', '/notificacoes', '/corpo', '/formularios', '/conquistas']
+  const appRoutes = ['/dashboard', '/treino', '/alimentacao', '/hidratacao', '/agua', '/fotos', '/bioimpedancia', '/sono', '/perfil', '/configuracoes', '/relatorios', '/agenda', '/feed', '/ranking', '/chat', '/mensagens', '/compartilhar', '/notificacoes', '/corpo', '/formularios', '/conquistas']
   const isAppRoute = appRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
