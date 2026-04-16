@@ -67,7 +67,11 @@ export function TabAntropometria({ patientId, canEdit }: TabAntropometriaProps) 
     fetch(`/api/professional/clients/${patientId}/antropometria`)
       .then(r => r.json())
       .then(data => {
-        if (data.success) setRecords(data.records || [])
+        if (data.success) {
+          setRecords(data.records || [])
+        } else {
+          console.error('Erro ao buscar antropometria:', data.error)
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -144,6 +148,7 @@ export function TabAntropometria({ patientId, canEdit }: TabAntropometriaProps) 
       }
     } catch (error) {
       console.error('Erro ao salvar medidas:', error)
+      toast.error('Erro ao salvar medidas')
     } finally {
       setSaving(false)
     }

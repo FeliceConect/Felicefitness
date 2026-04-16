@@ -24,7 +24,7 @@ export async function GET(
 
     const supabaseAdmin = getAdminClient()
 
-    // Verify professional
+    // Verify professional — nutri, trainer, admin, superadmin can read
     const { data: professional } = await supabaseAdmin
       .from('fitness_professionals')
       .select('id')
@@ -33,21 +33,30 @@ export async function GET(
       .single()
 
     if (!professional) {
-      return NextResponse.json({ success: false, error: 'Acesso restrito' }, { status: 403 })
-    }
+      // Check if user is admin/superadmin
+      const { data: profile } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-    // Verify assignment
-    const { data: assignment } = await supabaseAdmin
-      .from('fitness_client_assignments')
-      .select('id')
-      .eq('professional_id', professional.id)
-      .eq('client_id', params.id)
-      .eq('is_active', true)
-      .limit(1)
-      .single()
+      if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+        return NextResponse.json({ success: false, error: 'Acesso restrito' }, { status: 403 })
+      }
+    } else {
+      // Verify assignment (only for professionals)
+      const { data: assignment } = await supabaseAdmin
+        .from('fitness_client_assignments')
+        .select('id')
+        .eq('professional_id', professional.id)
+        .eq('client_id', params.id)
+        .eq('is_active', true)
+        .limit(1)
+        .single()
 
-    if (!assignment) {
-      return NextResponse.json({ success: false, error: 'Paciente nao vinculado' }, { status: 403 })
+      if (!assignment) {
+        return NextResponse.json({ success: false, error: 'Paciente nao vinculado' }, { status: 403 })
+      }
     }
 
     // Fetch records with circumference fields
