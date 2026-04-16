@@ -128,7 +128,27 @@ export function useBodyComposition(): UseBodyCompositionReturn {
                      row.pontuacao_inbody && row.pontuacao_inbody >= 60 ? 'abaixo_media' as const : 'fraco' as const
         },
 
+        circunferencias: {
+          torax: row.circ_torax ?? null,
+          cintura: row.circ_cintura ?? null,
+          abdome: row.circ_abdome ?? null,
+          quadril: row.circ_quadril ?? null,
+          braco_d: row.circ_braco_d ?? null,
+          braco_e: row.circ_braco_e ?? null,
+          braco_contraido_d: row.circ_braco_contraido_d ?? null,
+          braco_contraido_e: row.circ_braco_contraido_e ?? null,
+          antebraco_d: row.circ_antebraco_d ?? null,
+          antebraco_e: row.circ_antebraco_e ?? null,
+          coxa_d: row.circ_coxa_d ?? null,
+          coxa_e: row.circ_coxa_e ?? null,
+          coxa_medial_d: row.circ_coxa_medial_d ?? null,
+          coxa_medial_e: row.circ_coxa_medial_e ?? null,
+          panturrilha_d: row.circ_panturrilha_d ?? null,
+          panturrilha_e: row.circ_panturrilha_e ?? null,
+        },
+
         fonte: row.fonte || 'manual',
+        momento_avaliacao: row.momento_avaliacao ?? null,
         notas: row.notas,
         created_at: row.created_at
       }))
@@ -211,19 +231,30 @@ export function useBodyComposition(): UseBodyCompositionReturn {
         gordura_perna_esquerda: input.gordura_perna_esquerda || null,
         // Medidas circunferenciais
         circ_torax: input.circ_torax || null,
+        circ_cintura: input.circ_cintura || null,
         circ_abdome: input.circ_abdome || null,
+        circ_quadril: input.circ_quadril || null,
         circ_braco_d: input.circ_braco_d || null,
         circ_braco_e: input.circ_braco_e || null,
+        circ_braco_contraido_d: input.circ_braco_contraido_d || null,
+        circ_braco_contraido_e: input.circ_braco_contraido_e || null,
         circ_antebraco_d: input.circ_antebraco_d || null,
         circ_antebraco_e: input.circ_antebraco_e || null,
         circ_coxa_d: input.circ_coxa_d || null,
         circ_coxa_e: input.circ_coxa_e || null,
+        circ_coxa_medial_d: input.circ_coxa_medial_d || null,
+        circ_coxa_medial_e: input.circ_coxa_medial_e || null,
         circ_panturrilha_d: input.circ_panturrilha_d || null,
         circ_panturrilha_e: input.circ_panturrilha_e || null,
+        // Outros dados InBody
+        idade_metabolica: input.idade_metabolica || null,
         // Metadados
         fonte: input.fonte,
         notas: input.notas || null,
         foto_url: input.foto_url || null,
+        momento_avaliacao: input.momento_avaliacao || null,
+        avaliador_id: input.avaliador_id || null,
+        horario_coleta: input.horario_coleta || null,
       }
 
       // Salvar no Supabase

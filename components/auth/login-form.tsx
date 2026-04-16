@@ -95,11 +95,42 @@ export function LoginForm() {
             })
           }
         } else {
-          toast({
-            variant: "success",
-            title: "Bem-vindo!",
-            description: "Login realizado com sucesso.",
-          })
+          // Checar se é admin (super_admin / admin / secretary / support)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: profileData } = await (supabase as any)
+            .from('fitness_profiles')
+            .select('role, admin_type')
+            .eq('id', authData.user.id)
+            .single()
+
+          const profileRole = profileData?.role as string | undefined
+          const adminType = profileData?.admin_type as string | null | undefined
+
+          if (profileRole === 'super_admin' || profileRole === 'admin') {
+            // Support → pacientes; secretary → agenda; demais admins → dashboard
+            if (adminType === 'support') {
+              redirectPath = '/admin/pacientes'
+            } else if (adminType === 'secretary') {
+              redirectPath = '/admin/agenda'
+            } else {
+              redirectPath = '/admin'
+            }
+            toast({
+              variant: "success",
+              title: "Bem-vindo!",
+              description: adminType === 'support'
+                ? 'Acessando pacientes.'
+                : adminType === 'secretary'
+                  ? 'Acessando agenda.'
+                  : 'Acessando painel administrativo.',
+            })
+          } else {
+            toast({
+              variant: "success",
+              title: "Bem-vindo!",
+              description: "Login realizado com sucesso.",
+            })
+          }
         }
       }
 

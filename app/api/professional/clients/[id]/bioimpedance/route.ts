@@ -53,7 +53,7 @@ export async function GET(
     // Fetch bioimpedance records
     const { data: records, error } = await supabaseAdmin
       .from('fitness_body_compositions')
-      .select('id, data, peso, massa_muscular, gordura_corporal, agua_corporal, massa_ossea, metabolismo_basal, gordura_visceral, score_inbody, imc')
+      .select('id, data, peso, massa_muscular_esqueletica_kg, massa_gordura_kg, agua_corporal_l, minerais_kg, taxa_metabolica_basal, gordura_visceral, pontuacao_inbody, imc')
       .eq('user_id', params.id)
       .order('data', { ascending: false })
       .limit(30)
@@ -63,7 +63,22 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Erro ao buscar dados' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, records: records || [] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapped = (records || []).map((r: any) => ({
+      id: r.id,
+      data: r.data,
+      peso: r.peso,
+      massa_muscular: r.massa_muscular_esqueletica_kg,
+      gordura_corporal: r.massa_gordura_kg,
+      agua_corporal: r.agua_corporal_l,
+      massa_ossea: r.minerais_kg,
+      metabolismo_basal: r.taxa_metabolica_basal,
+      gordura_visceral: r.gordura_visceral,
+      score_inbody: r.pontuacao_inbody,
+      imc: r.imc,
+    }))
+
+    return NextResponse.json({ success: true, records: mapped })
   } catch (error) {
     console.error('Erro na API de bioimpedância:', error)
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })

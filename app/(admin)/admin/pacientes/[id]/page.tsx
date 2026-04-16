@@ -31,6 +31,10 @@ import { ProgramHeader } from '@/components/admin/patient/program-header'
 import { FichaVivaSection } from '@/components/admin/patient/ficha-viva-section'
 import { NewConsultationModal } from '@/components/admin/patient/new-consultation-modal'
 import { SuperadminConsultationsSection } from '@/components/admin/patient/superadmin-consultations-section'
+import { ProgressPhotosGrid } from '@/components/admin/patient/progress-photos-grid'
+import { BioimpedanceSection } from '@/components/admin/patient/bioimpedance-section'
+import { PhotosCompare } from '@/components/admin/patient/photos-compare'
+import { TabAntropometria } from '@/components/portal/client-detail/tab-antropometria'
 
 // === Types ===
 
@@ -334,6 +338,8 @@ export default function PatientDetailPage() {
 
   // secretary não vê dados clínicos/corporais
   const isSecretary = role === 'admin' && adminType === 'secretary'
+  // support: só vê/cadastra dados antropométricos
+  const isSupport = role === 'admin' && adminType === 'support'
 
   const [data, setData] = useState<PatientData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -396,6 +402,68 @@ export default function PatientDetailPage() {
 
   const weightTrend = stats.weight.change30d
   const WeightIcon = weightTrend > 0 ? TrendingUp : weightTrend < 0 ? TrendingDown : Minus
+
+  // === Support view: apenas identificação + dados antropométricos (com cadastro) ===
+  if (isSupport) {
+    return (
+      <div className="space-y-6 max-w-6xl">
+        <div>
+          <button
+            onClick={() => router.push('/admin/pacientes')}
+            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para pacientes
+          </button>
+
+          <div className="bg-white rounded-xl border border-border p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-dourado/20 flex items-center justify-center flex-shrink-0">
+                {patient.foto_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={patient.foto_url}
+                    alt={patient.nome}
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-dourado font-bold text-2xl">
+                    {patient.nome?.charAt(0).toUpperCase() || '?'}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-foreground">{patient.nome || 'Sem nome'}</h1>
+                <p className="text-foreground-secondary">{patient.email}</p>
+                <p className="text-xs text-foreground-muted mt-1">
+                  {patient.altura_cm && `${patient.altura_cm}cm`}
+                  {patient.genero && ` · ${patient.genero}`}
+                  {patient.data_nascimento && ` · Nasc. ${formatDate(patient.data_nascimento)}`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bioimpedância (InBody) */}
+        <BioimpedanceSection patientId={patientId} />
+
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Scale className="w-5 h-5 text-dourado" />
+            Dados Antropométricos
+          </h2>
+          <TabAntropometria patientId={patientId} canEdit={true} />
+        </div>
+
+        {/* Fotos padronizadas M0-M6 */}
+        <ProgressPhotosGrid patientId={patientId} />
+
+        {/* Comparador de fotos */}
+        <PhotosCompare patientId={patientId} patientName={patient.nome} />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -870,6 +938,15 @@ export default function PatientDetailPage() {
           </div>
         )}
       </Section>}
+
+      {/* Bioimpedância (InBody) — cadastro completo */}
+      {!isSecretary && <BioimpedanceSection patientId={patientId} />}
+
+      {/* Grid M0-M6 — fotos padronizadas da avaliação antropométrica */}
+      {!isSecretary && <ProgressPhotosGrid patientId={patientId} />}
+
+      {/* Comparador antes/depois com exportação */}
+      {!isSecretary && <PhotosCompare patientId={patientId} patientName={patient.nome} />}
 
       {/* Hidratação & Sono */}
       <Section title="Hidratação & Sono" icon={Droplets}>

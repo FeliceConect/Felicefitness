@@ -406,7 +406,8 @@ export function getNotificationTypeIcon(type: NotificationType): string {
     feed_reaction: '👍',
     feed_comment: '💬',
     feed_new_post: '📣',
-    streak_risk: '🔥'
+    streak_risk: '🔥',
+    bioimpedance_registered: '📊'
   }
   return icons[type] || '📱'
 }
@@ -430,7 +431,8 @@ export function getNotificationTypeColor(type: NotificationType): string {
     feed_reaction: '#c29863', // dourado
     feed_comment: '#c29863', // dourado
     feed_new_post: '#c29863', // dourado
-    streak_risk: '#EF4444' // red
+    streak_risk: '#EF4444', // red
+    bioimpedance_registered: '#c29863' // dourado
   }
   return colors[type] || '#6B7280'
 }

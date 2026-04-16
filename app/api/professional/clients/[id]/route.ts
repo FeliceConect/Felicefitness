@@ -120,7 +120,7 @@ export async function GET(
         .order('data', { ascending: false }),
       supabaseAdmin
         .from('fitness_body_compositions')
-        .select('id, user_id, data, peso, massa_muscular, gordura_corporal, gordura_percentual')
+        .select('id, user_id, data, peso, massa_muscular_esqueletica_kg, massa_gordura_kg, percentual_gordura')
         .eq('user_id', clientId)
         .gte('data', monthAgoStr)
         .order('data', { ascending: false }),
@@ -277,11 +277,11 @@ export async function GET(
       bioimpedance: lastBioimpedance ? {
         data: lastBioimpedance.data,
         peso: lastBioimpedance.peso,
-        massa_muscular: lastBioimpedance.massa_muscular,
-        gordura_corporal: lastBioimpedance.gordura_corporal,
-        agua_corporal: lastBioimpedance.agua_corporal,
-        massa_ossea: lastBioimpedance.massa_ossea,
-        metabolismo_basal: lastBioimpedance.metabolismo_basal
+        massa_muscular: lastBioimpedance.massa_muscular_esqueletica_kg,
+        gordura_corporal: lastBioimpedance.massa_gordura_kg,
+        agua_corporal: lastBioimpedance.agua_corporal_l,
+        massa_ossea: lastBioimpedance.minerais_kg,
+        metabolismo_basal: lastBioimpedance.taxa_metabolica_basal
       } : null
     })
 

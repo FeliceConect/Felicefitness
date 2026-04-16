@@ -130,7 +130,7 @@ export async function GET(
       // Composição corporal (últimas 10)
       supabaseAdmin
         .from('fitness_body_compositions')
-        .select('id, data, peso, massa_muscular, gordura_corporal, gordura_percentual')
+        .select('id, data, peso, massa_muscular_esqueletica_kg, massa_gordura_kg, percentual_gordura')
         .eq('user_id', patientId)
         .order('data', { ascending: false })
         .limit(10),
@@ -460,12 +460,26 @@ export async function GET(
       bodyComposition: bodyComp.map((b: Record<string, unknown>) => ({
         data: b.data,
         peso: b.peso,
-        massa_muscular: b.massa_muscular,
-        gordura_corporal: b.gordura_corporal,
-        gordura_percentual: b.gordura_percentual,
+        massa_muscular: b.massa_muscular_esqueletica_kg,
+        gordura_corporal: b.massa_gordura_kg,
+        gordura_percentual: b.percentual_gordura,
       })),
 
-      lastBioimpedance: lastBioResult.data?.[0] || null,
+      lastBioimpedance: lastBioResult.data?.[0] ? (() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const b: any = lastBioResult.data[0]
+        return {
+          data: b.data,
+          peso: b.peso,
+          massa_muscular: b.massa_muscular_esqueletica_kg,
+          gordura_corporal: b.massa_gordura_kg,
+          agua_corporal: b.agua_corporal_l,
+          massa_ossea: b.minerais_kg,
+          metabolismo_basal: b.taxa_metabolica_basal,
+          gordura_visceral: b.gordura_visceral,
+          pontuacao_inbody: b.pontuacao_inbody,
+        }
+      })() : null,
 
       progressPhotos: (photosResult.data || []).map((p: Record<string, unknown>) => ({
         id: p.id,

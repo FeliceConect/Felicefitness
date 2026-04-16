@@ -21,6 +21,7 @@ import {
   UserX
 } from 'lucide-react'
 import { roleLabels, UserRole } from '@/lib/admin/types'
+import { useUserRole } from '@/hooks/use-user-role'
 
 interface User {
   id: string
@@ -48,6 +49,9 @@ interface Pagination {
 }
 
 export default function UsersPage() {
+  const { role: currentRole, adminType: currentAdminType } = useUserRole()
+  // Secretária: só pode criar clientes, não pode deletar/inativar, não pode alterar roles
+  const isSecretary = currentRole === 'admin' && currentAdminType === 'secretary'
   const [users, setUsers] = useState<User[]>([])
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
@@ -126,12 +130,17 @@ export default function UsersPage() {
       return
     }
 
+    // Secretaria só pode criar usuários cliente
+    const payload = isSecretary
+      ? { ...newUser, role: 'client' as UserRole, admin_type: '' }
+      : newUser
+
     setCreating(true)
     try {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()
@@ -459,15 +468,17 @@ export default function UsersPage() {
                         {formatDate(user.created_at)}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user)
-                            setShowRoleModal(true)
-                          }}
-                          className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary hover:text-foreground transition-colors"
-                        >
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
+                        {!isSecretary && (
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user)
+                              setShowRoleModal(true)
+                            }}
+                            className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary hover:text-foreground transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -491,15 +502,17 @@ export default function UsersPage() {
                         <p className="text-sm text-foreground-secondary">{user.email}</p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user)
-                        setShowRoleModal(true)
-                      }}
-                      className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
+                    {!isSecretary && (
+                      <button
+                        onClick={() => {
+                          setSelectedUser(user)
+                          setShowRoleModal(true)
+                        }}
+                        className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
@@ -832,27 +845,41 @@ export default function UsersPage() {
               </div>
 
               {/* Role */}
-              <div>
-                <label className="block text-sm font-medium text-foreground-muted mb-1">
-                  Papel
-                </label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
-                  className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
-                >
-                  <option value="client">Cliente</option>
-                  <option value="trainer">Personal Trainer</option>
-                  <option value="nutritionist">Nutricionista</option>
-                  <option value="coach">Coach de Alta Performance</option>
-                  <option value="physiotherapist">Fisioterapeuta</option>
-                  <option value="admin">Administrador</option>
-                  <option value="super_admin">Super Admin</option>
-                </select>
-              </div>
+              {isSecretary ? (
+                <div>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">
+                    Papel
+                  </label>
+                  <div className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground-muted text-sm">
+                    Cliente
+                  </div>
+                  <p className="text-xs text-foreground-muted mt-1">
+                    A secretaria pode cadastrar apenas pacientes.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-foreground-muted mb-1">
+                    Papel
+                  </label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
+                    className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                  >
+                    <option value="client">Cliente</option>
+                    <option value="trainer">Personal Trainer</option>
+                    <option value="nutritionist">Nutricionista</option>
+                    <option value="coach">Coach de Alta Performance</option>
+                    <option value="physiotherapist">Fisioterapeuta</option>
+                    <option value="admin">Administrador</option>
+                    <option value="super_admin">Super Admin</option>
+                  </select>
+                </div>
+              )}
 
               {/* Admin Type (only when role is admin) */}
-              {newUser.role === 'admin' && (
+              {!isSecretary && newUser.role === 'admin' && (
                 <div>
                   <label className="block text-sm font-medium text-foreground-muted mb-1">
                     Tipo de Admin

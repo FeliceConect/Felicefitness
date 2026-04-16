@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { compressImageFile } from '@/lib/images/compress'
 
 function getAdminClient() {
   return createAdminClient(
@@ -41,16 +42,14 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getAdminClient()
 
-    const fileExt = file.name.split('.').pop() || 'jpg'
-    const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`
-
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    // Comprime com sharp (WebP 1080px q82) — reduz ~16× o tamanho final
+    const compressed = await compressImageFile(file)
+    const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${compressed.extension}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('feed-images')
-      .upload(fileName, buffer, {
-        contentType: file.type,
+      .upload(fileName, compressed.buffer, {
+        contentType: compressed.contentType,
         upsert: false,
       })
 

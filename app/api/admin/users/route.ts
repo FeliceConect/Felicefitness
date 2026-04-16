@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabase as any)
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
@@ -194,6 +194,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { email, password, nome, role, admin_type } = body
+
+    // Secretária só pode criar usuários com role 'client'
+    if (profile.role === 'admin' && profile.admin_type === 'secretary' && role && role !== 'client') {
+      return NextResponse.json(
+        { success: false, error: 'Secretaria só pode cadastrar pacientes' },
+        { status: 403 }
+      )
+    }
 
     if (!email || !password) {
       return NextResponse.json(
@@ -340,13 +348,21 @@ export async function PATCH(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabase as any)
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
     if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json(
         { success: false, error: 'Acesso negado' },
+        { status: 403 }
+      )
+    }
+
+    // Secretária não pode alterar roles
+    if (profile.role === 'admin' && profile.admin_type === 'secretary') {
+      return NextResponse.json(
+        { success: false, error: 'Secretaria não pode alterar papéis' },
         { status: 403 }
       )
     }
@@ -442,13 +458,21 @@ export async function DELETE(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabase as any)
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
     if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json(
         { success: false, error: 'Acesso negado' },
+        { status: 403 }
+      )
+    }
+
+    // Secretária não pode deletar/inativar/reativar usuários
+    if (profile.role === 'admin' && profile.admin_type === 'secretary') {
+      return NextResponse.json(
+        { success: false, error: 'Secretaria não pode remover ou inativar usuários' },
         { status: 403 }
       )
     }

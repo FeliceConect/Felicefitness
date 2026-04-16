@@ -71,8 +71,10 @@ const segmentalMagraFields: FormField[] = [
 ]
 
 // Medidas circunferenciais (manual)
-type CircumferenceField = 'circ_torax' | 'circ_abdome' | 'circ_braco_d' | 'circ_braco_e' |
-  'circ_antebraco_d' | 'circ_antebraco_e' | 'circ_coxa_d' | 'circ_coxa_e' |
+type CircumferenceField = 'circ_torax' | 'circ_cintura' | 'circ_abdome' | 'circ_quadril' |
+  'circ_braco_d' | 'circ_braco_e' | 'circ_braco_contraido_d' | 'circ_braco_contraido_e' |
+  'circ_antebraco_d' | 'circ_antebraco_e' |
+  'circ_coxa_d' | 'circ_coxa_e' | 'circ_coxa_medial_d' | 'circ_coxa_medial_e' |
   'circ_panturrilha_d' | 'circ_panturrilha_e'
 
 interface CircumferenceFormField {
@@ -83,13 +85,19 @@ interface CircumferenceFormField {
 
 const circumferenceFields: CircumferenceFormField[] = [
   { key: 'circ_torax', label: 'Tórax', placeholder: '100' },
+  { key: 'circ_cintura', label: 'Cintura', placeholder: '80' },
   { key: 'circ_abdome', label: 'Abdome', placeholder: '85' },
-  { key: 'circ_braco_d', label: 'Braço Direito', placeholder: '35' },
-  { key: 'circ_braco_e', label: 'Braço Esquerdo', placeholder: '34.5' },
+  { key: 'circ_quadril', label: 'Quadril', placeholder: '100' },
+  { key: 'circ_braco_d', label: 'Braço Direito (relaxado)', placeholder: '35' },
+  { key: 'circ_braco_e', label: 'Braço Esquerdo (relaxado)', placeholder: '34.5' },
+  { key: 'circ_braco_contraido_d', label: 'Braço Direito (contraído)', placeholder: '37' },
+  { key: 'circ_braco_contraido_e', label: 'Braço Esquerdo (contraído)', placeholder: '36.5' },
   { key: 'circ_antebraco_d', label: 'Antebraço Direito', placeholder: '28' },
   { key: 'circ_antebraco_e', label: 'Antebraço Esquerdo', placeholder: '27.5' },
-  { key: 'circ_coxa_d', label: 'Coxa Direita', placeholder: '58' },
-  { key: 'circ_coxa_e', label: 'Coxa Esquerda', placeholder: '57.5' },
+  { key: 'circ_coxa_d', label: 'Coxa Proximal Direita', placeholder: '58' },
+  { key: 'circ_coxa_e', label: 'Coxa Proximal Esquerda', placeholder: '57.5' },
+  { key: 'circ_coxa_medial_d', label: 'Coxa Medial Direita', placeholder: '52' },
+  { key: 'circ_coxa_medial_e', label: 'Coxa Medial Esquerda', placeholder: '51.5' },
   { key: 'circ_panturrilha_d', label: 'Panturrilha Direita', placeholder: '38' },
   { key: 'circ_panturrilha_e', label: 'Panturrilha Esquerda', placeholder: '37.5' },
 ]
@@ -191,13 +199,19 @@ export default function NovaMedicaoPage() {
         controle_muscular: formData.controle_muscular,
         // Medidas circunferenciais
         circ_torax: circumferenceData.circ_torax,
+        circ_cintura: circumferenceData.circ_cintura,
         circ_abdome: circumferenceData.circ_abdome,
+        circ_quadril: circumferenceData.circ_quadril,
         circ_braco_d: circumferenceData.circ_braco_d,
         circ_braco_e: circumferenceData.circ_braco_e,
+        circ_braco_contraido_d: circumferenceData.circ_braco_contraido_d,
+        circ_braco_contraido_e: circumferenceData.circ_braco_contraido_e,
         circ_antebraco_d: circumferenceData.circ_antebraco_d,
         circ_antebraco_e: circumferenceData.circ_antebraco_e,
         circ_coxa_d: circumferenceData.circ_coxa_d,
         circ_coxa_e: circumferenceData.circ_coxa_e,
+        circ_coxa_medial_d: circumferenceData.circ_coxa_medial_d,
+        circ_coxa_medial_e: circumferenceData.circ_coxa_medial_e,
         circ_panturrilha_d: circumferenceData.circ_panturrilha_d,
         circ_panturrilha_e: circumferenceData.circ_panturrilha_e,
       }

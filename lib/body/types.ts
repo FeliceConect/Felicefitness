@@ -56,6 +56,26 @@ export interface InBodyScore {
   categoria: 'fraco' | 'abaixo_media' | 'normal' | 'bom' | 'excelente'
 }
 
+// Medidas circunferenciais (fita métrica)
+export interface CircumferenceMeasurements {
+  torax: number | null
+  cintura: number | null
+  abdome: number | null
+  quadril: number | null
+  braco_d: number | null
+  braco_e: number | null
+  braco_contraido_d: number | null
+  braco_contraido_e: number | null
+  antebraco_d: number | null
+  antebraco_e: number | null
+  coxa_d: number | null
+  coxa_e: number | null
+  coxa_medial_d: number | null
+  coxa_medial_e: number | null
+  panturrilha_d: number | null
+  panturrilha_e: number | null
+}
+
 // Medição completa de bioimpedância
 export interface BodyCompositionMeasurement {
   id: string
@@ -83,8 +103,12 @@ export interface BodyCompositionMeasurement {
   // Pontuação InBody
   score: InBodyScore
 
+  // Circunferências (fita métrica)
+  circunferencias?: CircumferenceMeasurements
+
   // Metadados
   fonte: 'inbody' | 'manual' | 'balanca_smart'
+  momento_avaliacao?: string | null
   notas?: string
   created_at: string
   updated_at?: string
@@ -232,19 +256,33 @@ export interface NewMeasurementInput {
 
   // Medidas circunferenciais (cm) - manual
   circ_torax?: number
+  circ_cintura?: number
   circ_abdome?: number
+  circ_quadril?: number
   circ_braco_d?: number
   circ_braco_e?: number
+  circ_braco_contraido_d?: number
+  circ_braco_contraido_e?: number
   circ_antebraco_d?: number
   circ_antebraco_e?: number
   circ_coxa_d?: number
   circ_coxa_e?: number
+  circ_coxa_medial_d?: number
+  circ_coxa_medial_e?: number
   circ_panturrilha_d?: number
   circ_panturrilha_e?: number
+
+  // Outros dados InBody
+  idade_metabolica?: number
 
   fonte: 'inbody' | 'manual'
   notas?: string
   foto_url?: string
+
+  // Metadados da coleta (profissional)
+  momento_avaliacao?: string
+  avaliador_id?: string
+  horario_coleta?: string
 }
 
 // Tipo para badge/chip de status

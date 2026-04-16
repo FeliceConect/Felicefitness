@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard,
@@ -27,11 +27,24 @@ interface AdminLayoutProps {
   children: React.ReactNode
 }
 
+// Rotas permitidas para admin_type='support' (apenas agenda + pacientes)
+const SUPPORT_ALLOWED_PREFIXES = ['/admin/agenda', '/admin/pacientes']
+const SUPPORT_LANDING = '/admin/pacientes'
+// Rotas permitidas para admin_type='secretary' (agenda + usuários + atribuições)
+const SECRETARY_ALLOWED_PREFIXES = ['/admin/agenda', '/admin/users', '/admin/assignments']
+const SECRETARY_LANDING = '/admin/agenda'
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { role, adminType, loading, isAdmin, email } = useUserRole()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const isSupport = role === 'admin' && adminType === 'support'
+  const isSecretary = role === 'admin' && adminType === 'secretary'
+  // Support e secretary não devem voltar para o app (não são pacientes)
+  const canGoToApp = !(role === 'admin' && (adminType === 'support' || adminType === 'secretary'))
 
   // Redirecionar se não for admin
   useEffect(() => {
@@ -39,6 +52,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       router.push('/')
     }
   }, [loading, isAdmin, router])
+
+  // Guard: support só pode acessar /admin/agenda e /admin/pacientes
+  useEffect(() => {
+    if (loading || !isSupport || !pathname) return
+    const isAllowed = SUPPORT_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
+    if (!isAllowed) {
+      router.replace(SUPPORT_LANDING)
+    }
+  }, [loading, isSupport, pathname, router])
+
+  // Guard: secretary só pode acessar /admin/agenda, /admin/users e /admin/assignments
+  useEffect(() => {
+    if (loading || !isSecretary || !pathname) return
+    const isAllowed = SECRETARY_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
+    if (!isAllowed) {
+      router.replace(SECRETARY_LANDING)
+    }
+  }, [loading, isSecretary, pathname, router])
 
   // Loading state
   if (loading) {
@@ -66,30 +97,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     : email === 'marinella.guimaraes@gmail.com' ? 'Marinella'
     : email?.split('@')[0] || 'Admin'
 
-  // Menu completo — filtrado por admin_type (secretary/support)
-  // super_admin e admin sem admin_type veem tudo
-  const allMenuItems = [
-    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', access: 'all' },
-    { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda', access: 'all' },
-    { href: '/admin/pacientes', icon: UserSearch, label: 'Pacientes', access: 'all' },
-    { href: '/admin/users', icon: Users, label: 'Usuários', access: 'all' },
-    { href: '/admin/professionals', icon: UserCog, label: 'Profissionais', access: 'all' },
-    { href: '/admin/assignments', icon: Link2, label: 'Atribuições', access: 'all' },
-    { href: '/admin/rankings', icon: Trophy, label: 'Rankings', access: 'super_admin' },
-    { href: '/admin/formularios', icon: ClipboardList, label: 'Formulários', access: 'all' },
-    { href: '/admin/prontuario', icon: FileText, label: 'Prontuário', access: 'super_admin' },
-    { href: '/admin/costs', icon: DollarSign, label: 'Custos API', access: 'super_admin' },
-    { href: '/admin/settings', icon: Settings, label: 'Configurações', access: 'super_admin' },
+  // Menu completo — cada item lista os contextos que podem vê-lo
+  // Contextos: 'super' (super_admin + admin legado), 'secretary', 'support'
+  type MenuContext = 'super' | 'secretary' | 'support'
+  const allMenuItems: Array<{ href: string; icon: React.ElementType; label: string; contexts: MenuContext[] }> = [
+    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', contexts: ['super'] },
+    { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda', contexts: ['super', 'secretary', 'support'] },
+    { href: '/admin/pacientes', icon: UserSearch, label: 'Pacientes', contexts: ['super', 'support'] },
+    { href: '/admin/users', icon: Users, label: 'Usuários', contexts: ['super', 'secretary'] },
+    { href: '/admin/professionals', icon: UserCog, label: 'Profissionais', contexts: ['super'] },
+    { href: '/admin/assignments', icon: Link2, label: 'Atribuições', contexts: ['super', 'secretary'] },
+    { href: '/admin/rankings', icon: Trophy, label: 'Rankings', contexts: ['super'] },
+    { href: '/admin/formularios', icon: ClipboardList, label: 'Formulários', contexts: ['super'] },
+    { href: '/admin/prontuario', icon: FileText, label: 'Prontuário', contexts: ['super'] },
+    { href: '/admin/costs', icon: DollarSign, label: 'Custos API', contexts: ['super'] },
+    { href: '/admin/settings', icon: Settings, label: 'Configurações', contexts: ['super'] },
   ]
 
-  const menuItems = allMenuItems.filter(item => {
-    // super_admin vê tudo
-    if (role === 'super_admin') return true
-    // admin sem admin_type (legado) vê tudo
-    if (!adminType) return true
-    // secretary e support veem apenas itens com access 'all'
-    return item.access === 'all'
-  })
+  const userContext: MenuContext =
+    role === 'super_admin' || !adminType
+      ? 'super'
+      : adminType === 'secretary'
+        ? 'secretary'
+        : 'support'
+
+  const menuItems = allMenuItems.filter(item => item.contexts.includes(userContext))
 
   return (
     <div className="min-h-screen bg-background">
@@ -176,13 +208,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <p className="text-xs text-nude">{roleLabels[role]}</p>
                 </div>
               </div>
-              <Link
-                href="/"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-fendi hover:text-seda hover:bg-vinho/30 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-sm">Voltar ao App</span>
-              </Link>
+              {canGoToApp && (
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-fendi hover:text-seda hover:bg-vinho/30 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="text-sm">Voltar ao App</span>
+                </Link>
+              )}
               <button
                 onClick={async () => {
                   const { createClient } = await import('@/lib/supabase/client')
@@ -198,12 +232,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              <Link
-                href="/"
-                className="flex items-center justify-center p-2 rounded-lg text-fendi hover:text-seda hover:bg-vinho/30"
-              >
-                <LogOut className="w-5 h-5" />
-              </Link>
+              {canGoToApp && (
+                <Link
+                  href="/"
+                  className="flex items-center justify-center p-2 rounded-lg text-fendi hover:text-seda hover:bg-vinho/30"
+                >
+                  <LogOut className="w-5 h-5" />
+                </Link>
+              )}
               <button
                 onClick={async () => {
                   const { createClient } = await import('@/lib/supabase/client')

@@ -16,6 +16,7 @@ export type NotificationType =
   | 'feed_comment'
   | 'feed_new_post'
   | 'streak_risk'
+  | 'bioimpedance_registered'
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent'
 
