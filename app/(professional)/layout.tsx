@@ -24,7 +24,8 @@ import {
   Stethoscope,
   UserCog,
   Link2,
-  Trophy
+  Trophy,
+  Smartphone
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 
@@ -115,6 +116,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
 
   // Itens admin — só visíveis para super_admin
   const adminMenuItems = isSuperAdmin ? [
+    { href: '/dashboard', icon: Smartphone, label: 'Ir para o App' },
     { href: '/admin', icon: LayoutDashboard, label: 'Painel Admin' },
     { href: '/admin/users', icon: Users, label: 'Usuários' },
     { href: '/admin/professionals', icon: UserCog, label: 'Profissionais' },
