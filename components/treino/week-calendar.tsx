@@ -56,6 +56,7 @@ export function WeekCalendar({ days, onSelectDay, selectedDate }: WeekCalendarPr
         {days.map((day) => {
           const isSelected = selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(day.date, 'yyyy-MM-dd')
           const isTodayDate = isToday(day.date)
+          const workoutCount = day.workouts?.length ?? (day.workout ? 1 : 0)
 
           return (
             <motion.button
@@ -83,6 +84,13 @@ export function WeekCalendar({ days, onSelectDay, selectedDate }: WeekCalendarPr
               ) : statusIcons[day.status] ? (
                 <span className="text-xs">{statusIcons[day.status]}</span>
               ) : null}
+
+              {/* Badge de múltiplos treinos */}
+              {workoutCount > 1 && (
+                <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-dourado text-white text-[10px] font-bold flex items-center justify-center border border-white shadow-sm">
+                  {workoutCount}
+                </div>
+              )}
 
               {/* Indicador de hoje */}
               {isTodayDate && (

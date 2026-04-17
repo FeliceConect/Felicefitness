@@ -18,7 +18,10 @@ import {
   Dumbbell,
   Clock,
   GripVertical,
-  Pencil
+  Pencil,
+  Video,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 import { toast } from 'sonner'
@@ -35,6 +38,7 @@ interface Exercise {
   weight_suggestion?: string
   rpe_target?: number
   instructions?: string
+  video_url?: string
   is_warmup: boolean
   order_index: number
 }
@@ -95,6 +99,16 @@ const GOAL_LABELS: Record<string, string> = {
   custom: 'Personalizado'
 }
 
+const WEEKDAY_OPTIONS = [
+  { value: 1, label: 'Segunda' },
+  { value: 2, label: 'Terça' },
+  { value: 3, label: 'Quarta' },
+  { value: 4, label: 'Quinta' },
+  { value: 5, label: 'Sexta' },
+  { value: 6, label: 'Sábado' },
+  { value: 0, label: 'Domingo' },
+]
+
 const MUSCLE_GROUPS = [
   { value: 'chest', label: 'Peito' },
   { value: 'back', label: 'Costas' },
@@ -122,6 +136,7 @@ export default function TrainingProgramDetailPage() {
   const [expandedWeeks, setExpandedWeeks] = useState<number[]>([])
   const [expandedDays, setExpandedDays] = useState<string[]>([])
   const [showAddExerciseModal, setShowAddExerciseModal] = useState<{ weekIndex: number; dayIndex: number } | null>(null)
+  const [editingExercise, setEditingExercise] = useState<{ weekIndex: number; dayIndex: number; exerciseIndex: number; exercise: Exercise } | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [showClientModal, setShowClientModal] = useState(false)
   const [isEditingName, setIsEditingName] = useState(false)
@@ -199,6 +214,7 @@ export default function TrainingProgramDetailPage() {
             notes: week.notes,
             days: week.days.map((day, dayIdx) => ({
               dayNumber: dayIdx + 1,
+              dayOfWeek: day.day_of_week,
               name: day.name,
               muscleGroups: day.muscle_groups,
               estimatedDuration: day.estimated_duration,
@@ -217,6 +233,7 @@ export default function TrainingProgramDetailPage() {
                 weightSuggestion: ex.weight_suggestion,
                 rpeTarget: ex.rpe_target,
                 instructions: ex.instructions,
+                videoUrl: ex.video_url,
                 isWarmup: ex.is_warmup,
                 orderIndex: exIdx
               }))
@@ -323,9 +340,38 @@ export default function TrainingProgramDetailPage() {
 
   function removeExercise(weekIndex: number, dayIndex: number, exerciseIndex: number) {
     if (!program) return
+    if (!confirm('Remover este exercício?')) return
 
     const newWeeks = [...program.weeks]
     newWeeks[weekIndex].days[dayIndex].exercises.splice(exerciseIndex, 1)
+    setProgram({ ...program, weeks: newWeeks })
+    setHasChanges(true)
+  }
+
+  function updateExercise(weekIndex: number, dayIndex: number, exerciseIndex: number, exercise: Exercise) {
+    if (!program) return
+
+    const newWeeks = [...program.weeks]
+    newWeeks[weekIndex].days[dayIndex].exercises[exerciseIndex] = {
+      ...newWeeks[weekIndex].days[dayIndex].exercises[exerciseIndex],
+      ...exercise,
+    }
+    setProgram({ ...program, weeks: newWeeks })
+    setHasChanges(true)
+    setEditingExercise(null)
+  }
+
+  function moveExercise(weekIndex: number, dayIndex: number, exerciseIndex: number, direction: 'up' | 'down') {
+    if (!program) return
+
+    const exercises = program.weeks[weekIndex].days[dayIndex].exercises
+    const targetIndex = direction === 'up' ? exerciseIndex - 1 : exerciseIndex + 1
+    if (targetIndex < 0 || targetIndex >= exercises.length) return
+
+    const newWeeks = [...program.weeks]
+    const reordered = [...exercises]
+    ;[reordered[exerciseIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[exerciseIndex]]
+    newWeeks[weekIndex].days[dayIndex].exercises = reordered
     setProgram({ ...program, weeks: newWeeks })
     setHasChanges(true)
   }
@@ -337,6 +383,38 @@ export default function TrainingProgramDetailPage() {
     newWeeks[weekIndex].days[dayIndex].name = name
     setProgram({ ...program, weeks: newWeeks })
     setHasChanges(true)
+  }
+
+  function updateDayOfWeek(weekIndex: number, dayIndex: number, value: string) {
+    if (!program) return
+
+    const parsedValue = value === '' ? undefined : parseInt(value, 10)
+
+    if (parsedValue !== undefined) {
+      const conflict = program.weeks[weekIndex].days.some(
+        (d, idx) => idx !== dayIndex && d.day_of_week === parsedValue
+      )
+      if (conflict) {
+        const dayLabel = WEEKDAY_OPTIONS.find(o => o.value === parsedValue)?.label ?? 'este dia'
+        toast.warning(`Já existe um treino para ${dayLabel} nesta semana.`, {
+          description: 'Você pode manter mais de um treino no mesmo dia se quiser.',
+        })
+      }
+    }
+
+    const newWeeks = [...program.weeks]
+    newWeeks[weekIndex].days[dayIndex].day_of_week = parsedValue
+    setProgram({ ...program, weeks: newWeeks })
+    setHasChanges(true)
+  }
+
+  function hasDayOfWeekConflict(weekIndex: number, dayIndex: number): boolean {
+    if (!program) return false
+    const day = program.weeks[weekIndex].days[dayIndex]
+    if (day.day_of_week === undefined) return false
+    return program.weeks[weekIndex].days.some(
+      (d, idx) => idx !== dayIndex && d.day_of_week === day.day_of_week
+    )
   }
 
   function copyWeekToAll(fromWeekIndex: number) {
@@ -633,17 +711,45 @@ export default function TrainingProgramDetailPage() {
                         <div key={dayIndex} className="bg-background-elevated rounded-lg overflow-hidden">
                           {/* Day Header */}
                           <div
-                            className="flex items-center justify-between p-3 cursor-pointer hover:bg-border/50"
+                            className="flex items-center justify-between p-3 cursor-pointer hover:bg-border/50 gap-2"
                             onClick={() => toggleDay(dayKey)}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
                               <input
                                 type="text"
                                 value={day.name}
                                 onChange={(e) => updateDayName(weekIndex, dayIndex, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-transparent text-foreground font-medium focus:outline-none focus:bg-white px-2 py-1 rounded"
+                                className="bg-transparent text-foreground font-medium focus:outline-none focus:bg-white px-2 py-1 rounded min-w-0 max-w-[160px]"
                               />
+                              <select
+                                value={day.day_of_week ?? ''}
+                                onChange={(e) => updateDayOfWeek(weekIndex, dayIndex, e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`bg-white border text-xs rounded px-2 py-1 focus:outline-none ${
+                                  hasDayOfWeekConflict(weekIndex, dayIndex)
+                                    ? 'border-orange-500 text-orange-600 focus:border-orange-500'
+                                    : 'border-border text-foreground focus:border-dourado'
+                                }`}
+                                title={
+                                  hasDayOfWeekConflict(weekIndex, dayIndex)
+                                    ? 'Já existe outro treino marcado para este dia'
+                                    : 'Dia da semana em que este treino será executado'
+                                }
+                              >
+                                <option value="">Auto (sequência)</option>
+                                {WEEKDAY_OPTIONS.map(opt => (
+                                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                              </select>
+                              {hasDayOfWeekConflict(weekIndex, dayIndex) && (
+                                <span
+                                  className="text-xs text-orange-600 italic"
+                                  title="Outro treino já está marcado para este dia"
+                                >
+                                  duplicado
+                                </span>
+                              )}
                               <span className="text-xs text-foreground-secondary">
                                 {day.exercises.length} exercícios
                               </span>
@@ -675,23 +781,61 @@ export default function TrainingProgramDetailPage() {
                                   {day.exercises.map((exercise, exIndex) => (
                                     <div
                                       key={exIndex}
-                                      className="flex items-center justify-between bg-white border border-border rounded px-3 py-2"
+                                      className="flex items-center justify-between bg-white border border-border rounded-lg px-3 py-2 gap-2"
                                     >
-                                      <div className="flex items-center gap-3">
-                                        <GripVertical className="w-4 h-4 text-foreground-muted" />
-                                        <div>
-                                          <p className="text-foreground text-sm">{exercise.exercise_name}</p>
-                                          <p className="text-xs text-foreground-secondary">
+                                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <GripVertical className="w-4 h-4 text-foreground-muted flex-shrink-0" />
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-foreground text-sm flex items-center gap-1.5">
+                                            <span className="truncate">{exercise.exercise_name}</span>
+                                            {exercise.video_url && (
+                                              <span className="inline-flex items-center flex-shrink-0" title="Vídeo configurado">
+                                                <Video className="w-3.5 h-3.5 text-dourado" />
+                                              </span>
+                                            )}
+                                          </p>
+                                          <p className="text-xs text-foreground-secondary truncate">
                                             {exercise.sets} x {exercise.reps} | {exercise.rest_seconds}s descanso
+                                            {exercise.is_warmup && ' • aquecimento'}
                                           </p>
                                         </div>
                                       </div>
-                                      <button
-                                        onClick={() => removeExercise(weekIndex, dayIndex, exIndex)}
-                                        className="text-red-400 hover:text-red-300"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
+                                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                                        <button
+                                          onClick={() => moveExercise(weekIndex, dayIndex, exIndex, 'up')}
+                                          disabled={exIndex === 0}
+                                          className="p-1.5 rounded text-foreground-secondary hover:text-foreground hover:bg-background-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                          title="Mover para cima"
+                                          aria-label="Mover exercício para cima"
+                                        >
+                                          <ArrowUp className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => moveExercise(weekIndex, dayIndex, exIndex, 'down')}
+                                          disabled={exIndex === day.exercises.length - 1}
+                                          className="p-1.5 rounded text-foreground-secondary hover:text-foreground hover:bg-background-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                          title="Mover para baixo"
+                                          aria-label="Mover exercício para baixo"
+                                        >
+                                          <ArrowDown className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingExercise({ weekIndex, dayIndex, exerciseIndex: exIndex, exercise })}
+                                          className="p-1.5 rounded text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                          title="Editar exercício"
+                                          aria-label="Editar exercício"
+                                        >
+                                          <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => removeExercise(weekIndex, dayIndex, exIndex)}
+                                          className="p-1.5 rounded text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                          title="Remover exercício"
+                                          aria-label="Remover exercício"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -737,11 +881,27 @@ export default function TrainingProgramDetailPage() {
 
       {/* Add Exercise Modal */}
       {showAddExerciseModal && (
-        <AddExerciseModal
+        <ExerciseFormModal
+          mode="add"
           onClose={() => setShowAddExerciseModal(null)}
-          onAdd={(exercise) => addExercise(
+          onSave={(exercise) => addExercise(
             showAddExerciseModal.weekIndex,
             showAddExerciseModal.dayIndex,
+            exercise
+          )}
+        />
+      )}
+
+      {/* Edit Exercise Modal */}
+      {editingExercise && (
+        <ExerciseFormModal
+          mode="edit"
+          initialExercise={editingExercise.exercise}
+          onClose={() => setEditingExercise(null)}
+          onSave={(exercise) => updateExercise(
+            editingExercise.weekIndex,
+            editingExercise.dayIndex,
+            editingExercise.exerciseIndex,
             exercise
           )}
         />
@@ -833,32 +993,37 @@ export default function TrainingProgramDetailPage() {
   )
 }
 
-// Add Exercise Modal Component
-function AddExerciseModal({
+// Exercise Form Modal Component (handles both add and edit)
+function ExerciseFormModal({
+  mode,
+  initialExercise,
   onClose,
-  onAdd
+  onSave
 }: {
+  mode: 'add' | 'edit'
+  initialExercise?: Exercise
   onClose: () => void
-  onAdd: (exercise: Exercise) => void
+  onSave: (exercise: Exercise) => void
 }) {
-  const [formData, setFormData] = useState({
-    exercise_name: '',
-    muscle_group: '',
-    sets: '3',
-    reps: '10-12',
-    rest_seconds: '60',
-    tempo: '',
-    weight_suggestion: '',
-    rpe_target: '',
-    instructions: '',
-    is_warmup: false
-  })
+  const [formData, setFormData] = useState(() => ({
+    exercise_name: initialExercise?.exercise_name ?? '',
+    muscle_group: initialExercise?.muscle_group ?? '',
+    sets: initialExercise?.sets?.toString() ?? '3',
+    reps: initialExercise?.reps ?? '10-12',
+    rest_seconds: initialExercise?.rest_seconds?.toString() ?? '60',
+    tempo: initialExercise?.tempo ?? '',
+    weight_suggestion: initialExercise?.weight_suggestion ?? '',
+    rpe_target: initialExercise?.rpe_target?.toString() ?? '',
+    instructions: initialExercise?.instructions ?? '',
+    video_url: initialExercise?.video_url ?? '',
+    is_warmup: initialExercise?.is_warmup ?? false,
+  }))
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!formData.exercise_name) return
 
-    onAdd({
+    onSave({
       exercise_name: formData.exercise_name,
       muscle_group: formData.muscle_group,
       sets: parseInt(formData.sets) || 3,
@@ -868,8 +1033,9 @@ function AddExerciseModal({
       weight_suggestion: formData.weight_suggestion,
       rpe_target: formData.rpe_target ? parseInt(formData.rpe_target) : undefined,
       instructions: formData.instructions,
+      video_url: formData.video_url.trim() || undefined,
       is_warmup: formData.is_warmup,
-      order_index: 0
+      order_index: initialExercise?.order_index ?? 0
     })
   }
 
@@ -877,7 +1043,9 @@ function AddExerciseModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl max-w-md w-full p-6 my-8 border border-border">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">Adicionar Exercício</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            {mode === 'edit' ? 'Editar Exercício' : 'Adicionar Exercício'}
+          </h3>
           <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
             <X className="w-5 h-5 text-foreground-secondary" />
           </button>
@@ -983,6 +1151,23 @@ function AddExerciseModal({
             />
           </div>
 
+          <div>
+            <label className="block text-xs text-foreground-secondary mb-1 flex items-center gap-1.5">
+              <Video className="w-3.5 h-3.5 text-dourado" />
+              Link do vídeo (YouTube)
+            </label>
+            <input
+              type="url"
+              value={formData.video_url}
+              onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
+            />
+            <p className="text-xs text-foreground-muted mt-1">
+              O paciente verá o vídeo dentro do app ao clicar em &ldquo;Como fazer&rdquo;.
+            </p>
+          </div>
+
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -1006,7 +1191,7 @@ function AddExerciseModal({
               className="flex-1 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-colors flex items-center justify-center gap-2"
             >
               <Check className="w-4 h-4" />
-              Adicionar
+              {mode === 'edit' ? 'Salvar' : 'Adicionar'}
             </button>
           </div>
         </form>

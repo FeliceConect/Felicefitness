@@ -549,9 +549,19 @@ export default function WorkoutExecutionPage() {
         <ExerciseVideoModal
           isOpen={showVideoModal}
           onClose={() => setShowVideoModal(false)}
-          videoUrl={exerciseVideoUrls[currentExercise.exercise_id] || exerciseVideoUrls[currentExercise.nome?.toLowerCase()] || ''}
+          videoUrl={
+            currentExercise.video_url ||
+            exerciseVideoUrls[currentExercise.exercise_id] ||
+            exerciseVideoUrls[currentExercise.nome?.toLowerCase()] ||
+            ''
+          }
           exerciseName={currentExercise.nome}
-          instructions={exerciseInstructions[currentExercise.exercise_id] || exerciseInstructions[currentExercise.nome?.toLowerCase()] || ''}
+          instructions={
+            currentExercise.instructions ||
+            exerciseInstructions[currentExercise.exercise_id] ||
+            exerciseInstructions[currentExercise.nome?.toLowerCase()] ||
+            ''
+          }
         />
       )}
 

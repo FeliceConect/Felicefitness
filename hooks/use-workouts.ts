@@ -56,6 +56,8 @@ interface TrainingExercise {
   weight_suggestion: string | null
   order_index: number
   notes: string | null
+  video_url: string | null
+  instructions: string | null
 }
 
 interface UseWorkoutsReturn {
@@ -270,7 +272,9 @@ export function useWorkouts(): UseWorkoutsReturn {
                   repeticoes: ex.reps || '12',
                   descanso: ex.rest_seconds || 60,
                   carga_sugerida: ex.weight_suggestion ? parseFloat(ex.weight_suggestion) : undefined,
-                  is_superset: false
+                  is_superset: false,
+                  video_url: ex.video_url || undefined,
+                  instructions: ex.instructions || undefined,
                 }))
             }
           })
@@ -353,6 +357,8 @@ export function useWorkouts(): UseWorkoutsReturn {
           nome: te.nome,
           ordem: te.ordem,
           is_superset: te.is_superset,
+          video_url: te.video_url,
+          instructions: te.instructions,
           series: Array.from({ length: te.series }, (_, i) => ({
             id: `${w.id}-set-${idx}-${i}`,
             workout_exercise_id: `${w.id}-ex-${idx}`,
@@ -390,41 +396,85 @@ export function useWorkouts(): UseWorkoutsReturn {
       const dayOfWeek = date.getDay()
       const dateStr = format(date, 'yyyy-MM-dd')
 
-      // Verificar se existe treino real para este dia
-      // Priorizar treinos concluídos sobre pendentes
-      const dayWorkouts = workouts.filter(w => w.data === dateStr)
-      const realWorkout = dayWorkouts.find(w => w.status === 'concluido') || dayWorkouts[0]
+      // Buscar TODOS os treinos reais para este dia
+      const dayWorkoutsRaw = workouts.filter(w => w.data === dateStr)
 
-      // Buscar template para este dia da semana
-      const template = templates.find(t => t.dia_semana === dayOfWeek)
+      // Buscar TODOS os templates para este dia da semana
+      const dayTemplates = templates.filter(t => t.dia_semana === dayOfWeek)
+
+      // Construir lista completa de workouts do dia
+      const workoutsList: Workout[] = []
+      const usedTemplateIds = new Set<string>()
+
+      // 1. Workouts reais (convertidos), pareando com template por template_id quando possível
+      for (const rw of dayWorkoutsRaw) {
+        const matchedTemplate =
+          dayTemplates.find(t => t.id === rw.template_id) ??
+          dayTemplates[workoutsList.length]
+        if (matchedTemplate) usedTemplateIds.add(matchedTemplate.id)
+        workoutsList.push(
+          convertWorkout(
+            rw as DBWorkout & { exercicios?: (DBWorkoutExercise & { series?: DBWorkoutSet[] })[] },
+            matchedTemplate
+          )
+        )
+      }
+
+      // 2. Templates restantes — gerar workouts virtuais (pendentes) para cada
+      for (const tpl of dayTemplates) {
+        if (usedTemplateIds.has(tpl.id)) continue
+        workoutsList.push({
+          id: `template-${dateStr}-${tpl.id}`,
+          template_id: tpl.id,
+          user_id: '',
+          nome: tpl.nome,
+          tipo: tpl.tipo,
+          fase: tpl.fase,
+          data: dateStr,
+          status: 'pendente',
+          duracao_estimada: tpl.duracao_estimada,
+          created_at: new Date().toISOString(),
+          exercicios: tpl.exercicios.map((te, idx) => ({
+            id: `template-${dateStr}-${tpl.id}-ex-${idx}`,
+            workout_id: `template-${dateStr}-${tpl.id}`,
+            exercise_id: te.exercise_id,
+            nome: te.nome,
+            ordem: te.ordem,
+            is_superset: te.is_superset,
+            video_url: te.video_url,
+            instructions: te.instructions,
+            series: Array.from({ length: te.series }, (_, si) => ({
+              id: `template-${dateStr}-${tpl.id}-set-${idx}-${si}`,
+              workout_exercise_id: `template-${dateStr}-${tpl.id}-ex-${idx}`,
+              numero_serie: si + 1,
+              repeticoes_planejadas: te.repeticoes,
+              carga_planejada: te.carga_sugerida,
+              status: 'pendente' as const
+            }))
+          }))
+        })
+      }
+
+      const hasPlannedWorkout = workoutsList.length > 0
+      const allCompleted = hasPlannedWorkout && workoutsList.every(w => w.status === 'concluido')
+      const anyCompleted = workoutsList.some(w => w.status === 'concluido')
 
       // Determinar status
       let status: DayWorkout['status'] = 'future'
-
-      // Determinar tipo baseado em dados reais (template ou workout)
       let type: string | undefined
       let icon: string | undefined
 
-      // Se não tem template nem treino real para o dia, é descanso (não missed)
-      const hasPlannedWorkout = template || realWorkout
-
       if (isBefore(date, todayDate) && !isToday(date)) {
-        // Dia passou
-        if (realWorkout?.status === 'concluido') {
+        if (allCompleted) {
           status = 'completed'
-        } else if (template && !realWorkout) {
-          // Tinha treino planejado mas não fez
-          status = 'missed'
-        } else if (!template && !realWorkout) {
-          // Não tinha treino planejado - é descanso
+        } else if (hasPlannedWorkout) {
+          status = anyCompleted ? 'partial' : 'missed'
+        } else {
           status = 'rest'
           type = 'rest'
-        } else {
-          // Tem workout mas não está concluído
-          status = 'missed'
         }
       } else if (isToday(date)) {
-        if (realWorkout?.status === 'concluido') {
+        if (allCompleted) {
           status = 'completed'
         } else if (hasPlannedWorkout) {
           status = 'pending'
@@ -433,47 +483,9 @@ export function useWorkouts(): UseWorkoutsReturn {
           type = 'rest'
         }
       } else {
-        // Dia futuro
         if (!hasPlannedWorkout) {
           status = 'rest'
           type = 'rest'
-        }
-      }
-
-      // Criar workout object
-      let workout: Workout | undefined
-
-      if (realWorkout) {
-        workout = convertWorkout(realWorkout as DBWorkout & { exercicios?: (DBWorkoutExercise & { series?: DBWorkoutSet[] })[] }, template)
-      } else if (template && dayOfWeek !== 0) {
-        // Criar workout baseado no template
-        workout = {
-          id: `template-${dateStr}-${template.id}`,
-          template_id: template.id,
-          user_id: '',
-          nome: template.nome,
-          tipo: template.tipo,
-          fase: template.fase,
-          data: dateStr,
-          status: 'pendente',
-          duracao_estimada: template.duracao_estimada,
-          created_at: new Date().toISOString(),
-          exercicios: template.exercicios.map((te, idx) => ({
-            id: `template-${dateStr}-ex-${idx}`,
-            workout_id: `template-${dateStr}-${template.id}`,
-            exercise_id: te.exercise_id,
-            nome: te.nome,
-            ordem: te.ordem,
-            is_superset: te.is_superset,
-            series: Array.from({ length: te.series }, (_, i) => ({
-              id: `template-${dateStr}-set-${idx}-${i}`,
-              workout_exercise_id: `template-${dateStr}-ex-${idx}`,
-              numero_serie: i + 1,
-              repeticoes_planejadas: te.repeticoes,
-              carga_planejada: te.carga_sugerida,
-              status: 'pendente' as const
-            }))
-          }))
         }
       }
 
@@ -482,7 +494,8 @@ export function useWorkouts(): UseWorkoutsReturn {
         dayOfWeek,
         dayOfMonth: date.getDate(),
         status,
-        workout,
+        workout: workoutsList[0],
+        workouts: workoutsList,
         type,
         icon
       }
@@ -496,19 +509,30 @@ export function useWorkouts(): UseWorkoutsReturn {
   }, [weekDays])
 
   // Próximos treinos (inclui próxima semana se necessário)
+  // Cada entrada representa UM treino (não um dia) — assim múltiplos treinos no mesmo dia aparecem todos
   const upcomingWorkouts = useMemo(() => {
     const todayDate = new Date()
 
-    // Primeiro, pegar os treinos futuros da semana atual
-    const currentWeekUpcoming = weekDays
-      .filter(d => (d.status === 'pending' || d.status === 'future') && d.workout)
+    // 1. Expandir weekDays atuais — cada workout vira uma entrada separada
+    const currentWeekUpcoming: DayWorkout[] = []
+    for (const d of weekDays) {
+      if (d.status !== 'pending' && d.status !== 'future') continue
+      const list = d.workouts && d.workouts.length > 0 ? d.workouts : (d.workout ? [d.workout] : [])
+      for (const w of list) {
+        if (w.status === 'concluido') continue
+        currentWeekUpcoming.push({
+          ...d,
+          workout: w,
+          workouts: [w], // garantir que cada entrada renderiza só esse workout
+        })
+      }
+    }
 
-    // Se já temos 3 treinos na semana atual, retornar
     if (currentWeekUpcoming.length >= 3) {
       return currentWeekUpcoming.slice(0, 3)
     }
 
-    // Se não, adicionar treinos da próxima semana baseado nos templates
+    // 2. Próxima semana — usar TODOS os templates por dia
     const nextWeekWorkouts: DayWorkout[] = []
     const weekStart = startOfWeek(todayDate, { weekStartsOn: 1 })
     const nextWeekStart = addDays(weekStart, 7)
@@ -518,43 +542,47 @@ export function useWorkouts(): UseWorkoutsReturn {
       const dayOfWeek = date.getDay()
       const dateStr = format(date, 'yyyy-MM-dd')
 
-      // Buscar template para este dia da semana
-      const template = templates.find(t => t.dia_semana === dayOfWeek)
+      const dayTemplates = templates.filter(t => t.dia_semana === dayOfWeek)
 
-      if (template) {
+      for (const template of dayTemplates) {
+        if ((currentWeekUpcoming.length + nextWeekWorkouts.length) >= 3) break
+        const w: Workout = {
+          id: `template-${dateStr}-${template.id}`,
+          template_id: template.id,
+          user_id: '',
+          nome: template.nome,
+          tipo: template.tipo,
+          fase: template.fase,
+          data: dateStr,
+          status: 'pendente',
+          duracao_estimada: template.duracao_estimada,
+          created_at: new Date().toISOString(),
+          exercicios: template.exercicios.map((te, idx) => ({
+            id: `template-${dateStr}-${template.id}-ex-${idx}`,
+            workout_id: `template-${dateStr}-${template.id}`,
+            exercise_id: te.exercise_id,
+            nome: te.nome,
+            ordem: te.ordem,
+            is_superset: te.is_superset,
+            video_url: te.video_url,
+            instructions: te.instructions,
+            series: Array.from({ length: te.series }, (_, si) => ({
+              id: `template-${dateStr}-${template.id}-set-${idx}-${si}`,
+              workout_exercise_id: `template-${dateStr}-${template.id}-ex-${idx}`,
+              numero_serie: si + 1,
+              repeticoes_planejadas: te.repeticoes,
+              carga_planejada: te.carga_sugerida,
+              status: 'pendente' as const
+            }))
+          }))
+        }
         nextWeekWorkouts.push({
           date,
           dayOfWeek,
           dayOfMonth: date.getDate(),
           status: 'future',
-          workout: {
-            id: `template-${dateStr}-${template.id}`,
-            template_id: template.id,
-            user_id: '',
-            nome: template.nome,
-            tipo: template.tipo,
-            fase: template.fase,
-            data: dateStr,
-            status: 'pendente',
-            duracao_estimada: template.duracao_estimada,
-            created_at: new Date().toISOString(),
-            exercicios: template.exercicios.map((te, idx) => ({
-              id: `template-${dateStr}-ex-${idx}`,
-              workout_id: `template-${dateStr}-${template.id}`,
-              exercise_id: te.exercise_id,
-              nome: te.nome,
-              ordem: te.ordem,
-              is_superset: te.is_superset,
-              series: Array.from({ length: te.series }, (_, si) => ({
-                id: `template-${dateStr}-set-${idx}-${si}`,
-                workout_exercise_id: `template-${dateStr}-ex-${idx}`,
-                numero_serie: si + 1,
-                repeticoes_planejadas: te.repeticoes,
-                carga_planejada: te.carga_sugerida,
-                status: 'pendente' as const
-              }))
-            }))
-          }
+          workout: w,
+          workouts: [w],
         })
       }
     }
@@ -579,10 +607,11 @@ export function useWorkouts(): UseWorkoutsReturn {
       return convertWorkout(realWorkout as DBWorkout & { exercicios?: (DBWorkoutExercise & { series?: DBWorkoutSet[] })[] }, template)
     }
 
-    // Se não encontrou, buscar nos dias da semana (pode ser template)
-    const day = weekDays.find(d => d.workout?.id === id)
-    if (day?.workout) {
-      return day.workout
+    // Se não encontrou, buscar nos dias da semana (pode ser template) — incluindo múltiplos por dia
+    for (const day of weekDays) {
+      const list = day.workouts && day.workouts.length > 0 ? day.workouts : (day.workout ? [day.workout] : [])
+      const found = list.find(w => w.id === id)
+      if (found) return found
     }
 
     // Se é um ID de template (formato: template-{date}-{templateId}), gerar o workout
@@ -615,6 +644,8 @@ export function useWorkouts(): UseWorkoutsReturn {
               nome: te.nome,
               ordem: te.ordem,
               is_superset: te.is_superset,
+              video_url: te.video_url,
+              instructions: te.instructions,
               series: Array.from({ length: te.series }, (_, i) => ({
                 id: `${id}-set-${idx}-${i}`,
                 workout_exercise_id: `${id}-ex-${idx}`,

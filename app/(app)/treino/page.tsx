@@ -117,10 +117,16 @@ export default function TreinoPage() {
     checkSavedWorkout()
   }, [getSavedWorkoutId])
 
-  // Calcular estatísticas da semana
+  // Calcular estatísticas da semana — conta cada treino individualmente (múltiplos por dia incluídos)
   const weekStats = useMemo(() => {
-    const completed = weekDays.filter(d => d.status === 'completed').length
-    const total = weekDays.filter(d => d.workout || d.type === 'beach_tennis').length
+    let completed = 0
+    let total = 0
+    for (const d of weekDays) {
+      const list = d.workouts && d.workouts.length > 0 ? d.workouts : (d.workout ? [d.workout] : [])
+      total += list.length
+      completed += list.filter(w => w.status === 'concluido').length
+      if (list.length === 0 && d.type === 'beach_tennis') total += 1
+    }
     return { completed, total }
   }, [weekDays])
 
@@ -236,37 +242,74 @@ export default function TreinoPage() {
           {selectedIsToday ? 'Hoje' : selectedDay ? format(selectedDay.date, "EEEE, d 'de' MMMM", { locale: ptBR }) : 'Hoje'}
         </h2>
 
-        {/* Se é dia de treino perdido, mostrar opção de executar */}
-        {selectedIsMissed && selectedDay?.workout ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-red-500/30 rounded-2xl p-5"
-          >
-            <div className="text-center mb-4">
-              <span className="text-4xl mb-3 block">😅</span>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Treino não realizado</h3>
-              <p className="text-sm text-foreground-secondary">
-                {selectedDay.workout.nome} • {selectedDay.workout.exercicios?.length || 0} exercícios
-              </p>
+        {(() => {
+          const dayWorkouts =
+            selectedDay?.workouts && selectedDay.workouts.length > 0
+              ? selectedDay.workouts
+              : selectedDay?.workout
+                ? [selectedDay.workout]
+                : []
+
+          if (selectedIsMissed && dayWorkouts.length > 0) {
+            return (
+              <div className="space-y-3">
+                {dayWorkouts.length > 1 && (
+                  <p className="text-xs text-foreground-muted">
+                    {dayWorkouts.length} treinos planejados para este dia
+                  </p>
+                )}
+                {dayWorkouts.map((workout) => (
+                  <motion.div
+                    key={workout.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white border border-red-500/30 rounded-2xl p-5"
+                  >
+                    <div className="text-center mb-4">
+                      <span className="text-4xl mb-3 block">😅</span>
+                      <h3 className="text-lg font-semibold text-foreground mb-1">Treino não realizado</h3>
+                      <p className="text-sm text-foreground-secondary">
+                        {workout.nome} • {workout.exercicios?.length || 0} exercícios
+                      </p>
+                    </div>
+                    <Link href={`/treino/${workout.id}`}>
+                      <Button variant="gradient" className="w-full">
+                        <Play className="w-4 h-4 mr-2" />
+                        Fazer agora
+                      </Button>
+                    </Link>
+                    <p className="text-xs text-foreground-muted text-center mt-2">
+                      O treino será registrado com a data de hoje
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            )
+          }
+
+          if (dayWorkouts.length === 0) {
+            return (
+              <TodayWorkoutCard
+                workout={null}
+                isRest={selectedIsRest}
+                specialActivity={selectedIsSpecial ? { name: 'Beach Tennis', icon: '🎾' } : undefined}
+              />
+            )
+          }
+
+          return (
+            <div className="space-y-3">
+              {dayWorkouts.length > 1 && (
+                <p className="text-xs text-foreground-muted">
+                  {dayWorkouts.length} treinos planejados para este dia
+                </p>
+              )}
+              {dayWorkouts.map((workout) => (
+                <TodayWorkoutCard key={workout.id} workout={workout} />
+              ))}
             </div>
-            <Link href={`/treino/${selectedDay.workout.id}`}>
-              <Button variant="gradient" className="w-full">
-                <Play className="w-4 h-4 mr-2" />
-                Fazer agora
-              </Button>
-            </Link>
-            <p className="text-xs text-foreground-muted text-center mt-2">
-              O treino será registrado com a data de hoje
-            </p>
-          </motion.div>
-        ) : (
-          <TodayWorkoutCard
-            workout={selectedDay?.workout || null}
-            isRest={selectedIsRest}
-            specialActivity={selectedIsSpecial ? { name: 'Beach Tennis', icon: '🎾' } : undefined}
-          />
-        )}
+          )
+        })()}
       </div>
 
       {/* Atividades Extras do Dia */}
@@ -328,7 +371,7 @@ export default function TreinoPage() {
           <div className="space-y-3">
             {upcomingWorkouts.map((day, index) => (
               <motion.div
-                key={day.date.toISOString()}
+                key={day.workout?.id ?? `${day.date.toISOString()}-${index}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}

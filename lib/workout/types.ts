@@ -51,6 +51,8 @@ export interface TemplateExercise {
   is_superset?: boolean
   superset_with?: string // id do exercício pareado
   notas?: string
+  video_url?: string
+  instructions?: string
 }
 
 export interface Workout {
@@ -81,6 +83,8 @@ export interface WorkoutExercise {
   series: ExerciseSet[]
   notas?: string
   is_superset?: boolean
+  video_url?: string
+  instructions?: string
 }
 
 export interface ExerciseSet {
@@ -156,7 +160,8 @@ export interface DayWorkout {
   dayOfWeek: number
   dayOfMonth: number
   status: 'completed' | 'partial' | 'pending' | 'rest' | 'missed' | 'future'
-  workout?: Workout
+  workout?: Workout // Primeiro treino do dia (compat — usado quando só há um)
+  workouts?: Workout[] // Todos os treinos do dia (suporta múltiplos no mesmo day_of_week)
   type?: string // 'beach_tennis', 'bike', etc.
   icon?: string
 }
