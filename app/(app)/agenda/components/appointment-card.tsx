@@ -50,12 +50,6 @@ export function AppointmentCard({
   const startTime = appointment.start_time.slice(0, 5)
   const endTime = appointment.end_time.slice(0, 5)
 
-  // Verificar se está dentro de 15min para link online
-  const now = new Date()
-  const appointmentStart = new Date(`${appointment.date}T${appointment.start_time}`)
-  const minutesBefore = (appointmentStart.getTime() - now.getTime()) / (1000 * 60)
-  const canJoin = appointment.appointment_type === 'online' && appointment.meeting_link && minutesBefore <= 15 && minutesBefore > -60
-
   const canConfirm = appointment.status === 'scheduled' && !isHistory
   const canReschedule = ['scheduled', 'confirmed'].includes(appointment.status) && !isHistory
 
@@ -146,6 +140,27 @@ export function AppointmentCard({
           </div>
         )}
 
+        {/* Link da reunião online — destaque para paciente */}
+        {appointment.appointment_type === 'online' && !isHistory && (
+          <div className="mb-3 p-2.5 rounded-xl bg-vinho/5 border border-vinho/20">
+            {appointment.meeting_link ? (
+              <a
+                href={appointment.meeting_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-vinho text-white text-xs font-medium hover:bg-vinho/90 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Entrar na reunião
+              </a>
+            ) : (
+              <p className="text-xs text-vinho">
+                Link da reunião ainda não foi configurado pelo profissional.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Ações */}
         {!isHistory && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
@@ -167,18 +182,6 @@ export function AppointmentCard({
               <CalendarPlus className="w-3.5 h-3.5" />
               Calendário
             </button>
-
-            {canJoin && (
-              <a
-                href={appointment.meeting_link!}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-vinho/10 text-vinho text-xs font-medium hover:bg-vinho/20 transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Entrar
-              </a>
-            )}
 
             {canReschedule && (
               <button
