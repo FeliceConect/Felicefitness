@@ -15,6 +15,9 @@ import {
   Check,
   XCircle,
   AlertTriangle,
+  Edit2,
+  Trash2,
+  RotateCcw,
 } from 'lucide-react'
 import type { AppointmentWithDetails, AppointmentStatus, AppointmentType } from '@/types/appointments'
 import { APPOINTMENT_STATUS_LABELS, APPOINTMENT_STATUS_COLORS, PROFESSIONAL_TYPE_LABELS } from '@/types/appointments'
@@ -24,6 +27,7 @@ export default function AdminAgendaPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [editingApt, setEditingApt] = useState<AppointmentWithDetails | null>(null)
 
   // Filters
   const [filterStatus, setFilterStatus] = useState<string>('')
@@ -56,12 +60,15 @@ export default function AdminAgendaPage() {
 
   const handleStatusChange = async (id: string, status: AppointmentStatus) => {
     try {
-      if (status === 'cancelled') {
-        const res = await fetch(`/api/appointments/${id}`, { method: 'DELETE' })
+      if (status === 'completed') {
+        if (!confirm('Confirmar que esta consulta foi REALIZADA?\n\nO paciente receberá 20 pts e uma notificação. Essa ação pode ser desfeita depois no botão "Desfazer".')) return
+        const res = await fetch(`/api/appointments/${id}/complete`, { method: 'POST' })
         const data = await res.json()
         if (data.success) await fetchAppointments()
-      } else if (status === 'completed') {
-        const res = await fetch(`/api/appointments/${id}/complete`, { method: 'POST' })
+        else if (data.error) alert(data.error)
+      } else if (status === 'cancelled') {
+        if (!confirm('Cancelar esta consulta? A consulta continuará visível como "Cancelada".')) return
+        const res = await fetch(`/api/appointments/${id}`, { method: 'DELETE' })
         const data = await res.json()
         if (data.success) await fetchAppointments()
       } else {
@@ -72,9 +79,36 @@ export default function AdminAgendaPage() {
         })
         const data = await res.json()
         if (data.success) await fetchAppointments()
+        else if (data.error) alert(data.error)
       }
     } catch (err) {
       console.error('Erro ao atualizar status:', err)
+    }
+  }
+
+  const handleHardDelete = async (id: string) => {
+    if (!confirm('DELETAR permanentemente esta consulta?\n\nEsta ação não pode ser desfeita. Se havia pontos de presença atribuídos, eles também serão removidos.')) return
+    try {
+      const res = await fetch(`/api/appointments/${id}?hard=true`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) await fetchAppointments()
+      else alert(data.error || 'Erro ao deletar')
+    } catch (err) {
+      console.error('Erro ao deletar consulta:', err)
+      alert('Erro ao deletar consulta')
+    }
+  }
+
+  const handleUncomplete = async (id: string) => {
+    if (!confirm('Desfazer a marcação "Realizada"?\n\nA consulta volta para "Agendada" e os 20 pts atribuídos ao paciente serão removidos.')) return
+    try {
+      const res = await fetch(`/api/appointments/${id}/uncomplete`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) await fetchAppointments()
+      else alert(data.error || 'Erro ao desfazer')
+    } catch (err) {
+      console.error('Erro ao desfazer consulta:', err)
+      alert('Erro ao desfazer')
     }
   }
 
@@ -266,31 +300,56 @@ export default function AdminAgendaPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          {apt.status !== 'cancelled' && (
+                            <button
+                              onClick={() => setEditingApt(apt)}
+                              title="Editar consulta (data, hora, link, tipo)"
+                              className="p-1.5 rounded-lg hover:bg-blue-500/20 text-blue-500 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
                           {['scheduled', 'confirmed', 'reschedule_requested'].includes(apt.status) && (
                             <>
                               <button
                                 onClick={() => handleStatusChange(apt.id, 'completed')}
                                 title="Marcar como realizada"
-                                className="p-1.5 rounded-lg hover:bg-green-500/20 text-green-400 transition-colors"
+                                className="p-1.5 rounded-lg hover:bg-green-500/20 text-green-500 transition-colors"
                               >
                                 <Check className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleStatusChange(apt.id, 'no_show')}
                                 title="Não compareceu"
-                                className="p-1.5 rounded-lg hover:bg-yellow-500/20 text-yellow-400 transition-colors"
+                                className="p-1.5 rounded-lg hover:bg-yellow-500/20 text-yellow-500 transition-colors"
                               >
                                 <AlertTriangle className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleStatusChange(apt.id, 'cancelled')}
-                                title="Cancelar"
-                                className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
+                                title="Cancelar (mantém como Cancelada)"
+                                className="p-1.5 rounded-lg hover:bg-orange-500/20 text-orange-500 transition-colors"
                               >
                                 <XCircle className="w-4 h-4" />
                               </button>
                             </>
                           )}
+                          {apt.status === 'completed' && (
+                            <button
+                              onClick={() => handleUncomplete(apt.id)}
+                              title="Desfazer Realizada (marcou por engano) — reverte para Agendada e remove os 20 pts"
+                              className="p-1.5 rounded-lg hover:bg-yellow-500/20 text-yellow-500 transition-colors"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleHardDelete(apt.id)}
+                            title="Deletar permanentemente"
+                            className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -308,6 +367,18 @@ export default function AdminAgendaPage() {
           onClose={() => setShowCreateModal(false)}
           onCreated={() => {
             setShowCreateModal(false)
+            fetchAppointments()
+          }}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingApt && (
+        <EditAppointmentModal
+          appointment={editingApt}
+          onClose={() => setEditingApt(null)}
+          onSaved={() => {
+            setEditingApt(null)
             fetchAppointments()
           }}
         />
@@ -598,6 +669,204 @@ function CreateAppointmentModal({
             className="w-full py-3 px-4 rounded-xl bg-dourado text-foreground font-medium text-sm hover:bg-dourado/90 transition-colors disabled:opacity-50"
           >
             {submitting ? 'Criando...' : 'Criar Consulta'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ====================================
+// Edit Appointment Modal
+// ====================================
+
+function EditAppointmentModal({
+  appointment,
+  onClose,
+  onSaved,
+}: {
+  appointment: AppointmentWithDetails
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [appointmentType, setAppointmentType] = useState<AppointmentType>(appointment.appointment_type)
+  const [date, setDate] = useState(appointment.date)
+  const [startTime, setStartTime] = useState(appointment.start_time.slice(0, 5))
+  const [endTime, setEndTime] = useState(appointment.end_time.slice(0, 5))
+  const [location, setLocation] = useState(appointment.location || 'Complexo Felice')
+  const [meetingLink, setMeetingLink] = useState(appointment.meeting_link || '')
+  const [notes, setNotes] = useState(appointment.notes || '')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async () => {
+    if (!date || !startTime || !endTime) {
+      setError('Preencha data e horários')
+      return
+    }
+
+    setSubmitting(true)
+    setError('')
+
+    try {
+      const res = await fetch(`/api/appointments/${appointment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appointment_type: appointmentType,
+          date,
+          start_time: startTime,
+          end_time: endTime,
+          location: appointmentType === 'presencial' ? location : null,
+          meeting_link: appointmentType === 'online' ? meetingLink : null,
+          notes: notes || null,
+        }),
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        onSaved()
+      } else {
+        setError(data.error || 'Erro ao salvar consulta')
+      }
+    } catch {
+      setError('Erro ao salvar consulta')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative bg-white border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Edit2 className="w-5 h-5 text-dourado" />
+            Editar Consulta
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-background-elevated text-foreground-secondary">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Paciente + Profissional (readonly) */}
+          <div className="p-3 rounded-lg bg-background-elevated border border-border text-xs text-foreground-secondary space-y-1">
+            <p><strong className="text-foreground">Paciente:</strong> {appointment.patient_name}</p>
+            <p><strong className="text-foreground">Profissional:</strong> {appointment.professional_name}</p>
+            <p className="text-foreground-muted">Para trocar paciente ou profissional, delete esta consulta e crie uma nova.</p>
+          </div>
+
+          {/* Tipo */}
+          <div>
+            <label className="block text-sm text-foreground-muted mb-1">Tipo</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAppointmentType('presencial')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  appointmentType === 'presencial'
+                    ? 'bg-dourado text-foreground'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
+                }`}
+              >
+                <MapPin className="w-4 h-4" />
+                Presencial
+              </button>
+              <button
+                onClick={() => setAppointmentType('online')}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  appointmentType === 'online'
+                    ? 'bg-dourado text-foreground'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
+                }`}
+              >
+                <Video className="w-4 h-4" />
+                Online
+              </button>
+            </div>
+          </div>
+
+          {/* Data e horários */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm text-foreground-muted mb-1">Data *</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-foreground-muted mb-1">Início *</label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-foreground-muted mb-1">Fim *</label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+              />
+            </div>
+          </div>
+
+          {/* Local ou Link */}
+          {appointmentType === 'presencial' ? (
+            <div>
+              <label className="block text-sm text-foreground-muted mb-1">Local</label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Complexo Felice"
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm text-foreground-muted mb-1">Link da reunião</label>
+              <input
+                type="url"
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+                placeholder="https://meet.google.com/..."
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+              />
+            </div>
+          )}
+
+          {/* Notas */}
+          <div>
+            <label className="block text-sm text-foreground-muted mb-1">Notas (opcional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              placeholder="Observações sobre a consulta..."
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border resize-none"
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full py-3 px-4 rounded-xl bg-dourado text-foreground font-medium text-sm hover:bg-dourado/90 transition-colors disabled:opacity-50"
+          >
+            {submitting ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
       </div>

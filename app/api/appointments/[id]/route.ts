@@ -210,7 +210,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Cancelar consulta (soft delete → status 'cancelled')
+// DELETE - Cancelar consulta (soft delete → status 'cancelled') OU remover (?hard=true)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -239,6 +239,30 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Apenas admin pode cancelar consultas' }, { status: 403 })
     }
 
+    const hard = request.nextUrl.searchParams.get('hard') === 'true'
+
+    if (hard) {
+      // Hard delete: remove registro e pontos de presença associados
+      await supabaseAdmin
+        .from('fitness_point_transactions')
+        .delete()
+        .eq('reference_id', id)
+        .eq('category', 'attendance')
+
+      const { error } = await supabaseAdmin
+        .from('fitness_appointments')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Erro ao deletar consulta:', error)
+        return NextResponse.json({ success: false, error: 'Erro ao deletar consulta' }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    // Soft delete padrão → status cancelled
     const { data: updated, error } = await supabaseAdmin
       .from('fitness_appointments')
       .update({

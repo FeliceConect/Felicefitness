@@ -76,10 +76,12 @@ export default function ProfessionalAgendaPage() {
   }, [fetchAppointments])
 
   const handleComplete = async (id: string) => {
+    if (!confirm('Confirmar que esta consulta foi REALIZADA?\n\nO paciente receberá 20 pts e uma notificação. Para desfazer (caso clique por engano), peça à secretária/admin.')) return
     try {
       const res = await fetch(`/api/appointments/${id}/complete`, { method: 'POST' })
       const data = await res.json()
       if (data.success) await fetchAppointments()
+      else if (data.error) alert(data.error)
     } catch (err) {
       console.error('Erro:', err)
     }
