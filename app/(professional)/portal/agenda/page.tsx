@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   ClipboardList,
   CalendarDays,
+  ExternalLink,
+  Copy,
 } from 'lucide-react'
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -204,6 +206,42 @@ export default function ProfessionalAgendaPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Link da reunião online — sempre visível para o profissional */}
+                {apt.appointment_type === 'online' && canAction && (
+                  <div className="mb-3 p-2.5 rounded-xl bg-vinho/5 border border-vinho/20">
+                    {apt.meeting_link ? (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={apt.meeting_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-vinho text-white text-xs font-medium hover:bg-vinho/90 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Entrar na reunião
+                        </a>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(apt.meeting_link!)
+                            } catch {}
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-border text-foreground-secondary text-xs font-medium hover:bg-background-elevated transition-colors"
+                          aria-label="Copiar link"
+                          title="Copiar link"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          Copiar
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-vinho">
+                        Link da reunião ainda não foi configurado. Entre em contato com a administração.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Reagendamento reason */}
                 {apt.status === 'reschedule_requested' && apt.reschedule_reason && (
