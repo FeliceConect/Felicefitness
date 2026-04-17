@@ -109,6 +109,10 @@ export default function FormsPage() {
   const [deleteTemplate, setDeleteTemplate] = useState<Template | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Delete assignment (formulário enviado ainda não preenchido)
+  const [deleteAssignment, setDeleteAssignment] = useState<Assignment | null>(null)
+  const [deletingAssignment, setDeletingAssignment] = useState(false)
+
   useEffect(() => {
     if (!professionalLoading && !isProfessional) {
       router.push('/portal')
@@ -214,6 +218,29 @@ export default function FormsPage() {
       toast.error('Erro ao remover template')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  async function confirmDeleteAssignment() {
+    if (!deleteAssignment) return
+    setDeletingAssignment(true)
+    try {
+      const res = await fetch(`/api/portal/forms/assignments/${deleteAssignment.id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Formulário removido')
+        setDeleteAssignment(null)
+        fetchAssignments()
+      } else {
+        toast.error(data.error || 'Erro ao remover formulário')
+      }
+    } catch (err) {
+      console.error('Erro ao remover formulário:', err)
+      toast.error('Erro ao remover formulário')
+    } finally {
+      setDeletingAssignment(false)
     }
   }
 
@@ -560,10 +587,26 @@ export default function FormsPage() {
                         Ver Respostas
                       </button>
                     )}
-                    {assignment.status !== 'completed' && (
+                    {(assignment.status === 'pending' || assignment.status === 'in_progress') && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-sm text-foreground-muted">
+                          <Clock className="w-4 h-4" />
+                          Aguardando
+                        </div>
+                        <button
+                          onClick={() => setDeleteAssignment(assignment)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors whitespace-nowrap"
+                          title="Remover envio"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Excluir
+                        </button>
+                      </div>
+                    )}
+                    {assignment.status !== 'completed' && assignment.status !== 'pending' && assignment.status !== 'in_progress' && (
                       <div className="flex items-center gap-2 text-sm text-foreground-muted">
                         <Clock className="w-4 h-4" />
-                        Aguardando
+                        {FORM_STATUS_LABELS[assignment.status]}
                       </div>
                     )}
                   </div>
@@ -771,6 +814,55 @@ export default function FormsPage() {
                 className="flex-1 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-colors text-sm font-medium"
               >
                 Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Assignment Confirmation */}
+      {deleteAssignment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-foreground">Remover formulário enviado?</h2>
+                <p className="text-sm text-foreground-secondary mt-1">
+                  <strong>{deleteAssignment.template?.name || 'Formulário'}</strong> enviado para{' '}
+                  <strong>{deleteAssignment.client?.nome || 'paciente'}</strong> será removido.
+                </p>
+                <p className="text-xs text-foreground-muted mt-2">
+                  Use esta ação quando o envio foi feito por engano. Só é possível remover formulários que ainda não foram preenchidos.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteAssignment(null)}
+                disabled={deletingAssignment}
+                className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDeleteAssignment}
+                disabled={deletingAssignment}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deletingAssignment ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Removendo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Remover
+                  </>
+                )}
               </button>
             </div>
           </div>
