@@ -66,7 +66,13 @@ export async function GET(request: NextRequest) {
     // Filtrar por role
     if (role) {
       if (role === 'client') {
-        query = query.or('role.eq.client,role.is.null')
+        // Super_admins veem clients + super_admins (para autogestão de bioimpedância/fotos/medidas)
+        // Secretárias/admins veem apenas clients
+        if (profile.role === 'super_admin') {
+          query = query.or('role.eq.client,role.eq.super_admin,role.is.null')
+        } else {
+          query = query.or('role.eq.client,role.is.null')
+        }
       } else if (role === 'assignable') {
         // Clientes + superadmins que também participam do programa
         query = query.or('role.eq.client,role.eq.super_admin,role.is.null')

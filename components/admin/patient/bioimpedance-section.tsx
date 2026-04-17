@@ -718,8 +718,7 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                capture="environment"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.pdf"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -730,12 +729,12 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-dourado/10 hover:bg-dourado/20 text-dourado text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {analyzing ? 'Analisando foto com IA...' : 'Enviar foto do InBody (IA preenche)'}
+                  {analyzing ? 'Analisando InBody com IA...' : 'Enviar InBody (foto ou PDF — IA preenche)'}
                 </button>
                 {fotoUrl && (
                   <button onClick={() => setPreviewUrl(fotoUrl)} className="inline-flex items-center gap-1.5 text-xs text-dourado hover:underline">
                     <Camera className="w-3.5 h-3.5" />
-                    Ver foto enviada
+                    Ver arquivo enviado
                   </button>
                 )}
                 <span className="text-[11px] text-foreground-muted ml-auto">
@@ -827,8 +826,17 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
           className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
           onClick={() => setPreviewUrl(null)}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={previewUrl} alt="Preview" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" />
+          {previewUrl.toLowerCase().endsWith('.pdf') ? (
+            <iframe
+              src={previewUrl}
+              title="Preview PDF"
+              className="w-[90vw] h-[90vh] rounded-lg bg-white"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previewUrl} alt="Preview" className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg" />
+          )}
           <button
             onClick={() => setPreviewUrl(null)}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/20 text-white hover:bg-white/30"

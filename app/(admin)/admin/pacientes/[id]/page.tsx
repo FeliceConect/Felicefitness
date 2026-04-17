@@ -942,6 +942,21 @@ export default function PatientDetailPage() {
       {/* Bioimpedância (InBody) — cadastro completo */}
       {!isSecretary && <BioimpedanceSection patientId={patientId} />}
 
+      {/* Dados Antropométricos — circunferências */}
+      {!isSecretary && (
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-3">
+              <Scale className="w-5 h-5 text-dourado" />
+              Dados Antropométricos
+            </h2>
+          </div>
+          <div className="px-6 py-6">
+            <TabAntropometria patientId={patientId} canEdit={true} />
+          </div>
+        </div>
+      )}
+
       {/* Grid M0-M6 — fotos padronizadas da avaliação antropométrica */}
       {!isSecretary && <ProgressPhotosGrid patientId={patientId} />}
 

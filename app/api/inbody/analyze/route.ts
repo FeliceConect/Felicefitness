@@ -17,7 +17,9 @@ function getAdminClient() {
 }
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15MB bruto
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+const ALLOWED_PDF_TYPES = ['application/pdf']
+const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_PDF_TYPES]
 
 // POST - Analisa foto do relatório InBody com GPT-4o Vision
 // Retorna os campos estruturados + faz upload da foto comprimida.
@@ -75,44 +77,80 @@ export async function POST(request: NextRequest) {
     const file = formData.get('image') as File | null
 
     if (!file) {
-      return NextResponse.json({ success: false, error: 'Imagem obrigatória' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Arquivo obrigatório' }, { status: 400 })
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ success: false, error: 'Tipo de arquivo não permitido' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Tipo de arquivo não permitido (envie imagem ou PDF do InBody)' }, { status: 400 })
     }
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ success: false, error: 'Arquivo muito grande (máx. 15MB)' }, { status: 400 })
     }
 
-    // Converte arquivo em buffer
+    const isPdf = ALLOWED_PDF_TYPES.includes(file.type)
     const arrayBuffer = await file.arrayBuffer()
     const rawBuffer = Buffer.from(arrayBuffer)
 
-    // Comprime para Storage (WebP 1080px q82)
-    const storageCompressed = await compressImage(rawBuffer)
-
-    // Para OCR, usa qualidade maior (1600px q90) pra IA ler números pequenos
-    const ocrCompressed = await compressImage(rawBuffer, { maxDimension: 1600, quality: 90 })
-    const base64 = ocrCompressed.buffer.toString('base64')
-
-    // Upload no bucket inbody-reports (se não existir, bucket default seria progress-photos)
-    const fileName = `${user.id}/inbody_${Date.now()}.${storageCompressed.extension}`
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from('progress-photos')
-      .upload(fileName, storageCompressed.buffer, {
-        contentType: storageCompressed.contentType,
-        upsert: false,
-      })
-
     let imageUrl: string | null = null
-    if (!uploadError) {
-      const { data: { publicUrl } } = supabaseAdmin.storage
+    let pdfText: string | null = null
+    let base64: string | null = null
+
+    if (isPdf) {
+      // Extrai texto do PDF (InBody PDFs são text-based — não precisa OCR de imagem)
+      const { extractText } = await import('unpdf')
+      try {
+        const { text } = await extractText(new Uint8Array(arrayBuffer), { mergePages: true })
+        pdfText = (text || '').trim()
+      } catch (err) {
+        console.error('Erro extrair texto PDF:', err)
+        return NextResponse.json({
+          success: false,
+          error: 'Não foi possível ler o PDF. Verifique se o arquivo não está corrompido.',
+        }, { status: 422 })
+      }
+
+      if (!pdfText) {
+        return NextResponse.json({
+          success: false,
+          error: 'PDF não contém texto extraível. Tente exportar como imagem ou enviar foto.',
+        }, { status: 422 })
+      }
+
+      // Upload do PDF original para referência
+      const fileName = `${user.id}/inbody_${Date.now()}.pdf`
+      const { error: uploadError } = await supabaseAdmin.storage
         .from('progress-photos')
-        .getPublicUrl(fileName)
-      imageUrl = publicUrl
+        .upload(fileName, rawBuffer, {
+          contentType: 'application/pdf',
+          upsert: false,
+        })
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabaseAdmin.storage
+          .from('progress-photos')
+          .getPublicUrl(fileName)
+        imageUrl = publicUrl
+      }
+    } else {
+      // Fluxo de imagem original
+      const storageCompressed = await compressImage(rawBuffer)
+      const ocrCompressed = await compressImage(rawBuffer, { maxDimension: 1600, quality: 90 })
+      base64 = ocrCompressed.buffer.toString('base64')
+
+      const fileName = `${user.id}/inbody_${Date.now()}.${storageCompressed.extension}`
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from('progress-photos')
+        .upload(fileName, storageCompressed.buffer, {
+          contentType: storageCompressed.contentType,
+          upsert: false,
+        })
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabaseAdmin.storage
+          .from('progress-photos')
+          .getPublicUrl(fileName)
+        imageUrl = publicUrl
+      }
     }
 
-    // Análise com GPT-4o Vision
+    // Análise com GPT-4o (Vision para imagem, texto puro para PDF)
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 1500,
@@ -120,7 +158,7 @@ export async function POST(request: NextRequest) {
         {
           role: 'system',
           content: `Você é um especialista em leitura de relatórios de bioimpedância InBody.
-Ao receber a foto de um resultado InBody, extraia TODOS os valores numéricos visíveis.
+Ao receber ${isPdf ? 'o texto extraído de um PDF' : 'a foto'} de um resultado InBody, extraia TODOS os valores numéricos ${isPdf ? 'presentes' : 'visíveis'}.
 
 Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem backticks, sem texto extra.
 Use null quando o campo não estiver visível ou não for possível extrair com certeza.
@@ -178,17 +216,19 @@ Regras:
 - Use ponto decimal (ex: 72.5, não 72,5)
 - Os campos "_percent" representam a porcentagem do valor ideal mostrada abaixo de cada segmento (ex: "110,4%")
 - "grau_obesidade" é o valor em % mostrado em "Grau de Obesidade" (ex: "116%")
-- Impedância Z: BD=Braço Direito, BE=Braço Esquerdo, TR=Tronco, PD=Perna Direita, PE=Perna Esquerda. Aparece no canto inferior direito em tabela Z(Ω) com linhas 20 kHz e 100 kHz
+- Impedância Z: BD=Braço Direito, BE=Braço Esquerdo, TR=Tronco, PD=Perna Direita, PE=Perna Esquerda. Aparece em tabela Z(Ω) com linhas 20 kHz e 100 kHz
 - "confidence" é sua confiança na leitura geral (0.0 a 1.0)
-- Se a imagem não for um relatório InBody, retorne: {"error": "não é um relatório InBody"}
-- Nunca invente valores — se não ver, null. Se a tabela de impedância não estiver visível, retorne null em "impedancia_20khz" e "impedancia_100khz".`
+- Se o conteúdo não for um relatório InBody, retorne: {"error": "não é um relatório InBody"}
+- Nunca invente valores — se não ${isPdf ? 'encontrar' : 'ver'}, null. Se a tabela de impedância não estiver presente, retorne null em "impedancia_20khz" e "impedancia_100khz".`
         },
         {
           role: 'user',
-          content: [
-            { type: 'text', text: 'Extraia todos os dados deste relatório InBody:' },
-            { type: 'image_url', image_url: { url: `data:image/webp;base64,${base64}`, detail: 'high' } },
-          ],
+          content: isPdf
+            ? `Extraia todos os dados deste relatório InBody (texto extraído do PDF):\n\n${pdfText}`
+            : [
+                { type: 'text', text: 'Extraia todos os dados deste relatório InBody:' },
+                { type: 'image_url', image_url: { url: `data:image/webp;base64,${base64}`, detail: 'high' } },
+              ],
         },
       ],
     })
