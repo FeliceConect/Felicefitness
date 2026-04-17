@@ -1,8 +1,8 @@
 "use client"
 
 import { toast } from 'sonner'
-import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useCallback, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft,
   Save,
@@ -500,6 +500,9 @@ function QuestionEditorModal({
 
 export default function CreateTemplatePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
+  const isEditMode = !!editId
   const { isProfessional, isNutritionist, loading: professionalLoading } = useProfessional()
 
   // Template fields
@@ -520,8 +523,59 @@ export default function CreateTemplatePage() {
 
   // UI state
   const [saving, setSaving] = useState(false)
+  const [loadingTemplate, setLoadingTemplate] = useState(isEditMode)
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionName, setEditingSectionName] = useState('')
+
+  // Carrega dados do template em modo edição
+  useEffect(() => {
+    if (!editId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/portal/forms/templates/${editId}`)
+        const data = await res.json()
+        if (cancelled) return
+        if (!data.success) {
+          toast.error(data.error || 'Erro ao carregar template')
+          router.push('/portal/forms')
+          return
+        }
+        const tpl = data.data
+        setName(tpl.name || '')
+        setDescription(tpl.description || '')
+        setFormType((tpl.form_type as FormType) || 'custom')
+
+        // Reconstruir seções a partir das perguntas
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const qs: any[] = Array.isArray(tpl.questions) ? tpl.questions : []
+        const sectionNames = Array.from(new Set(qs.map(q => q.section).filter(Boolean))) as string[]
+        const restoredSections: Section[] = sectionNames.length > 0
+          ? sectionNames.map(nm => ({ id: crypto.randomUUID(), name: nm }))
+          : [{ id: crypto.randomUUID(), name: 'Geral' }]
+        setSections(restoredSections)
+        setExpandedSections(restoredSections.map(s => s.id))
+        setActiveSection(restoredSections[0].name)
+
+        const restoredQuestions: EditorQuestion[] = qs.map(q => ({
+          id: q.id || crypto.randomUUID(),
+          question_text: q.question_text,
+          question_type: q.question_type,
+          is_required: !!q.is_required,
+          section: q.section || restoredSections[0].name,
+          options: Array.isArray(q.options) ? q.options : [],
+          config: q.config || {},
+        }))
+        setQuestions(restoredQuestions)
+      } catch (err) {
+        console.error('Erro ao carregar template:', err)
+        if (!cancelled) toast.error('Erro ao carregar template')
+      } finally {
+        if (!cancelled) setLoadingTemplate(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [editId, router])
 
   const hasChanges = name.trim().length > 0 && questions.length > 0
 
@@ -653,8 +707,13 @@ export default function CreateTemplatePage() {
         })),
       }
 
-      const response = await fetch('/api/portal/forms/templates/custom', {
-        method: 'POST',
+      const url = isEditMode
+        ? `/api/portal/forms/templates/${editId}`
+        : '/api/portal/forms/templates/custom'
+      const method = isEditMode ? 'PATCH' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -662,6 +721,7 @@ export default function CreateTemplatePage() {
       const data = await response.json()
 
       if (data.success) {
+        toast.success(isEditMode ? 'Template atualizado' : 'Template criado')
         router.push('/portal/forms')
       } else {
         toast.error(data.error || 'Erro ao salvar template')
@@ -676,7 +736,7 @@ export default function CreateTemplatePage() {
 
   // ---- Render ----
 
-  if (professionalLoading) {
+  if (professionalLoading || loadingTemplate) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dourado" />
@@ -701,8 +761,10 @@ export default function CreateTemplatePage() {
             <ArrowLeft className="w-5 h-5 text-foreground-muted" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Novo Template</h1>
-            <p className="text-sm text-foreground-secondary">Crie um formulário personalizado</p>
+            <h1 className="text-xl font-bold text-foreground">{isEditMode ? 'Editar Template' : 'Novo Template'}</h1>
+            <p className="text-sm text-foreground-secondary">
+              {isEditMode ? 'Ajuste seu formulário personalizado' : 'Crie um formulário personalizado'}
+            </p>
           </div>
         </div>
         <button

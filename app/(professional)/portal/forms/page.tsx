@@ -15,7 +15,9 @@ import {
   Calendar,
   Eye,
   Loader2,
-  Plus
+  Plus,
+  Pencil,
+  Trash2
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 import {
@@ -33,6 +35,20 @@ interface Template {
   form_type: string
   is_system_template: boolean
   questions: { count: number }[]
+}
+
+interface TemplateQuestion {
+  id: string
+  question_text: string
+  question_type: string
+  is_required: boolean
+  section: string | null
+  options: { value: string; label: string }[] | null
+  order_index: number
+}
+
+interface TemplateDetail extends Omit<Template, 'questions'> {
+  questions: TemplateQuestion[]
 }
 
 interface Assignment {
@@ -84,6 +100,14 @@ export default function FormsPage() {
   const [sendDueDate, setSendDueDate] = useState('')
   const [sendNotes, setSendNotes] = useState('')
   const [sending, setSending] = useState(false)
+
+  // View modal state (visualização read-only do template)
+  const [viewTemplate, setViewTemplate] = useState<TemplateDetail | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+
+  // Delete confirmation state
+  const [deleteTemplate, setDeleteTemplate] = useState<Template | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!professionalLoading && !isProfessional) {
@@ -143,6 +167,54 @@ export default function FormsPage() {
     setSendDueDate('')
     setSendNotes('')
     setShowSendModal(true)
+  }
+
+  async function openViewModal(template: Template) {
+    setViewLoading(true)
+    setViewTemplate({ ...template, questions: [] })
+    try {
+      const res = await fetch(`/api/portal/forms/templates/${template.id}`)
+      const data = await res.json()
+      if (data.success) {
+        setViewTemplate(data.data)
+      } else {
+        toast.error(data.error || 'Erro ao carregar template')
+        setViewTemplate(null)
+      }
+    } catch (err) {
+      console.error('Erro ao buscar template:', err)
+      toast.error('Erro ao carregar template')
+      setViewTemplate(null)
+    } finally {
+      setViewLoading(false)
+    }
+  }
+
+  function openEdit(template: Template) {
+    router.push(`/portal/forms/create?edit=${template.id}`)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTemplate) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/portal/forms/templates/${deleteTemplate.id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Template removido')
+        setDeleteTemplate(null)
+        fetchTemplates()
+      } else {
+        toast.error(data.error || 'Erro ao remover template')
+      }
+    } catch (err) {
+      console.error('Erro ao remover template:', err)
+      toast.error('Erro ao remover template')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   async function handleSendForm() {
@@ -210,7 +282,8 @@ export default function FormsPage() {
     })
   }
 
-  const allTemplates = [...templates.system, ...templates.custom]
+  // Apenas templates personalizados criados pelo profissional — templates do sistema removidos da UI
+  const allTemplates = templates.custom
 
   const filteredAssignments = assignments.filter(a => {
     const matchesSearch =
@@ -369,33 +442,6 @@ export default function FormsPage() {
       {/* Templates Tab */}
       {activeTab === 'templates' && (
         <>
-          {/* System Templates */}
-          {templates.system.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-dourado" />
-                Templates do Sistema
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {templates.system
-                  .filter(t =>
-                    t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    t.description?.toLowerCase().includes(searchTerm.toLowerCase())
-                  )
-                  .map((template) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      gradientClass={gradientClass}
-                      gradientHoverClass={gradientHoverClass}
-                      questionCount={getQuestionCount(template)}
-                      onSend={() => openSendModal(template)}
-                    />
-                  ))}
-              </div>
-            </div>
-          )}
-
           {/* Custom Templates */}
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -416,6 +462,9 @@ export default function FormsPage() {
                     gradientHoverClass={gradientHoverClass}
                     questionCount={getQuestionCount(template)}
                     onSend={() => openSendModal(template)}
+                    onView={() => openViewModal(template)}
+                    onEdit={() => openEdit(template)}
+                    onDelete={() => setDeleteTemplate(template)}
                   />
                 ))}
 
@@ -436,9 +485,9 @@ export default function FormsPage() {
           {allTemplates.length === 0 && (
             <div className="bg-white rounded-xl border border-border p-12 text-center">
               <ClipboardList className="w-12 h-12 text-foreground-muted mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum template disponível</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum template ainda</h3>
               <p className="text-foreground-secondary">
-                Os templates do sistema precisam ser inicializados pelo administrador.
+                Crie seu primeiro template personalizado clicando em &quot;Novo Template&quot;.
               </p>
             </div>
           )}
@@ -639,6 +688,142 @@ export default function FormsPage() {
           </div>
         </div>
       )}
+
+      {/* View Modal — visualização read-only das perguntas */}
+      {viewTemplate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-6 my-8 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1 min-w-0 pr-2">
+                <h2 className="text-xl font-bold text-foreground">{viewTemplate.name}</h2>
+                {viewTemplate.description && (
+                  <p className="text-sm text-foreground-secondary mt-1">{viewTemplate.description}</p>
+                )}
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-500 rounded-full">Personalizado</span>
+                  <span className="px-2 py-0.5 text-xs bg-background-elevated text-foreground-secondary rounded-full">
+                    {FORM_TYPE_LABELS[viewTemplate.form_type as keyof typeof FORM_TYPE_LABELS] || viewTemplate.form_type}
+                  </span>
+                  <span className="text-xs text-foreground-muted">
+                    {viewTemplate.questions.length} pergunta{viewTemplate.questions.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setViewTemplate(null)} className="p-1 hover:bg-background-elevated rounded">
+                <X className="w-5 h-5 text-foreground-secondary" />
+              </button>
+            </div>
+
+            {viewLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-dourado animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {viewTemplate.questions.map((q, i) => (
+                  <div key={q.id} className="p-3 rounded-lg border border-border bg-background-elevated/50">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-mono text-foreground-muted mt-0.5">{i + 1}.</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          {q.question_text}
+                          {q.is_required && <span className="text-red-500 ml-1">*</span>}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-dourado/10 text-dourado">
+                            {q.question_type}
+                          </span>
+                          {q.section && (
+                            <span className="text-[10px] text-foreground-muted">Seção: {q.section}</span>
+                          )}
+                        </div>
+                        {q.options && q.options.length > 0 && (
+                          <ul className="mt-2 space-y-0.5 pl-3">
+                            {q.options.map((opt, oi) => (
+                              <li key={oi} className="text-xs text-foreground-secondary">• {opt.label}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {viewTemplate.questions.length === 0 && (
+                  <p className="text-sm text-foreground-muted text-center py-6">Nenhuma pergunta neste template.</p>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2 mt-6 pt-4 border-t border-border">
+              <button
+                onClick={() => {
+                  const id = viewTemplate.id
+                  setViewTemplate(null)
+                  router.push(`/portal/forms/create?edit=${id}`)
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors text-sm font-medium"
+              >
+                <Pencil className="w-4 h-4" />
+                Editar
+              </button>
+              <button
+                onClick={() => setViewTemplate(null)}
+                className="flex-1 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-colors text-sm font-medium"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation */}
+      {deleteTemplate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-foreground">Remover template?</h2>
+                <p className="text-sm text-foreground-secondary mt-1">
+                  Esta ação não pode ser desfeita. O template <strong>{deleteTemplate.name}</strong> será permanentemente removido.
+                </p>
+                <p className="text-xs text-foreground-muted mt-2">
+                  Se o template já foi enviado para pacientes, a remoção será bloqueada.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTemplate(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Removendo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Remover
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -650,13 +835,20 @@ function TemplateCard({
   gradientHoverClass,
   questionCount,
   onSend,
+  onView,
+  onEdit,
+  onDelete,
 }: {
   template: Template
   gradientClass: string
   gradientHoverClass: string
   questionCount: number
   onSend: () => void
+  onView?: () => void
+  onEdit?: () => void
+  onDelete?: () => void
 }) {
+  const isCustom = !template.is_system_template
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden hover:border-dourado/50 transition-colors">
       <div className="p-4">
@@ -664,9 +856,13 @@ function TemplateCard({
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground truncate">{template.name}</h3>
             <div className="flex items-center gap-2 mt-1">
-              {template.is_system_template && (
+              {template.is_system_template ? (
                 <span className="px-2 py-0.5 text-xs bg-dourado/20 text-dourado rounded-full">
                   Sistema
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-500 rounded-full">
+                  Personalizado
                 </span>
               )}
               <span className="px-2 py-0.5 text-xs bg-background-elevated text-foreground-secondary rounded-full">
@@ -694,6 +890,44 @@ function TemplateCard({
           <Send className="w-4 h-4" />
           Enviar para Paciente
         </button>
+
+        {isCustom && (onView || onEdit || onDelete) && (
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            {onView && (
+              <button
+                onClick={onView}
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-background-elevated text-foreground-secondary text-xs font-medium hover:bg-border transition-colors"
+                aria-label="Visualizar template"
+                title="Visualizar"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                Ver
+              </button>
+            )}
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-background-elevated text-foreground-secondary text-xs font-medium hover:bg-border transition-colors"
+                aria-label="Editar template"
+                title="Editar"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Editar
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition-colors"
+                aria-label="Remover template"
+                title="Remover"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Excluir
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
