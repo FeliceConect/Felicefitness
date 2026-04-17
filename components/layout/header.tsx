@@ -59,15 +59,15 @@ export function Header() {
 
         {/* Right side icons */}
         <div className="flex items-center gap-1">
-          {/* Portal (somente super_admin) */}
+          {/* Admin (somente super_admin) */}
           {isSuperAdmin && (
             <Link
-              href="/portal"
+              href="/admin"
               className="flex items-center gap-1.5 px-2.5 py-1.5 mr-1 rounded-full bg-cafe text-seda text-xs font-medium hover:bg-vinho transition-colors"
-              title="Ir para o Portal / Admin"
+              title="Ir para o Admin"
             >
               <Briefcase className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Portal</span>
+              <span className="hidden sm:inline">Admin</span>
             </Link>
           )}
 

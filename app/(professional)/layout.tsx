@@ -141,10 +141,17 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-cafe border-b border-cafe/80 z-50 flex items-center justify-between px-4">
+      <div
+        className="lg:hidden fixed top-0 left-0 right-0 bg-cafe border-b border-cafe/80 z-50 flex items-center justify-between px-3"
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          height: 'calc(4rem + env(safe-area-inset-top, 0px))'
+        }}
+      >
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-vinho/30"
+          className="p-2.5 rounded-lg hover:bg-vinho/30 active:bg-vinho/50 -ml-1"
+          aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
         >
           {mobileMenuOpen ? (
             <X className="w-6 h-6 text-seda" />
@@ -152,8 +159,19 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
             <Menu className="w-6 h-6 text-seda" />
           )}
         </button>
-        <span className="text-seda font-semibold">Portal Profissional</span>
-        <div className="w-10" />
+        <span className="text-seda font-semibold truncate px-2">Portal Profissional</span>
+        {isSuperAdmin ? (
+          <Link
+            href="/dashboard"
+            className="p-2.5 rounded-lg hover:bg-vinho/30 active:bg-vinho/50 -mr-1 flex items-center gap-1 text-dourado"
+            aria-label="Ir para o App"
+            title="Ir para o App"
+          >
+            <Smartphone className="w-5 h-5" />
+          </Link>
+        ) : (
+          <div className="w-10" />
+        )}
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -165,12 +183,18 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
       )}
 
       {/* Sidebar — dark café premium */}
-      <aside className={`
-        fixed top-0 left-0 h-full bg-cafe border-r border-vinho/20 z-50
-        transition-all duration-300 ease-in-out flex flex-col
-        ${sidebarOpen ? 'w-64' : 'w-20'}
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      <aside
+        className={`
+          fixed top-0 left-0 h-full bg-cafe border-r border-vinho/20 z-50
+          transition-all duration-300 ease-in-out flex flex-col
+          ${sidebarOpen ? 'w-64' : 'w-20'}
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+        }}
+      >
         {/* Logo */}
         <div className="h-16 flex-shrink-0 flex items-center justify-between px-4 border-b border-vinho/20">
           {sidebarOpen && (
@@ -303,12 +327,14 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
       </aside>
 
       {/* Main Content — light warm background */}
-      <main className={`
-        min-h-screen transition-all duration-300
-        pt-16 lg:pt-0
-        ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'}
-      `}>
-        <div className="p-6">
+      <main
+        className={`
+          min-h-screen transition-all duration-300
+          pt-[calc(4rem+env(safe-area-inset-top,0px))] lg:pt-0
+          ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'}
+        `}
+      >
+        <div className="p-4 lg:p-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
           {children}
         </div>
       </main>
