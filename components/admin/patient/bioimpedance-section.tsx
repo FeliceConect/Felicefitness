@@ -104,7 +104,6 @@ const CAMPOS: GrupoDef[] = [
     [
       { key: 'gordura_visceral', label: 'Gordura Visceral' },
       { key: 'pontuacao_inbody', label: 'Pontuação InBody' },
-      { key: 'idade_metabolica', label: 'Idade Metabólica' },
     ],
     [
       { key: 'relacao_cintura_quadril', label: 'Cintura/Quadril', step: '0.01' },
@@ -155,28 +154,7 @@ const CAMPOS: GrupoDef[] = [
       { key: 'gordura_perna_esquerda_percent', label: 'Perna E (%)', step: '0.1' },
     ],
   ] },
-  { group: 'Impedância Z (Ω) — 20 kHz', rows: [
-    [
-      { key: 'z20_bd', label: 'Braço D', step: '0.1' },
-      { key: 'z20_be', label: 'Braço E', step: '0.1' },
-      { key: 'z20_tr', label: 'Tronco', step: '0.1' },
-      { key: 'z20_pd', label: 'Perna D', step: '0.1' },
-      { key: 'z20_pe', label: 'Perna E', step: '0.1' },
-    ],
-  ] },
-  { group: 'Impedância Z (Ω) — 100 kHz', rows: [
-    [
-      { key: 'z100_bd', label: 'Braço D', step: '0.1' },
-      { key: 'z100_be', label: 'Braço E', step: '0.1' },
-      { key: 'z100_tr', label: 'Tronco', step: '0.1' },
-      { key: 'z100_pd', label: 'Perna D', step: '0.1' },
-      { key: 'z100_pe', label: 'Perna E', step: '0.1' },
-    ],
-  ] },
 ]
-
-// campos "z20_*" e "z100_*" são auxiliares de UI — são agregados em "impedancia_dados" (JSONB) antes do POST
-const Z_KEYS = ['z20_bd', 'z20_be', 'z20_tr', 'z20_pd', 'z20_pe', 'z100_bd', 'z100_be', 'z100_tr', 'z100_pd', 'z100_pe']
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10
@@ -242,25 +220,7 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
       const filled: FormState = {}
       Object.keys(ai).forEach(k => {
         if (k === 'confidence' || ai[k] == null) return
-        // Desempacota impedância em campos auxiliares do form
-        if (k === 'impedancia_20khz' && typeof ai[k] === 'object') {
-          const z = ai[k] as Record<string, number | null>
-          if (z.BD != null) filled.z20_bd = z.BD
-          if (z.BE != null) filled.z20_be = z.BE
-          if (z.TR != null) filled.z20_tr = z.TR
-          if (z.PD != null) filled.z20_pd = z.PD
-          if (z.PE != null) filled.z20_pe = z.PE
-          return
-        }
-        if (k === 'impedancia_100khz' && typeof ai[k] === 'object') {
-          const z = ai[k] as Record<string, number | null>
-          if (z.BD != null) filled.z100_bd = z.BD
-          if (z.BE != null) filled.z100_be = z.BE
-          if (z.TR != null) filled.z100_tr = z.TR
-          if (z.PD != null) filled.z100_pd = z.PD
-          if (z.PE != null) filled.z100_pe = z.PE
-          return
-        }
+        if (k === 'impedancia_20khz' || k === 'impedancia_100khz' || k === 'idade_metabolica') return
         filled[k] = ai[k]
       })
       setForm(filled)
@@ -285,32 +245,11 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
 
   const openEdit = (record: BioRecord) => {
     const filled: FormState = {}
-    // Copia os campos diretos
-    const skipKeys = new Set(['id', 'fonte', 'foto_url', 'impedancia_dados'])
+    const skipKeys = new Set(['id', 'fonte', 'foto_url', 'impedancia_dados', 'idade_metabolica'])
     Object.entries(record).forEach(([k, v]) => {
       if (skipKeys.has(k)) return
       if (v != null) filled[k] = v as string | number
     })
-    // Desempacota impedancia_dados nos campos auxiliares z20_* / z100_*
-    const imp = record.impedancia_dados
-    if (imp) {
-      const z20 = imp['20khz']
-      if (z20) {
-        if (z20.BD != null) filled.z20_bd = z20.BD
-        if (z20.BE != null) filled.z20_be = z20.BE
-        if (z20.TR != null) filled.z20_tr = z20.TR
-        if (z20.PD != null) filled.z20_pd = z20.PD
-        if (z20.PE != null) filled.z20_pe = z20.PE
-      }
-      const z100 = imp['100khz']
-      if (z100) {
-        if (z100.BD != null) filled.z100_bd = z100.BD
-        if (z100.BE != null) filled.z100_be = z100.BE
-        if (z100.TR != null) filled.z100_tr = z100.TR
-        if (z100.PD != null) filled.z100_pd = z100.PD
-        if (z100.PE != null) filled.z100_pe = z100.PE
-      }
-    }
     setForm(filled)
     setFotoUrl(record.foto_url)
     setFonte((record.fonte as 'inbody' | 'inbody_ia' | 'manual') || 'inbody')
@@ -344,30 +283,11 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
       Object.keys(form).forEach(k => {
         const v = form[k]
         if (v === '' || v == null) return
-        // Campos de impedância Z são agregados depois — pular aqui
-        if (Z_KEYS.includes(k)) return
         body[k] = typeof v === 'string' ? parseFloat(v) : v
       })
       if (form.momento_avaliacao) body.momento_avaliacao = form.momento_avaliacao
       if (form.data) body.data = form.data
       if (form.horario_coleta) body.horario_coleta = form.horario_coleta
-
-      // Agrega impedância Z em JSONB se algum valor foi preenchido
-      const toNum = (k: string): number | null => {
-        const v = form[k]
-        if (v === '' || v == null) return null
-        return typeof v === 'string' ? parseFloat(v) : v
-      }
-      const z20 = { BD: toNum('z20_bd'), BE: toNum('z20_be'), TR: toNum('z20_tr'), PD: toNum('z20_pd'), PE: toNum('z20_pe') }
-      const z100 = { BD: toNum('z100_bd'), BE: toNum('z100_be'), TR: toNum('z100_tr'), PD: toNum('z100_pd'), PE: toNum('z100_pe') }
-      const hasZ20 = Object.values(z20).some(v => v != null)
-      const hasZ100 = Object.values(z100).some(v => v != null)
-      if (hasZ20 || hasZ100) {
-        body.impedancia_dados = {
-          ...(hasZ20 ? { '20khz': z20 } : {}),
-          ...(hasZ100 ? { '100khz': z100 } : {}),
-        }
-      }
 
       const url = editingId
         ? `/api/admin/patients/${patientId}/bioimpedance/${editingId}`

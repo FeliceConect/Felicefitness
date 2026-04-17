@@ -179,7 +179,6 @@ Formato:
   "taxa_metabolica_basal": 1635,
   "gordura_visceral": 7,
   "pontuacao_inbody": 82,
-  "idade_metabolica": 32,
   "relacao_cintura_quadril": 0.88,
   "peso_ideal": 70.0,
   "controle_peso": -2.5,
@@ -206,8 +205,6 @@ Formato:
   "gordura_perna_direita_percent": 127.3,
   "gordura_perna_esquerda": 2.3,
   "gordura_perna_esquerda_percent": 124.8,
-  "impedancia_20khz": { "BD": 281.3, "BE": 299.1, "TR": 22.4, "PD": 224.9, "PE": 236.2 },
-  "impedancia_100khz": { "BD": 248.3, "BE": 266.5, "TR": 19.3, "PD": 198.4, "PE": 208.4 },
   "confidence": 0.92
 }
 
@@ -216,10 +213,10 @@ Regras:
 - Use ponto decimal (ex: 72.5, não 72,5)
 - Os campos "_percent" representam a porcentagem do valor ideal mostrada abaixo de cada segmento (ex: "110,4%")
 - "grau_obesidade" é o valor em % mostrado em "Grau de Obesidade" (ex: "116%")
-- Impedância Z: BD=Braço Direito, BE=Braço Esquerdo, TR=Tronco, PD=Perna Direita, PE=Perna Esquerda. Aparece em tabela Z(Ω) com linhas 20 kHz e 100 kHz
+- DIREITA vs ESQUERDA: SEMPRE use o RÓTULO escrito no relatório ("Direita"/"D" ou "Esquerda"/"E"), NUNCA infira pela posição na coluna. ATENÇÃO: no InBody, "Direito" geralmente aparece à ESQUERDA da página e "Esquerdo" à DIREITA da página (perspectiva espelhada do paciente). Procure as letras "D" e "E" ou as palavras completas em cada barra/segmento antes de classificar. Se não houver rótulo claro, retorne null e NÃO chute.
 - "confidence" é sua confiança na leitura geral (0.0 a 1.0)
 - Se o conteúdo não for um relatório InBody, retorne: {"error": "não é um relatório InBody"}
-- Nunca invente valores — se não ${isPdf ? 'encontrar' : 'ver'}, null. Se a tabela de impedância não estiver presente, retorne null em "impedancia_20khz" e "impedancia_100khz".`
+- Nunca invente valores — se não ${isPdf ? 'encontrar' : 'ver'}, null.`
         },
         {
           role: 'user',

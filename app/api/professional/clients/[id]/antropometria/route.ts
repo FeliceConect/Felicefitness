@@ -24,27 +24,28 @@ export async function GET(
 
     const supabaseAdmin = getAdminClient()
 
-    // Verify professional — nutri, trainer, admin, superadmin can read
-    const { data: professional } = await supabaseAdmin
-      .from('fitness_professionals')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
+    // Role-first: super_admin / admin sempre podem; outros precisam ser
+    // profissional ativo com vínculo ao paciente.
+    const { data: profile } = await supabaseAdmin
+      .from('fitness_profiles')
+      .select('role')
+      .eq('id', user.id)
       .single()
 
-    if (!professional) {
-      // Check if user is admin/superadmin
-      const { data: profile } = await supabaseAdmin
-        .from('fitness_profiles')
-        .select('role')
-        .eq('id', user.id)
+    const isAdminRole = !!profile?.role && ['super_admin', 'admin'].includes(profile.role)
+
+    if (!isAdminRole) {
+      const { data: professional } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
         .single()
 
-      if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      if (!professional) {
         return NextResponse.json({ success: false, error: 'Acesso restrito' }, { status: 403 })
       }
-    } else {
-      // Verify assignment (only for professionals)
+
       const { data: assignment } = await supabaseAdmin
         .from('fitness_client_assignments')
         .select('id')
@@ -102,27 +103,28 @@ export async function POST(
 
     const supabaseAdmin = getAdminClient()
 
-    // Verify professional — nutri, trainer, admin, superadmin can create
-    const { data: professional } = await supabaseAdmin
-      .from('fitness_professionals')
-      .select('id, type')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
+    // Role-first: super_admin / admin sempre podem criar; outros precisam ser
+    // profissional ativo com vínculo ao paciente.
+    const { data: profile } = await supabaseAdmin
+      .from('fitness_profiles')
+      .select('role')
+      .eq('id', user.id)
       .single()
 
-    if (!professional) {
-      // Check if user is admin/superadmin
-      const { data: profile } = await supabaseAdmin
-        .from('fitness_profiles')
-        .select('role')
-        .eq('id', user.id)
+    const isAdminRole = !!profile?.role && ['super_admin', 'admin'].includes(profile.role)
+
+    if (!isAdminRole) {
+      const { data: professional } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('id, type')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
         .single()
 
-      if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      if (!professional) {
         return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
       }
-    } else {
-      // Verify assignment
+
       const { data: assignment } = await supabaseAdmin
         .from('fitness_client_assignments')
         .select('id')
