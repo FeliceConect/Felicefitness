@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useShareImage } from '@/hooks/use-share-image'
 import {
   Plus,
   MessageCircle,
@@ -16,6 +17,8 @@ import {
   ArrowUp,
   Sparkles,
   ChevronLeft,
+  Share2,
+  Heart,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUnreadFeed } from '@/hooks/use-unread-feed'
@@ -123,6 +126,29 @@ interface CommunityStats {
   user_posted_today: boolean
 }
 
+interface ActiveChallenge {
+  id: string
+  title: string
+  description: string
+  end_date: string
+  participant_count: number
+  is_joined: boolean
+  user_score: number
+  has_started: boolean
+}
+
+interface ActiveUser {
+  user_id: string
+  name: string
+  initial: string
+  role: string
+  tier: string
+  foto_url: string | null
+  last_post_type: string
+  post_count: number
+  is_self: boolean
+}
+
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -150,9 +176,6 @@ export default function FeedPage() {
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
 
-  // Filter
-  const [filterType, setFilterType] = useState('')
-
   // Unread feed badge + new posts banner
   const { markAsRead, details: unreadDetails, refetch: refetchUnread } = useUnreadFeed()
   const [newPostsBannerCount, setNewPostsBannerCount] = useState(0)
@@ -160,9 +183,47 @@ export default function FeedPage() {
   const [interactionsBanner, setInteractionsBanner] = useState<string | null>(null)
 
   // Community stats + masonry
-  const [communityStats, setCommunityStats] = useState<CommunityStats | null>(null)
+  const [, setCommunityStats] = useState<CommunityStats | null>(null)
+  const [activeChallenge, setActiveChallenge] = useState<ActiveChallenge | null>(null)
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([])
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+
+  // Double-tap to like
+  const lastTap = useRef<Record<string, number>>({})
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [heartBurst, setHeartBurst] = useState<string | null>(null)
+
+  // Compartilhar post como story (PNG)
+  const storyTemplateRef = useRef<HTMLDivElement>(null)
+  const { generateImage, downloadImage, isGenerating: sharing } = useShareImage({ pixelRatio: 2, backgroundColor: '#322b29' })
+  const handleShareStory = async () => {
+    if (!storyTemplateRef.current) return
+    try {
+      const blob = await generateImage(storyTemplateRef.current)
+      if (blob) {
+        downloadImage(blob, `felice-feed-${Date.now()}.png`)
+        toast.success('Story salvo! Compartilhe nas suas redes 📸')
+      } else {
+        toast.error('Não foi possível gerar a imagem')
+      }
+    } catch {
+      toast.error('Erro ao gerar story')
+    }
+  }
+
+  // Menções @paciente em comentários
+  interface MentionSuggestion {
+    user_id: string
+    name: string
+    handle: string
+    initial: string
+    role: string
+  }
+  const [mentionResults, setMentionResults] = useState<MentionSuggestion[]>([])
+  const [mentionOpen, setMentionOpen] = useState(false)
+  const mentionDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const commentInputRef = useRef<HTMLInputElement>(null)
 
   // Mark feed as read on mount + fetch active users
   useEffect(() => {
@@ -185,6 +246,25 @@ export default function FeedPage() {
       .then(res => res.json())
       .then(data => {
         if (data.success) setCommunityStats(data.stats)
+      })
+      .catch(() => {})
+    // Fetch desafio ativo (mais recente em curso) para card no topo do feed
+    fetch('/api/challenges')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.challenges)) {
+          const current = data.challenges.find((c: ActiveChallenge) => c.has_started)
+          if (current) setActiveChallenge(current)
+        }
+      })
+      .catch(() => {})
+    // Fetch quem postou hoje (timezone SP correto via endpoint) — usado na barra de avatares
+    fetch('/api/feed/active-today')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.active_users)) {
+          setActiveUsers(data.active_users)
+        }
       })
       .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -220,7 +300,6 @@ export default function FeedPage() {
     try {
       const offset = reset ? 0 : posts.length
       const params = new URLSearchParams({ limit: '20', offset: String(offset) })
-      if (filterType) params.set('type', filterType)
 
       const res = await fetch(`/api/feed?${params}`)
       const data = await res.json()
@@ -243,11 +322,11 @@ export default function FeedPage() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [filterType, posts.length])
+  }, [posts.length])
 
   useEffect(() => {
     fetchPosts(true)
-  }, [filterType]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-load comments when fullscreen modal opens
   useEffect(() => {
@@ -264,6 +343,8 @@ export default function FeedPage() {
         .finally(() => setLoadingComments(null))
     }
     setNewComment('')
+    setMentionOpen(false)
+    setMentionResults([])
   }, [selectedPostId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -451,320 +532,253 @@ export default function FeedPage() {
 
   const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) || null : null
 
-  // Masonry card renderer
+  const scrollToPost = (postId: string) => {
+    const el = document.getElementById(`post-${postId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  // Extrai o termo após "@" imediatamente antes do cursor (retorna null se não houver)
+  const getMentionQuery = (value: string): string | null => {
+    const m = value.match(/(?:^|\s)@([a-z0-9._-]{0,20})$/i)
+    return m ? m[1] : null
+  }
+
+  const handleCommentChange = (value: string) => {
+    setNewComment(value)
+    const q = getMentionQuery(value)
+    if (q === null) {
+      setMentionOpen(false)
+      return
+    }
+    setMentionOpen(true)
+    if (mentionDebounce.current) clearTimeout(mentionDebounce.current)
+    mentionDebounce.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/feed/mentions?q=${encodeURIComponent(q)}`)
+        const data = await res.json()
+        if (data.success) setMentionResults(data.results || [])
+      } catch {
+        // silent
+      }
+    }, 180)
+  }
+
+  const selectMention = (m: MentionSuggestion) => {
+    const replaced = newComment.replace(/(^|\s)@([a-z0-9._-]{0,20})$/i, `$1@${m.handle} `)
+    setNewComment(replaced)
+    setMentionOpen(false)
+    setMentionResults([])
+    commentInputRef.current?.focus()
+  }
+
+  // Renderiza texto com @menções destacadas em dourado
+  const renderTextWithMentions = (text: string) => {
+    const parts = text.split(/(@[a-z0-9._-]+)/gi)
+    return parts.map((part, i) =>
+      part.startsWith('@') ? (
+        <span key={i} className="text-dourado font-semibold">{part}</span>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    )
+  }
+
+  // Masonry card renderer — estilo Instagram: foto grande em destaque, overlays com metadata
   const renderMasonryCard = (post: Post) => {
     const totalReactions = getTotalReactions(post.reactions_count)
     const hasInteractions = totalReactions > 0 || post.comment_count > 0
 
-    const cardFooter = (textColor: string, bgColor: string) => (
-      <div className={`px-3 pb-3 flex items-center justify-between ${textColor}`}>
-        <div className="flex items-center gap-1.5">
-          <div className={`w-5 h-5 rounded-full ${bgColor} flex items-center justify-center`}>
-            <span className={`text-[9px] font-bold ${textColor}`}>{post.author_initial}</span>
-          </div>
-          <span className="text-[11px] font-medium truncate max-w-[80px]">{post.author_name}</span>
-          {post.is_highlight_author && <span className="text-[10px]">⭐</span>}
-          {post.author_tier && post.author_tier !== 'bronze' && (
-            <span className="text-[10px]">{TIER_ICONS[post.author_tier]}</span>
-          )}
-        </div>
-        {hasInteractions && (
-          <div className="flex items-center gap-1.5 text-[10px] opacity-70">
-            {totalReactions > 0 && <span>❤️ {totalReactions}</span>}
-            {post.comment_count > 0 && <span>💬 {post.comment_count}</span>}
-          </div>
-        )}
-      </div>
-    )
-
-    const adminBadge = post.admin_reacted ? (
-      <div className="px-3 pt-2.5">
-        <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-dourado/20 text-dourado font-semibold">
-          <Sparkles className="w-2.5 h-2.5" /> Equipe Felice
-        </span>
-      </div>
-    ) : null
-
-    // WORKOUT CARD
-    if (post.post_type === 'workout') {
-      return (
-        <div
-          onClick={() => setSelectedPostId(post.id)}
-          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
-          style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #322b29 100%)' }}
-        >
-          {adminBadge}
-          <div className="p-3.5 pb-2">
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Dumbbell className="w-3.5 h-3.5 text-white/60" />
-              <span className="text-[9px] font-semibold text-white/60 uppercase tracking-widest">Treino</span>
-            </div>
-            {post.metadata?.duracao_min && (
-              <p className="font-heading text-3xl font-bold text-white leading-none">
-                {post.metadata.duracao_min}<span className="text-base text-white/50 ml-0.5">min</span>
-              </p>
-            )}
-            <div className="flex gap-3 mt-1.5">
-              {post.metadata?.exercicios && (
-                <span className="text-[11px] text-white/60">{post.metadata.exercicios} exerc.</span>
-              )}
-              {post.metadata?.calorias && (
-                <span className="text-[11px] text-white/60">{post.metadata.calorias} kcal</span>
-              )}
-            </div>
-            {post.metadata?.energia && (
-              <div className="mt-2">
-                <span className="text-sm">{ENERGY_LEVELS.find(e => e.value === post.metadata?.energia)?.emoji}</span>
-              </div>
-            )}
-          </div>
-          {post.content && (
-            <p className="px-3.5 pb-1.5 text-white/60 text-[11px] line-clamp-2">{post.content}</p>
-          )}
-          {post.image_url && (
-            <div className="px-3 pb-2">
-              <img src={post.image_url} alt="" className="w-full rounded-lg object-cover max-h-32" />
-            </div>
-          )}
-          {cardFooter('text-white/80', 'bg-white/20')}
-        </div>
-      )
-    }
-
-    // MEAL CARD
-    if (post.post_type === 'meal') {
-      if (post.image_url) {
+    // Chip de tipo (canto superior esquerdo sobre a foto)
+    const typeChip = (() => {
+      if (post.post_type === 'workout') {
         return (
-          <div
-            onClick={() => setSelectedPostId(post.id)}
-            className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] bg-white border border-border"
-          >
-            <div className="relative">
-              <img src={post.image_url} alt="" className="w-full object-cover" style={{ maxHeight: '180px' }} />
-              {post.metadata && Object.keys(post.metadata).length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6">
-                  <div className="flex gap-2">
-                    {post.metadata.calorias && (
-                      <span className="text-[10px] text-white font-semibold bg-white/20 px-1.5 py-0.5 rounded">{post.metadata.calorias} kcal</span>
-                    )}
-                    {post.metadata.proteinas && (
-                      <span className="text-[10px] text-white font-semibold bg-white/20 px-1.5 py-0.5 rounded">{post.metadata.proteinas}g prot</span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            {adminBadge}
-            {post.content && (
-              <p className="px-3 pt-2 pb-1 text-foreground text-[11px] line-clamp-2">{post.content}</p>
-            )}
-            {cardFooter('text-foreground-secondary', 'bg-foreground-muted/20')}
-          </div>
+          <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-sm uppercase tracking-wider">
+            <Dumbbell className="w-2.5 h-2.5" /> Treino
+          </span>
         )
       }
-      return (
-        <div
-          onClick={() => setSelectedPostId(post.id)}
-          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
-          style={{ background: 'linear-gradient(135deg, #2d5a3d 0%, #322b29 100%)' }}
-        >
-          {adminBadge}
-          <div className="p-3.5 pb-2">
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Coffee className="w-3.5 h-3.5 text-white/60" />
-              <span className="text-[9px] font-semibold text-white/60 uppercase tracking-widest">
-                {MEAL_TYPE_OPTIONS.find(m => m.value === post.metadata?.tipo_refeicao)?.label || 'Refeição'}
-              </span>
-            </div>
-            {post.metadata && (
-              <div className="grid grid-cols-2 gap-1.5">
-                {post.metadata.calorias && (
-                  <div className="bg-white/10 rounded-lg py-1.5 px-2 text-center">
-                    <p className="font-heading text-lg font-bold text-white">{post.metadata.calorias}</p>
-                    <p className="text-[8px] text-white/50">kcal</p>
-                  </div>
-                )}
-                {post.metadata.proteinas && (
-                  <div className="bg-white/10 rounded-lg py-1.5 px-2 text-center">
-                    <p className="font-heading text-lg font-bold text-white">{post.metadata.proteinas}g</p>
-                    <p className="text-[8px] text-white/50">proteina</p>
-                  </div>
+      if (post.post_type === 'meal') {
+        const mealLabel = MEAL_TYPE_OPTIONS.find(m => m.value === post.metadata?.tipo_refeicao)?.label || 'Refeição'
+        return (
+          <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-sm uppercase tracking-wider">
+            <Coffee className="w-2.5 h-2.5" /> {mealLabel}
+          </span>
+        )
+      }
+      if (post.post_type === 'achievement') {
+        return (
+          <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-dourado/90 text-white backdrop-blur-sm uppercase tracking-wider">
+            🏆 Conquista
+          </span>
+        )
+      }
+      if (post.post_type === 'level_up') {
+        return (
+          <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r from-vinho to-dourado text-white backdrop-blur-sm uppercase tracking-wider">
+            ⬆️ Level Up
+          </span>
+        )
+      }
+      return null
+    })()
+
+    // Metadata chips (sobre a foto, parte inferior)
+    const metaChips: React.ReactNode[] = []
+    if (post.post_type === 'workout' && post.metadata) {
+      if (post.metadata.duracao_min) metaChips.push(<span key="dur" className="text-[10px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm">{post.metadata.duracao_min}min</span>)
+      if (post.metadata.exercicios) metaChips.push(<span key="ex" className="text-[10px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm">{post.metadata.exercicios} exerc.</span>)
+      if (post.metadata.calorias) metaChips.push(<span key="kcal" className="text-[10px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm">{post.metadata.calorias} kcal</span>)
+      if (post.metadata.energia) {
+        const e = ENERGY_LEVELS.find(x => x.value === post.metadata?.energia)
+        if (e) metaChips.push(<span key="en" className="text-[11px] bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm">{e.emoji}</span>)
+      }
+    } else if (post.post_type === 'meal' && post.metadata) {
+      if (post.metadata.calorias) metaChips.push(<span key="kcal" className="text-[10px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm">{post.metadata.calorias} kcal</span>)
+      if (post.metadata.proteinas) metaChips.push(<span key="prot" className="text-[10px] text-white font-semibold bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm">{post.metadata.proteinas}g prot</span>)
+    } else if (post.post_type === 'achievement' && post.metadata?.titulo) {
+      metaChips.push(<span key="tit" className="text-[10px] text-white font-bold bg-dourado/80 px-2 py-0.5 rounded backdrop-blur-sm">{post.metadata.titulo}</span>)
+    } else if (post.post_type === 'level_up' && post.metadata?.nivel) {
+      metaChips.push(<span key="lvl" className="text-[10px] text-white font-bold bg-vinho/80 px-2 py-0.5 rounded backdrop-blur-sm">Nível {post.metadata.nivel}</span>)
+    }
+
+    const handleCardTap = () => {
+      const now = Date.now()
+      const prev = lastTap.current[post.id] || 0
+      if (now - prev < 280) {
+        // Double tap — curtir com heart
+        if (openTimer.current) {
+          clearTimeout(openTimer.current)
+          openTimer.current = null
+        }
+        if (!post.user_reactions.includes('heart')) {
+          handleReaction(post.id, 'heart')
+        }
+        setHeartBurst(post.id)
+        setTimeout(() => setHeartBurst(prevId => prevId === post.id ? null : prevId), 800)
+        lastTap.current[post.id] = 0
+      } else {
+        lastTap.current[post.id] = now
+        if (openTimer.current) clearTimeout(openTimer.current)
+        openTimer.current = setTimeout(() => {
+          if (lastTap.current[post.id] === now) {
+            setSelectedPostId(post.id)
+          }
+          openTimer.current = null
+        }, 280)
+      }
+    }
+
+    return (
+      <div
+        onClick={handleCardTap}
+        className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] bg-white border border-border"
+      >
+        {/* Foto em destaque */}
+        {post.image_url && (
+          <div className="relative">
+            <img src={post.image_url} alt="" className="w-full object-cover block" />
+
+            {/* Heart burst (double-tap anim) */}
+            {heartBurst === post.id && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <Heart className="w-20 h-20 text-white fill-red-500 drop-shadow-lg animate-heart-burst" />
+              </div>
+            )}
+
+            {/* Overlay topo: chip de tipo + badge Equipe Felice */}
+            {(typeChip || post.admin_reacted) && (
+              <div className="absolute top-1.5 left-1.5 right-1.5 flex items-start justify-between gap-1 pointer-events-none">
+                {typeChip}
+                {post.admin_reacted && (
+                  <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-dourado/90 text-white font-semibold backdrop-blur-sm">
+                    <Sparkles className="w-2.5 h-2.5" /> Felice
+                  </span>
                 )}
               </div>
             )}
-          </div>
-          {post.content && (
-            <p className="px-3.5 pb-1.5 text-white/60 text-[11px] line-clamp-2">{post.content}</p>
-          )}
-          {cardFooter('text-white/80', 'bg-white/20')}
-        </div>
-      )
-    }
 
-    // ACHIEVEMENT CARD
-    if (post.post_type === 'achievement') {
-      return (
-        <div
-          onClick={() => setSelectedPostId(post.id)}
-          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] animate-pulse-glow"
-          style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)' }}
-        >
-          {adminBadge}
-          <div className="p-4 text-center">
-            <span className="text-3xl">🏆</span>
-            {post.metadata?.titulo && (
-              <p className="font-heading text-base font-bold text-white mt-2 leading-tight">{post.metadata.titulo}</p>
-            )}
-            <p className="text-[9px] text-white/60 mt-1 uppercase tracking-widest">Conquista Desbloqueada</p>
-          </div>
-          {post.content && (
-            <p className="px-3.5 pb-1.5 text-white/70 text-[11px] line-clamp-2 text-center">{post.content}</p>
-          )}
-          {cardFooter('text-white/80', 'bg-white/20')}
-        </div>
-      )
-    }
-
-    // LEVEL UP CARD
-    if (post.post_type === 'level_up') {
-      return (
-        <div
-          onClick={() => setSelectedPostId(post.id)}
-          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
-          style={{ background: 'linear-gradient(135deg, #663739 0%, #c29863 100%)' }}
-        >
-          <div className="p-4 text-center">
-            <span className="text-3xl">⬆️</span>
-            {post.metadata?.nivel && (
-              <p className="font-heading text-2xl font-bold text-white mt-1">Nível {post.metadata.nivel}</p>
-            )}
-            {post.metadata?.nome_nivel && (
-              <p className="text-sm text-white/80 font-medium">{post.metadata.nome_nivel}</p>
-            )}
-            <p className="text-[9px] text-white/50 mt-1 uppercase tracking-widest">Level Up!</p>
-          </div>
-          {post.content && (
-            <p className="px-3.5 pb-1.5 text-white/70 text-[11px] line-clamp-2 text-center">{post.content}</p>
-          )}
-          {cardFooter('text-white/80', 'bg-white/20')}
-        </div>
-      )
-    }
-
-    // FREE TEXT / DEFAULT CARD
-    const templateBg = post.metadata?.template_bg
-    const template = templateBg ? TEMPLATE_BACKGROUNDS.find(t => t.id === templateBg) : null
-
-    if (template) {
-      // Template card with gradient background
-      return (
-        <div
-          onClick={() => setSelectedPostId(post.id)}
-          className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]"
-          style={{ background: template.gradient }}
-        >
-          {adminBadge}
-          <div className="p-4 min-h-[120px] flex flex-col justify-center">
-            {post.content && (
-              <p className="text-white text-sm font-medium leading-relaxed text-center italic">
-                &ldquo;{post.content}&rdquo;
-              </p>
+            {/* Overlay bottom: metadata chips */}
+            {metaChips.length > 0 && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-1.5 pt-6">
+                <div className="flex gap-1 flex-wrap">{metaChips}</div>
+              </div>
             )}
           </div>
-          {post.image_url && (
-            <div className="px-3 pb-2">
-              <img src={post.image_url} alt="" className="w-full rounded-lg object-cover max-h-32" />
+        )}
+
+        {/* Conteúdo texto */}
+        {post.content && (
+          <p className="px-3 pt-2 pb-0.5 text-foreground text-[12px] leading-snug line-clamp-2">{post.content}</p>
+        )}
+
+        {/* Footer: autor + reações */}
+        <div className="px-3 py-2 flex items-center justify-between text-foreground-secondary">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="w-5 h-5 rounded-full bg-foreground-muted/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-[9px] font-bold text-foreground-secondary">{post.author_initial}</span>
+            </div>
+            <span className="text-[11px] font-medium truncate">{post.author_name}</span>
+            {post.is_highlight_author && <span className="text-[10px] flex-shrink-0">⭐</span>}
+            {post.author_tier && post.author_tier !== 'bronze' && (
+              <span className="text-[10px] flex-shrink-0">{TIER_ICONS[post.author_tier]}</span>
+            )}
+          </div>
+          {hasInteractions && (
+            <div className="flex items-center gap-1.5 text-[10px] opacity-70 flex-shrink-0">
+              {totalReactions > 0 && <span>❤️ {totalReactions}</span>}
+              {post.comment_count > 0 && <span>💬 {post.comment_count}</span>}
             </div>
           )}
-          {cardFooter('text-white/80', 'bg-white/20')}
         </div>
-      )
-    }
-
-    // Plain free text card (white)
-    return (
-      <div
-        onClick={() => setSelectedPostId(post.id)}
-        className="rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] bg-white border border-border"
-      >
-        {adminBadge}
-        {post.image_url && (
-          <img src={post.image_url} alt="" className="w-full object-cover" style={{ maxHeight: '200px' }} />
-        )}
-        <div className="p-3.5">
-          {post.content && (
-            <p className="text-foreground text-[13px] leading-relaxed whitespace-pre-wrap line-clamp-4">{post.content}</p>
-          )}
-        </div>
-        {cardFooter('text-foreground-secondary', 'bg-foreground-muted/20')}
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
+      {/* Header — Compartilhe seu dia (sticky, CTA principal) */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center justify-between p-4">
-          <h1 className="font-heading font-bold text-lg text-foreground">Comunidade</h1>
+        <div className="px-3 py-3">
           <button
             onClick={() => setShowCreate(true)}
-            className="p-2 rounded-full bg-dourado text-white hover:bg-dourado/90 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-dourado/10 to-dourado/5 border border-dourado/20 text-left transition-all active:scale-[0.99]"
           >
-            <Plus className="w-5 h-5" />
+            <span className="text-xl">✨</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Compartilhe seu dia!</p>
+              <p className="text-[11px] text-foreground-muted">Mostre sua evolução para a comunidade</p>
+            </div>
+            <Plus className="w-5 h-5 text-dourado" />
           </button>
-        </div>
-
-        {/* Filter chips */}
-        <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
-          <button
-            onClick={() => setFilterType('')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              !filterType ? 'bg-dourado text-white' : 'bg-background-elevated text-foreground-secondary'
-            }`}
-          >
-            Todos
-          </button>
-          {POST_TYPES.map(pt => (
-            <button
-              key={pt.value}
-              onClick={() => setFilterType(pt.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                filterType === pt.value ? 'bg-dourado text-white' : 'bg-background-elevated text-foreground-secondary'
-              }`}
-            >
-              {pt.label}
-            </button>
-          ))}
         </div>
       </div>
 
-      {/* Community Live Bar */}
-      {communityStats && (
-        <div className="mx-3 mt-3 mb-1">
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-border overflow-x-auto">
-            <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="font-heading font-bold text-foreground">{communityStats.active_today}</span>
-              <span className="text-foreground-muted">ativos</span>
+      {/* Desafio ativo — card fixo no topo com CTA */}
+      {activeChallenge && (
+        <div className="mx-3 mt-2 mb-1">
+          <div className="relative overflow-hidden rounded-xl p-4 text-white" style={{ background: 'linear-gradient(135deg, #663739 0%, #c29863 100%)' }}>
+            <div className="absolute top-2 right-2">
+              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm uppercase tracking-wider">
+                🏆 Desafio ativo
+              </span>
             </div>
-            <div className="w-px h-4 bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 text-xs whitespace-nowrap">
-              <span className="text-sm">💪</span>
-              <span className="font-heading font-bold text-foreground">{communityStats.workouts_week}</span>
-              <span className="text-foreground-muted">treinos</span>
-            </div>
-            <div className="w-px h-4 bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 text-xs whitespace-nowrap">
-              <span className="text-sm">🔥</span>
-              <span className="font-heading font-bold text-foreground">{communityStats.reactions_week}</span>
-              <span className="text-foreground-muted">reações</span>
-            </div>
-            <div className="w-px h-4 bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 text-xs whitespace-nowrap">
-              <span className="text-sm">📝</span>
-              <span className="font-heading font-bold text-foreground">{communityStats.posts_week}</span>
-              <span className="text-foreground-muted">posts</span>
+            <p className="font-heading font-bold text-base leading-tight pr-20">{activeChallenge.title}</p>
+            {activeChallenge.description && (
+              <p className="text-[11px] text-white/80 mt-1 line-clamp-2">{activeChallenge.description}</p>
+            )}
+            <div className="flex items-center justify-between mt-3 gap-2">
+              <div className="flex items-center gap-3 text-[11px] text-white/80">
+                <span>👥 {activeChallenge.participant_count}</span>
+                {activeChallenge.is_joined && <span>⭐ {activeChallenge.user_score} pts</span>}
+              </div>
+              <button
+                onClick={() => setShowCreate(true)}
+                className="px-3 py-1.5 rounded-full bg-white text-vinho text-xs font-semibold hover:bg-white/90 transition-colors active:scale-95"
+              >
+                Postar progresso
+              </button>
             </div>
           </div>
         </div>
@@ -788,20 +802,36 @@ export default function FeedPage() {
         </div>
       )}
 
-      {/* Auto-suggest banner - if user hasn't posted today */}
-      {communityStats && !communityStats.user_posted_today && !loading && (
+      {/* Postaram hoje — avatares com ring dourado (clique abre post da pessoa) */}
+      {activeUsers.length > 0 && (
         <div className="mx-3 mt-2 mb-1">
-          <button
-            onClick={() => setShowCreate(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-dourado/10 to-dourado/5 border border-dourado/20 text-left transition-all active:scale-[0.99]"
-          >
-            <span className="text-xl">✨</span>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Compartilhe seu dia!</p>
-              <p className="text-[11px] text-foreground-muted">Mostre sua evolução para a comunidade</p>
-            </div>
-            <Plus className="w-5 h-5 text-dourado" />
-          </button>
+          <div className="flex gap-3 px-1 py-2 overflow-x-auto">
+            {activeUsers.map(u => (
+              <button
+                key={u.user_id}
+                onClick={() => {
+                  const p = posts.find(post => post.user_id === u.user_id)
+                  if (p) scrollToPost(p.id)
+                }}
+                className="flex flex-col items-center gap-1 flex-shrink-0 active:scale-95 transition-transform"
+                aria-label={`Ver post de ${u.name}`}
+              >
+                <div className="p-[2px] rounded-full bg-gradient-to-br from-dourado via-dourado/80 to-vinho">
+                  <div className="p-[2px] rounded-full bg-background">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-dourado/30 to-vinho/30 flex items-center justify-center overflow-hidden">
+                      {u.foto_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={u.foto_url} alt={u.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-bold text-foreground">{u.initial}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] text-foreground-secondary font-medium max-w-[56px] truncate">{u.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -863,6 +893,66 @@ export default function FeedPage() {
         )}
       </div>
 
+      {/* Template oculto para exportar como story (1080x1920) */}
+      {selectedPost && selectedPost.image_url && (
+        <div
+          ref={storyTemplateRef}
+          style={{
+            position: 'fixed',
+            left: '-99999px',
+            top: 0,
+            width: '1080px',
+            height: '1920px',
+            background: 'linear-gradient(135deg, #322b29 0%, #663739 60%, #c29863 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '80px 60px',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+          }}
+          aria-hidden="true"
+        >
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '28px', letterSpacing: '6px', textTransform: 'uppercase', margin: 0 }}>Comunidade</p>
+            <p style={{ color: '#c29863', fontSize: '64px', fontWeight: 700, letterSpacing: '2px', margin: '8px 0 0 0' }}>Complexo Felice</p>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{
+              width: '100%',
+              borderRadius: '32px',
+              overflow: 'hidden',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+              background: '#fff',
+            }}>
+              <img
+                src={selectedPost.image_url}
+                alt=""
+                crossOrigin="anonymous"
+                style={{ width: '100%', display: 'block', objectFit: 'cover' }}
+              />
+              {selectedPost.content && (
+                <p style={{ padding: '32px 40px', fontSize: '28px', color: '#322b29', lineHeight: 1.4, margin: 0 }}>{selectedPost.content}</p>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '40px' }}>
+            <div style={{
+              width: '88px', height: '88px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, #c29863, #663739)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: '40px', fontWeight: 700,
+            }}>
+              {selectedPost.author_initial}
+            </div>
+            <div>
+              <p style={{ color: '#fff', fontSize: '36px', fontWeight: 600, margin: 0 }}>{selectedPost.author_name}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '22px', margin: '4px 0 0 0' }}>@complexofelice</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Fullscreen Post Modal */}
       {selectedPost && (
         <div className="fixed inset-x-0 top-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center" style={{ height: '100dvh', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }} onClick={() => setSelectedPostId(null)}>
@@ -904,6 +994,15 @@ export default function FeedPage() {
                   )}
                 </div>
               </div>
+              <button
+                onClick={handleShareStory}
+                disabled={sharing || !selectedPost.image_url}
+                className="p-1.5 rounded-lg hover:bg-background-elevated text-foreground-muted hover:text-dourado disabled:opacity-40 transition-colors"
+                aria-label="Compartilhar como story"
+                title="Compartilhar como story"
+              >
+                {sharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+              </button>
               {selectedPost.is_own && (
                 <button
                   onClick={() => { handleDeletePost(selectedPost.id); setSelectedPostId(null); }}
@@ -1105,7 +1204,7 @@ export default function FeedPage() {
                             )}
                             <span className="text-[10px] text-foreground-muted">{formatDate(comment.created_at)}</span>
                           </div>
-                          <p className="text-xs text-foreground-secondary leading-relaxed">{comment.content}</p>
+                          <p className="text-xs text-foreground-secondary leading-relaxed">{renderTextWithMentions(comment.content)}</p>
                         </div>
                       </div>
                     )
@@ -1113,22 +1212,49 @@ export default function FeedPage() {
                 )}
 
                 {/* Add comment input */}
-                <div className="p-3 flex items-center gap-2 border-t border-border">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !submittingComment && handleComment(selectedPost.id)}
-                    className="flex-1 px-3 py-2 rounded-full bg-background-input border border-border text-sm text-foreground placeholder-foreground-muted focus:outline-none focus:ring-1 focus:ring-dourado/50"
-                    placeholder="Comentar..."
-                  />
-                  <button
-                    onClick={() => handleComment(selectedPost.id)}
-                    disabled={!newComment.trim() || submittingComment}
-                    className="p-2 rounded-full bg-dourado text-white disabled:opacity-50 hover:bg-dourado/90 transition-colors"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
+                <div className="relative border-t border-border">
+                  {mentionOpen && mentionResults.length > 0 && (
+                    <div className="absolute bottom-full left-3 right-3 mb-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-white shadow-lg z-10">
+                      {mentionResults.map(m => (
+                        <button
+                          key={m.user_id}
+                          onClick={() => selectMention(m)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-background-elevated text-left transition-colors"
+                        >
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-dourado/40 to-vinho/40 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-foreground">{m.initial}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground truncate">{m.name}</p>
+                            <p className="text-[10px] text-foreground-muted truncate">@{m.handle}</p>
+                          </div>
+                          {PROFESSIONAL_ROLES[m.role] && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[m.role].color}`}>
+                              {PROFESSIONAL_ROLES[m.role].label}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="p-3 flex items-center gap-2">
+                    <input
+                      ref={commentInputRef}
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => handleCommentChange(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !submittingComment && handleComment(selectedPost.id)}
+                      className="flex-1 px-3 py-2 rounded-full bg-background-input border border-border text-sm text-foreground placeholder-foreground-muted focus:outline-none focus:ring-1 focus:ring-dourado/50"
+                      placeholder="Comentar... (@ para mencionar)"
+                    />
+                    <button
+                      onClick={() => handleComment(selectedPost.id)}
+                      disabled={!newComment.trim() || submittingComment}
+                      className="p-2 rounded-full bg-dourado text-white disabled:opacity-50 hover:bg-dourado/90 transition-colors"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -163,6 +163,12 @@ const config: Config = {
           "25%": { transform: "rotate(-5deg)" },
           "75%": { transform: "rotate(5deg)" },
         },
+        "heart-burst": {
+          "0%": { opacity: "0", transform: "scale(0.3)" },
+          "30%": { opacity: "1", transform: "scale(1.2)" },
+          "60%": { opacity: "1", transform: "scale(1)" },
+          "100%": { opacity: "0", transform: "scale(1.1)" },
+        },
       },
       animation: {
         "shake": "shake 0.5s ease-in-out",
@@ -175,6 +181,7 @@ const config: Config = {
         "float": "float 3s ease-in-out infinite",
         "heartbeat": "heartbeat 0.8s ease-in-out",
         "wiggle": "wiggle 0.3s ease-in-out",
+        "heart-burst": "heart-burst 0.8s ease-out forwards",
       },
       padding: {
         "safe": "env(safe-area-inset-bottom, 20px)",

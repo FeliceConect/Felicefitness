@@ -191,8 +191,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Tipo de post inválido' }, { status: 400 })
     }
 
-    // Posts criados pelo usuário precisam de foto. Posts automáticos (sistema) são permitidos sem foto.
-    if (!is_auto_generated && !image_url) {
+    // Foto obrigatória para TODOS os posts (inclusive auto-gerados).
+    if (!image_url) {
       return NextResponse.json({ success: false, error: 'A foto é obrigatória para publicar no feed' }, { status: 400 })
     }
 

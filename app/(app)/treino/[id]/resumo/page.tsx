@@ -12,7 +12,6 @@ import { useSaveWorkout } from '@/hooks/use-save-workout'
 import { useGamification } from '@/hooks/use-gamification'
 import { cn } from '@/lib/utils'
 import { getTodayDateSP } from '@/lib/utils/date'
-import { autoPostWorkout } from '@/lib/services/auto-post'
 import type { CompletedCardio, CardioExerciseType } from '@/lib/workout/types'
 
 interface CompletedSetData {
@@ -179,18 +178,6 @@ export default function WorkoutSummaryPage() {
       const totalXP = baseXP + volumeBonus + prBonus
 
       await addXP(totalXP, `Treino concluído: ${saveData.nome}`, 'workout_completed')
-
-      // Auto-post workout to feed
-      autoPostWorkout({
-        workoutName: saveData.nome,
-        duration: summary.duration,
-        exercises: summary.exercisesCompleted,
-        volume: summary.totalVolume,
-        calories: summary.caloriesBurned,
-        energy: energy || undefined,
-        prs: summary.newPRs,
-        workoutId: savedId,
-      })
 
       // Refresh workouts data
       await refresh()

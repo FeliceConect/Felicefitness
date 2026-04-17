@@ -13,7 +13,6 @@ import type {
   MealType
 } from '@/lib/nutrition/types'
 import { leonardoGoals, leonardoMealPlan } from '@/lib/nutrition/types'
-import { autoPostMeal } from '@/lib/services/auto-post'
 import { calculateNutritionProgress } from '@/lib/nutrition/calculations'
 
 interface UseDailyMealsReturn {
@@ -271,15 +270,6 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
       }
 
       setMeals(prev => [...prev, newMeal])
-
-      // Auto-post meal to feed
-      autoPostMeal({
-        mealType: newMeal.tipo,
-        calories: newMeal.calorias_total,
-        protein: newMeal.proteinas_total,
-        carbs: newMeal.carboidratos_total,
-        fat: newMeal.gorduras_total,
-      })
 
       console.log('=== addMeal: CONCLUÍDO ===')
     } catch (err) {
