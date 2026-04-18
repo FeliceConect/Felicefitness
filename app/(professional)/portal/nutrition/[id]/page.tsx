@@ -21,6 +21,10 @@ import {
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 import { toast } from 'sonner'
+import { FoodSearch } from '@/components/alimentacao/food-search'
+import { PortionSelector } from '@/components/alimentacao/portion-selector'
+import { calculateFoodMacros } from '@/lib/nutrition/calculations'
+import type { Food as NutritionFood } from '@/lib/nutrition/types'
 
 interface Food {
   name: string
@@ -829,13 +833,95 @@ export default function MealPlanDetailPage() {
   )
 }
 
-// Add Food Modal Component
-function AddFoodModal({
+// Food Picker Sheet — busca na base TACO/TBCA + seletor de porção com cálculo automático de macros,
+// com fallback para preenchimento manual quando o alimento não está na base.
+function FoodPickerSheet({
+  title,
   onClose,
   onAdd
 }: {
+  title: string
   onClose: () => void
   onAdd: (food: Food) => void
+}) {
+  const [selectedFood, setSelectedFood] = useState<NutritionFood | null>(null)
+  const [manualMode, setManualMode] = useState(false)
+
+  function handleConfirmPortion(quantity: number) {
+    if (!selectedFood) return
+    const macros = calculateFoodMacros(selectedFood, quantity)
+    onAdd({
+      name: selectedFood.nome,
+      quantity,
+      unit: selectedFood.unidade === 'unidade' ? 'un' : selectedFood.unidade,
+      calories: macros.calorias,
+      protein: macros.proteinas,
+      carbs: macros.carboidratos,
+      fat: macros.gorduras
+    })
+    setSelectedFood(null)
+  }
+
+  if (selectedFood) {
+    return (
+      <PortionSelector
+        food={selectedFood}
+        onConfirm={handleConfirmPortion}
+        onCancel={() => setSelectedFood(null)}
+      />
+    )
+  }
+
+  if (manualMode) {
+    return (
+      <ManualFoodForm
+        onBack={() => setManualMode(false)}
+        onClose={onClose}
+        onAdd={onAdd}
+      />
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-xl">
+        <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            <p className="text-xs text-foreground-muted">Busca na base TACO/TBCA (6.000+ alimentos)</p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
+            <X className="w-5 h-5 text-foreground-muted" />
+          </button>
+        </div>
+        <div className="p-5 overflow-y-auto flex-1">
+          <FoodSearch
+            onSelect={(food) => setSelectedFood(food)}
+            showAddCustom={false}
+          />
+        </div>
+        <div className="p-4 border-t border-border flex-shrink-0">
+          <button
+            onClick={() => setManualMode(true)}
+            className="w-full px-4 py-2 bg-background-elevated text-foreground-secondary rounded-lg hover:bg-border transition-colors text-sm border border-border"
+          >
+            Não encontrei — preencher manualmente
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Manual Food Form — fallback para alimentos fora da base (receitas próprias, produtos de marca, etc).
+function ManualFoodForm({
+  onClose,
+  onAdd,
+  onBack
+}: {
+  onClose: () => void
+  onAdd: (food: Food) => void
+  onBack: () => void
 }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -866,7 +952,12 @@ function AddFoodModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">Adicionar Alimento</h3>
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-1 hover:bg-background-elevated rounded">
+              <ArrowLeft className="w-5 h-5 text-foreground-muted" />
+            </button>
+            <h3 className="text-lg font-semibold text-foreground">Alimento Manual</h3>
+          </div>
           <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
             <X className="w-5 h-5 text-foreground-muted" />
           </button>
@@ -985,6 +1076,23 @@ function AddFoodModal({
   )
 }
 
+// Add Food Modal Component — wrapper que usa FoodPickerSheet (busca → porção → macros automáticos)
+function AddFoodModal({
+  onClose,
+  onAdd
+}: {
+  onClose: () => void
+  onAdd: (food: Food) => void
+}) {
+  return (
+    <FoodPickerSheet
+      title="Adicionar Alimento"
+      onClose={onClose}
+      onAdd={onAdd}
+    />
+  )
+}
+
 // Alternatives Modal Component
 function AlternativesModal({
   meal,
@@ -996,41 +1104,11 @@ function AlternativesModal({
   onAddAlternative: (foods: Food[]) => void
 }) {
   const [foods, setFoods] = useState<Food[]>([])
-  const [currentFood, setCurrentFood] = useState({
-    name: '',
-    quantity: '',
-    unit: 'g',
-    calories: '',
-    protein: '',
-    carbs: '',
-    fat: ''
-  })
+  const [showPicker, setShowPicker] = useState(false)
 
-  function addFoodToList() {
-    if (!currentFood.name || !currentFood.quantity) return
-
-    setFoods([
-      ...foods,
-      {
-        name: currentFood.name,
-        quantity: parseFloat(currentFood.quantity),
-        unit: currentFood.unit,
-        calories: currentFood.calories ? parseFloat(currentFood.calories) : 0,
-        protein: currentFood.protein ? parseFloat(currentFood.protein) : 0,
-        carbs: currentFood.carbs ? parseFloat(currentFood.carbs) : 0,
-        fat: currentFood.fat ? parseFloat(currentFood.fat) : 0
-      }
-    ])
-
-    setCurrentFood({
-      name: '',
-      quantity: '',
-      unit: 'g',
-      calories: '',
-      protein: '',
-      carbs: '',
-      fat: ''
-    })
+  function addFoodToList(food: Food) {
+    setFoods(prev => [...prev, food])
+    setShowPicker(false)
   }
 
   function removeFoodFromList(index: number) {
@@ -1043,144 +1121,94 @@ function AlternativesModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl max-w-2xl w-full my-8 shadow-xl">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">Adicionar Variação</h3>
-            <p className="text-sm text-foreground-secondary">
-              Crie uma opção alternativa para: {meal.meal_name || meal.meal_type}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
-            <X className="w-5 h-5 text-foreground-muted" />
-          </button>
-        </div>
-
-        <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
-          {/* Original Foods Reference */}
-          <div className="p-3 bg-background-elevated rounded-lg">
-            <p className="text-xs font-medium text-foreground-muted uppercase mb-2">Alimentos originais (referência)</p>
-            <div className="flex flex-wrap gap-2">
-              {meal.foods.map((food, idx) => (
-                <span key={idx} className="px-2 py-1 bg-white text-foreground-secondary text-xs rounded border border-border">
-                  {food.name} - {food.quantity}{food.unit}
-                </span>
-              ))}
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white rounded-xl max-w-2xl w-full my-8 shadow-xl">
+          <div className="flex items-center justify-between p-5 border-b border-border">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Adicionar Variação</h3>
+              <p className="text-sm text-foreground-secondary">
+                Crie uma opção alternativa para: {meal.meal_name || meal.meal_type}
+              </p>
             </div>
+            <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
+              <X className="w-5 h-5 text-foreground-muted" />
+            </button>
           </div>
 
-          {/* Foods in this alternative */}
-          {foods.length > 0 && (
-            <div className="p-3 bg-dourado/10 border border-dourado/20 rounded-lg">
-              <p className="text-xs font-medium text-dourado uppercase mb-2">Alimentos desta variação</p>
-              <div className="space-y-2">
-                {foods.map((food, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground">{food.name} - {food.quantity}{food.unit}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-foreground-muted">{food.calories} kcal</span>
-                      <button
-                        onClick={() => removeFoodFromList(idx)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+          <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+            {/* Original Foods Reference */}
+            <div className="p-3 bg-background-elevated rounded-lg">
+              <p className="text-xs font-medium text-foreground-muted uppercase mb-2">Alimentos originais (referência)</p>
+              <div className="flex flex-wrap gap-2">
+                {meal.foods.map((food, idx) => (
+                  <span key={idx} className="px-2 py-1 bg-white text-foreground-secondary text-xs rounded border border-border">
+                    {food.name} - {food.quantity}{food.unit}
+                  </span>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Add food form */}
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={currentFood.name}
-                onChange={(e) => setCurrentFood({ ...currentFood, name: e.target.value })}
-                placeholder="Nome do alimento"
-                className="px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
-              />
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={currentFood.quantity}
-                  onChange={(e) => setCurrentFood({ ...currentFood, quantity: e.target.value })}
-                  placeholder="Qtd"
-                  className="flex-1 px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
-                />
-                <select
-                  value={currentFood.unit}
-                  onChange={(e) => setCurrentFood({ ...currentFood, unit: e.target.value })}
-                  className="w-20 px-2 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
-                >
-                  <option value="g">g</option>
-                  <option value="ml">ml</option>
-                  <option value="un">un</option>
-                </select>
+            {/* Foods in this alternative */}
+            {foods.length > 0 && (
+              <div className="p-3 bg-dourado/10 border border-dourado/20 rounded-lg">
+                <p className="text-xs font-medium text-dourado uppercase mb-2">Alimentos desta variação</p>
+                <div className="space-y-2">
+                  {foods.map((food, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <span className="text-foreground">{food.name} - {food.quantity}{food.unit}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-foreground-muted">{food.calories} kcal</span>
+                        <button
+                          onClick={() => removeFoodFromList(idx)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              <input
-                type="number"
-                value={currentFood.calories}
-                onChange={(e) => setCurrentFood({ ...currentFood, calories: e.target.value })}
-                placeholder="kcal"
-                className="px-2 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado text-sm"
-              />
-              <input
-                type="number"
-                value={currentFood.protein}
-                onChange={(e) => setCurrentFood({ ...currentFood, protein: e.target.value })}
-                placeholder="Prot"
-                className="px-2 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado text-sm"
-              />
-              <input
-                type="number"
-                value={currentFood.carbs}
-                onChange={(e) => setCurrentFood({ ...currentFood, carbs: e.target.value })}
-                placeholder="Carb"
-                className="px-2 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado text-sm"
-              />
-              <input
-                type="number"
-                value={currentFood.fat}
-                onChange={(e) => setCurrentFood({ ...currentFood, fat: e.target.value })}
-                placeholder="Gord"
-                className="px-2 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado text-sm"
-              />
-            </div>
+            )}
+
+            {/* Abrir picker para adicionar alimento com busca na base */}
             <button
-              onClick={addFoodToList}
-              disabled={!currentFood.name || !currentFood.quantity}
-              className="w-full py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-border"
+              onClick={() => setShowPicker(true)}
+              className="w-full py-3 border-2 border-dashed border-border rounded-lg text-foreground-muted hover:border-dourado hover:text-dourado transition-colors flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Adicionar alimento à variação
             </button>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 p-5 border-t border-border">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={foods.length === 0}
-            className="flex-1 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <Check className="w-4 h-4" />
-            Salvar Variação
-          </button>
+          {/* Actions */}
+          <div className="flex gap-3 p-5 border-t border-border">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={foods.length === 0}
+              className="flex-1 px-4 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              Salvar Variação
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {showPicker && (
+        <FoodPickerSheet
+          title="Alimento para a variação"
+          onClose={() => setShowPicker(false)}
+          onAdd={addFoodToList}
+        />
+      )}
+    </>
   )
 }
