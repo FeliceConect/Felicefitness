@@ -21,6 +21,7 @@ interface Food {
   name: string
   quantity: number
   unit: string
+  portion_label?: string
   calories?: number
   protein?: number
   carbs?: number
@@ -276,7 +277,7 @@ export function MealPlanCard({
                           <div key={idx} className="flex items-center justify-between text-sm">
                             <span className="text-foreground-secondary">{food.name}</span>
                             <span className="text-foreground-secondary">
-                              {food.quantity}{food.unit} • {food.calories || 0} kcal
+                              {food.portion_label || `${food.quantity}${food.unit}`} • {food.calories || 0} kcal
                             </span>
                           </div>
                         ))}
@@ -359,7 +360,7 @@ export function MealPlanCard({
                                     {meal.foods?.map((food, foodIdx) => (
                                       <div key={foodIdx} className="flex items-center justify-between text-xs">
                                         <span className="text-foreground-secondary">{food.name}</span>
-                                        <span className="text-foreground-secondary">{food.quantity}{food.unit}</span>
+                                        <span className="text-foreground-secondary">{food.portion_label || `${food.quantity}${food.unit}`}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -382,7 +383,7 @@ export function MealPlanCard({
                                         {foods.map((food, foodIdx) => (
                                           <div key={foodIdx} className="flex items-center justify-between text-xs">
                                             <span className="text-foreground-secondary">{food.name}</span>
-                                            <span className="text-foreground-secondary">{food.quantity}{food.unit}</span>
+                                            <span className="text-foreground-secondary">{food.portion_label || `${food.quantity}${food.unit}`}</span>
                                           </div>
                                         ))}
                                       </div>

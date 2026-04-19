@@ -30,6 +30,9 @@ interface Food {
   name: string
   quantity: number
   unit: string
+  // Descrição amigável da porção ex: "2 unidades (100g)", "3× 1 fatia (60g)".
+  // Quando presente, é exibida no plano no lugar de apenas gramas.
+  portion_label?: string
   calories?: number
   protein?: number
   carbs?: number
@@ -598,7 +601,7 @@ export default function MealPlanDetailPage() {
                                 className="flex items-center justify-between text-sm bg-white rounded px-3 py-2 border border-border"
                               >
                                 <span className="text-foreground">
-                                  {food.name} - {food.quantity}{food.unit}
+                                  {food.name} - {food.portion_label || `${food.quantity}${food.unit}`}
                                 </span>
                                 <div className="flex items-center gap-3">
                                   <span className="text-foreground-muted">{food.calories || 0} kcal</span>
@@ -847,13 +850,14 @@ function FoodPickerSheet({
   const [selectedFood, setSelectedFood] = useState<NutritionFood | null>(null)
   const [manualMode, setManualMode] = useState(false)
 
-  function handleConfirmPortion(quantity: number) {
+  function handleConfirmPortion(quantity: number, portionLabel?: string) {
     if (!selectedFood) return
     const macros = calculateFoodMacros(selectedFood, quantity)
     onAdd({
       name: selectedFood.nome,
       quantity,
       unit: selectedFood.unidade === 'unidade' ? 'un' : selectedFood.unidade,
+      portion_label: portionLabel,
       calories: macros.calorias,
       protein: macros.proteinas,
       carbs: macros.carboidratos,
@@ -1144,7 +1148,7 @@ function AlternativesModal({
               <div className="flex flex-wrap gap-2">
                 {meal.foods.map((food, idx) => (
                   <span key={idx} className="px-2 py-1 bg-white text-foreground-secondary text-xs rounded border border-border">
-                    {food.name} - {food.quantity}{food.unit}
+                    {food.name} - {food.portion_label || `${food.quantity}${food.unit}`}
                   </span>
                 ))}
               </div>
@@ -1157,7 +1161,7 @@ function AlternativesModal({
                 <div className="space-y-2">
                   {foods.map((food, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
-                      <span className="text-foreground">{food.name} - {food.quantity}{food.unit}</span>
+                      <span className="text-foreground">{food.name} - {food.portion_label || `${food.quantity}${food.unit}`}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-foreground-muted">{food.calories} kcal</span>
                         <button

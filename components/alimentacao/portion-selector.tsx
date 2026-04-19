@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Minus, Plus, Check, X, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Food } from '@/lib/nutrition/types'
+import type { Food, CommonPortion } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
 import { cn } from '@/lib/utils'
@@ -12,13 +12,18 @@ import { cn } from '@/lib/utils'
 interface PortionSelectorProps {
   food: Food
   defaultQuantity?: number
-  onConfirm: (quantity: number) => void
+  onConfirm: (quantity: number, portionLabel?: string) => void
   onCancel: () => void
   onToggleFavorite?: () => void
 }
 
 // Porções genéricas em gramas (fallback quando não há porções comuns)
 const defaultGramPortions = [50, 100, 150, 200, 250, 300]
+
+function buildPortionLabel(portion: CommonPortion, count: number): string {
+  if (count <= 1) return portion.label
+  return `${count}× ${portion.label}`
+}
 
 export function PortionSelector({
   food,
@@ -28,14 +33,51 @@ export function PortionSelector({
   onToggleFavorite
 }: PortionSelectorProps) {
   const [quantity, setQuantity] = useState(defaultQuantity || food.porcao_padrao)
+  // Porção selecionada (permite incrementar/decrementar múltiplos da porção base
+  // e gerar um label descritivo quando a nutri salva).
+  const [selectedPortion, setSelectedPortion] = useState<CommonPortion | null>(null)
 
   // Calculate macros for current quantity
   const macros = useMemo(() => {
     return calculateFoodMacros(food, quantity)
   }, [food, quantity])
 
-  const adjustQuantity = (delta: number) => {
-    setQuantity(prev => Math.max(1, prev + delta))
+  // Quando uma porção está selecionada, +/- anda de porção em porção (ex: 1→2→3→…).
+  // Senão cai no comportamento legado de ±10g.
+  const adjustQuantity = (direction: 1 | -1) => {
+    if (selectedPortion) {
+      const step = selectedPortion.grams
+      setQuantity(prev => Math.max(step, prev + direction * step))
+    } else {
+      setQuantity(prev => Math.max(1, prev + direction * 10))
+    }
+  }
+
+  const handlePortionClick = (portion: CommonPortion) => {
+    setSelectedPortion(portion)
+    setQuantity(portion.grams)
+  }
+
+  const handleGenericPortionClick = (grams: number) => {
+    setSelectedPortion(null)
+    setQuantity(grams)
+  }
+
+  // Contagem de múltiplos da porção base (ex: 3 para "3× 1 unidade"). Só faz
+  // sentido quando há porção selecionada e o quantity é múltiplo exato dela.
+  const portionCount = selectedPortion && selectedPortion.grams > 0
+    ? Math.round(quantity / selectedPortion.grams)
+    : 1
+  const isExactMultiple = selectedPortion && selectedPortion.grams > 0
+    && quantity === selectedPortion.grams * portionCount
+    && portionCount >= 1
+
+  const handleConfirm = () => {
+    if (selectedPortion && isExactMultiple) {
+      onConfirm(quantity, buildPortionLabel(selectedPortion, portionCount))
+    } else {
+      onConfirm(quantity)
+    }
   }
 
   const categoryInfo = foodCategoryLabels[food.categoria]
@@ -103,8 +145,9 @@ export function PortionSelector({
           <label className="text-sm text-foreground-secondary block mb-3">Quantidade</label>
           <div className="flex items-center justify-center gap-4">
             <button
-              onClick={() => adjustQuantity(-10)}
+              onClick={() => adjustQuantity(-1)}
               className="w-14 h-14 rounded-xl bg-white flex items-center justify-center hover:bg-background-elevated transition-colors"
+              aria-label={selectedPortion ? 'Remover uma porção' : 'Diminuir 10g'}
             >
               <Minus className="w-6 h-6 text-foreground" />
             </button>
@@ -120,8 +163,9 @@ export function PortionSelector({
               <span className="text-xl text-foreground-secondary ml-1">{food.unidade}</span>
             </div>
             <button
-              onClick={() => adjustQuantity(10)}
+              onClick={() => adjustQuantity(1)}
               className="w-14 h-14 rounded-xl bg-white flex items-center justify-center hover:bg-background-elevated transition-colors"
+              aria-label={selectedPortion ? 'Adicionar uma porção' : 'Aumentar 10g'}
             >
               <Plus className="w-6 h-6 text-foreground" />
             </button>
@@ -134,10 +178,10 @@ export function PortionSelector({
               food.porcoes_comuns.map((portion, index) => (
                 <button
                   key={index}
-                  onClick={() => setQuantity(portion.grams)}
+                  onClick={() => handlePortionClick(portion)}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    quantity === portion.grams
+                    selectedPortion === portion
                       ? 'bg-dourado text-white'
                       : portion.isDefault
                         ? 'bg-dourado/20 text-dourado border border-dourado/30 hover:bg-dourado/30'
@@ -152,10 +196,10 @@ export function PortionSelector({
               defaultGramPortions.map(portion => (
                 <button
                   key={portion}
-                  onClick={() => setQuantity(portion)}
+                  onClick={() => handleGenericPortionClick(portion)}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    quantity === portion
+                    quantity === portion && !selectedPortion
                       ? 'bg-dourado text-white'
                       : 'bg-white text-foreground-secondary hover:bg-background-elevated'
                   )}
@@ -166,8 +210,15 @@ export function PortionSelector({
             )}
           </div>
 
-          {/* Mostrar peso em gramas quando usando porções comuns */}
-          {food.porcoes_comuns && food.porcoes_comuns.length > 0 && (
+          {/* Mostrar resumo quando usando porção selecionada */}
+          {selectedPortion && isExactMultiple && (
+            <p className="text-center text-xs text-foreground-muted mt-2">
+              {portionCount > 1
+                ? `${portionCount}× ${selectedPortion.label} = ${quantity}${food.unidade}`
+                : `= ${quantity}${food.unidade}`}
+            </p>
+          )}
+          {food.porcoes_comuns && food.porcoes_comuns.length > 0 && !selectedPortion && (
             <p className="text-center text-xs text-foreground-muted mt-2">
               = {quantity}{food.unidade}
             </p>
@@ -211,7 +262,7 @@ export function PortionSelector({
             variant="gradient"
             size="lg"
             className="flex-1 gap-2"
-            onClick={() => onConfirm(quantity)}
+            onClick={handleConfirm}
           >
             <Check className="w-5 h-5" />
             Adicionar
