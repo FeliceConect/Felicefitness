@@ -124,40 +124,38 @@ export async function GET(request: NextRequest) {
       // Busca principal pelo termo do usuário
       const searchTerms = [normalizedQuery, ...aliasTerms]
 
-      // Buscar com OR para todos os termos (query original + aliases)
-      // Usamos uma busca mais ampla e depois rankeamos no JS
-      let globalQuery = (supabase as SupabaseAny)
-        .from('fitness_global_foods')
-        .select('*')
-        .eq('is_active', true)
+      // Executa uma query por termo em paralelo e deduplica por id.
+      // Motivo: os próprios alimentos têm vírgula no nome_busca (ex: "ovo, de galinha"),
+      // o que quebraria o .or() do PostgREST (vírgula é separador de filtros).
+      const runTermQuery = async (term: string) => {
+        let q = (supabase as SupabaseAny)
+          .from('fitness_global_foods')
+          .select('*')
+          .eq('is_active', true)
+          .ilike('nome_busca', `%${term}%`)
 
-      if (category) {
-        globalQuery = globalQuery.eq('categoria', category)
+        if (category) q = q.eq('categoria', category)
+        if (sources && sources.length > 0) q = q.in('source', sources)
+
+        // 500 por termo garante que alimentos TACO isolados não sejam cortados
+        // quando o termo é popular em preparações TBCA (ex: "ovo", "frango").
+        return q.limit(500)
       }
 
-      if (sources && sources.length > 0) {
-        globalQuery = globalQuery.in('source', sources)
+      const results = await Promise.all(searchTerms.map(runTermQuery))
+      const firstError = results.find(r => r.error)?.error
+      if (firstError) {
+        console.error('Erro ao buscar alimentos globais:', firstError)
+        return NextResponse.json({ error: firstError.message }, { status: 500 })
       }
 
-      // Construir filtro OR com todos os termos
-      const orFilters = searchTerms
-        .map(term => `nome_busca.ilike.%${term}%`)
-        .join(',')
-      globalQuery = globalQuery.or(orFilters)
-
-      // Buscar mais resultados para poder rankear bem, depois limitar.
-      // 500 garante que alimentos TACO (isolados) não sejam cortados por termos
-      // populares dominados por preparações TBCA (ex: "ovo", "frango", "arroz").
-      globalQuery = globalQuery.limit(500)
-
-      const { data: globalFoods, error: globalError } = await globalQuery
-
-      if (globalError) {
-        console.error('Erro ao buscar alimentos globais:', globalError)
-        return NextResponse.json({ error: globalError.message }, { status: 500 })
+      const byId = new Map<string, SupabaseAny>()
+      for (const r of results) {
+        for (const row of (r.data || [])) {
+          if (!byId.has(row.id)) byId.set(row.id, row)
+        }
       }
-
-      allGlobalFoods = globalFoods || []
+      allGlobalFoods = Array.from(byId.values())
 
       // Rankear por relevância
       allGlobalFoods.sort((a: SupabaseAny, b: SupabaseAny) => {
