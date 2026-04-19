@@ -17,7 +17,8 @@ import {
   Users,
   Calendar,
   Target,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Pencil
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 import { toast } from 'sonner'
@@ -129,6 +130,9 @@ export default function MealPlanDetailPage() {
   const [showAlternativesModal, setShowAlternativesModal] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
   const [showClientModal, setShowClientModal] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [nameBeforeEdit, setNameBeforeEdit] = useState<string>('')
+  const [savingName, setSavingName] = useState(false)
 
   useEffect(() => {
     if (!professionalLoading && !isNutritionist) {
@@ -208,6 +212,49 @@ export default function MealPlanDetailPage() {
       console.error('Erro ao buscar plano:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Salva só o nome via PATCH — evita ter que clicar em "Salvar" toda vez que
+  // a nutri só quis renomear o plano.
+  async function saveNameInline() {
+    if (!plan) return
+    const trimmed = (plan.name || '').trim()
+    console.log('[saveNameInline] start', { trimmed, nameBeforeEdit, planId: plan.id })
+    if (!trimmed) {
+      setPlan({ ...plan, name: nameBeforeEdit })
+      setEditingName(false)
+      return
+    }
+    if (trimmed === nameBeforeEdit) {
+      console.log('[saveNameInline] no change, exiting')
+      setEditingName(false)
+      return
+    }
+    setSavingName(true)
+    try {
+      const r = await fetch('/api/portal/meal-plans', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: plan.id, name: trimmed })
+      })
+      const data = await r.json()
+      console.log('[saveNameInline] response', r.status, data)
+      if (data.success) {
+        setPlan({ ...plan, name: trimmed })
+        setNameBeforeEdit(trimmed)
+        toast.success('Nome atualizado')
+      } else {
+        setPlan({ ...plan, name: nameBeforeEdit })
+        toast.error(data.error || 'Erro ao salvar nome')
+      }
+    } catch (err) {
+      console.error('[saveNameInline] erro:', err)
+      setPlan({ ...plan, name: nameBeforeEdit })
+      toast.error('Erro ao salvar nome')
+    } finally {
+      setSavingName(false)
+      setEditingName(false)
     }
   }
 
@@ -411,7 +458,66 @@ export default function MealPlanDetailPage() {
             <ArrowLeft className="w-5 h-5 text-foreground-muted" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{plan.name}</h1>
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={plan.name}
+                  disabled={savingName}
+                  onChange={(e) => setPlan({ ...plan, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      saveNameInline()
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault()
+                      setPlan({ ...plan, name: nameBeforeEdit })
+                      setEditingName(false)
+                    }
+                  }}
+                  className="text-2xl font-bold text-foreground bg-white border border-dourado rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-dourado/40 w-full max-w-md disabled:opacity-60"
+                />
+                <button
+                  type="button"
+                  onClick={saveNameInline}
+                  disabled={savingName}
+                  className="p-2 rounded-lg bg-dourado text-white hover:bg-dourado/90 disabled:opacity-50 transition-colors flex-shrink-0"
+                  title="Salvar nome"
+                >
+                  {savingName ? (
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlan({ ...plan, name: nameBeforeEdit })
+                    setEditingName(false)
+                  }}
+                  disabled={savingName}
+                  className="p-2 rounded-lg bg-background-elevated text-foreground-muted hover:bg-border disabled:opacity-50 transition-colors flex-shrink-0 border border-border"
+                  title="Cancelar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setNameBeforeEdit(plan.name)
+                  setEditingName(true)
+                }}
+                className="group flex items-center gap-2 text-left hover:opacity-80 transition-opacity"
+                title="Clique para editar o nome"
+              >
+                <h1 className="text-2xl font-bold text-foreground">{plan.name}</h1>
+                <Pencil className="w-4 h-4 text-dourado/70" />
+              </button>
+            )}
             <div className="flex items-center gap-3 text-sm text-foreground-secondary">
               {plan.is_template && (
                 <span className="px-2 py-0.5 bg-dourado/20 text-dourado rounded-full text-xs">

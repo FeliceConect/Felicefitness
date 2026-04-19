@@ -140,9 +140,15 @@ export function PortionSelector({
           </div>
         </div>
 
-        {/* Quantity selector */}
+        {/* Quantity selector — modo "porções" quando há porção selecionada,
+            modo "gramas" caso contrário. A diferença é visual também: no modo
+            porções o número grande é a QUANTIDADE de porções (1, 2, 3…) e
+            abaixo aparece o equivalente em gramas. Isso deixa explícito para
+            a nutri que "2 fatias" basta apertar + uma vez. */}
         <div className="mb-6">
-          <label className="text-sm text-foreground-secondary block mb-3">Quantidade</label>
+          <label className="text-sm text-foreground-secondary block mb-3">
+            {selectedPortion ? 'Quantas porções?' : 'Quantidade'}
+          </label>
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => adjustQuantity(-1)}
@@ -151,16 +157,37 @@ export function PortionSelector({
             >
               <Minus className="w-6 h-6 text-foreground" />
             </button>
-            <div className="w-32 text-center">
-              <motion.span
-                key={quantity}
-                initial={{ scale: 1.2, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-4xl font-bold text-foreground"
-              >
-                {quantity}
-              </motion.span>
-              <span className="text-xl text-foreground-secondary ml-1">{food.unidade}</span>
+            <div className="min-w-[8rem] text-center">
+              {selectedPortion && isExactMultiple ? (
+                <>
+                  <motion.span
+                    key={portionCount}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-4xl font-bold text-foreground"
+                  >
+                    {portionCount}
+                  </motion.span>
+                  <span className="text-xl text-foreground-secondary ml-1">
+                    ×
+                  </span>
+                  <p className="text-xs text-foreground-secondary mt-1 leading-tight">
+                    {selectedPortion.label}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <motion.span
+                    key={quantity}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-4xl font-bold text-foreground"
+                  >
+                    {quantity}
+                  </motion.span>
+                  <span className="text-xl text-foreground-secondary ml-1">{food.unidade}</span>
+                </>
+              )}
             </div>
             <button
               onClick={() => adjustQuantity(1)}
