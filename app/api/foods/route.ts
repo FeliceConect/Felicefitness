@@ -127,12 +127,23 @@ export async function GET(request: NextRequest) {
       // Executa uma query por termo em paralelo e deduplica por id.
       // Motivo: os próprios alimentos têm vírgula no nome_busca (ex: "ovo, de galinha"),
       // o que quebraria o .or() do PostgREST (vírgula é separador de filtros).
+      //
+      // Cada termo é quebrado em tokens (por espaço/vírgula) e cada token vira um
+      // ilike encadeado (AND). Isso permite casar "pão francês" (digitado pelo
+      // usuário) com "pao, trigo, frances" (como está no banco) — os dois tokens
+      // "pao" e "frances" aparecem, independente da ordem/pontuação.
       const runTermQuery = async (term: string) => {
+        const tokens = term.split(/[\s,]+/).filter(t => t.length >= 2)
+        const effective = tokens.length > 0 ? tokens : [term]
+
         let q = (supabase as SupabaseAny)
           .from('fitness_global_foods')
           .select('*')
           .eq('is_active', true)
-          .ilike('nome_busca', `%${term}%`)
+
+        for (const token of effective) {
+          q = q.ilike('nome_busca', `%${token}%`)
+        }
 
         if (category) q = q.eq('categoria', category)
         if (sources && sources.length > 0) q = q.in('source', sources)
