@@ -12,18 +12,24 @@ interface FoodSearchProps {
   excludeIds?: string[]
   onAddCustomFood?: (name: string) => void
   showAddCustom?: boolean
+  sources?: string[]
 }
 
-export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAddCustom = true }: FoodSearchProps) {
+export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAddCustom = true, sources }: FoodSearchProps) {
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | null>(null)
+  const [showAllSources, setShowAllSources] = useState(false)
   const { favorites, recent, search, searchResults, searchLoading, getByCategory } = useFoods()
+
+  const sourcesKey = sources?.join(',') || ''
+  const effectiveSources = showAllSources ? undefined : sources
 
   // Trigger search when query changes
   useEffect(() => {
     if (selectedCategory) return
-    search(query)
-  }, [query, selectedCategory, search])
+    search(query, effectiveSources)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, selectedCategory, search, sourcesKey, showAllSources])
 
   // Filter out excluded IDs from results
   const filteredResults = searchResults.filter(f => !excludeIds.includes(f.id))
@@ -40,7 +46,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
   const handleCategoryClick = (category: FoodCategory) => {
     setSelectedCategory(category)
     setQuery('')
-    getByCategory(category)
+    getByCategory(category, effectiveSources)
   }
 
   const clearSearch = () => {
@@ -77,6 +83,23 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
           <Loader2 className="absolute right-10 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dourado animate-spin" />
         )}
       </div>
+
+      {/* Toggle: mostrar receitas/preparações também (só aparece quando há filtro de sources) */}
+      {sources && sources.length > 0 && isSearching && (
+        <div className="flex items-center justify-between bg-white/60 border border-border rounded-lg px-3 py-2">
+          <span className="text-xs text-foreground-secondary">
+            {showAllSources
+              ? 'Mostrando alimentos + receitas/preparações'
+              : 'Mostrando apenas alimentos base'}
+          </span>
+          <button
+            onClick={() => setShowAllSources(v => !v)}
+            className="text-xs font-medium text-dourado hover:text-dourado/80 transition-colors"
+          >
+            {showAllSources ? 'Apenas base' : 'Mostrar receitas também'}
+          </button>
+        </div>
+      )}
 
       {/* Search results */}
       <AnimatePresence>

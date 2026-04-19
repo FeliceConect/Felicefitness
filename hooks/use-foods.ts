@@ -8,10 +8,10 @@ interface UseFoodsReturn {
   favorites: Food[]
   recent: Food[]
   userFoods: Food[]
-  search: (query: string) => void
+  search: (query: string, sources?: string[]) => void
   searchResults: Food[]
   searchLoading: boolean
-  getByCategory: (category: FoodCategory) => void
+  getByCategory: (category: FoodCategory, sources?: string[]) => void
   getById: (id: string) => Food | null
   addFood: (food: Omit<Food, 'id' | 'created_at'>) => Promise<Food>
   updateFood: (id: string, data: Partial<Food>) => Promise<void>
@@ -121,7 +121,7 @@ export function useFoods(): UseFoodsReturn {
   }, [foods])
 
   // Busca server-side com debounce
-  const searchApi = useCallback(async (query: string, category?: string) => {
+  const searchApi = useCallback(async (query: string, category?: string, sources?: string[]) => {
     // Cancelar request anterior
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
@@ -130,6 +130,7 @@ export function useFoods(): UseFoodsReturn {
     const params = new URLSearchParams()
     if (query) params.set('q', query)
     if (category) params.set('category', category)
+    if (sources && sources.length > 0) params.set('source', sources.join(','))
     params.set('limit', '20')
 
     const controller = new AbortController()
@@ -156,7 +157,7 @@ export function useFoods(): UseFoodsReturn {
 
   // Buscar com debounce
   const search = useCallback(
-    (query: string) => {
+    (query: string, sources?: string[]) => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current)
       }
@@ -169,7 +170,7 @@ export function useFoods(): UseFoodsReturn {
 
       setSearchLoading(true)
       debounceRef.current = setTimeout(() => {
-        searchApi(query)
+        searchApi(query, undefined, sources)
       }, DEBOUNCE_MS)
     },
     [searchApi]
@@ -177,8 +178,8 @@ export function useFoods(): UseFoodsReturn {
 
   // Por categoria (server-side)
   const getByCategory = useCallback(
-    (category: FoodCategory) => {
-      searchApi('', category)
+    (category: FoodCategory, sources?: string[]) => {
+      searchApi('', category, sources)
     },
     [searchApi]
   )

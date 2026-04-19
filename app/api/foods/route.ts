@@ -106,6 +106,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')?.trim() || ''
     const category = searchParams.get('category')
+    const sourceParam = searchParams.get('source')
+    const sources = sourceParam
+      ? sourceParam.split(',').map(s => s.trim()).filter(Boolean)
+      : null
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
     const offset = parseInt(searchParams.get('offset') || '0')
 
@@ -131,14 +135,20 @@ export async function GET(request: NextRequest) {
         globalQuery = globalQuery.eq('categoria', category)
       }
 
+      if (sources && sources.length > 0) {
+        globalQuery = globalQuery.in('source', sources)
+      }
+
       // Construir filtro OR com todos os termos
       const orFilters = searchTerms
         .map(term => `nome_busca.ilike.%${term}%`)
         .join(',')
       globalQuery = globalQuery.or(orFilters)
 
-      // Buscar mais resultados para poder rankear bem, depois limitar
-      globalQuery = globalQuery.limit(200)
+      // Buscar mais resultados para poder rankear bem, depois limitar.
+      // 500 garante que alimentos TACO (isolados) não sejam cortados por termos
+      // populares dominados por preparações TBCA (ex: "ovo", "frango", "arroz").
+      globalQuery = globalQuery.limit(500)
 
       const { data: globalFoods, error: globalError } = await globalQuery
 
@@ -168,11 +178,17 @@ export async function GET(request: NextRequest) {
 
     } else if (category) {
       // Busca só por categoria (sem texto)
-      const { data: globalFoods, error: globalError } = await (supabase as SupabaseAny)
+      let catQuery = (supabase as SupabaseAny)
         .from('fitness_global_foods')
         .select('*')
         .eq('is_active', true)
         .eq('categoria', category)
+
+      if (sources && sources.length > 0) {
+        catQuery = catQuery.in('source', sources)
+      }
+
+      const { data: globalFoods, error: globalError } = await catQuery
         .order('nome')
         .range(offset, offset + limit - 1)
 

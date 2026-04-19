@@ -888,7 +888,7 @@ function FoodPickerSheet({
         <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
           <div>
             <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-            <p className="text-xs text-foreground-muted">Busca na base TACO/TBCA (6.000+ alimentos)</p>
+            <p className="text-xs text-foreground-muted">Alimentos base (TACO). Use o toggle para incluir receitas/preparações.</p>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
             <X className="w-5 h-5 text-foreground-muted" />
@@ -898,6 +898,7 @@ function FoodPickerSheet({
           <FoodSearch
             onSelect={(food) => setSelectedFood(food)}
             showAddCustom={false}
+            sources={['taco']}
           />
         </div>
         <div className="p-4 border-t border-border flex-shrink-0">
