@@ -22,12 +22,15 @@ import {
 import type { AppointmentWithDetails, AppointmentStatus, AppointmentType } from '@/types/appointments'
 import { APPOINTMENT_STATUS_LABELS, APPOINTMENT_STATUS_COLORS, PROFESSIONAL_TYPE_LABELS } from '@/types/appointments'
 
+type ProfessionalOption = { id: string; display_name: string; type: string }
+
 export default function AdminAgendaPage() {
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [editingApt, setEditingApt] = useState<AppointmentWithDetails | null>(null)
+  const [professionalsList, setProfessionalsList] = useState<ProfessionalOption[]>([])
 
   // Filters
   const [filterStatus, setFilterStatus] = useState<string>('')
@@ -57,6 +60,19 @@ export default function AdminAgendaPage() {
   useEffect(() => {
     fetchAppointments()
   }, [fetchAppointments])
+
+  useEffect(() => {
+    async function loadProfessionals() {
+      try {
+        const res = await fetch('/api/professional/list')
+        const data = await res.json()
+        if (data.success && data.data) setProfessionalsList(data.data)
+      } catch (err) {
+        console.error('Erro ao buscar profissionais:', err)
+      }
+    }
+    loadProfessionals()
+  }, [])
 
   const handleStatusChange = async (id: string, status: AppointmentStatus) => {
     try {
@@ -170,7 +186,7 @@ export default function AdminAgendaPage() {
       </div>
 
       {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-white rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-4 bg-white rounded-xl">
           <div>
             <label className="block text-xs text-foreground-secondary mb-1">Status</label>
             <select
@@ -185,6 +201,21 @@ export default function AdminAgendaPage() {
               <option value="completed">Realizada</option>
               <option value="cancelled">Cancelada</option>
               <option value="no_show">Não compareceu</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-foreground-secondary mb-1">Profissional</label>
+            <select
+              value={filterProfessional}
+              onChange={(e) => setFilterProfessional(e.target.value)}
+              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+            >
+              <option value="">Todos</option>
+              {professionalsList.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.display_name} ({PROFESSIONAL_TYPE_LABELS[p.type as keyof typeof PROFESSIONAL_TYPE_LABELS] || p.type})
+                </option>
+              ))}
             </select>
           </div>
           <div>
