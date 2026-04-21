@@ -24,12 +24,15 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
   const sourcesKey = sources?.join(',') || ''
   const effectiveSources = showAllSources ? undefined : sources
 
-  // Trigger search when query changes
+  // Trigger search when query changes (ou recarrega categoria quando toggle muda)
   useEffect(() => {
-    if (selectedCategory) return
-    search(query, effectiveSources)
+    if (selectedCategory) {
+      getByCategory(selectedCategory, effectiveSources)
+    } else {
+      search(query, effectiveSources)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, selectedCategory, search, sourcesKey, showAllSources])
+  }, [query, selectedCategory, search, getByCategory, sourcesKey, showAllSources])
 
   // Filter out excluded IDs from results
   const filteredResults = searchResults.filter(f => !excludeIds.includes(f.id))
@@ -46,7 +49,6 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
   const handleCategoryClick = (category: FoodCategory) => {
     setSelectedCategory(category)
     setQuery('')
-    getByCategory(category, effectiveSources)
   }
 
   const clearSearch = () => {

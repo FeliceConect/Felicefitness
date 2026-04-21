@@ -1,8 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { getSectionsForType, getConsultationLabel } from './consultation-sections'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
+import { useUnsavedWarning } from '@/hooks/use-unsaved-warning'
+import { DraftRestoreBanner } from '@/components/ui/draft-restore-banner'
+import { DraftStatusIndicator } from '@/components/ui/draft-status-indicator'
 
 interface ConsultationData {
   anamnese: string
@@ -18,9 +22,11 @@ interface ConsultationEditorProps {
   initialData?: ConsultationData
   saving?: boolean
   professionalType?: string
+  /** Chave única para o rascunho local (ex: "consultation:{patientId}:{noteId|new}"). */
+  draftKey?: string
 }
 
-export function ConsultationEditor({ isOpen, onClose, onSave, initialData, saving, professionalType }: ConsultationEditorProps) {
+export function ConsultationEditor({ isOpen, onClose, onSave, initialData, saving, professionalType, draftKey }: ConsultationEditorProps) {
   const [anamnese, setAnamnese] = useState('')
   const [exames, setExames] = useState('')
   const [diagnostico, setDiagnostico] = useState('')
@@ -38,17 +44,48 @@ export function ConsultationEditor({ isOpen, onClose, onSave, initialData, savin
     }
   }, [isOpen, initialData])
 
+  const currentValue: ConsultationData = useMemo(
+    () => ({ anamnese, exames, diagnostico, conduta }),
+    [anamnese, exames, diagnostico, conduta]
+  )
+  const isEmpty = useMemo(
+    () => (v: ConsultationData) =>
+      !v.anamnese.trim() && !v.exames.trim() && !v.diagnostico.trim() && !v.conduta.trim(),
+    []
+  )
+  const {
+    status: draftStatus,
+    lastSavedAt,
+    pendingDraft,
+    clearDraft,
+    dismissPending,
+  } = useDraftAutosave<ConsultationData>(
+    draftKey || 'consultation:fallback',
+    currentValue,
+    { enabled: isOpen && !!draftKey, isEmpty }
+  )
+  useUnsavedWarning(isOpen && !isEmpty(currentValue))
+
   if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!anamnese.trim() && !exames.trim() && !diagnostico.trim() && !conduta.trim()) return
+    if (isEmpty(currentValue)) return
     onSave({
       anamnese: anamnese.trim(),
       exames: exames.trim(),
       diagnostico: diagnostico.trim(),
       conduta: conduta.trim(),
     })
+    clearDraft()
+  }
+
+  const applyDraft = (draft: ConsultationData) => {
+    setAnamnese(draft.anamnese || '')
+    setExames(draft.exames || '')
+    setDiagnostico(draft.diagnostico || '')
+    setConduta(draft.conduta || '')
+    dismissPending()
   }
 
   const stateMap: Record<string, { value: string; setter: (v: string) => void }> = {
@@ -70,6 +107,13 @@ export function ConsultationEditor({ isOpen, onClose, onSave, initialData, savin
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {pendingDraft && (
+            <DraftRestoreBanner
+              savedAt={pendingDraft.savedAt}
+              onRestore={() => applyDraft(pendingDraft.value)}
+              onDiscard={clearDraft}
+            />
+          )}
           {sections.map((section) => {
             const state = stateMap[section.key]
             return (
@@ -85,21 +129,24 @@ export function ConsultationEditor({ isOpen, onClose, onSave, initialData, savin
               </div>
             )
           })}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
-            >
-              {saving ? 'Salvando...' : `Salvar ${label}`}
-            </button>
+          <div className="flex items-center gap-3 pt-2">
+            <DraftStatusIndicator status={draftStatus} lastSavedAt={lastSavedAt} />
+            <div className="ml-auto flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
+              >
+                {saving ? 'Salvando...' : `Salvar ${label}`}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -1,8 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { Ruler, Plus, TrendingUp, Pencil, Trash2 } from 'lucide-react'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
+import { useUnsavedWarning } from '@/hooks/use-unsaved-warning'
+import { DraftRestoreBanner } from '@/components/ui/draft-restore-banner'
+import { DraftStatusIndicator } from '@/components/ui/draft-status-indicator'
 
 interface AntropometriaRecord {
   id: string
@@ -62,6 +66,26 @@ export function TabAntropometria({ patientId, canEdit }: TabAntropometriaProps) 
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [selectedMetric, setSelectedMetric] = useState<string>('circ_abdome')
   const [editingId, setEditingId] = useState<string | null>(null)
+
+  // Autosave: chave escopada por paciente + record (new vs edit). Formulário
+  // conta como "vazio" se nenhum campo numérico foi preenchido — evita salvar
+  // ruído quando a nutri só abre o modal e fecha.
+  const draftKey = `antropometria:${patientId}:${editingId || 'new'}`
+  const isEmptyForm = useMemo(
+    () => (v: Record<string, string>) => Object.values(v).every(val => !val || val.trim() === ''),
+    []
+  )
+  const {
+    status: draftStatus,
+    lastSavedAt,
+    pendingDraft,
+    clearDraft,
+    dismissPending,
+  } = useDraftAutosave(draftKey, formData, {
+    enabled: showForm,
+    isEmpty: isEmptyForm,
+  })
+  useUnsavedWarning(showForm && !isEmptyForm(formData))
 
   const fetchRecords = () => {
     fetch(`/api/professional/clients/${patientId}/antropometria`)
@@ -139,6 +163,7 @@ export function TabAntropometria({ patientId, canEdit }: TabAntropometriaProps) 
       const data = await res.json()
       if (data.success) {
         toast.success(editingId ? 'Medidas atualizadas' : 'Medidas registradas')
+        clearDraft()
         setShowForm(false)
         setFormData({})
         setEditingId(null)
@@ -339,6 +364,13 @@ export function TabAntropometria({ patientId, canEdit }: TabAntropometriaProps) 
               <p className="text-sm text-foreground-secondary">Valores em centímetros (cm)</p>
             </div>
             <div className="p-4 space-y-3">
+              {pendingDraft && (
+                <DraftRestoreBanner
+                  savedAt={pendingDraft.savedAt}
+                  onRestore={() => { setFormData(pendingDraft.value); dismissPending() }}
+                  onDiscard={clearDraft}
+                />
+              )}
               {/* Metadados da coleta (momento + data + horário) */}
               <div className="grid grid-cols-3 gap-2">
                 <div>
@@ -386,20 +418,23 @@ export function TabAntropometria({ patientId, canEdit }: TabAntropometriaProps) 
                 </div>
               ))}
             </div>
-            <div className="p-4 border-t border-border flex gap-3">
+            <div className="p-4 border-t border-border flex items-center gap-3">
+              <DraftStatusIndicator status={draftStatus} lastSavedAt={lastSavedAt} />
+              <div className="ml-auto flex gap-3">
               <button
                 onClick={() => { setShowForm(false); setFormData({}); setEditingId(null) }}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"
+                className="px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 rounded-lg bg-dourado text-white text-sm font-medium hover:bg-dourado/90 disabled:opacity-50 transition-colors"
               >
                 {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Salvar'}
               </button>
+              </div>
             </div>
           </div>
         </div>

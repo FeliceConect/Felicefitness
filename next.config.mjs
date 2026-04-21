@@ -8,7 +8,10 @@ const nextConfig = {
 const pwaConfig = withPWA({
   dest: 'public',
   register: false, // Registramos manualmente no hook
-  skipWaiting: true,
+  // IMPORTANTE: skipWaiting=false para não ativar nova versão do SW enquanto
+  // a aba está aberta. Isso evitava reloads forçados em formulários longos
+  // (prontuário/antropometria/plano alimentar) durante deploys.
+  skipWaiting: false,
   disable: process.env.NODE_ENV === 'development',
   // Import push notification handlers
   importScripts: ['/push-sw.js'],

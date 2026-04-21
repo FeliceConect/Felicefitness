@@ -156,6 +156,7 @@ export function TabProntuario({ patientId, professionalType }: TabProntuarioProp
         initialData={editingConsultation?.data}
         saving={saving}
         professionalType={professionalType}
+        draftKey={`consultation:${patientId}:${editingConsultation?.id || 'new'}`}
       />
     </div>
   )

@@ -26,6 +26,10 @@ import { FoodSearch } from '@/components/alimentacao/food-search'
 import { PortionSelector } from '@/components/alimentacao/portion-selector'
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
 import type { Food as NutritionFood } from '@/lib/nutrition/types'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
+import { useUnsavedWarning } from '@/hooks/use-unsaved-warning'
+import { DraftRestoreBanner } from '@/components/ui/draft-restore-banner'
+import { DraftStatusIndicator } from '@/components/ui/draft-status-indicator'
 
 interface Food {
   name: string
@@ -133,6 +137,22 @@ export default function MealPlanDetailPage() {
   const [editingName, setEditingName] = useState(false)
   const [nameBeforeEdit, setNameBeforeEdit] = useState<string>('')
   const [savingName, setSavingName] = useState(false)
+
+  // Autosave do plano alimentar: só roda quando a nutri já encostou em algo
+  // (hasChanges). O rascunho é escopado por ID do plano, então múltiplos
+  // planos editados em paralelo não se sobrescrevem.
+  const {
+    status: draftStatus,
+    lastSavedAt,
+    pendingDraft,
+    clearDraft,
+    dismissPending,
+  } = useDraftAutosave<MealPlan>(
+    `meal-plan:${id}`,
+    plan as MealPlan,
+    { enabled: !!plan && hasChanges, debounceMs: 1200 }
+  )
+  useUnsavedWarning(hasChanges)
 
   useEffect(() => {
     if (!professionalLoading && !isNutritionist) {
@@ -302,6 +322,7 @@ export default function MealPlanDetailPage() {
       const data = await response.json()
       if (data.success) {
         setHasChanges(false)
+        clearDraft()
         router.push('/portal/nutrition')
       }
     } catch (error) {
@@ -448,6 +469,14 @@ export default function MealPlanDetailPage() {
 
   return (
     <div className="space-y-6">
+      {pendingDraft && (
+        <DraftRestoreBanner
+          savedAt={pendingDraft.savedAt}
+          onRestore={() => { setPlan(pendingDraft.value); setHasChanges(true); dismissPending() }}
+          onDiscard={clearDraft}
+          label="Rascunho deste plano encontrado no navegador"
+        />
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -539,24 +568,27 @@ export default function MealPlanDetailPage() {
             </div>
           </div>
         </div>
-        <button
-          onClick={savePlan}
-          disabled={saving || !hasChanges}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
-        >
-          {saving ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="w-5 h-5" />
-              Salvar
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          <DraftStatusIndicator status={draftStatus} lastSavedAt={lastSavedAt} />
+          <button
+            onClick={savePlan}
+            disabled={saving || !hasChanges}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
+          >
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                Salvar
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Macros Summary */}

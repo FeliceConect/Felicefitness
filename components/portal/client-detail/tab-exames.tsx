@@ -1,8 +1,20 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { Plus, FileText, Calendar, Trash2, ChevronDown, ChevronUp, Save, X, Loader2 } from 'lucide-react'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
+import { useUnsavedWarning } from '@/hooks/use-unsaved-warning'
+import { DraftRestoreBanner } from '@/components/ui/draft-restore-banner'
+import { DraftStatusIndicator } from '@/components/ui/draft-status-indicator'
+
+interface ExamFormValue {
+  examDate: string
+  examType: string
+  description: string
+  results: string
+  observations: string
+}
 
 interface Exam {
   id: string
@@ -49,6 +61,28 @@ export function TabExames({ patientId, professionalId }: TabExamesProps) {
   const [description, setDescription] = useState('')
   const [results, setResults] = useState('')
   const [observations, setObservations] = useState('')
+
+  const formValue: ExamFormValue = useMemo(
+    () => ({ examDate, examType, description, results, observations }),
+    [examDate, examType, description, results, observations]
+  )
+  const isEmpty = useMemo(
+    () => (v: ExamFormValue) =>
+      !v.description.trim() && !v.results.trim() && !v.observations.trim(),
+    []
+  )
+  const {
+    status: draftStatus,
+    lastSavedAt,
+    pendingDraft,
+    clearDraft,
+    dismissPending,
+  } = useDraftAutosave<ExamFormValue>(
+    `exam:${patientId}:new`,
+    formValue,
+    { enabled: showForm, isEmpty }
+  )
+  useUnsavedWarning(showForm && !isEmpty(formValue))
 
   const fetchExams = useCallback(async () => {
     try {
@@ -99,6 +133,7 @@ export function TabExames({ patientId, professionalId }: TabExamesProps) {
       const data = await res.json()
       if (data.success) {
         toast.success('Exame registrado com sucesso')
+        clearDraft()
         resetForm()
         setShowForm(false)
         fetchExams()
@@ -169,6 +204,21 @@ export function TabExames({ patientId, professionalId }: TabExamesProps) {
       {/* Form */}
       {showForm && (
         <div className="bg-emerald-50/50 border border-emerald-200/50 rounded-xl p-4 space-y-3">
+          {pendingDraft && (
+            <DraftRestoreBanner
+              savedAt={pendingDraft.savedAt}
+              onRestore={() => {
+                const v = pendingDraft.value
+                setExamDate(v.examDate || new Date().toISOString().slice(0, 10))
+                setExamType(v.examType || 'hemograma')
+                setDescription(v.description || '')
+                setResults(v.results || '')
+                setObservations(v.observations || '')
+                dismissPending()
+              }}
+              onDiscard={clearDraft}
+            />
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-foreground-secondary mb-1">Data do Exame</label>
@@ -226,7 +276,8 @@ export function TabExames({ patientId, professionalId }: TabExamesProps) {
             />
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-3">
+            <DraftStatusIndicator status={draftStatus} lastSavedAt={lastSavedAt} />
             <button
               onClick={handleSave}
               disabled={saving}
