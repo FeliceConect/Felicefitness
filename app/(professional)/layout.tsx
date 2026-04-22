@@ -35,7 +35,7 @@ interface ProfessionalLayoutProps {
 
 export default function ProfessionalLayout({ children }: ProfessionalLayoutProps) {
   const router = useRouter()
-  const { professional, loading, isProfessional, isSuperAdmin, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isActive, userEmail, profileName } = useProfessional()
+  const { professional, loading, isProfessional, isSuperAdmin, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isMedicoIntegrativo, isActive, userEmail, profileName } = useProfessional()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -85,8 +85,6 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
     )
   }
 
-  const isMedicoIntegrativo = professional?.type === 'medico_integrativo'
-
   const getDashboardRoute = () => {
     if (isCoach) return '/portal/coach'
     if (isMedicoIntegrativo) return '/portal/medico-integrativo'
@@ -112,6 +110,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
     { href: '/portal/forms', icon: ClipboardList, label: 'Formulários', show: true },
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
     { href: '/portal/settings', icon: Settings, label: 'Configurações', show: !isCoach && !isPhysiotherapist && !isMedicoIntegrativo },
+    { href: '/dashboard', icon: Smartphone, label: 'Ir para o App', show: isMedicoIntegrativo },
   ].filter(item => item.show)
 
   // Itens admin — só visíveis para super_admin
@@ -160,7 +159,7 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
           )}
         </button>
         <span className="text-seda font-semibold truncate px-2">Portal Profissional</span>
-        {isSuperAdmin ? (
+        {(isSuperAdmin || isMedicoIntegrativo) ? (
           <Link
             href="/dashboard"
             className="p-2.5 rounded-lg hover:bg-vinho/30 active:bg-vinho/50 -mr-1 flex items-center gap-1 text-dourado"
