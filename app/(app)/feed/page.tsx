@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUnreadFeed } from '@/hooks/use-unread-feed'
+import { compressImageClient } from '@/lib/images/compress-client'
 
 const TIER_ICONS: Record<string, string> = {
   bronze: '🥉',
@@ -392,15 +393,37 @@ export default function FeedPage() {
     if (!canPost) return
     setCreating(true)
     try {
-      // Upload image first if selected
+      // Upload image first if selected (comprime no client para evitar 413/timeout)
       let imageUrl: string | null = null
       if (selectedImage) {
+        let fileToUpload: File = selectedImage
+        try {
+          fileToUpload = await compressImageClient(selectedImage)
+        } catch {
+          // Se a compressão falhar, segue com o arquivo original
+        }
+
         const formData = new FormData()
-        formData.append('file', selectedImage)
+        formData.append('file', fileToUpload)
         const uploadRes = await fetch('/api/feed/upload', {
           method: 'POST',
           body: formData,
         })
+        if (!uploadRes.ok) {
+          const status = uploadRes.status
+          if (status === 413) {
+            toast.error('Imagem muito grande. Tente uma foto menor.')
+          } else if (status === 401) {
+            toast.error('Sessão expirada. Faça login novamente.')
+          } else if (status >= 500) {
+            toast.error('Servidor indisponível ao enviar imagem. Tente de novo.')
+          } else {
+            const txt = await uploadRes.text().catch(() => '')
+            toast.error(txt ? `Erro ao enviar imagem (${status})` : 'Erro ao enviar imagem')
+          }
+          setCreating(false)
+          return
+        }
         const uploadData = await uploadRes.json()
         if (!uploadData.success) {
           toast.error(uploadData.error || 'Erro ao enviar imagem')
@@ -420,6 +443,18 @@ export default function FeedPage() {
           metadata: (hasMetadata || selectedTemplate) ? { ...postMetadata, ...(selectedTemplate ? { template_bg: selectedTemplate } : {}) } : null,
         }),
       })
+      if (!res.ok) {
+        if (res.status === 401) {
+          toast.error('Sessão expirada. Faça login novamente.')
+        } else if (res.status >= 500) {
+          toast.error('Servidor indisponível. Tente de novo em instantes.')
+        } else {
+          const data = await res.json().catch(() => null)
+          toast.error(data?.error || `Erro ao publicar (${res.status})`)
+        }
+        setCreating(false)
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setShowCreate(false)
@@ -431,7 +466,12 @@ export default function FeedPage() {
       }
     } catch (error) {
       console.error('Erro ao criar post:', error)
-      toast.error('Erro ao publicar post')
+      const msg = error instanceof Error ? error.message : ''
+      if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('failed to fetch')) {
+        toast.error('Sem conexão. Verifique sua internet.')
+      } else {
+        toast.error('Erro ao publicar post. Tente novamente.')
+      }
     } finally {
       setCreating(false)
     }
@@ -724,6 +764,7 @@ export default function FeedPage() {
             {post.author_tier && post.author_tier !== 'bronze' && (
               <span className="text-[10px] flex-shrink-0">{TIER_ICONS[post.author_tier]}</span>
             )}
+            <span className="text-[10px] opacity-60 flex-shrink-0">· {formatDate(post.created_at)}</span>
           </div>
           {hasInteractions && (
             <div className="flex items-center gap-1.5 text-[10px] opacity-70 flex-shrink-0">

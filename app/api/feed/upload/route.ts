@@ -13,7 +13,7 @@ function getAdminClient() {
   )
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 // POST - Upload image for feed post
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ success: false, error: 'Arquivo muito grande. Máximo 5MB' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Arquivo muito grande. Máximo 10MB' }, { status: 400 })
     }
 
     const supabaseAdmin = getAdminClient()
