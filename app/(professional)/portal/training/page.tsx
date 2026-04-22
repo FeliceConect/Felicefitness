@@ -130,20 +130,10 @@ export default function TrainingPage() {
 
   async function duplicateProgram(program: TrainingProgram) {
     try {
-      const response = await fetch('/api/portal/training-programs', {
+      const response = await fetch(`/api/portal/training-programs/${program.id}/clone`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `${program.name} (Cópia)`,
-          description: program.description,
-          goal: program.goal,
-          difficulty: program.difficulty,
-          durationWeeks: program.duration_weeks,
-          daysPerWeek: program.days_per_week,
-          sessionDuration: program.session_duration,
-          equipmentNeeded: program.equipment_needed,
-          isTemplate: false // Cópia é um programa normal, não template
-        })
+        body: JSON.stringify({})
       })
       const data = await response.json()
       if (data.success) {
