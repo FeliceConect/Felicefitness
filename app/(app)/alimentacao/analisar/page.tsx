@@ -15,6 +15,10 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  Trash2,
+  Plus,
+  X as XIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -72,6 +76,9 @@ function AnalysisContent() {
   const [saving, setSaving] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [usageInfo, setUsageInfo] = useState<{ used: number; limit: number } | null>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [addingNew, setAddingNew] = useState(false)
+  const [edited, setEdited] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -113,6 +120,9 @@ function AnalysisContent() {
     setAnalyzing(true)
     setError(null)
     setResult(null)
+    setEditingIndex(null)
+    setAddingNew(false)
+    setEdited(false)
 
     try {
       const res = await fetch('/api/meals/analyze', {
@@ -148,8 +158,42 @@ function AnalysisContent() {
     }
   }
 
+  const recomputeTotals = (alimentos: AnalyzedFood[]) => ({
+    calorias: Math.round(alimentos.reduce((s, a) => s + (a.calorias || 0), 0)),
+    proteinas: Math.round(alimentos.reduce((s, a) => s + (a.proteinas || 0), 0) * 10) / 10,
+    carboidratos: Math.round(alimentos.reduce((s, a) => s + (a.carboidratos || 0), 0) * 10) / 10,
+    gorduras: Math.round(alimentos.reduce((s, a) => s + (a.gorduras || 0), 0) * 10) / 10,
+  })
+
+  const updateFood = (index: number, updated: AnalyzedFood) => {
+    if (!result) return
+    const next = [...result.alimentos]
+    next[index] = updated
+    setResult({ ...result, alimentos: next, totais: recomputeTotals(next) })
+    setEdited(true)
+  }
+
+  const deleteFood = (index: number) => {
+    if (!result) return
+    const next = result.alimentos.filter((_, i) => i !== index)
+    setResult({ ...result, alimentos: next, totais: recomputeTotals(next) })
+    setEdited(true)
+    if (editingIndex === index) setEditingIndex(null)
+  }
+
+  const addFood = (food: AnalyzedFood) => {
+    if (!result) return
+    const next = [...result.alimentos, food]
+    setResult({ ...result, alimentos: next, totais: recomputeTotals(next) })
+    setEdited(true)
+  }
+
   const saveMeal = async () => {
     if (!result) return
+    if (result.alimentos.length === 0) {
+      toast.error('Adicione ao menos um alimento antes de salvar')
+      return
+    }
 
     setSaving(true)
     try {
@@ -186,8 +230,8 @@ function AnalysisContent() {
         carboidratos_total: result.totais.carboidratos,
         gorduras_total: result.totais.gorduras,
         notas: result.observacoes
-          ? `[Análise IA] ${result.observacoes}`
-          : '[Análise IA]',
+          ? `[Análise IA${edited ? ' • editada' : ''}] ${result.observacoes}`
+          : `[Análise IA${edited ? ' • editada' : ''}]`,
       }
 
       await addMeal(mealData)
@@ -205,6 +249,9 @@ function AnalysisContent() {
     setImageBase64(null)
     setResult(null)
     setError(null)
+    setEditingIndex(null)
+    setAddingNew(false)
+    setEdited(false)
   }
 
   return (
@@ -450,24 +497,72 @@ function AnalysisContent() {
                       >
                         <div className="divide-y divide-border">
                           {result.alimentos.map((food, idx) => (
-                            <div key={idx} className="px-4 py-3 flex items-center justify-between">
-                              <div>
-                                <p className="text-sm font-medium text-foreground">{food.nome}</p>
-                                <p className="text-xs text-foreground-muted">{food.quantidade_g}g</p>
+                            editingIndex === idx ? (
+                              <FoodEditRow
+                                key={idx}
+                                initial={food}
+                                onSave={(updated) => { updateFood(idx, updated); setEditingIndex(null) }}
+                                onCancel={() => setEditingIndex(null)}
+                              />
+                            ) : (
+                              <div key={idx} className="px-4 py-3 flex items-center justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">{food.nome}</p>
+                                  <p className="text-xs text-foreground-muted">{food.quantidade_g}g</p>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <p className="text-sm font-bold text-dourado">{food.calorias} kcal</p>
+                                  <p className="text-xs text-foreground-muted">
+                                    P:{food.proteinas}g C:{food.carboidratos}g G:{food.gorduras}g
+                                  </p>
+                                </div>
+                                <div className="flex gap-0.5 flex-shrink-0 ml-1">
+                                  <button
+                                    onClick={() => { setEditingIndex(idx); setAddingNew(false) }}
+                                    className="p-2 rounded-lg hover:bg-background-elevated"
+                                    aria-label="Editar alimento"
+                                    title="Editar"
+                                  >
+                                    <Pencil className="w-4 h-4 text-foreground-secondary" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteFood(idx)}
+                                    className="p-2 rounded-lg hover:bg-red-50"
+                                    aria-label="Remover alimento"
+                                    title="Remover"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </button>
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-sm font-bold text-dourado">{food.calorias} kcal</p>
-                                <p className="text-xs text-foreground-muted">
-                                  P:{food.proteinas}g C:{food.carboidratos}g G:{food.gorduras}g
-                                </p>
-                              </div>
-                            </div>
+                            )
                           ))}
+
+                          {addingNew ? (
+                            <FoodEditRow
+                              initial={{ nome: '', quantidade_g: 100, calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, categoria: 'outros' }}
+                              onSave={(food) => { addFood(food); setAddingNew(false) }}
+                              onCancel={() => setAddingNew(false)}
+                            />
+                          ) : (
+                            <button
+                              onClick={() => { setAddingNew(true); setEditingIndex(null) }}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm text-dourado font-medium hover:bg-dourado/5 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" /> Adicionar alimento
+                            </button>
+                          )}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
+
+                {edited && (
+                  <p className="text-[11px] text-foreground-muted text-center -mt-2">
+                    Lista ajustada — totais recalculados
+                  </p>
+                )}
 
                 {/* Action buttons */}
                 <div className="flex gap-3">
@@ -513,6 +608,97 @@ function AnalysisContent() {
         onChange={handleFileChange}
         className="hidden"
       />
+    </div>
+  )
+}
+
+interface FoodEditRowProps {
+  initial: AnalyzedFood
+  onSave: (food: AnalyzedFood) => void
+  onCancel: () => void
+}
+
+function FoodEditRow({ initial, onSave, onCancel }: FoodEditRowProps) {
+  const [nome, setNome] = useState(initial.nome)
+  const [quantidade, setQuantidade] = useState(String(initial.quantidade_g ?? 0))
+  const [calorias, setCalorias] = useState(String(initial.calorias ?? 0))
+  const [proteinas, setProteinas] = useState(String(initial.proteinas ?? 0))
+  const [carboidratos, setCarboidratos] = useState(String(initial.carboidratos ?? 0))
+  const [gorduras, setGorduras] = useState(String(initial.gorduras ?? 0))
+
+  const num = (v: string) => {
+    const n = parseFloat(v.replace(',', '.'))
+    return isNaN(n) ? 0 : n
+  }
+
+  const handleSave = () => {
+    if (!nome.trim()) {
+      toast.error('Informe o nome do alimento')
+      return
+    }
+    onSave({
+      nome: nome.trim(),
+      quantidade_g: num(quantidade),
+      calorias: num(calorias),
+      proteinas: num(proteinas),
+      carboidratos: num(carboidratos),
+      gorduras: num(gorduras),
+      categoria: initial.categoria || 'outros',
+    })
+  }
+
+  const inputCls = 'w-full px-2 py-1.5 rounded-lg bg-white border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-dourado'
+  const labelCls = 'text-[10px] uppercase tracking-wide text-foreground-muted block mb-0.5'
+
+  return (
+    <div className="px-4 py-3 space-y-2 bg-dourado/5">
+      <div>
+        <label className={labelCls}>Nome</label>
+        <input
+          type="text"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          placeholder="Ex.: Arroz integral"
+          className={inputCls}
+          autoFocus
+        />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className={labelCls}>Quant. (g)</label>
+          <input type="text" inputMode="decimal" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Kcal</label>
+          <input type="text" inputMode="decimal" value={calorias} onChange={(e) => setCalorias(e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Prot. (g)</label>
+          <input type="text" inputMode="decimal" value={proteinas} onChange={(e) => setProteinas(e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Carb. (g)</label>
+          <input type="text" inputMode="decimal" value={carboidratos} onChange={(e) => setCarboidratos(e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Gord. (g)</label>
+          <input type="text" inputMode="decimal" value={gorduras} onChange={(e) => setGorduras(e.target.value)} className={inputCls} />
+        </div>
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={onCancel}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white border border-border text-sm text-foreground-secondary"
+        >
+          <XIcon className="w-4 h-4" /> Cancelar
+        </button>
+        <button
+          onClick={handleSave}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg bg-dourado text-white text-sm font-medium"
+        >
+          <Check className="w-4 h-4" /> Salvar
+        </button>
+      </div>
     </div>
   )
 }
