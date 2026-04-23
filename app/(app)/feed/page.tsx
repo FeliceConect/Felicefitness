@@ -908,12 +908,25 @@ export default function FeedPage() {
           </div>
         ) : (
           <>
-            <div style={{ columns: 2, columnGap: '10px' }}>
-              {posts.map(post => (
-                <div key={post.id} id={`post-${post.id}`} className="break-inside-avoid mb-2.5">
-                  {renderMasonryCard(post)}
-                </div>
-              ))}
+            {/* Masonry 2-col manual: intercala por índice para manter a ordem
+                cronológica na leitura visual (esquerda-direita, topo-baixo).
+                CSS `columns: 2` enche uma coluna inteira antes da outra,
+                quebrando a percepção de "mais novo primeiro". */}
+            <div className="grid grid-cols-2 gap-2.5 items-start">
+              <div className="flex flex-col gap-2.5">
+                {posts.filter((_, i) => i % 2 === 0).map(post => (
+                  <div key={post.id} id={`post-${post.id}`}>
+                    {renderMasonryCard(post)}
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {posts.filter((_, i) => i % 2 === 1).map(post => (
+                  <div key={post.id} id={`post-${post.id}`}>
+                    {renderMasonryCard(post)}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Load more */}
