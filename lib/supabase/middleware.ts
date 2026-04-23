@@ -72,6 +72,7 @@ export async function updateSession(request: NextRequest) {
   let isProfessional = false
   let isAdminUser = false
   let isSuperAdmin = false
+  let isMedicoIntegrativo = false // acessa app E portal, como super_admin
   let isRestrictedAdmin = false // admin_type secretary/support — sem acesso ao app
   let profile: { role: string; onboarding_completed: boolean; admin_type?: string | null } | null = null
 
@@ -103,13 +104,16 @@ export async function updateSession(request: NextRequest) {
       // Fallback: verificar tabela fitness_professionals
       const { data: professional } = await supabase
         .from('fitness_professionals')
-        .select('id, is_active')
+        .select('id, is_active, type')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle()
 
       if (professional) {
         isProfessional = true
+        if (professional.type === 'medico_integrativo') {
+          isMedicoIntegrativo = true
+        }
       }
     }
   }
@@ -137,8 +141,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Profissional (exceto super_admin) tentando acessar rotas do app → portal
-  if (user && isProfessional && !isSuperAdmin && isAppRoute) {
+  // Profissional (exceto super_admin e medico_integrativo) tentando acessar rotas do app → portal
+  if (user && isProfessional && !isSuperAdmin && !isMedicoIntegrativo && isAppRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/portal'
     return NextResponse.redirect(url)
