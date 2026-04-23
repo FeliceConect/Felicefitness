@@ -15,6 +15,7 @@ import {
   calculateScheduleConsistency,
   isWeekday,
 } from '@/lib/sleep/calculations'
+import { awardSleepPoints } from '@/lib/services/points'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseRow = Record<string, any>
@@ -228,6 +229,13 @@ export function useSleep(days: number = 30): UseSleepReturn {
         })
 
       if (insertError) throw insertError
+
+      // Atribui pontos (3pts, com dedup diário no backend) — best-effort
+      try {
+        await awardSleepPoints()
+      } catch (pointsErr) {
+        console.error('Falha ao atribuir pontos de sono:', pointsErr)
+      }
 
       await fetchSleepLogs()
     } catch (err) {

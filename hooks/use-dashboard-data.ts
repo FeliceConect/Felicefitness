@@ -64,6 +64,7 @@ export interface DashboardData {
   proteinConsumed: number
   proteinGoal: number
   workoutStats: WorkoutStats
+  sleepLoggedToday: boolean
   loading: boolean
   error: Error | null
   refresh: () => Promise<void>
@@ -131,6 +132,7 @@ export function useDashboardData(): DashboardData {
   const [caloriesConsumed, setCaloriesConsumed] = useState(0)
   const [proteinConsumed, setProteinConsumed] = useState(0)
   const [workoutStats, setWorkoutStats] = useState<WorkoutStats>({ totalWorkouts: 0, prsThisMonth: 0 })
+  const [sleepLoggedToday, setSleepLoggedToday] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -182,6 +184,20 @@ export function useDashboardData(): DashboardData {
           console.warn('Perfil não encontrado, usando dados do auth:', profileError.message)
         }
       }
+
+      // Buscar se registrou sono hoje (created_at >= meia-noite de hoje,
+      // mesma lógica do dedup em /api/points/award)
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: sleepTodayData } = await (supabase as any)
+        .from('fitness_sleep_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('created_at', todayStart.toISOString())
+        .limit(1)
+
+      setSleepLoggedToday(Array.isArray(sleepTodayData) && sleepTodayData.length > 0)
 
       // Buscar água
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -422,6 +438,7 @@ export function useDashboardData(): DashboardData {
     proteinConsumed,
     proteinGoal: profile?.meta_proteina_g || 170,
     workoutStats,
+    sleepLoggedToday,
     loading,
     error,
     refresh: fetchData

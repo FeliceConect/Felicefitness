@@ -35,6 +35,7 @@ export function DashboardContent() {
     proteinConsumed,
     proteinGoal,
     workoutStats,
+    sleepLoggedToday,
     loading,
     refresh
   } = useDashboardData()
@@ -170,7 +171,7 @@ export function DashboardContent() {
     treinoConcluido: todayWorkout?.status === 'concluido',
     alimentacaoPercent: caloriesGoal > 0 ? caloriesConsumed / caloriesGoal : 0,
     aguaPercent: waterGoal > 0 ? waterTotal / waterGoal : 0,
-    sonoRegistrado: false
+    sonoRegistrado: sleepLoggedToday
   }
 
   // Stats
