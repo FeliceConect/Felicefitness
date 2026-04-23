@@ -95,9 +95,29 @@ export async function GET(request: NextRequest) {
       p_user_type: userType
     })
 
+    // Gerar signed URLs para mensagens com anexo (bucket privado chat-attachments)
+    const ordered = (messages || []).reverse() // Do mais antigo para o mais novo
+    const messagesWithUrls = await Promise.all(ordered.map(async (msg: Record<string, unknown>) => {
+      const metadata = msg.metadata as Record<string, unknown> | null
+      const storagePath = metadata && typeof metadata.storage_path === 'string' ? metadata.storage_path : null
+      const isExpired = metadata && metadata.expired === true
+      if (!storagePath || isExpired) return msg
+
+      const { data: signed } = await supabaseAdmin.storage
+        .from('chat-attachments')
+        .createSignedUrl(storagePath, 60 * 60) // 1h
+
+      if (!signed?.signedUrl) return msg
+
+      return {
+        ...msg,
+        metadata: { ...metadata, url: signed.signedUrl },
+      }
+    }))
+
     return NextResponse.json({
       success: true,
-      messages: (messages || []).reverse(), // Ordenar do mais antigo para o mais novo
+      messages: messagesWithUrls,
       hasMore: messages?.length === limit
     })
 

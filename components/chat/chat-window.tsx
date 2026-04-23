@@ -1,7 +1,20 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Send, ArrowLeft, User, Loader2 } from 'lucide-react'
+import { Send, ArrowLeft, User, Loader2, Paperclip, X, FileText, Download } from 'lucide-react'
+import { compressImageClient } from '@/lib/images/compress-client'
+import { toast } from 'sonner'
+
+interface MessageMetadata {
+  storage_path?: string
+  url?: string
+  mime_type?: string
+  file_name?: string
+  file_size?: number
+  expires_at?: string
+  expired?: boolean
+  [key: string]: unknown
+}
 
 interface Message {
   id: string
@@ -10,7 +23,7 @@ interface Message {
   sender_type: 'client' | 'professional'
   content: string
   message_type: string
-  metadata: Record<string, unknown> | null
+  metadata: MessageMetadata | null
   is_read: boolean
   created_at: string
 }
@@ -33,6 +46,22 @@ interface ChatWindowProps {
   onNewMessage?: () => void
 }
 
+const ACCEPT_MIMES = 'image/*,audio/*,video/*,application/pdf'
+
+function formatBytes(bytes?: number) {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function daysUntil(iso?: string): number | null {
+  if (!iso) return null
+  const ms = new Date(iso).getTime() - Date.now()
+  if (ms <= 0) return 0
+  return Math.ceil(ms / (1000 * 60 * 60 * 24))
+}
+
 export function ChatWindow({
   conversationId,
   participant,
@@ -48,9 +77,12 @@ export function ChatWindow({
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [hasMore, setHasMore] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchMessages = useCallback(async (before?: string) => {
     try {
@@ -89,30 +121,146 @@ export function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Cleanup do object URL do preview
+  useEffect(() => {
+    return () => {
+      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl)
+    }
+  }, [pendingPreviewUrl])
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite reescolher o mesmo arquivo depois
+    if (!file) return
+
+    // Limite client-side de sanidade (50MB — server valida por categoria)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 50MB.')
+      return
+    }
+
+    setPendingFile(file)
+    if (file.type.startsWith('image/')) {
+      setPendingPreviewUrl(URL.createObjectURL(file))
+    } else {
+      setPendingPreviewUrl(null)
+    }
+  }
+
+  const clearPendingFile = () => {
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl)
+    setPendingFile(null)
+    setPendingPreviewUrl(null)
+  }
+
+  const uploadPendingFile = async (): Promise<{
+    category: 'image' | 'audio' | 'video' | 'pdf'
+    storage_path: string
+    mime_type: string
+    file_name: string
+    file_size: number
+    expires_at: string
+  } | null> => {
+    if (!pendingFile) return null
+
+    let fileToUpload: File = pendingFile
+    // Comprime imagem no client antes de enviar
+    if (pendingFile.type.startsWith('image/') && pendingFile.type !== 'image/gif') {
+      try {
+        fileToUpload = await compressImageClient(pendingFile)
+      } catch {
+        // Segue com o arquivo original se compressão falhar
+      }
+    }
+
+    const formData = new FormData()
+    formData.append('file', fileToUpload)
+    formData.append('conversationId', conversationId)
+
+    const res = await fetch('/api/chat/upload', { method: 'POST', body: formData })
+    if (!res.ok) {
+      const status = res.status
+      if (status === 413) toast.error('Arquivo muito grande.')
+      else if (status === 401) toast.error('Sessão expirada. Faça login novamente.')
+      else if (status >= 500) toast.error('Servidor indisponível. Tente de novo.')
+      else {
+        try {
+          const err = await res.json()
+          toast.error(err.error || 'Erro ao enviar arquivo.')
+        } catch {
+          toast.error('Erro ao enviar arquivo.')
+        }
+      }
+      return null
+    }
+    const data = await res.json()
+    if (!data.success) {
+      toast.error(data.error || 'Erro ao enviar arquivo.')
+      return null
+    }
+    return data
+  }
+
   const handleSend = async () => {
-    if (!newMessage.trim() || sending) return
+    const hasText = newMessage.trim().length > 0
+    const hasFile = !!pendingFile
+    if ((!hasText && !hasFile) || sending) return
 
     setSending(true)
     const messageContent = newMessage.trim()
     setNewMessage('')
 
     try {
+      let messageType: string = 'text'
+      let metadata: MessageMetadata | null = null
+      let contentToSend = messageContent
+
+      if (hasFile) {
+        const uploaded = await uploadPendingFile()
+        if (!uploaded) {
+          // Reabilita o input e o arquivo em pendência ao falhar
+          setNewMessage(messageContent)
+          setSending(false)
+          return
+        }
+        messageType = uploaded.category // 'image' | 'audio' | 'video' | 'pdf'
+        metadata = {
+          storage_path: uploaded.storage_path,
+          mime_type: uploaded.mime_type,
+          file_name: uploaded.file_name,
+          file_size: uploaded.file_size,
+          expires_at: uploaded.expires_at,
+        }
+        // content precisa existir (NOT NULL na tabela). Usa legenda ou placeholder.
+        if (!contentToSend) contentToSend = `📎 ${uploaded.file_name}`
+      }
+
       const response = await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           conversationId,
-          content: messageContent
+          content: contentToSend,
+          messageType,
+          metadata,
         })
       })
 
       const data = await response.json()
 
       if (data.success) {
-        setMessages(prev => [...prev, data.message])
+        // A API retorna a mensagem sem signed URL (é inserida "crua").
+        // Para exibir o anexo imediatamente, sobrescrevemos metadata.url com
+        // o object URL local — no próximo polling vem a signed URL de verdade.
+        let msg: Message = data.message
+        if (metadata && pendingFile && pendingPreviewUrl) {
+          msg = { ...msg, metadata: { ...metadata, url: pendingPreviewUrl } }
+        }
+        setMessages(prev => [...prev, msg])
+        clearPendingFile()
         onNewMessage?.()
       } else {
-        setNewMessage(messageContent) // Restaurar mensagem em caso de erro
+        setNewMessage(messageContent) // Restaurar em caso de erro
       }
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error)
@@ -159,6 +307,79 @@ export function ChatWindow({
     groups[date].push(message)
     return groups
   }, {} as Record<string, Message[]>)
+
+  const renderAttachment = (msg: Message, isMine: boolean) => {
+    const md = msg.metadata
+    if (!md) return null
+
+    // Anexo já expirado (cron removeu do Storage)
+    if (md.expired) {
+      return (
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isMine ? 'bg-secondary/60' : 'bg-background-input/60'} text-sm opacity-70`}>
+          <FileText className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">{md.file_name || 'arquivo'} · expirado</span>
+        </div>
+      )
+    }
+
+    const url = md.url
+    if (!url) return null
+
+    if (msg.message_type === 'image') {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+          <img
+            src={url}
+            alt={md.file_name || 'imagem'}
+            className="max-w-full max-h-80 rounded-lg object-contain bg-black/5"
+            loading="lazy"
+          />
+        </a>
+      )
+    }
+
+    if (msg.message_type === 'audio') {
+      return (
+        <audio controls src={url} className="max-w-full">
+          Seu navegador não suporta áudio.
+        </audio>
+      )
+    }
+
+    if (msg.message_type === 'video') {
+      return (
+        <video controls src={url} className="max-w-full max-h-80 rounded-lg bg-black" preload="metadata">
+          Seu navegador não suporta vídeo.
+        </video>
+      )
+    }
+
+    // pdf / outros
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        download={md.file_name}
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isMine ? 'bg-secondary/60 hover:bg-secondary/80' : 'bg-background-input hover:bg-background-elevated'} transition-colors`}
+      >
+        <FileText className={`w-5 h-5 flex-shrink-0 ${isMine ? 'text-seda' : 'text-dourado'}`} />
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-medium truncate ${isMine ? 'text-secondary-foreground' : 'text-foreground'}`}>
+            {md.file_name || 'documento.pdf'}
+          </p>
+          <p className={`text-xs ${isMine ? 'text-seda' : 'text-foreground-muted'}`}>
+            {formatBytes(md.file_size)}
+          </p>
+        </div>
+        <Download className={`w-4 h-4 flex-shrink-0 ${isMine ? 'text-seda' : 'text-foreground-muted'}`} />
+      </a>
+    )
+  }
+
+  const hasAttachment = (msg: Message) =>
+    msg.metadata && (msg.metadata.storage_path || msg.metadata.expired)
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -224,6 +445,9 @@ export function ChatWindow({
                 <div className="space-y-2">
                   {msgs.map((message) => {
                     const isMine = message.sender_id === currentUserId
+                    const attachment = hasAttachment(message)
+                    const showContent = message.content && !(attachment && message.content.startsWith('📎 '))
+                    const expiresInDays = isMine && message.metadata?.expires_at ? daysUntil(message.metadata.expires_at) : null
                     return (
                       <div
                         key={message.id}
@@ -236,9 +460,19 @@ export function ChatWindow({
                               : 'bg-background-elevated text-foreground rounded-bl-md'
                           }`}
                         >
-                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                          {attachment && (
+                            <div className={showContent ? 'mb-2' : ''}>
+                              {renderAttachment(message, isMine)}
+                            </div>
+                          )}
+                          {showContent && (
+                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                          )}
                           <p className={`text-xs mt-1 ${isMine ? 'text-seda' : 'text-foreground-muted'}`}>
                             {formatTime(message.created_at)}
+                            {expiresInDays !== null && expiresInDays > 0 && (
+                              <span className="ml-2 opacity-75">· expira em {expiresInDays}d</span>
+                            )}
                             {isMine && message.is_read && (
                               <span className="ml-2">Lida</span>
                             )}
@@ -255,22 +489,70 @@ export function ChatWindow({
         )}
       </div>
 
+      {/* Preview do arquivo em pendência */}
+      {pendingFile && (
+        <div className="px-4 pt-3 pb-0 bg-background-card border-t border-border">
+          <div className="flex items-center gap-3 p-3 bg-background-elevated rounded-lg">
+            {pendingPreviewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={pendingPreviewUrl}
+                alt="preview"
+                className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-lg bg-dourado/15 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-6 h-6 text-dourado" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{pendingFile.name}</p>
+              <p className="text-xs text-foreground-muted">{formatBytes(pendingFile.size)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={clearPendingFile}
+              className="p-2 rounded-lg hover:bg-background-card transition-colors"
+              aria-label="Remover arquivo"
+            >
+              <X className="w-4 h-4 text-foreground-muted" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 bg-background-card border-t border-border">
         <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPT_MIMES}
+            onChange={handleFilePick}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending}
+            className="p-3 rounded-full bg-background-elevated text-foreground hover:bg-background-input disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Anexar arquivo"
+          >
+            <Paperclip className="w-5 h-5" />
+          </button>
           <input
             ref={inputRef}
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Digite sua mensagem..."
+            placeholder={pendingFile ? 'Legenda (opcional)...' : 'Digite sua mensagem...'}
             className="flex-1 px-4 py-3 bg-background-input border border-border rounded-full text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado focus:border-transparent"
             disabled={sending}
           />
           <button
             onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !pendingFile) || sending}
             className="p-3 rounded-full bg-dourado text-white hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {sending ? (
