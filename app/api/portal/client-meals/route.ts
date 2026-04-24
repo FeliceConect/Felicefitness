@@ -16,7 +16,22 @@ interface Meal {
   proteinas_total: number
   carboidratos_total: number
   gorduras_total: number
+  foto_url: string | null
+  notas: string | null
+  analise_ia: string | null
+  profile?: { id: string; nome: string; email: string } | null
   [key: string]: unknown
+}
+
+interface MealItem {
+  meal_id: string
+  nome_alimento: string
+  quantidade: number
+  unidade: string
+  calorias: number | null
+  proteinas: number | null
+  carboidratos: number | null
+  gorduras: number | null
 }
 
 // GET - Listar refeicoes dos clientes do profissional
@@ -130,6 +145,56 @@ export async function GET(request: NextRequest) {
 
     const mealsTyped = meals as Meal[] | null
 
+    // Buscar itens (alimentos) das refeições encontradas em lote
+    const mealIds = (mealsTyped || []).map(m => m.id)
+    let itemsByMeal: Record<string, MealItem[]> = {}
+
+    if (mealIds.length > 0) {
+      const { data: items } = await supabaseAdmin
+        .from('fitness_meal_items')
+        .select('meal_id, nome_alimento, quantidade, unidade, calorias, proteinas, carboidratos, gorduras')
+        .in('meal_id', mealIds)
+
+      itemsByMeal = ((items as MealItem[] | null) || []).reduce((acc, it) => {
+        if (!acc[it.meal_id]) acc[it.meal_id] = []
+        acc[it.meal_id].push(it)
+        return acc
+      }, {} as Record<string, MealItem[]>)
+    }
+
+    // Mapear refeições para o formato esperado pela página (EN).
+    // A página espera meal_date / meal_time / meal_type / calories / protein / carbs / fat / foods / photo_url / notes / ai_analysis;
+    // o banco armazena esses campos em português.
+    const mealsMapped = (mealsTyped || []).map(m => {
+      const items = itemsByMeal[m.id] || []
+      return {
+        id: m.id,
+        user_id: m.user_id,
+        meal_date: m.data,
+        meal_time: m.horario,
+        meal_type: m.tipo_refeicao,
+        description: '',
+        calories: Number(m.calorias_total) || 0,
+        protein: Number(m.proteinas_total) || 0,
+        carbs: Number(m.carboidratos_total) || 0,
+        fat: Number(m.gorduras_total) || 0,
+        fiber: 0,
+        photo_url: m.foto_url || null,
+        notes: m.notas || null,
+        ai_analysis: m.analise_ia || null,
+        profile: m.profile || null,
+        foods: items.map(it => ({
+          name: it.nome_alimento,
+          quantity: Number(it.quantidade) || 0,
+          unit: it.unidade || 'g',
+          calories: Number(it.calorias) || 0,
+          protein: Number(it.proteinas) || 0,
+          carbs: Number(it.carboidratos) || 0,
+          fat: Number(it.gorduras) || 0,
+        })),
+      }
+    })
+
     // Calcular estatisticas
     const stats = {
       totalMeals: mealsTyped?.length || 0,
@@ -154,7 +219,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      meals: mealsTyped || [],
+      meals: mealsMapped,
       clients: clients || [],
       stats
     })
