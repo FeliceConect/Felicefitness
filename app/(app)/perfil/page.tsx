@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trophy, Ruler, Target, Camera, X, Check, ImageIcon, History, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Edit, Trophy, Ruler, Target, X, Check, ImageIcon, HistoryIcon, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,8 +27,12 @@ const OBJECTIVES = [
 ]
 
 interface BodyCompositionData {
+  altura: number | null
+  peso: number | null
+  pesoIdeal: number | null
   gordura: number | null
   musculo: number | null
+  data: string | null
 }
 
 export default function PerfilPage() {
@@ -42,9 +46,19 @@ export default function PerfilPage() {
     data: ''
   })
   const [savingObjective, setSavingObjective] = useState(false)
-  const [bodyComposition, setBodyComposition] = useState<BodyCompositionData>({ gordura: null, musculo: null })
+  const [bodyComposition, setBodyComposition] = useState<BodyCompositionData>({
+    altura: null,
+    peso: null,
+    pesoIdeal: null,
+    gordura: null,
+    musculo: null,
+    data: null
+  })
 
-  // Fetch latest body composition data
+  // Antropometria registrada pela equipe (fitness_body_compositions).
+  // A equipe pode salvar avaliações parciais (ex.: só altura+meta numa visita,
+  // bioimpedância completa em outra), então puxamos o último valor NÃO-NULO
+  // por campo, varrendo os registros do mais recente para o mais antigo.
   useEffect(() => {
     async function fetchBodyComposition() {
       const supabase = createClient()
@@ -55,16 +69,26 @@ export default function PerfilPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('fitness_body_compositions')
-        .select('percentual_gordura, massa_muscular_esqueletica_kg')
+        .select('data, altura_cm, peso, peso_ideal, percentual_gordura, massa_muscular_esqueletica_kg')
         .eq('user_id', user.id)
         .order('data', { ascending: false })
-        .limit(1)
-        .single()
+        .limit(20)
 
-      if (!error && data) {
+      if (!error && Array.isArray(data) && data.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pickLatest = (field: string) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const found = (data as any[]).find(r => r[field] !== null && r[field] !== undefined)
+          return found ? found[field] : null
+        }
+
         setBodyComposition({
-          gordura: data.percentual_gordura,
-          musculo: data.massa_muscular_esqueletica_kg
+          altura: pickLatest('altura_cm'),
+          peso: pickLatest('peso'),
+          pesoIdeal: pickLatest('peso_ideal'),
+          gordura: pickLatest('percentual_gordura'),
+          musculo: pickLatest('massa_muscular_esqueletica_kg'),
+          data: data[0].data
         })
       }
     }
@@ -92,15 +116,17 @@ export default function PerfilPage() {
     )
   }
 
-  // Get body data from profile (fields from database are altura_cm, peso_atual)
+  // Dados Físicos vêm da última antropometria registrada pela equipe.
+  // Fallback para o profile (auto-declarado) só quando ainda não há avaliação.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const profileData = profile as any
   const bodyData = {
-    altura: profileData.altura_cm || null,
-    peso: profileData.peso_atual || null,
-    pesoMeta: profileData.meta_peso || null,
+    altura: bodyComposition.altura ?? profileData.altura_cm ?? null,
+    peso: bodyComposition.peso ?? profileData.peso_atual ?? null,
+    pesoMeta: bodyComposition.pesoIdeal ?? profileData.meta_peso ?? null,
     gordura: bodyComposition.gordura,
-    musculo: bodyComposition.musculo
+    musculo: bodyComposition.musculo,
+    dataAvaliacao: bodyComposition.data
   }
 
   // Get objective from profile - stored as JSON string: "id|titulo|data"
@@ -203,20 +229,19 @@ export default function PerfilPage() {
           </div>
         )}
 
-        {/* Body Data */}
+        {/* Body Data — registrado pela equipe (antropometria/InBody) */}
         <div className="px-4">
           <Card>
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Ruler className="h-4 w-4" />
                 Dados Físicos
               </CardTitle>
-              <Link href="/perfil/editar">
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-              </Link>
+              <p className="text-xs text-muted-foreground">
+                {bodyData.dataAvaliacao
+                  ? `Última avaliação: ${format(new Date(bodyData.dataAvaliacao), "d MMM yyyy", { locale: ptBR })}`
+                  : 'Sem avaliação registrada — sua equipe atualizará após a próxima coleta.'}
+              </p>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -314,23 +339,10 @@ export default function PerfilPage() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="px-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/corpo/nova-medicao">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
-                <Ruler className="h-5 w-5" />
-                <span>Nova Medição</span>
-              </Button>
-            </Link>
-            <Link href="/fotos/nova">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
-                <Camera className="h-5 w-5" />
-                <span>Foto Progresso</span>
-              </Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        {/* Quick Actions — apenas leitura.
+            Medições antropométricas e fotos são feitas pela equipe no portal. */}
+        <div className="px-4">
+          <div className="grid grid-cols-3 gap-3">
             <Link href="/fotos">
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
                 <ImageIcon className="h-5 w-5" />
@@ -339,12 +351,10 @@ export default function PerfilPage() {
             </Link>
             <Link href="/relatorios/evolucao">
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
-                <History className="h-5 w-5" />
+                <HistoryIcon className="h-5 w-5" />
                 <span>Evolução</span>
               </Button>
             </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <Link href="/formularios">
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
                 <ClipboardList className="h-5 w-5" />

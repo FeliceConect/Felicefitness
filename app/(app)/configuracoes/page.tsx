@@ -6,13 +6,7 @@ import {
   Bell,
   User,
   Target,
-  Dumbbell,
-  Utensils,
   Palette,
-  Shield,
-  UserCog,
-  Info,
-  MessageSquare,
   LogOut,
   ChevronRight
 } from 'lucide-react'
@@ -123,31 +117,8 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Preferências */}
-        <section>
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
-            Preferências
-          </h2>
-          <div className="bg-card rounded-xl border divide-y">
-            <SettingsItem
-              icon={<Dumbbell className="w-5 h-5" />}
-              label="Treino"
-              description="Horários, dias, tipos"
-              href="/configuracoes/treino"
-            />
-            <SettingsItem
-              icon={<Utensils className="w-5 h-5" />}
-              label="Alimentação"
-              description="Refeições, restrições"
-              href="/configuracoes/alimentacao"
-            />
-
-
-          </div>
-        </section>
-
-
-
+        {/* Preferências de treino e alimentação são definidas pela equipe (personal/nutri),
+            por isso não ficam ajustáveis pelo paciente nesta tela. */}
 
         {/* App */}
         <section>
@@ -175,45 +146,9 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Dados */}
+        {/* Sair */}
         <section>
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
-            Dados e Privacidade
-          </h2>
           <div className="bg-card rounded-xl border divide-y">
-            <SettingsItem
-              icon={<Shield className="w-5 h-5" />}
-              label="Privacidade"
-              description="Compartilhamento, feed automático"
-              href="/configuracoes/privacidade"
-            />
-            <SettingsItem
-              icon={<UserCog className="w-5 h-5" />}
-              label="Conta"
-              description="Email, senha"
-              href="/configuracoes/conta"
-            />
-          </div>
-        </section>
-
-        {/* Outros */}
-        <section>
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
-            Outros
-          </h2>
-          <div className="bg-card rounded-xl border divide-y">
-            <SettingsItem
-              icon={<Info className="w-5 h-5" />}
-              label="Sobre"
-              description="Versão, créditos"
-              href="/configuracoes/sobre"
-            />
-            <SettingsItem
-              icon={<MessageSquare className="w-5 h-5" />}
-              label="Feedback"
-              description="Enviar sugestões"
-              href="mailto:feedback@feliceconect.com.br"
-            />
             <SettingsItem
               icon={<LogOut className="w-5 h-5" />}
               label="Sair"

@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Plus, History, TrendingUp, ChevronRight, Calendar } from 'lucide-react'
+import { Plus, HistoryIcon, TrendingUp, ChevronRight, Calendar } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
@@ -198,7 +198,7 @@ export default function BodyPage() {
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
-                <History className="w-5 h-5 text-dourado" />
+                <HistoryIcon className="w-5 h-5 text-dourado" />
               </div>
               <div>
                 <p className="text-foreground font-medium">Histórico de Medições</p>

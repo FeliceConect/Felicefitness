@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Calendar, Clock, History } from 'lucide-react'
+import { Calendar, Clock, HistoryIcon } from 'lucide-react'
 import { AppointmentCard } from './components/appointment-card'
 import type { AppointmentWithDetails } from '@/types/appointments'
 
@@ -120,7 +120,7 @@ export default function AgendaPage() {
                 : 'bg-background-elevated text-foreground-secondary hover:bg-border'
             }`}
           >
-            <History className="w-4 h-4" />
+            <HistoryIcon className="w-4 h-4" />
             Histórico
           </button>
         </div>

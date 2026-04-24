@@ -13,7 +13,7 @@ import {
   StockAlert,
   ProgressRing,
 } from '@/components/supplements'
-import { Plus, Package, History } from 'lucide-react'
+import { Plus, Package, HistoryIcon } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SupplementosPage() {
@@ -67,7 +67,7 @@ export default function SupplementosPage() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" asChild>
               <Link href="/suplementos/historico">
-                <History className="h-5 w-5" />
+                <HistoryIcon className="h-5 w-5" />
               </Link>
             </Button>
             <Button variant="ghost" size="icon" asChild>
