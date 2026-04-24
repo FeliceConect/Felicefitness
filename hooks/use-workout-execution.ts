@@ -5,6 +5,16 @@ import type { Workout, WorkoutExercise, ExerciseSet, CompletedSet, CompletedCard
 import { getExercisePR } from '@/lib/workout/mock-data'
 
 type ExecutionStatus = 'not_started' | 'in_progress' | 'resting' | 'completed'
+export type ExerciseProgress = 'pending' | 'in_progress' | 'completed'
+
+export interface ExerciseStatus {
+  index: number
+  exerciseId: string
+  name: string
+  totalSets: number
+  completedSets: number
+  status: ExerciseProgress
+}
 
 interface WorkoutExecutionState {
   workout: Workout | null
@@ -30,6 +40,7 @@ interface UseWorkoutExecutionReturn {
   editCompletedSet: (exerciseId: string, setNumber: number, data: { reps: number; weight: number }) => void
   skipSet: () => void
   skipExercise: () => void
+  jumpToExercise: (exerciseIndex: number) => void
   startRest: (seconds: number) => void
   skipRest: () => void
   addRestTime: (seconds: number) => void
@@ -46,6 +57,8 @@ interface UseWorkoutExecutionReturn {
   isLastExercise: boolean
   totalSets: number
   completedSetsCount: number
+  exercisesStatus: ExerciseStatus[]
+  hasIncompleteExercises: boolean
 }
 
 const STORAGE_KEY = 'felicefit_workout_execution'
@@ -233,6 +246,63 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
 
   const progress = totalSets > 0 ? (completedSetsCount / totalSets) * 100 : 0
 
+  // Quantidade de séries concluídas para um exercício específico
+  const getCompletedSetsCountForExercise = (ex: WorkoutExercise): number => {
+    return state.completedSets.filter(cs => cs.exerciseId === ex.id).length
+  }
+
+  // Status agregado de cada exercício do treino
+  const exercisesStatus: ExerciseStatus[] = (state.workout?.exercicios || []).map((ex, idx) => {
+    const completed = getCompletedSetsCountForExercise(ex)
+    const total = ex.series.length
+    let status: ExerciseProgress = 'pending'
+    if (completed >= total && total > 0) status = 'completed'
+    else if (completed > 0) status = 'in_progress'
+    return {
+      index: idx,
+      exerciseId: ex.id,
+      name: ex.nome,
+      totalSets: total,
+      completedSets: completed,
+      status
+    }
+  })
+
+  const hasIncompleteExercises = exercisesStatus.some(e => e.status !== 'completed')
+
+  // Encontra o próximo exercício incompleto (com wrap), ignorando o índice atual e quaisquer "ignorar"
+  const findNextIncompleteExerciseIndex = (
+    workout: Workout,
+    completedSetsSnapshot: CompletedSet[],
+    fromIndex: number,
+    ignore: number[] = []
+  ): number => {
+    const total = workout.exercicios.length
+    for (let step = 1; step <= total; step++) {
+      const candidate = (fromIndex + step) % total
+      if (ignore.includes(candidate)) continue
+      const ex = workout.exercicios[candidate]
+      const completed = completedSetsSnapshot.filter(cs => cs.exerciseId === ex.id).length
+      if (completed < ex.series.length) return candidate
+    }
+    return -1
+  }
+
+  // Primeira série incompleta usando snapshot custom de completedSets (útil dentro de setState)
+  const findFirstIncompleteSetIndexWithSnapshot = (
+    workout: Workout,
+    exerciseIndex: number,
+    completedSetsSnapshot: CompletedSet[]
+  ): number => {
+    const ex = workout.exercicios[exerciseIndex]
+    if (!ex) return 0
+    for (let i = 0; i < ex.series.length; i++) {
+      const done = completedSetsSnapshot.some(cs => cs.exerciseId === ex.id && cs.setNumber === i + 1)
+      if (!done) return i
+    }
+    return ex.series.length - 1
+  }
+
   // Funções auxiliares para verificar treino salvo
   const hasSavedWorkout = useCallback((): boolean => {
     try {
@@ -366,32 +436,43 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     }
 
     setState(prev => {
-      const newState = {
+      const newCompleted = [...prev.completedSets, completedSet]
+      const baseNew = {
         ...prev,
-        completedSets: [...prev.completedSets, completedSet],
+        completedSets: newCompleted,
         newPRs: pr ? [...prev.newPRs, pr] : prev.newPRs
       }
 
-      // Verificar se é última série do exercício
-      if (prev.currentSetIndex < currentExercise.series.length - 1) {
-        // Próxima série
-        return {
-          ...newState,
-          currentSetIndex: prev.currentSetIndex + 1
-        }
-      } else if (prev.currentExerciseIndex < (prev.workout?.exercicios.length || 0) - 1) {
-        // Próximo exercício
-        return {
-          ...newState,
-          currentExerciseIndex: prev.currentExerciseIndex + 1,
-          currentSetIndex: 0
-        }
-      } else {
-        // Treino completo
-        return {
-          ...newState,
-          status: 'completed'
-        }
+      const exercicios = prev.workout?.exercicios || []
+      const curEx = exercicios[prev.currentExerciseIndex]
+      if (!curEx || !prev.workout) return baseNew
+
+      // Próxima série incompleta dentro do exercício atual
+      const nextSetInCurrent = findFirstIncompleteSetIndexWithSnapshot(
+        prev.workout,
+        prev.currentExerciseIndex,
+        newCompleted
+      )
+      const curExCompleted = newCompleted.filter(cs => cs.exerciseId === curEx.id).length
+
+      // Se ainda há série pendente no exercício atual, segue nele
+      if (curExCompleted < curEx.series.length) {
+        return { ...baseNew, currentSetIndex: nextSetInCurrent }
+      }
+
+      // Exercício atual ficou completo: pular pro próximo incompleto (com wrap)
+      const nextExIndex = findNextIncompleteExerciseIndex(
+        prev.workout,
+        newCompleted,
+        prev.currentExerciseIndex
+      )
+      if (nextExIndex === -1) {
+        return { ...baseNew, status: 'completed' }
+      }
+      return {
+        ...baseNew,
+        currentExerciseIndex: nextExIndex,
+        currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, nextExIndex, newCompleted)
       }
     })
   }, [currentExercise, currentSet, state.currentSetIndex, checkForPR])
@@ -427,30 +508,77 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     if (!currentExercise) return
 
     setState(prev => {
+      if (!prev.workout) return prev
+
+      // Se ainda existe série incompleta dentro do exercício atual após o índice corrente, vai pra próxima
       if (prev.currentSetIndex < currentExercise.series.length - 1) {
         return { ...prev, currentSetIndex: prev.currentSetIndex + 1 }
-      } else if (prev.currentExerciseIndex < (prev.workout?.exercicios.length || 0) - 1) {
-        return {
-          ...prev,
-          currentExerciseIndex: prev.currentExerciseIndex + 1,
-          currentSetIndex: 0
+      }
+
+      // Pular última série → próximo exercício incompleto (sem mudar o que ficou pendente nele)
+      const nextExIndex = findNextIncompleteExerciseIndex(
+        prev.workout,
+        prev.completedSets,
+        prev.currentExerciseIndex,
+        [prev.currentExerciseIndex]
+      )
+      if (nextExIndex === -1) {
+        // Não há outro exercício incompleto. Só finalizar se o atual também estiver concluído.
+        const cur = prev.workout.exercicios[prev.currentExerciseIndex]
+        const curCompleted = prev.completedSets.filter(cs => cs.exerciseId === cur.id).length
+        if (curCompleted >= cur.series.length) {
+          return { ...prev, status: 'completed' }
         }
-      } else {
-        return { ...prev, status: 'completed' }
+        return prev // mantém no atual com séries pendentes (pular foi soft)
+      }
+      return {
+        ...prev,
+        currentExerciseIndex: nextExIndex,
+        currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, nextExIndex, prev.completedSets)
       }
     })
   }, [currentExercise])
 
   const skipExercise = useCallback(() => {
     setState(prev => {
-      if (prev.currentExerciseIndex < (prev.workout?.exercicios.length || 0) - 1) {
-        return {
-          ...prev,
-          currentExerciseIndex: prev.currentExerciseIndex + 1,
-          currentSetIndex: 0
+      if (!prev.workout) return prev
+      // Próximo exercício incompleto (com wrap), ignorando o atual — séries não realizadas dele permanecem pendentes
+      const nextExIndex = findNextIncompleteExerciseIndex(
+        prev.workout,
+        prev.completedSets,
+        prev.currentExerciseIndex,
+        [prev.currentExerciseIndex]
+      )
+      if (nextExIndex === -1) {
+        // Não existe outro incompleto. Se o atual também já está completo → finalizar; senão, ficar parado nele.
+        const cur = prev.workout.exercicios[prev.currentExerciseIndex]
+        const curCompleted = prev.completedSets.filter(cs => cs.exerciseId === cur.id).length
+        if (curCompleted >= cur.series.length) {
+          return { ...prev, status: 'completed' }
         }
-      } else {
-        return { ...prev, status: 'completed' }
+        return prev
+      }
+      return {
+        ...prev,
+        currentExerciseIndex: nextExIndex,
+        currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, nextExIndex, prev.completedSets)
+      }
+    })
+  }, [])
+
+  const jumpToExercise = useCallback((exerciseIndex: number) => {
+    setState(prev => {
+      if (!prev.workout) return prev
+      if (exerciseIndex < 0 || exerciseIndex >= prev.workout.exercicios.length) return prev
+      return {
+        ...prev,
+        currentExerciseIndex: exerciseIndex,
+        currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, exerciseIndex, prev.completedSets),
+        // Cancelar descanso ao pular manualmente — usuário escolheu mudar de exercício
+        isResting: false,
+        restTimeRemaining: 0,
+        restEndTime: null,
+        status: prev.status === 'resting' ? 'in_progress' : prev.status
       }
     })
   }, [])
@@ -525,6 +653,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     editCompletedSet,
     skipSet,
     skipExercise,
+    jumpToExercise,
     startRest,
     skipRest,
     addRestTime,
@@ -539,6 +668,8 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     isLastSet,
     isLastExercise,
     totalSets,
-    completedSetsCount
+    completedSetsCount,
+    exercisesStatus,
+    hasIncompleteExercises
   }
 }

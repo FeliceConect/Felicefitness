@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { X, Pause, Loader2, Zap, Info } from 'lucide-react'
+import { X, Pause, Loader2, Zap, PlayCircle, Clock } from 'lucide-react'
+import { ExerciseProgressStrip } from '@/components/treino/exercise-progress-strip'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { useWorkoutExecution } from '@/hooks/use-workout-execution'
@@ -66,14 +67,15 @@ export default function WorkoutExecutionPage() {
     editCompletedSet,
     skipSet,
     skipExercise,
+    jumpToExercise,
     addCardio,
     finishWorkout,
     currentExercise,
     currentSet,
     progress,
-    isLastSet,
-    isLastExercise,
-    completedSetsCount
+    completedSetsCount,
+    totalSets,
+    exercisesStatus
   } = useWorkoutExecution()
 
   const restTimer = useRestTimer({
@@ -159,8 +161,8 @@ export default function WorkoutExecutionPage() {
         }
       }
 
-      // Start rest timer if not last set of last exercise
-      if (!(isLastSet && isLastExercise) && currentExercise) {
+      // Start rest timer se ainda há séries a fazer no treino (independente da ordem)
+      if ((completedSetsCount + 1) < totalSets && currentExercise) {
         const restTime = currentSet?.descanso || defaultRestTime
         restTimer.start(restTime)
       }
@@ -247,8 +249,8 @@ export default function WorkoutExecutionPage() {
     setShowPRCelebration(false)
     setLatestPR(null)
 
-    // Start rest timer after PR celebration
-    if (!(isLastSet && isLastExercise) && currentExercise) {
+    // Start rest timer after PR celebration (se ainda há séries pendentes)
+    if (state.status !== 'completed' && currentExercise) {
       const restTime = currentSet?.descanso || 45
       restTimer.start(restTime)
     }
@@ -310,7 +312,7 @@ export default function WorkoutExecutionPage() {
   const lastWeight = currentExercise ? getLastWeight(currentExercise.nome) : null
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-44">
+    <div className="min-h-screen bg-background flex flex-col pb-48">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <button
@@ -343,8 +345,15 @@ export default function WorkoutExecutionPage() {
         />
       </div>
 
+      {/* Strip de exercícios — sempre visível, tap pra alternar */}
+      <ExerciseProgressStrip
+        exercises={exercisesStatus}
+        currentIndex={state.currentExerciseIndex}
+        onJump={jumpToExercise}
+      />
+
       {/* Main content */}
-      <div className="flex-1 flex flex-col p-6">
+      <div className="flex-1 flex flex-col px-6 pt-4 pb-2">
         {/* Current exercise */}
         {currentExercise && (
           <motion.div
@@ -353,33 +362,19 @@ export default function WorkoutExecutionPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex-1 flex flex-col"
           >
-            {/* Exercise info */}
+            {/* Title */}
             <div className="text-center mb-4">
-              <p className="text-sm text-dourado mb-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-dourado/80 mb-1.5">
                 Exercício {state.currentExerciseIndex + 1} de {workout.exercicios.length}
               </p>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
+              <h2 className="text-2xl font-bold text-foreground font-heading leading-tight">
                 {currentExercise.nome}
               </h2>
-              {/* Como Fazer button — always visible */}
-              <button
-                onClick={() => setShowVideoModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-dourado/10 hover:bg-dourado/20 transition-colors mb-2"
-              >
-                <Info className="w-3.5 h-3.5 text-dourado" />
-                <span className="text-xs font-semibold text-dourado">Como fazer</span>
-              </button>
-              {lastWeight && (
-                <p className="text-sm text-foreground-secondary">
-                  Última vez: {lastWeight.weight}kg × {lastWeight.reps}
-                </p>
-              )}
             </div>
 
             {/* Series indicators */}
             <div className="flex justify-center gap-3 mb-4">
               {currentExercise.series.map((set, index) => {
-                // Use the unique workout exercise id (currentExercise.id) not exercise_id
                 const completedSet = state.completedSets.find(
                   cs => cs.exerciseId === currentExercise.id && cs.setNumber === index + 1
                 )
@@ -395,9 +390,9 @@ export default function WorkoutExecutionPage() {
                     className={cn(
                       'w-12 h-12 rounded-full flex flex-col items-center justify-center text-lg font-bold',
                       isCompleted
-                        ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-400 active:scale-95 transition-all'
+                        ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-400 active:scale-95 transition-all shadow-sm shadow-emerald-500/30'
                         : isCurrent
-                          ? 'bg-dourado text-white ring-2 ring-dourado/70 ring-offset-2 ring-offset-background'
+                          ? 'bg-gradient-to-br from-dourado to-vinho text-white ring-2 ring-dourado/40 ring-offset-2 ring-offset-background shadow-md shadow-dourado/20'
                           : 'bg-background-elevated text-foreground-muted'
                     )}
                   >
@@ -411,43 +406,64 @@ export default function WorkoutExecutionPage() {
                 )
               })}
             </div>
-            {/* Hint para edição */}
+
+            {/* Card principal — série atual */}
+            {currentSet && (
+              <div className="bg-white border border-border rounded-3xl p-5 shadow-sm shadow-cafe/5 mb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground-secondary">
+                    Série {state.currentSetIndex + 1}
+                  </span>
+                  {currentSet.descanso ? (
+                    <span className="flex items-center gap-1 text-[11px] text-foreground-secondary">
+                      <Clock className="w-3 h-3" />
+                      {currentSet.descanso}s descanso
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="flex items-center justify-center gap-5 my-3">
+                  <div className="text-center">
+                    <p className="text-5xl font-bold font-heading text-foreground leading-none">
+                      {lastWeight?.weight ?? currentSet.carga_planejada ?? '–'}
+                    </p>
+                    <p className="text-xs text-foreground-secondary mt-1.5 uppercase tracking-wider">kg</p>
+                  </div>
+                  <span className="text-2xl text-foreground-muted font-light">×</span>
+                  <div className="text-center">
+                    <p className="text-5xl font-bold font-heading text-foreground leading-none">
+                      {currentSet.repeticoes_planejadas}
+                    </p>
+                    <p className="text-xs text-foreground-secondary mt-1.5 uppercase tracking-wider">reps</p>
+                  </div>
+                </div>
+
+                {lastWeight && (
+                  <div className="border-t border-border/60 pt-3 mt-3 flex items-center justify-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-dourado" />
+                    <p className="text-[11px] text-foreground-secondary">
+                      Último treino: <span className="text-foreground font-semibold">{lastWeight.weight}kg × {lastWeight.reps}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hint para edição (sutil) */}
             {state.completedSets.some(cs => cs.exerciseId === currentExercise.id) && (
-              <p className="text-center text-xs text-foreground-muted mb-2">
+              <p className="text-center text-[11px] text-foreground-muted mb-3">
                 Toque nas séries verdes para editar
               </p>
             )}
 
-            {/* Current set info */}
-            {currentSet && (
-              <div className="bg-white border border-border rounded-2xl p-4">
-                <div className="text-center">
-                  <p className="text-sm text-foreground-secondary mb-2">Série {state.currentSetIndex + 1}</p>
-                  <div className="flex items-center justify-center gap-4">
-                    <div>
-                      <p className="text-4xl font-bold text-foreground">
-                        {/* Prioridade: último peso usado > peso do template > '-' */}
-                        {lastWeight?.weight ?? currentSet.carga_planejada ?? '-'}
-                      </p>
-                      <p className="text-sm text-foreground-secondary">kg</p>
-                    </div>
-                    <span className="text-2xl text-foreground-muted">×</span>
-                    <div>
-                      <p className="text-4xl font-bold text-foreground">
-                        {currentSet.repeticoes_planejadas}
-                      </p>
-                      <p className="text-sm text-foreground-secondary">reps</p>
-                    </div>
-                  </div>
-                  {/* Indicar se é baseado no histórico */}
-                  {lastWeight && (
-                    <p className="text-xs text-dourado mt-2">
-                      Baseado no seu último treino
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Botão "Como fazer" — destaque maior */}
+            <button
+              onClick={() => setShowVideoModal(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-dourado/10 to-vinho/10 hover:from-dourado/20 hover:to-vinho/20 border border-dourado/30 active:scale-[0.98] transition-all"
+            >
+              <PlayCircle className="w-5 h-5 text-dourado" />
+              <span className="text-sm font-semibold text-dourado">Como fazer este exercício</span>
+            </button>
 
           </motion.div>
         )}
@@ -455,8 +471,8 @@ export default function WorkoutExecutionPage() {
 
       {/* Action buttons - Fixed at bottom above nav */}
       {currentExercise && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-background via-background to-transparent pt-6">
-          <div className="max-w-lg mx-auto space-y-3">
+        <div className="fixed bottom-16 left-0 right-0 px-4 pb-3 pt-4 z-40 bg-gradient-to-t from-background via-background to-transparent">
+          <div className="max-w-lg mx-auto space-y-2">
             <Button
               variant="gradient"
               size="lg"
@@ -466,40 +482,38 @@ export default function WorkoutExecutionPage() {
               Concluir Série
             </Button>
 
-            <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 variant="outline"
-                size="lg"
-                className="flex-1"
+                size="sm"
+                className="text-xs"
                 onClick={skipSet}
               >
                 Pular Série
               </Button>
               <Button
                 variant="outline"
-                size="lg"
-                className="flex-1"
+                size="sm"
+                className="text-xs"
                 onClick={skipExercise}
               >
                 Pular Exercício
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700"
+                onClick={() => setShowCardioInput(true)}
+              >
+                <Zap className="w-3 h-3 mr-1" />
+                Cardio
+                {state.completedCardio.length > 0 && (
+                  <span className="ml-1 bg-emerald-500 text-white text-[10px] px-1.5 rounded-full">
+                    {state.completedCardio.length}
+                  </span>
+                )}
+              </Button>
             </div>
-
-            {/* Cardio button */}
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
-              onClick={() => setShowCardioInput(true)}
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              Adicionar Cardio
-              {state.completedCardio.length > 0 && (
-                <span className="ml-2 bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {state.completedCardio.length}
-                </span>
-              )}
-            </Button>
           </div>
         </div>
       )}
