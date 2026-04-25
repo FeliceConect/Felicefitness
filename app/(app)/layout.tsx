@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/layout/header"
 import { BottomNav } from "@/components/layout/bottom-nav"
+import { MainContent } from "@/components/layout/main-content"
 
 export default async function AppLayout({
   children,
@@ -39,9 +40,7 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="content-safe-top content-safe-bottom">
-        {children}
-      </main>
+      <MainContent>{children}</MainContent>
       <BottomNav />
     </div>
   )

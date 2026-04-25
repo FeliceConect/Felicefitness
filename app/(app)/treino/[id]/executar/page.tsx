@@ -312,7 +312,7 @@ export default function WorkoutExecutionPage() {
   const lastWeight = currentExercise ? getLastWeight(currentExercise.nome) : null
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-48">
+    <div className="flex flex-col bg-background pb-48">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <button
@@ -469,9 +469,12 @@ export default function WorkoutExecutionPage() {
         )}
       </div>
 
-      {/* Action buttons - Fixed at bottom above nav */}
+      {/* Action buttons - Fixed at bottom above nav (considera safe-area do iPhone) */}
       {currentExercise && (
-        <div className="fixed bottom-16 left-0 right-0 px-4 pb-3 pt-4 z-40 bg-gradient-to-t from-background via-background to-transparent">
+        <div
+          className="fixed left-0 right-0 px-4 pb-3 pt-4 z-40 bg-gradient-to-t from-background via-background to-transparent"
+          style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <div className="max-w-lg mx-auto space-y-2">
             <Button
               variant="gradient"

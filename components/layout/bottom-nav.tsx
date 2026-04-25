@@ -38,9 +38,10 @@ export function BottomNav() {
   const pathname = usePathname()
   const { unreadCount, hasInteractions, details, markAsRead } = useUnreadFeed()
 
-  // Esconder bottom nav em telas com navegação própria (ex: form wizard)
-  const hideOnRoutes = ['/formularios/']
-  if (hideOnRoutes.some(route => pathname.startsWith(route) && pathname !== '/formularios')) {
+  // Esconder bottom nav em telas fullscreen (form wizard, treino imersivo)
+  const isFormWizard = pathname.startsWith('/formularios/') && pathname !== '/formularios'
+  const isImmersiveWorkout = /^\/treino\/[^/]+\/imersivo/.test(pathname)
+  if (isFormWizard || isImmersiveWorkout) {
     return null
   }
 

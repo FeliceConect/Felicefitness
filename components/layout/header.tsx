@@ -45,9 +45,10 @@ export function Header() {
     return () => clearInterval(interval)
   }, [fetchUnreadCounts])
 
-  // Esconder header em telas com navegação própria (ex: form wizard)
-  const hideOnRoutes = ['/formularios/']
-  if (hideOnRoutes.some(route => pathname.startsWith(route) && pathname !== '/formularios')) {
+  // Esconder header em telas fullscreen (form wizard, treino imersivo)
+  const isFormWizard = pathname.startsWith('/formularios/') && pathname !== '/formularios'
+  const isImmersiveWorkout = /^\/treino\/[^/]+\/imersivo/.test(pathname)
+  if (isFormWizard || isImmersiveWorkout) {
     return null
   }
 

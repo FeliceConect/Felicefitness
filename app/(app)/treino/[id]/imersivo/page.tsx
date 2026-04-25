@@ -98,9 +98,9 @@ export default function ImmersiveWorkoutPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-background flex flex-col">
+    <div className="fixed inset-0 z-40 bg-background flex flex-col safe-top">
       {/* Header with controls and progress */}
-      <div className="px-4 pt-4 pb-2 safe-area-top">
+      <div className="px-4 pt-4 pb-2">
         <ImmersiveControls
           onPause={workout.pause}
           onExit={handleExit}
