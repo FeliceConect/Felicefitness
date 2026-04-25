@@ -295,7 +295,7 @@ export function CardioInputModal({
                 </label>
                 <div className="flex items-center justify-center gap-2">
                   <button
-                    onClick={() => setDuracao(prev => Math.max(1, prev - 5))}
+                    onClick={() => setDuracao(prev => Math.max(1, prev - 1))}
                     className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                   >
                     <Minus className="w-4 h-4 text-foreground" />
@@ -305,7 +305,7 @@ export function CardioInputModal({
                     <span className="text-sm text-foreground-secondary ml-1">min</span>
                   </div>
                   <button
-                    onClick={() => setDuracao(prev => prev + 5)}
+                    onClick={() => setDuracao(prev => prev + 1)}
                     className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border"
                   >
                     <Plus className="w-4 h-4 text-foreground" />

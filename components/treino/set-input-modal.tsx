@@ -104,8 +104,8 @@ export function SetInputModal({
                 <div className="flex items-center justify-center gap-3">
                   <button
                     type="button"
-                    onClick={() => adjustWeight(-2.5)}
-                    onTouchEnd={(e) => { e.preventDefault(); adjustWeight(-2.5); }}
+                    onClick={() => adjustWeight(-1)}
+                    onTouchEnd={(e) => { e.preventDefault(); adjustWeight(-1); }}
                     className="w-14 h-14 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border active:bg-border transition-colors touch-manipulation select-none"
                   >
                     <Minus className="w-6 h-6 text-foreground" />
@@ -123,8 +123,8 @@ export function SetInputModal({
                   </div>
                   <button
                     type="button"
-                    onClick={() => adjustWeight(2.5)}
-                    onTouchEnd={(e) => { e.preventDefault(); adjustWeight(2.5); }}
+                    onClick={() => adjustWeight(1)}
+                    onTouchEnd={(e) => { e.preventDefault(); adjustWeight(1); }}
                     className="w-14 h-14 rounded-xl bg-background-elevated flex items-center justify-center hover:bg-border active:bg-border transition-colors touch-manipulation select-none"
                   >
                     <Plus className="w-6 h-6 text-foreground" />

@@ -197,5 +197,5 @@ export const RPE_SCALE = [
   { value: 10, emoji: '💀', label: 'Falha total' },
 ]
 
-export const WEIGHT_INCREMENTS = [0.5, 1, 2.5, 5, 10]
+export const WEIGHT_INCREMENTS = [1, 2, 5, 10, 20]
 export const REP_PRESETS = [6, 8, 10, 12, 15, 20]
