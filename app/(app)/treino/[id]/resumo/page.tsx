@@ -12,6 +12,13 @@ import { useSaveWorkout } from '@/hooks/use-save-workout'
 import { useGamification } from '@/hooks/use-gamification'
 import { cn } from '@/lib/utils'
 import { getTodayDateSP } from '@/lib/utils/date'
+import { createClient } from '@/lib/supabase/client'
+import {
+  awardWorkoutPoints,
+  awardPRPoints,
+  awardStreak7Points,
+  awardStreak30Points,
+} from '@/lib/services/points'
 import type { CompletedCardio, CardioExerciseType } from '@/lib/workout/types'
 
 interface CompletedSetData {
@@ -164,12 +171,60 @@ export default function WorkoutSummaryPage() {
       notes: notes || undefined
     }
 
-    // Save to database
-    const savedId = await saveWorkout(saveData)
+    // Read streak BEFORE saving so we can detect transitions to 7/30
+    // (the SQL trigger trigger_update_streak updates streak_atual on insert)
+    const supabase = createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    let oldStreak = 0
+    if (currentUser) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profileBefore } = await (supabase as any)
+        .from('fitness_profiles')
+        .select('streak_atual')
+        .eq('id', currentUser.id)
+        .single()
+      oldStreak = profileBefore?.streak_atual || 0
+    }
 
-    if (savedId) {
+    // Save to database
+    const result = await saveWorkout(saveData)
+
+    if (result) {
+      const { workoutId: savedId, prSetIds } = result
+
       // Clear localStorage
       localStorage.removeItem(SUMMARY_STORAGE_KEY)
+
+      // Award workout points (15 pts, dedup by workoutId)
+      try {
+        await awardWorkoutPoints(savedId)
+
+        // Award PR points (10 pts each, dedup by setId)
+        for (const setId of prSetIds) {
+          await awardPRPoints(setId)
+        }
+
+        // Detect streak transitions (7 / 30 days) and award bonus
+        if (currentUser) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: profileAfter } = await (supabase as any)
+            .from('fitness_profiles')
+            .select('streak_atual')
+            .eq('id', currentUser.id)
+            .single()
+          const newStreak = profileAfter?.streak_atual || 0
+
+          if (oldStreak < 7 && newStreak >= 7) {
+            await awardStreak7Points()
+          }
+          if (oldStreak < 30 && newStreak >= 30) {
+            await awardStreak30Points()
+          }
+        }
+      } catch (awardErr) {
+        // pontos são best-effort; não bloqueia o fluxo
+        console.error('Erro ao atribuir pontos do treino:', awardErr)
+      }
 
       // Add XP for completing workout
       const baseXP = 100 // Base XP for completing a workout

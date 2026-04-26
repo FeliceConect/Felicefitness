@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { awardPointsServer, POINT_VALUES, type PointAction } from '@/lib/services/points-server'
 
 function getAdminClient() {
   return createAdminClient(
@@ -10,20 +11,6 @@ function getAdminClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-}
-
-// Point values per action
-const POINT_VALUES: Record<string, { points: number; category: string; reason: string }> = {
-  workout_completed: { points: 15, category: 'workout', reason: 'Treino completo' },
-  all_meals_logged: { points: 10, category: 'nutrition', reason: 'Todas refeicoes registradas' },
-  water_goal_met: { points: 5, category: 'hydration', reason: 'Meta de agua atingida' },
-  sleep_logged: { points: 3, category: 'sleep', reason: 'Sono registrado' },
-  pr_achieved: { points: 10, category: 'workout', reason: 'Personal Record' },
-  post_created: { points: 2, category: 'social', reason: 'Post no feed' },
-  comment_or_reaction: { points: 1, category: 'social', reason: 'Interacao no feed' },
-  form_completed: { points: 5, category: 'form_completion', reason: 'Formulario preenchido' },
-  streak_7: { points: 15, category: 'consistency', reason: 'Streak de 7 dias consecutivos' },
-  streak_30: { points: 50, category: 'consistency', reason: 'Streak de 30 dias consecutivos' },
 }
 
 // POST - Award automatic points for an action
@@ -36,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { action, reference_id } = body
+    const { action, reference_id } = body as { action?: PointAction; reference_id?: string }
 
     if (!action || !POINT_VALUES[action]) {
       return NextResponse.json(
@@ -45,145 +32,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const config = POINT_VALUES[action]
-    const supabaseAdmin = getAdminClient()
+    const result = await awardPointsServer(user.id, action, reference_id || undefined)
 
-    // Dedup check: prevent awarding same action + reference twice
-    if (reference_id) {
-      const { data: existing } = await supabaseAdmin
-        .from('fitness_point_transactions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('reference_id', reference_id)
-        .eq('category', config.category)
-        .limit(1)
-
-      if (existing && existing.length > 0) {
-        return NextResponse.json({
-          success: true,
-          message: 'Pontos ja atribuidos para esta acao',
-          duplicate: true,
-        })
-      }
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 500 })
     }
 
-    // For daily actions without reference_id, check if already awarded today
-    if (!reference_id) {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const { data: todayExisting } = await supabaseAdmin
-        .from('fitness_point_transactions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('reason', config.reason)
-        .eq('source', 'automatic')
-        .gte('created_at', today.toISOString())
-        .limit(1)
-
-      if (todayExisting && todayExisting.length > 0) {
-        return NextResponse.json({
-          success: true,
-          message: 'Pontos ja atribuidos hoje para esta acao',
-          duplicate: true,
-        })
-      }
-    }
-
-    // Insert point transaction
-    const { data: transaction, error: insertError } = await supabaseAdmin
-      .from('fitness_point_transactions')
-      .insert({
-        user_id: user.id,
-        points: config.points,
-        reason: config.reason,
-        category: config.category,
-        source: 'automatic',
-        reference_id: reference_id || null,
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error('Erro ao atribuir pontos:', insertError)
-      return NextResponse.json({ success: false, error: 'Erro ao atribuir pontos' }, { status: 500 })
-    }
-
-    // Atualiza rankings atomicamente via RPC (fitness_award_points_to_user,
-    // migration 20260418). Substitui o read-then-update que sofria de race
-    // condition com operações concorrentes.
-    //
-    // Mapa tx.category → ranking.category(ies) que aquela transação deve
-    // pontuar. Categorias não listadas contribuem apenas para rankings
-    // globais (type != 'category').
-    const TX_TO_RANKING_CATEGORIES: Record<string, string[]> = {
-      nutrition: ['nutrition'],
-      workout: ['workout'],
-      consistency: ['consistency'],
-      sleep: ['consistency'],
-      wellness: ['consistency'],
-      hydration: ['consistency'],
-    }
-    const allowedRankingCategories = TX_TO_RANKING_CATEGORIES[config.category] || null
-
-    const { error: rpcError } = await supabaseAdmin.rpc('fitness_award_points_to_user', {
-      p_user_id: user.id,
-      p_delta: config.points,
-      p_allowed_ranking_categories: allowedRankingCategories,
-    })
-    if (rpcError) {
-      console.error('fitness_award_points_to_user falhou:', rpcError)
-    }
-
-    // Update challenge scores for active challenges the user has joined
-    const today = new Date().toISOString().split('T')[0]
-    const { data: userChallenges } = await supabaseAdmin
-      .from('fitness_challenge_participants')
-      .select('challenge_id')
-      .eq('user_id', user.id)
-
-    if (userChallenges && userChallenges.length > 0) {
-      const challengeIds = userChallenges.map(c => c.challenge_id)
-      const { data: activeChallenges } = await supabaseAdmin
-        .from('fitness_challenges')
-        .select('id, scoring_category')
-        .in('id', challengeIds)
-        .eq('is_active', true)
-        .lte('start_date', today)
-        .gte('end_date', today)
-
-      for (const ch of (activeChallenges || [])) {
-        // If challenge has a scoring_category filter, only count matching points
-        if (ch.scoring_category && ch.scoring_category !== config.category) continue
-
-        const { data: participant } = await supabaseAdmin
-          .from('fitness_challenge_participants')
-          .select('score')
-          .eq('challenge_id', ch.id)
-          .eq('user_id', user.id)
-          .single()
-
-        if (participant) {
-          await supabaseAdmin
-            .from('fitness_challenge_participants')
-            .update({ score: (participant.score || 0) + config.points })
-            .eq('challenge_id', ch.id)
-            .eq('user_id', user.id)
-        }
-      }
-    }
-
-    // Update user tier (never demotes)
-    try {
-      await supabaseAdmin.rpc('update_user_tier', { p_user_id: user.id })
-    } catch {
-      // tier update is best-effort
+    if (result.duplicate) {
+      return NextResponse.json({ success: true, message: result.message, duplicate: true })
     }
 
     return NextResponse.json({
       success: true,
-      transaction,
-      points: config.points,
-      message: `+${config.points} pontos: ${config.reason}`,
+      transaction: result.transaction,
+      points: result.points,
+      message: result.message,
     })
   } catch (error) {
     console.error('Erro na API de pontos:', error)

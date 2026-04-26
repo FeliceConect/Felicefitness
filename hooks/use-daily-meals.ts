@@ -14,6 +14,7 @@ import type {
 } from '@/lib/nutrition/types'
 import { leonardoGoals, leonardoMealPlan } from '@/lib/nutrition/types'
 import { calculateNutritionProgress } from '@/lib/nutrition/calculations'
+import { awardMealsPoints } from '@/lib/services/points'
 
 interface UseDailyMealsReturn {
   meals: Meal[]
@@ -269,7 +270,22 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         created_at: data.created_at
       }
 
-      setMeals(prev => [...prev, newMeal])
+      let nextCount = 0
+      setMeals(prev => {
+        const next = [...prev, newMeal]
+        nextCount = next.length
+        return next
+      })
+
+      // Award 10 pts when 3+ meals are logged today (server dedups daily)
+      const todayStr = format(new Date(), 'yyyy-MM-dd')
+      if (meal.data === todayStr && nextCount >= 3) {
+        try {
+          await awardMealsPoints()
+        } catch (awardErr) {
+          console.error('Erro ao atribuir pontos das refeições:', awardErr)
+        }
+      }
 
       console.log('=== addMeal: CONCLUÍDO ===')
     } catch (err) {

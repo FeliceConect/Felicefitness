@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/chat-cleanup",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-adherence",
+      "schedule": "0 2 * * 1"
     }
   ],
   "headers": [

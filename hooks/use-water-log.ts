@@ -26,6 +26,7 @@ function formatToLocalTime(isoString: string): string {
 import { generateMockTodayLogs } from '@/lib/water/calculations'
 import { DEFAULT_WATER_GOAL, DEFAULT_QUICK_ADD_AMOUNTS } from '@/lib/water/types'
 import type { WaterLog } from '@/lib/water/types'
+import { awardWaterGoalPoints } from '@/lib/services/points'
 
 interface WaterLogItem {
   id: string
@@ -128,7 +129,14 @@ export function useWaterLog(date?: Date): UseWaterLogReturn {
       horario: horarioLocal,
       quantidade_ml: ml
     }
-    setLogs(prev => [tempLog, ...prev])
+    // Captura totais antes/depois via setter funcional pra evitar stale closure
+    let prevTotal = 0
+    let nextTotal = 0
+    setLogs(prev => {
+      prevTotal = prev.reduce((sum, l) => sum + l.quantidade_ml, 0)
+      nextTotal = prevTotal + ml
+      return [tempLog, ...prev]
+    })
 
     try {
       // Vibrar (feedback tátil)
@@ -167,6 +175,16 @@ export function useWaterLog(date?: Date): UseWaterLogReturn {
         )
       )
 
+      // Award 5 pts ao atingir a meta (server dedup diário)
+      // Só dispara se o hook está olhando o dia de hoje
+      if (dateStr === getTodayISO() && prevTotal < goal && nextTotal >= goal) {
+        try {
+          await awardWaterGoalPoints()
+        } catch (awardErr) {
+          console.error('Erro ao atribuir pontos de água:', awardErr)
+        }
+      }
+
       return true
     } catch (err) {
       console.error('Erro ao adicionar água:', err)
@@ -177,7 +195,7 @@ export function useWaterLog(date?: Date): UseWaterLogReturn {
     } finally {
       setIsAdding(false)
     }
-  }, [])
+  }, [dateStr, goal])
 
   // Remover log
   const removeLog = useCallback(async (id: string): Promise<boolean> => {

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendPushNotification, validatePushConfig } from '@/lib/notifications/push'
 import { notificationTemplates } from '@/lib/notifications/templates'
+import { awardPointsServer } from '@/lib/services/points-server'
 
 function getAdminClient() {
   return createAdminClient(
@@ -120,6 +121,13 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Erro ao atualizar status:', updateError)
+    } else {
+      // Award form_completed points (5 pts, dedup by assignmentId)
+      try {
+        await awardPointsServer(user.id, 'form_completed', assignmentId)
+      } catch (awardError) {
+        console.error('Erro ao atribuir pontos do formulario:', awardError)
+      }
     }
 
     // Limpar rascunho se existir

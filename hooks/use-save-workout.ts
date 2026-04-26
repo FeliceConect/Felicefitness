@@ -31,8 +31,13 @@ interface WorkoutSaveData {
   notes?: string
 }
 
+export interface SaveWorkoutResult {
+  workoutId: string
+  prSetIds: string[]
+}
+
 interface UseSaveWorkoutReturn {
-  saveWorkout: (data: WorkoutSaveData) => Promise<string | null>
+  saveWorkout: (data: WorkoutSaveData) => Promise<SaveWorkoutResult | null>
   saving: boolean
   error: string | null
 }
@@ -43,9 +48,10 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
 
   const supabase = createClient()
 
-  const saveWorkout = useCallback(async (data: WorkoutSaveData): Promise<string | null> => {
+  const saveWorkout = useCallback(async (data: WorkoutSaveData): Promise<SaveWorkoutResult | null> => {
     setSaving(true)
     setError(null)
+    const prSetIds: string[] = []
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -151,13 +157,21 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
           notas: null
         }))
 
-        const { error: setsError } = await (supabase as AnyTable)
+        const { data: insertedSets, error: setsError } = await (supabase as AnyTable)
           .from('fitness_exercise_sets')
           .insert(setsToInsert)
+          .select('id, is_pr')
 
         if (setsError) {
           console.error('Error creating exercise sets:', setsError)
           throw setsError
+        }
+
+        // Track PR set IDs to award points after the workout is fully saved
+        for (const inserted of (insertedSets || [])) {
+          if (inserted?.is_pr && inserted?.id) {
+            prSetIds.push(inserted.id as string)
+          }
         }
 
         exerciseOrder++
@@ -210,7 +224,7 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
         }
       }
 
-      return workoutRecordId
+      return { workoutId: workoutRecordId, prSetIds }
     } catch (err) {
       console.error('Error saving workout:', err)
       setError(err instanceof Error ? err.message : 'Erro ao salvar treino')
