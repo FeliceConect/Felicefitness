@@ -1,9 +1,14 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
+import { fromZonedTime } from 'date-fns-tz'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { notifyComment } from '@/lib/notifications/social'
+import { getTodayDateSP, SAO_PAULO_TIMEZONE } from '@/lib/utils/date'
+
+const MAX_COMMENTS_AWARDED_PER_DAY = 2
+const COMMENT_REASON = 'Comentario no feed'
 
 function getAdminClient() {
   return createAdminClient(
@@ -120,23 +125,35 @@ export async function POST(
       .update({ comments_count: count || 0 })
       .eq('id', postId)
 
-    // Award 1 point for commenting (idempotente: 1 pt por user+post, mesmo que comente várias vezes)
+    // Award 1 pt — 1× por post + cap de 2 comentários pontuáveis por dia
     const { data: existingCommentPoints } = await supabaseAdmin
       .from('fitness_point_transactions')
       .select('id')
       .eq('user_id', user.id)
       .eq('reference_id', postId)
       .eq('category', 'social')
-      .eq('reason', 'Interacao no feed')
+      .eq('reason', COMMENT_REASON)
       .limit(1)
 
-    if (!existingCommentPoints || existingCommentPoints.length === 0) {
+    const startOfDayBR = fromZonedTime(`${getTodayDateSP()}T00:00:00`, SAO_PAULO_TIMEZONE)
+    const { count: commentsAwardedToday } = await supabaseAdmin
+      .from('fitness_point_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('category', 'social')
+      .eq('reason', COMMENT_REASON)
+      .gte('created_at', startOfDayBR.toISOString())
+
+    const alreadyForThisPost = (existingCommentPoints?.length ?? 0) > 0
+    const underDailyCap = (commentsAwardedToday ?? 0) < MAX_COMMENTS_AWARDED_PER_DAY
+
+    if (!alreadyForThisPost && underDailyCap) {
       await supabaseAdmin
         .from('fitness_point_transactions')
         .insert({
           user_id: user.id,
           points: 1,
-          reason: 'Interacao no feed',
+          reason: COMMENT_REASON,
           category: 'social',
           source: 'automatic',
           reference_id: postId,

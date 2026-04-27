@@ -1,9 +1,14 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
+import { fromZonedTime } from 'date-fns-tz'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { notifyReaction } from '@/lib/notifications/social'
+import { getTodayDateSP, SAO_PAULO_TIMEZONE } from '@/lib/utils/date'
+
+const MAX_REACTIONS_AWARDED_PER_DAY = 2
+const REACTION_REASON = 'Reacao no feed'
 
 function getAdminClient() {
   return createAdminClient(
@@ -62,23 +67,35 @@ export async function POST(
         })
       added = true
 
-      // Award 1 point for first reaction on this post
+      // Award 1 pt — 1× por post + cap de 2 reações pontuáveis por dia
       const { data: existingPoint } = await supabaseAdmin
         .from('fitness_point_transactions')
         .select('id')
         .eq('user_id', user.id)
         .eq('reference_id', postId)
         .eq('category', 'social')
-        .eq('reason', 'Interacao no feed')
+        .eq('reason', REACTION_REASON)
         .limit(1)
 
-      if (!existingPoint || existingPoint.length === 0) {
+      const startOfDayBR = fromZonedTime(`${getTodayDateSP()}T00:00:00`, SAO_PAULO_TIMEZONE)
+      const { count: reactionsAwardedToday } = await supabaseAdmin
+        .from('fitness_point_transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('category', 'social')
+        .eq('reason', REACTION_REASON)
+        .gte('created_at', startOfDayBR.toISOString())
+
+      const alreadyForThisPost = (existingPoint?.length ?? 0) > 0
+      const underDailyCap = (reactionsAwardedToday ?? 0) < MAX_REACTIONS_AWARDED_PER_DAY
+
+      if (!alreadyForThisPost && underDailyCap) {
         await supabaseAdmin
           .from('fitness_point_transactions')
           .insert({
             user_id: user.id,
             points: 1,
-            reason: 'Interacao no feed',
+            reason: REACTION_REASON,
             category: 'social',
             source: 'automatic',
             reference_id: postId,
