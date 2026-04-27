@@ -19,6 +19,7 @@ import {
   Swords,
   Lock,
   Globe,
+  Instagram,
 } from 'lucide-react'
 
 interface Ranking {
@@ -118,6 +119,13 @@ export default function AdminRankingsPage() {
   const [bioPoints, setBioPoints] = useState(30)
   const [bioReason, setBioReason] = useState('')
   const [awardingBio, setAwardingBio] = useState(false)
+
+  // Instagram #vivendofelice modal
+  const [showInstagramModal, setShowInstagramModal] = useState(false)
+  const [instagramClient, setInstagramClient] = useState('')
+  const [instagramUrl, setInstagramUrl] = useState('')
+  const [validatingInstagram, setValidatingInstagram] = useState(false)
+  const [instagramFeedback, setInstagramFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Point transactions
   const [showTransactions, setShowTransactions] = useState(false)
@@ -355,6 +363,40 @@ export default function AdminRankingsPage() {
     }
   }
 
+  const openInstagramModal = async () => {
+    setShowInstagramModal(true)
+    setInstagramFeedback(null)
+    if (clients.length === 0) await loadClientsAndProfessionals()
+  }
+
+  const validateInstagramPost = async () => {
+    if (!instagramClient || !instagramUrl.trim()) return
+    setValidatingInstagram(true)
+    setInstagramFeedback(null)
+    try {
+      const res = await fetch('/api/admin/rankings/instagram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: instagramClient,
+          postUrl: instagramUrl.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setInstagramFeedback({ type: 'success', message: data.message || '5 pts atribuídos' })
+        setInstagramUrl('')
+      } else {
+        setInstagramFeedback({ type: 'error', message: data.error || 'Erro ao validar post' })
+      }
+    } catch (error) {
+      console.error('Erro:', error)
+      setInstagramFeedback({ type: 'error', message: 'Erro de rede' })
+    } finally {
+      setValidatingInstagram(false)
+    }
+  }
+
   // Transactions
   const fetchTransactions = async () => {
     setShowTransactions(true)
@@ -480,6 +522,13 @@ export default function AdminRankingsPage() {
           >
             <Zap className="w-4 h-4" />
             Bioimpedancia
+          </button>
+          <button
+            onClick={openInstagramModal}
+            className="flex items-center gap-2 px-4 py-2.5 bg-cafe text-white rounded-lg text-sm font-medium hover:bg-cafe/80 transition-colors"
+          >
+            <Instagram className="w-4 h-4" />
+            #vivendofelice
           </button>
           <button
             onClick={fetchTransactions}
@@ -1362,6 +1411,97 @@ export default function AdminRankingsPage() {
                   className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-foreground text-sm font-medium disabled:opacity-50"
                 >
                   {awardingBio ? 'Atribuindo...' : `Atribuir ${bioPoints} pts`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instagram Validation Modal */}
+      {showInstagramModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Instagram className="w-5 h-5 text-dourado" />
+                Validar #vivendofelice
+              </h3>
+              <button
+                onClick={() => {
+                  setShowInstagramModal(false)
+                  setInstagramClient('')
+                  setInstagramUrl('')
+                  setInstagramFeedback(null)
+                }}
+                className="p-2 hover:bg-background-elevated rounded-lg"
+              >
+                <X className="w-5 h-5 text-foreground-secondary" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-xs text-foreground-muted">
+                Atribui 5 pts ao paciente após validar manualmente o post no Instagram com a hashtag <span className="text-vinho font-semibold">#vivendofelice</span>.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Paciente *</label>
+                <select
+                  value={instagramClient}
+                  onChange={e => setInstagramClient(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                >
+                  <option value="">Selecione</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>{c.nome || c.email}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">URL do post *</label>
+                <input
+                  type="url"
+                  value={instagramUrl}
+                  onChange={e => setInstagramUrl(e.target.value)}
+                  placeholder="https://www.instagram.com/p/..."
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                />
+                <p className="text-xs text-foreground-muted mt-1">
+                  Cole o link do post ou reel. Cada link pode ser validado uma vez por paciente.
+                </p>
+              </div>
+
+              {instagramFeedback && (
+                <div
+                  className={`rounded-lg p-3 text-xs ${
+                    instagramFeedback.type === 'success'
+                      ? 'bg-green-500/10 border border-green-500/30 text-green-700'
+                      : 'bg-red-500/10 border border-red-500/30 text-red-600'
+                  }`}
+                >
+                  {instagramFeedback.message}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowInstagramModal(false)
+                    setInstagramClient('')
+                    setInstagramUrl('')
+                    setInstagramFeedback(null)
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-muted text-sm"
+                >
+                  Fechar
+                </button>
+                <button
+                  onClick={validateInstagramPost}
+                  disabled={!instagramClient || !instagramUrl.trim() || validatingInstagram}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-foreground text-sm font-medium disabled:opacity-50"
+                >
+                  {validatingInstagram ? 'Validando...' : 'Validar +5 pts'}
                 </button>
               </div>
             </div>
