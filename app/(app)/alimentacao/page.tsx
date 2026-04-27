@@ -12,6 +12,7 @@ import { MealPlanCard } from '@/components/alimentacao/meal-plan-card'
 import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { useWaterLog } from '@/hooks/use-water-log'
 import { useMealPlan } from '@/hooks/use-meal-plan'
+import { useProfile } from '@/hooks/use-profile'
 import type { MealType } from '@/lib/nutrition/types'
 
 export default function AlimentacaoPage() {
@@ -19,6 +20,7 @@ export default function AlimentacaoPage() {
   const { meals, plannedMeals, totals, goals, progress, nextMeal, loading } = useDailyMeals()
   const { todayTotal: aguaConsumida } = useWaterLog()
   const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completedMealsData, isTrainingDay, completeMeal, loading: planLoading } = useMealPlan()
+  const { profile } = useProfile()
 
   const handleAddMeal = (tipo: MealType) => {
     router.push(`/alimentacao/refeicao/nova?tipo=${tipo}`)
@@ -48,8 +50,8 @@ export default function AlimentacaoPage() {
     }
   }
 
-  // Meta de água do perfil
-  const aguaMeta = 3000
+  // Meta de água do perfil (default 2000 ml — base 2L para todos)
+  const aguaMeta = profile?.meta_agua_ml ?? 2000
 
   if (loading || planLoading) {
     return (

@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
+import { fromZonedTime } from 'date-fns-tz'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP, SAO_PAULO_TIMEZONE } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -37,41 +39,34 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { clientId, postUrl } = body as { clientId?: string; postUrl?: string }
+    const { clientId } = body as { clientId?: string }
 
-    if (!clientId || !postUrl) {
+    if (!clientId) {
       return NextResponse.json(
-        { success: false, error: 'clientId e postUrl são obrigatórios' },
+        { success: false, error: 'clientId é obrigatório' },
         { status: 400 }
       )
     }
 
-    // Sanitiza URL do post (Instagram: https://www.instagram.com/p/<id>/ ou /reel/<id>/)
-    const trimmedUrl = postUrl.trim()
-    if (!/^https?:\/\/(www\.)?instagram\.com\/(p|reel|tv)\//i.test(trimmedUrl)) {
-      return NextResponse.json(
-        { success: false, error: 'URL inválida — informe o link do post no Instagram' },
-        { status: 400 }
-      )
-    }
-
-    // Dedup por URL (mesmo post nunca vale duas vezes, mesmo que admin tente)
-    const { data: existing } = await supabaseAdmin
+    // Cap diário: 1 validação Instagram por paciente por dia (timezone BR).
+    // Sem URL pra deduplicar, evita que o mesmo post seja validado várias
+    // vezes ou que o admin clique 5x sem perceber.
+    const startOfDayBR = fromZonedTime(`${getTodayDateSP()}T00:00:00`, SAO_PAULO_TIMEZONE)
+    const { data: existingToday } = await supabaseAdmin
       .from('fitness_point_transactions')
       .select('id')
       .eq('user_id', clientId)
       .eq('reason', REASON)
-      .ilike('notas', `%${trimmedUrl}%`)
+      .gte('created_at', startOfDayBR.toISOString())
       .limit(1)
 
-    if (existing && existing.length > 0) {
+    if (existingToday && existingToday.length > 0) {
       return NextResponse.json({
         success: false,
-        error: 'Este post já foi validado anteriormente',
+        error: 'Este paciente já recebeu pontos do #vivendofelice hoje',
       }, { status: 409 })
     }
 
-    // Insere a transação. Usa o campo `notas` para guardar a URL (reference_id é UUID).
     const { error: insertError } = await supabaseAdmin
       .from('fitness_point_transactions')
       .insert({
@@ -81,7 +76,6 @@ export async function POST(request: NextRequest) {
         category: 'social',
         source: profile.role === 'super_admin' ? 'superadmin' : 'professional',
         awarded_by: user.id,
-        notas: trimmedUrl,
       })
 
     if (insertError) {

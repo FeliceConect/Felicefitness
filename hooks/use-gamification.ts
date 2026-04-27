@@ -138,7 +138,7 @@ export function useGamification(): UseGamificationReturn {
           waterByDay[log.data] = (waterByDay[log.data] || 0) + (log.quantidade_ml || 0)
         }
       }
-      const waterGoalsMet = Object.values(waterByDay).filter(ml => ml >= 2500).length
+      const waterGoalsMet = Object.values(waterByDay).filter(ml => ml >= 2000).length
 
       // Buscar refeições registradas
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

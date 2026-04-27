@@ -123,7 +123,6 @@ export default function AdminRankingsPage() {
   // Instagram #vivendofelice modal
   const [showInstagramModal, setShowInstagramModal] = useState(false)
   const [instagramClient, setInstagramClient] = useState('')
-  const [instagramUrl, setInstagramUrl] = useState('')
   const [validatingInstagram, setValidatingInstagram] = useState(false)
   const [instagramFeedback, setInstagramFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -366,26 +365,34 @@ export default function AdminRankingsPage() {
   const openInstagramModal = async () => {
     setShowInstagramModal(true)
     setInstagramFeedback(null)
-    if (clients.length === 0) await loadClientsAndProfessionals()
+    // Carrega TODOS os clientes (mesma fonte da modal de bioimpedância).
+    // Importante usar /api/admin/users?role=client em vez de
+    // /api/professional/clients (que só traz pacientes atribuídos a um pro).
+    if (clients.length === 0) {
+      try {
+        const res = await fetch('/api/admin/users?role=client&limit=500')
+        const data = await res.json()
+        if (data.success) setClients(data.users || [])
+      } catch (error) {
+        console.error('Erro ao buscar clientes:', error)
+      }
+    }
   }
 
   const validateInstagramPost = async () => {
-    if (!instagramClient || !instagramUrl.trim()) return
+    if (!instagramClient) return
     setValidatingInstagram(true)
     setInstagramFeedback(null)
     try {
       const res = await fetch('/api/admin/rankings/instagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: instagramClient,
-          postUrl: instagramUrl.trim(),
-        }),
+        body: JSON.stringify({ clientId: instagramClient }),
       })
       const data = await res.json()
       if (data.success) {
         setInstagramFeedback({ type: 'success', message: data.message || '5 pts atribuídos' })
-        setInstagramUrl('')
+        setInstagramClient('')
       } else {
         setInstagramFeedback({ type: 'error', message: data.error || 'Erro ao validar post' })
       }
@@ -1431,7 +1438,6 @@ export default function AdminRankingsPage() {
                 onClick={() => {
                   setShowInstagramModal(false)
                   setInstagramClient('')
-                  setInstagramUrl('')
                   setInstagramFeedback(null)
                 }}
                 className="p-2 hover:bg-background-elevated rounded-lg"
@@ -1441,7 +1447,7 @@ export default function AdminRankingsPage() {
             </div>
             <div className="p-4 space-y-4">
               <p className="text-xs text-foreground-muted">
-                Atribui 5 pts ao paciente após validar manualmente o post no Instagram com a hashtag <span className="text-vinho font-semibold">#vivendofelice</span>.
+                Atribui 5 pts ao paciente após validar o post no Instagram com a hashtag <span className="text-vinho font-semibold">#vivendofelice</span>. Limite de 1 validação por paciente por dia.
               </p>
 
               <div>
@@ -1456,20 +1462,6 @@ export default function AdminRankingsPage() {
                     <option key={c.id} value={c.id}>{c.nome || c.email}</option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground-muted mb-1">URL do post *</label>
-                <input
-                  type="url"
-                  value={instagramUrl}
-                  onChange={e => setInstagramUrl(e.target.value)}
-                  placeholder="https://www.instagram.com/p/..."
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
-                />
-                <p className="text-xs text-foreground-muted mt-1">
-                  Cole o link do post ou reel. Cada link pode ser validado uma vez por paciente.
-                </p>
               </div>
 
               {instagramFeedback && (
@@ -1489,7 +1481,6 @@ export default function AdminRankingsPage() {
                   onClick={() => {
                     setShowInstagramModal(false)
                     setInstagramClient('')
-                    setInstagramUrl('')
                     setInstagramFeedback(null)
                   }}
                   className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-muted text-sm"
@@ -1498,7 +1489,7 @@ export default function AdminRankingsPage() {
                 </button>
                 <button
                   onClick={validateInstagramPost}
-                  disabled={!instagramClient || !instagramUrl.trim() || validatingInstagram}
+                  disabled={!instagramClient || validatingInstagram}
                   className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-foreground text-sm font-medium disabled:opacity-50"
                 >
                   {validatingInstagram ? 'Validando...' : 'Validar +5 pts'}

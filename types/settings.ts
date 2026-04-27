@@ -23,6 +23,20 @@ export interface UserProfile {
   condicao_medica?: string
   medicamentos?: string[]
 
+  // Metas (espelham fitness_profiles para leitura rápida; podem ser
+  // sobrescritas via /configuracoes ou pelo profissional)
+  meta_calorias_diarias?: number
+  meta_proteina_g?: number
+  meta_carboidrato_g?: number
+  meta_gordura_g?: number
+  meta_agua_ml?: number
+  meta_treinos_semana?: number
+  meta_minutos_treino?: number
+  meta_peso?: number
+  meta_percentual_gordura?: number
+  meta_massa_muscular?: number
+  meta_horas_sono?: number
+
   // Gamificação
   nivel?: number
   xp_total?: number
