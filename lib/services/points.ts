@@ -30,6 +30,16 @@ export type PointAction =
   | 'form_completed'
   | 'streak_7'
   | 'streak_30'
+  | 'activity_leve'
+  | 'activity_moderado'
+  | 'activity_intenso'
+  | 'activity_muito_intenso'
+  | 'cardio_leve'
+  | 'cardio_moderado'
+  | 'cardio_intenso'
+  | 'cardio_muito_intenso'
+
+export type CardioIntensity = 'leve' | 'moderado' | 'intenso' | 'muito_intenso'
 
 export interface AwardPointsResult {
   success: boolean
@@ -159,4 +169,17 @@ export function awardStreak7Points(): Promise<AwardPointsResult> {
  */
 export function awardStreak30Points(): Promise<AwardPointsResult> {
   return awardPoints('streak_30')
+}
+
+/**
+ * Award points for a cardio exercise inside a workout (esteira/bike no treino).
+ * Pontos por intensidade: leve 3, moderado 5, intenso 8, muito_intenso 10.
+ * Dedup por workout_exercise.id — cada cardio do treino soma uma vez.
+ */
+export function awardCardioInWorkoutPoints(
+  workoutExerciseId: string,
+  intensity: CardioIntensity
+): Promise<AwardPointsResult> {
+  const action = `cardio_${intensity}` as PointAction
+  return awardPoints(action, workoutExerciseId)
 }

@@ -21,6 +21,14 @@ export type PointAction =
   | 'streak_7'
   | 'streak_30'
   | 'weekly_adherence'
+  | 'activity_leve'
+  | 'activity_moderado'
+  | 'activity_intenso'
+  | 'activity_muito_intenso'
+  | 'cardio_leve'
+  | 'cardio_moderado'
+  | 'cardio_intenso'
+  | 'cardio_muito_intenso'
 
 export interface PointActionConfig {
   points: number
@@ -40,6 +48,33 @@ export const POINT_VALUES: Record<PointAction, PointActionConfig> = {
   streak_7: { points: 15, category: 'consistency', reason: 'Streak de 7 dias consecutivos' },
   streak_30: { points: 50, category: 'consistency', reason: 'Streak de 30 dias consecutivos' },
   weekly_adherence: { points: 10, category: 'nutrition', reason: 'Aderencia ao plano alimentar (semana)' },
+  // Atividade física avulsa (corrida, caminhada, futebol, dança...) registrada
+  // em fitness_activities. Cap diário aplicado na rota /api/activities.
+  activity_leve:           { points: 3,  category: 'workout', reason: 'Atividade leve' },
+  activity_moderado:       { points: 5,  category: 'workout', reason: 'Atividade moderada' },
+  activity_intenso:        { points: 8,  category: 'workout', reason: 'Atividade intensa' },
+  activity_muito_intenso:  { points: 10, category: 'workout', reason: 'Atividade muito intensa' },
+  // Cardio embutido em um treino (esteira/bike dentro do plano). Cada cardio
+  // soma — dedup por workout_exercise.id evita duplicação na mesma sessão.
+  cardio_leve:             { points: 3,  category: 'workout', reason: 'Cardio leve no treino' },
+  cardio_moderado:         { points: 5,  category: 'workout', reason: 'Cardio moderado no treino' },
+  cardio_intenso:          { points: 8,  category: 'workout', reason: 'Cardio intenso no treino' },
+  cardio_muito_intenso:    { points: 10, category: 'workout', reason: 'Cardio muito intenso no treino' },
+}
+
+// Mapa CardioIntensity → PointAction (atividade avulsa e cardio no treino)
+export const ACTIVITY_INTENSITY_ACTION: Record<'leve' | 'moderado' | 'intenso' | 'muito_intenso', PointAction> = {
+  leve: 'activity_leve',
+  moderado: 'activity_moderado',
+  intenso: 'activity_intenso',
+  muito_intenso: 'activity_muito_intenso',
+}
+
+export const CARDIO_INTENSITY_ACTION: Record<'leve' | 'moderado' | 'intenso' | 'muito_intenso', PointAction> = {
+  leve: 'cardio_leve',
+  moderado: 'cardio_moderado',
+  intenso: 'cardio_intenso',
+  muito_intenso: 'cardio_muito_intenso',
 }
 
 const TX_TO_RANKING_CATEGORIES: Record<string, string[]> = {

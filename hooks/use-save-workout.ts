@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
-import type { CompletedCardio } from '@/lib/workout/types'
+import type { CompletedCardio, CardioIntensity } from '@/lib/workout/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTable = any
@@ -31,9 +31,15 @@ interface WorkoutSaveData {
   notes?: string
 }
 
+export interface SavedCardioAward {
+  workoutExerciseId: string
+  intensity: CardioIntensity
+}
+
 export interface SaveWorkoutResult {
   workoutId: string
   prSetIds: string[]
+  cardioAwards: SavedCardioAward[]
 }
 
 interface UseSaveWorkoutReturn {
@@ -57,6 +63,7 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
     setSaving(true)
     setError(null)
     const prSetIds: string[] = []
+    const cardioAwards: SavedCardioAward[] = []
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -225,11 +232,21 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
             throw cardioSetError
           }
 
+          // Marca cardio para receber pts por intensidade no fluxo de
+          // resumo (resumo/page.tsx chama awardCardioInWorkoutPoints).
+          // Sem intensidade → não pontua (campo opcional no formulário).
+          if (cardio.intensidade) {
+            cardioAwards.push({
+              workoutExerciseId: cardioExercise.id as string,
+              intensity: cardio.intensidade,
+            })
+          }
+
           exerciseOrder++
         }
       }
 
-      return { workoutId: workoutRecordId, prSetIds }
+      return { workoutId: workoutRecordId, prSetIds, cardioAwards }
     } catch (err) {
       console.error('Error saving workout:', err)
       setError(err instanceof Error ? err.message : 'Erro ao salvar treino')

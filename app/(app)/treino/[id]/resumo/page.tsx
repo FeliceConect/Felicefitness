@@ -18,6 +18,7 @@ import {
   awardPRPoints,
   awardStreak7Points,
   awardStreak30Points,
+  awardCardioInWorkoutPoints,
 } from '@/lib/services/points'
 import type { CompletedCardio, CardioExerciseType } from '@/lib/workout/types'
 
@@ -198,7 +199,7 @@ export default function WorkoutSummaryPage() {
     const result = await saveWorkout(saveData)
 
     if (result) {
-      const { workoutId: savedId, prSetIds } = result
+      const { workoutId: savedId, prSetIds, cardioAwards } = result
 
       // Clear localStorage
       localStorage.removeItem(SUMMARY_STORAGE_KEY)
@@ -210,6 +211,11 @@ export default function WorkoutSummaryPage() {
         // Award PR points (10 pts each, dedup by setId)
         for (const setId of prSetIds) {
           await awardPRPoints(setId)
+        }
+
+        // Award cardio inside workout (3-10 pts por intensidade, dedup por workout_exercise.id)
+        for (const cardio of cardioAwards) {
+          await awardCardioInWorkoutPoints(cardio.workoutExerciseId, cardio.intensity)
         }
 
         // Detect streak transitions (7 / 30 days) and award bonus
