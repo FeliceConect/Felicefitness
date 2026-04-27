@@ -164,7 +164,7 @@ export function useAnalytics(): UseAnalyticsReturn {
       // Target calculations from profile or defaults
       const calorieTarget = profile?.meta_calorias_diarias || 2500
       const proteinTarget = profile?.meta_proteina_g || 170
-      const waterTarget = profile?.meta_agua_ml || 3000
+      const waterTarget = profile?.meta_agua_ml || 2000
 
       const daysOnCalorieTarget = dailyNutrition.filter(n =>
         n.calorias >= calorieTarget * 0.9 && n.calorias <= calorieTarget * 1.1

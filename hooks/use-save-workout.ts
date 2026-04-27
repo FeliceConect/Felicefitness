@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import type { CompletedCardio } from '@/lib/workout/types'
@@ -45,10 +45,15 @@ interface UseSaveWorkoutReturn {
 export function useSaveWorkout(): UseSaveWorkoutReturn {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Lock síncrono: setSaving(true) é assíncrono e não impede chamadas
+  // concorrentes. Sem isso, cliques rápidos podem inserir o mesmo treino N vezes.
+  const inFlightRef = useRef(false)
 
   const supabase = createClient()
 
   const saveWorkout = useCallback(async (data: WorkoutSaveData): Promise<SaveWorkoutResult | null> => {
+    if (inFlightRef.current) return null
+    inFlightRef.current = true
     setSaving(true)
     setError(null)
     const prSetIds: string[] = []
@@ -231,6 +236,7 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
       return null
     } finally {
       setSaving(false)
+      inFlightRef.current = false
     }
   }, [supabase])
 

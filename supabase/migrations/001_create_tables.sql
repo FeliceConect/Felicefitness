@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS fitness_profiles (
   meta_proteina_g INTEGER,
   meta_carboidrato_g INTEGER,
   meta_gordura_g INTEGER,
-  meta_agua_ml INTEGER DEFAULT 3000,
+  meta_agua_ml INTEGER DEFAULT 2000,
   hora_acordar TIME DEFAULT '05:00',
   hora_dormir TIME DEFAULT '22:00',
 

@@ -64,39 +64,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao atribuir pontos' }, { status: 500 })
     }
 
-    // Update points in all active rankings for this user
-    const { data: activeRankings } = await supabaseAdmin
-      .from('fitness_rankings')
-      .select('id')
-      .eq('is_active', true)
-
-    if (activeRankings) {
-      for (const ranking of activeRankings) {
-        const { data: participant } = await supabaseAdmin
-          .from('fitness_ranking_participants')
-          .select('total_points')
-          .eq('ranking_id', ranking.id)
-          .eq('user_id', clientId)
-          .single()
-
-        if (participant) {
-          await supabaseAdmin
-            .from('fitness_ranking_participants')
-            .update({ total_points: (participant.total_points || 0) + points })
-            .eq('ranking_id', ranking.id)
-            .eq('user_id', clientId)
-        } else {
-          // Auto-join and award
-          await supabaseAdmin
-            .from('fitness_ranking_participants')
-            .insert({
-              ranking_id: ranking.id,
-              user_id: clientId,
-              total_points: points,
-            })
-        }
-      }
-    }
+    // Atualiza ranking via RPC atômica (substitui o read-then-update,
+    // que sofria de race condition em concessões concorrentes).
+    // Bioimpedância só pontua em rankings globais → null.
+    await supabaseAdmin.rpc('fitness_award_points_to_user', {
+      p_user_id: clientId,
+      p_delta: points,
+      p_allowed_ranking_categories: null,
+    })
 
     return NextResponse.json({
       success: true,

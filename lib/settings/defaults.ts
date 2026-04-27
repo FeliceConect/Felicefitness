@@ -15,7 +15,7 @@ export const defaultGoals: Goals = {
   proteina: 170,
   carboidratos: 280,
   gordura: 75,
-  agua: 3000,
+  agua: 2000,
   treinos_semana: 6,
   minutos_treino: 40,
   peso_meta: 80,

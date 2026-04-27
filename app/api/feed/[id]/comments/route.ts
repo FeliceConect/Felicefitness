@@ -120,17 +120,35 @@ export async function POST(
       .update({ comments_count: count || 0 })
       .eq('id', postId)
 
-    // Award 1 point for commenting
-    await supabaseAdmin
+    // Award 1 point for commenting (idempotente: 1 pt por user+post, mesmo que comente várias vezes)
+    const { data: existingCommentPoints } = await supabaseAdmin
       .from('fitness_point_transactions')
-      .insert({
-        user_id: user.id,
-        points: 1,
-        reason: 'Interacao no feed',
-        category: 'social',
-        source: 'automatic',
-        reference_id: postId,
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('reference_id', postId)
+      .eq('category', 'social')
+      .eq('reason', 'Interacao no feed')
+      .limit(1)
+
+    if (!existingCommentPoints || existingCommentPoints.length === 0) {
+      await supabaseAdmin
+        .from('fitness_point_transactions')
+        .insert({
+          user_id: user.id,
+          points: 1,
+          reason: 'Interacao no feed',
+          category: 'social',
+          source: 'automatic',
+          reference_id: postId,
+        })
+
+      // Sincroniza com leaderboard
+      await supabaseAdmin.rpc('fitness_award_points_to_user', {
+        p_user_id: user.id,
+        p_delta: 1,
+        p_allowed_ranking_categories: null,
       })
+    }
 
     // Send push notification to post author (fire-and-forget)
     const { data: post } = await supabaseAdmin

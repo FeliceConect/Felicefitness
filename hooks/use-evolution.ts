@@ -221,7 +221,7 @@ export function useEvolution(): UseEvolutionReturn {
 
       // Targets from profile
       const proteinTarget = profile?.meta_proteina_g || 170
-      const waterTarget = profile?.meta_agua_ml || 3000
+      const waterTarget = profile?.meta_agua_ml || 2000
 
       // Calculate daily scores
       const consistencyData = days.map(day => {

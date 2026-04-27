@@ -460,7 +460,11 @@ export default function FeedPage() {
         setShowCreate(false)
         resetForm()
         fetchPosts(true)
-        toast.success('Post publicado! +2 pts')
+        if (data.points_awarded > 0) {
+          toast.success(`Post publicado! +${data.points_awarded} pts`)
+        } else {
+          toast.success('Post publicado!')
+        }
       } else {
         toast.error(data.error || 'Erro ao publicar')
       }

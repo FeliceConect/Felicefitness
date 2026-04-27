@@ -131,6 +131,13 @@ export async function POST(
 
     if (pointsError) {
       console.error('Erro ao atribuir pontos:', pointsError)
+    } else {
+      // Sincroniza com leaderboard (presença = ranking global, não por categoria)
+      await supabaseAdmin.rpc('fitness_award_points_to_user', {
+        p_user_id: appointment.patient_id,
+        p_delta: ATTENDANCE_POINTS,
+        p_allowed_ranking_categories: null,
+      })
     }
 
     // Notify patient about completed appointment + points

@@ -335,7 +335,7 @@ export async function GET(
     const waterDays = Object.keys(waterByDay).length
     const totalWater = Object.values(waterByDay).reduce((s, v) => s + v, 0)
     const avgWater = waterDays > 0 ? Math.round(totalWater / waterDays) : 0
-    const waterGoal = (profile.meta_agua as number) || 2500
+    const waterGoal = (profile.meta_agua as number) || 2000
     const waterGoalDays = Object.values(waterByDay).filter(ml => ml >= waterGoal).length
 
     // Sono

@@ -18,7 +18,9 @@ import {
   Loader2,
   Trash2,
   AlertTriangle,
-  UserX
+  UserX,
+  Key,
+  Copy
 } from 'lucide-react'
 import { roleLabels, UserRole } from '@/lib/admin/types'
 import { useUserRole } from '@/hooks/use-user-role'
@@ -83,6 +85,12 @@ export default function UsersPage() {
   const [deleting, setDeleting] = useState(false)
   const [deleteAction, setDeleteAction] = useState<'deactivate' | 'hard_delete'>('deactivate')
   const [currentUserRole, setCurrentUserRole] = useState<string>('')
+
+  // Estados para redefinição de senha
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -226,6 +234,54 @@ export default function UsersPage() {
       console.error(`Erro ao ${actionLabel} usuário:`, error)
       toast.error(`Erro ao ${actionLabel} usuário`)
     }
+  }
+
+  const handleResetPassword = async () => {
+    if (!selectedUser) return
+    if (newPassword.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres')
+      return
+    }
+
+    setResettingPassword(true)
+    try {
+      const response = await fetch('/api/admin/users/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          password: newPassword,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast.success(data.message || 'Senha redefinida com sucesso')
+        setShowPasswordModal(false)
+        setNewPassword('')
+        setShowNewPassword(false)
+        setSelectedUser(null)
+      } else {
+        toast.error(data.error || 'Erro ao redefinir senha')
+      }
+    } catch (error) {
+      console.error('Erro ao redefinir senha:', error)
+      toast.error('Erro ao redefinir senha')
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const generateRandomPassword = () => {
+    // Senha de 12 caracteres com letras e números (sem ambíguos como O/0, l/1)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+    let pwd = ''
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setNewPassword(pwd)
+    setShowNewPassword(true)
   }
 
   const handleDeleteUser = async () => {
@@ -653,6 +709,25 @@ export default function UsersPage() {
               <div className="border-t border-border pt-4 space-y-2">
                 <p className="text-sm text-foreground-secondary mb-3">Ações:</p>
 
+                {/* Botão Redefinir Senha */}
+                <button
+                  onClick={() => {
+                    setShowRoleModal(false)
+                    setNewPassword('')
+                    setShowNewPassword(false)
+                    setShowPasswordModal(true)
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-dourado/40 bg-dourado/10 hover:bg-dourado/20 transition-colors"
+                >
+                  <Key className="w-5 h-5 text-dourado" />
+                  <div className="text-left flex-1">
+                    <p className="font-medium text-dourado">Redefinir Senha</p>
+                    <p className="text-xs text-foreground-muted">
+                      Define uma nova senha para o usuário acessar o sistema
+                    </p>
+                  </div>
+                </button>
+
                 {/* Botão Inativar/Ativar */}
                 <button
                   onClick={() => {
@@ -763,6 +838,134 @@ export default function UsersPage() {
                     <>
                       <Trash2 className="w-4 h-4" />
                       Excluir
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showPasswordModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-border w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-dourado" />
+                <h3 className="text-lg font-semibold text-foreground">Redefinir Senha</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false)
+                  setNewPassword('')
+                  setShowNewPassword(false)
+                  setSelectedUser(null)
+                }}
+                className="p-2 rounded-lg hover:bg-background-elevated text-foreground-secondary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-background-elevated rounded-lg">
+                <div className="w-10 h-10 rounded-full bg-dourado/20 flex items-center justify-center">
+                  <span className="text-dourado font-medium">
+                    {selectedUser.nome?.charAt(0).toUpperCase() || selectedUser.email?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-foreground font-medium">{selectedUser.nome || 'Sem nome'}</p>
+                  <p className="text-sm text-foreground-secondary">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">
+                  Nova senha *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    minLength={6}
+                    className="w-full px-4 py-2.5 pr-12 bg-background-elevated border border-border rounded-lg text-foreground placeholder:text-foreground-secondary focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-secondary hover:text-foreground"
+                  >
+                    {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={generateRandomPassword}
+                  className="flex-1 py-2 px-3 text-sm bg-background-elevated text-foreground border border-border rounded-lg hover:border-dourado/40 transition-colors"
+                >
+                  Gerar senha
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!newPassword) {
+                      toast.error('Gere ou digite uma senha primeiro')
+                      return
+                    }
+                    try {
+                      await navigator.clipboard.writeText(newPassword)
+                      toast.success('Senha copiada')
+                    } catch {
+                      toast.error('Não foi possível copiar')
+                    }
+                  }}
+                  className="flex-1 py-2 px-3 text-sm bg-background-elevated text-foreground border border-border rounded-lg hover:border-dourado/40 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copiar
+                </button>
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                <p className="text-yellow-700 text-xs">
+                  <strong>Atenção:</strong> a sessão atual do usuário continua ativa até ele sair. Compartilhe a nova senha por um canal seguro.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false)
+                    setNewPassword('')
+                    setShowNewPassword(false)
+                    setSelectedUser(null)
+                  }}
+                  disabled={resettingPassword}
+                  className="flex-1 py-2.5 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleResetPassword}
+                  disabled={resettingPassword || newPassword.length < 6}
+                  className="flex-1 py-2.5 bg-dourado text-foreground rounded-lg hover:bg-dourado/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {resettingPassword ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="w-4 h-4" />
+                      Redefinir
                     </>
                   )}
                 </button>

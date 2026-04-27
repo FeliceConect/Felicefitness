@@ -3,7 +3,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { fromZonedTime } from 'date-fns-tz'
 import { notifyNewPost } from '@/lib/notifications/social'
+import { getTodayDateSP, SAO_PAULO_TIMEZONE } from '@/lib/utils/date'
+
+// Limite diário de posts que rendem pontos (regra de produto: além disso,
+// o post é publicado normalmente mas não soma no ranking).
+const MAX_POSTS_AWARDED_PER_DAY = 2
+const POINTS_PER_POST = 4
 
 function getAdminClient() {
   return createAdminClient(
@@ -218,22 +225,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Erro ao criar post' }, { status: 500 })
     }
 
-    // Award 4 points for posting
-    await supabaseAdmin
+    // Cap de pontos: máximo MAX_POSTS_AWARDED_PER_DAY posts/dia (timezone BR).
+    // Posts além disso são publicados, mas não somam pontos.
+    const startOfDayBR = fromZonedTime(`${getTodayDateSP()}T00:00:00`, SAO_PAULO_TIMEZONE)
+    const { count: postsAwardedToday } = await supabaseAdmin
       .from('fitness_point_transactions')
-      .insert({
-        user_id: user.id,
-        points: 4,
-        reason: 'Post no feed',
-        category: 'social',
-        source: 'automatic',
-        reference_id: post.id,
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('category', 'social')
+      .eq('reason', 'Post no feed')
+      .gte('created_at', startOfDayBR.toISOString())
+
+    // Idempotência por post.id (caso a rota seja chamada duas vezes pro mesmo post)
+    const { data: existingPostPoints } = await supabaseAdmin
+      .from('fitness_point_transactions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('reference_id', post.id)
+      .eq('category', 'social')
+      .limit(1)
+
+    const alreadyAwardedForThisPost = (existingPostPoints?.length ?? 0) > 0
+    const underDailyCap = (postsAwardedToday ?? 0) < MAX_POSTS_AWARDED_PER_DAY
+    let pointsAwarded = 0
+
+    if (!alreadyAwardedForThisPost && underDailyCap) {
+      await supabaseAdmin
+        .from('fitness_point_transactions')
+        .insert({
+          user_id: user.id,
+          points: POINTS_PER_POST,
+          reason: 'Post no feed',
+          category: 'social',
+          source: 'automatic',
+          reference_id: post.id,
+        })
+
+      // Atualiza ranking via RPC atômica (sem isso, "Seus pontos" no leaderboard
+      // não sobe — bug que deixava usuários com 0 pts mesmo após postar).
+      await supabaseAdmin.rpc('fitness_award_points_to_user', {
+        p_user_id: user.id,
+        p_delta: POINTS_PER_POST,
+        p_allowed_ranking_categories: null,
       })
+
+      pointsAwarded = POINTS_PER_POST
+    }
 
     // Notify other users about new post (fire-and-forget)
     notifyNewPost(user.id, post_type).catch(() => {})
 
-    return NextResponse.json({ success: true, post })
+    return NextResponse.json({
+      success: true,
+      post,
+      points_awarded: pointsAwarded,
+      daily_cap_reached: !underDailyCap && !alreadyAwardedForThisPost,
+    })
   } catch (error) {
     console.error('Erro na API de feed:', error)
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })

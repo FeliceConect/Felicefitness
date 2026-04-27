@@ -63,7 +63,7 @@ BEGIN
         SELECT SUM(quantidade_ml) FROM fitness_water_logs
         WHERE user_id = p_user_id AND data = p_date
       ), 0),
-      'meta_ml', COALESCE(v_profile.meta_agua_ml, 3000)
+      'meta_ml', COALESCE(v_profile.meta_agua_ml, 2000)
     ),
     'nutricao', json_build_object(
       'calorias', COALESCE((

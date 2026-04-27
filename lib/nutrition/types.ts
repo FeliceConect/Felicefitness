@@ -175,7 +175,7 @@ export const leonardoGoals: NutritionGoals = {
   proteinas: 170,
   carboidratos: 280,
   gorduras: 85,
-  agua: 3000
+  agua: 2000
 }
 
 // Plano de refeições do Leonardo

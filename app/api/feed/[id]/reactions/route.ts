@@ -83,6 +83,13 @@ export async function POST(
             source: 'automatic',
             reference_id: postId,
           })
+
+        // Sincroniza com leaderboard
+        await supabaseAdmin.rpc('fitness_award_points_to_user', {
+          p_user_id: user.id,
+          p_delta: 1,
+          p_allowed_ranking_categories: null,
+        })
       }
     }
 

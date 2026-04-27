@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Clock, Dumbbell, Flame, Trophy, Home, Loader2, Zap } from 'lucide-react'
@@ -124,6 +124,9 @@ export default function WorkoutSummaryPage() {
   const [saved, setSaved] = useState(false)
   const [summary, setSummary] = useState<WorkoutSummaryData>(getDefaultSummaryData())
   const [saveError, setSaveError] = useState<string | null>(null)
+  // Synchronous lock — bloqueia cliques múltiplos antes de o estado `saving`
+  // do hook propagar; sem isso, 4 cliques rápidos viram 4 inserts no banco.
+  const savingRef = useRef(false)
 
   // Find workout from real data
   const { getWorkoutById, loading, refresh } = useWorkouts()
@@ -146,6 +149,10 @@ export default function WorkoutSummaryPage() {
   }, [])
 
   const handleSave = async () => {
+    // Guarda síncrona contra cliques duplicados / concorrentes.
+    if (savingRef.current || saved) return
+    savingRef.current = true
+
     setSaveError(null)
 
     // Prepare data for saving
@@ -153,6 +160,7 @@ export default function WorkoutSummaryPage() {
       // If we don't have workout data from execution, use from workout object
       if (!workout) {
         setSaveError('Dados do treino não encontrados')
+        savingRef.current = false
         return
       }
     }
@@ -242,6 +250,7 @@ export default function WorkoutSummaryPage() {
       }, 1500)
     } else {
       setSaveError('Erro ao salvar treino. Tente novamente.')
+      savingRef.current = false
     }
   }
 

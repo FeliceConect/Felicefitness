@@ -85,7 +85,7 @@ const mockProfile: Profile = {
   meta_proteina_g: 170,
   meta_carboidrato_g: 280,
   meta_gordura_g: 85,
-  meta_agua_ml: 3000,
+  meta_agua_ml: 2000,
   hora_acordar: '06:00',
   hora_dormir: '22:00',
   // Medicamento desativado por padrão - cada usuário configura se precisar
@@ -431,7 +431,7 @@ export function useDashboardData(): DashboardData {
     todayWorkout,
     todayMeals,
     waterTotal,
-    waterGoal: profile?.meta_agua_ml || 3000,
+    waterGoal: profile?.meta_agua_ml || 2000,
     streak: profile?.streak_atual || 0,
     caloriesConsumed,
     caloriesGoal: profile?.meta_calorias_diarias || 2500,

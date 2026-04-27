@@ -163,7 +163,7 @@ export async function GET(
     }
     const daysWithHydration = Object.keys(waterByDay).length
     const avgDailyWater = daysWithHydration > 0 ? Math.round(totalWater / daysWithHydration) : 0
-    const waterGoalMl = (profile.meta_agua as number) || 2500
+    const waterGoalMl = (profile.meta_agua as number) || 2000
     const daysGoalMet = Object.values(waterByDay).filter(ml => ml >= waterGoalMl).length
 
     // Calcular média de sono
