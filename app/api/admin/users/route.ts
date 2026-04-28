@@ -421,15 +421,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Lê o role atual antes de atualizar — precisamos saber se é uma
-    // transição cliente → profissional (caso em que precisamos remover dos rankings).
+    // transição que tira o usuário do programa de pacientes.
+    // Quem participa do ranking: client + super_admin (líderes também competem).
+    // Quem NÃO participa: coach, trainer, nutritionist, physiotherapist, admin.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: targetCurrent } = await (supabaseAdmin as any)
       .from('fitness_profiles')
       .select('role')
       .eq('id', userId)
       .single()
-    const wasClient = !targetCurrent?.role || targetCurrent.role === 'client'
-    const becomesNonClient = newRole !== 'client'
+    const PARTICIPATING_ROLES = new Set(['client', 'super_admin', null, undefined])
+    const wasParticipating = PARTICIPATING_ROLES.has(targetCurrent?.role || null)
+    const becomesNonParticipating = !PARTICIPATING_ROLES.has(newRole)
 
     const { error: updateError } = await supabaseAdmin
       .from('fitness_profiles')
@@ -444,9 +447,10 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Quando paciente vira profissional, sai automaticamente dos rankings
-    // e desafios — não faz sentido coach competir no leaderboard de pacientes.
-    if (wasClient && becomesNonClient) {
+    // Quando o usuário deixa de ser participante do programa (paciente ou
+    // super_admin) e vira profissional/admin, sai automaticamente do
+    // leaderboard e desafios. Líderes (super_admin) continuam competindo.
+    if (wasParticipating && becomesNonParticipating) {
       await supabaseAdmin
         .from('fitness_ranking_participants')
         .delete()

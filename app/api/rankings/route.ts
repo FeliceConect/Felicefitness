@@ -39,14 +39,15 @@ export async function GET(request: NextRequest) {
     }
 
     // For each ranking, get user's position and optionally the leaderboard
-    // Defesa em profundidade: ranking de paciente NUNCA pode listar coach,
-    // personal, nutricionista, admin etc. Mesmo se a tabela de participantes
-    // tiver linhas órfãs (ex: paciente promovido depois pra profissional).
-    const { data: clientProfiles } = await supabaseAdmin
+    // Defesa em profundidade: o leaderboard só mostra quem participa do
+    // programa (clientes + super_admins, que também competem). Nunca mostra
+    // coach/personal/nutricionista/admin/fisio mesmo que estejam órfãos
+    // em fitness_ranking_participants (caso de paciente promovido depois).
+    const { data: eligibleProfiles } = await supabaseAdmin
       .from('fitness_profiles')
       .select('id')
-      .or('role.eq.client,role.is.null')
-    const clientIds = new Set((clientProfiles || []).map(p => p.id))
+      .or('role.eq.client,role.eq.super_admin,role.is.null')
+    const clientIds = new Set((eligibleProfiles || []).map(p => p.id))
 
     const rankingsWithData = await Promise.all((rankings || []).map(async (ranking) => {
       // Get all participants ordered by points
