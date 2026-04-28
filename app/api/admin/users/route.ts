@@ -420,6 +420,17 @@ export async function PATCH(request: NextRequest) {
       updateData.admin_type = null
     }
 
+    // Lê o role atual antes de atualizar — precisamos saber se é uma
+    // transição cliente → profissional (caso em que precisamos remover dos rankings).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: targetCurrent } = await (supabaseAdmin as any)
+      .from('fitness_profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    const wasClient = !targetCurrent?.role || targetCurrent.role === 'client'
+    const becomesNonClient = newRole !== 'client'
+
     const { error: updateError } = await supabaseAdmin
       .from('fitness_profiles')
       .update(updateData)
@@ -431,6 +442,19 @@ export async function PATCH(request: NextRequest) {
         { success: false, error: 'Erro ao atualizar role' },
         { status: 500 }
       )
+    }
+
+    // Quando paciente vira profissional, sai automaticamente dos rankings
+    // e desafios — não faz sentido coach competir no leaderboard de pacientes.
+    if (wasClient && becomesNonClient) {
+      await supabaseAdmin
+        .from('fitness_ranking_participants')
+        .delete()
+        .eq('user_id', userId)
+      await supabaseAdmin
+        .from('fitness_challenge_participants')
+        .delete()
+        .eq('user_id', userId)
     }
 
     return NextResponse.json({
