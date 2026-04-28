@@ -179,12 +179,9 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
           throw setsError
         }
 
-        // Track PR set IDs to award points after the workout is fully saved
-        for (const inserted of (insertedSets || [])) {
-          if (inserted?.is_pr && inserted?.id) {
-            prSetIds.push(inserted.id as string)
-          }
-        }
+        // (PR set IDs serão re-lidos ao final, depois que todos os sets
+        // tiverem sido inseridos — o trigger SQL pode "substituir" PRs
+        // dentro do mesmo treino quando uma carga maior aparece.)
 
         exerciseOrder++
       }
@@ -243,6 +240,21 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
           }
 
           exerciseOrder++
+        }
+      }
+
+      // Re-leitura do estado final de is_pr: o trigger SQL pode ter
+      // desmarcado sets antigos quando um set mais pesado entrou no
+      // mesmo treino+exercício. Usamos só o que ficou marcado.
+      const { data: finalPrSets } = await (supabase as AnyTable)
+        .from('fitness_exercise_sets')
+        .select('id, workout_exercise:workout_exercise_id(workout_id)')
+        .eq('is_pr', true)
+
+      for (const s of (finalPrSets || [])) {
+        const we = (s as { workout_exercise?: { workout_id?: string } }).workout_exercise
+        if (we?.workout_id === workoutRecordId && (s as { id?: string }).id) {
+          prSetIds.push((s as { id: string }).id)
         }
       }
 
