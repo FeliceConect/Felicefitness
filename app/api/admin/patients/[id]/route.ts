@@ -102,11 +102,14 @@ export async function GET(
         .order('data', { ascending: false })
         .limit(100),
 
-      // Treinos (30 dias)
+      // Treinos CONCLUÍDOS (30 dias). Importante filtrar por status:
+      // sem isso, planos semanais com vários treinos pendentes inflam
+      // a contagem (ex: paciente fez 1 treino mas contagem mostra 8).
       supabaseAdmin
         .from('fitness_workouts')
-        .select('id, nome, tipo, duracao_minutos, calorias_estimadas, data')
+        .select('id, nome, tipo, duracao_minutos, calorias_estimadas, data, status')
         .eq('user_id', patientId)
+        .eq('status', 'concluido')
         .gte('data', thirtyDaysAgoStr)
         .order('data', { ascending: false })
         .limit(100),

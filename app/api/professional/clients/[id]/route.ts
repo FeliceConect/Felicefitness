@@ -104,6 +104,7 @@ export async function GET(
         .from('fitness_workouts')
         .select('*')
         .eq('user_id', clientId)
+        .eq('status', 'concluido')
         .gte('data', weekAgoStr)
         .order('data', { ascending: false }),
       supabaseAdmin
