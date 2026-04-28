@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Clock, Flame, MapPin, Trash2 } from 'lucide-react'
+import { Clock, Flame, MapPin, Trash2, Edit2 } from 'lucide-react'
 import type { Activity } from '@/lib/activity/types'
 import { activityTypeLabels, intensityLabels } from '@/lib/activity/types'
 import { cn } from '@/lib/utils'
@@ -9,10 +9,11 @@ import { cn } from '@/lib/utils'
 interface ActivityCardProps {
   activity: Activity
   onDelete?: (id: string) => void
+  onEdit?: (activity: Activity) => void
   index?: number
 }
 
-export function ActivityCard({ activity, onDelete, index = 0 }: ActivityCardProps) {
+export function ActivityCard({ activity, onDelete, onEdit, index = 0 }: ActivityCardProps) {
   const typeInfo = activityTypeLabels[activity.activity_type]
   const intensityInfo = intensityLabels[activity.intensity]
 
@@ -52,15 +53,27 @@ export function ActivityCard({ activity, onDelete, index = 0 }: ActivityCardProp
           </div>
         </div>
 
-        {/* Delete button */}
-        {onDelete && (
-          <button
-            onClick={() => onDelete(activity.id)}
-            className="p-2 text-foreground-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+        {/* Edit + Delete buttons (só aparecem quando today, controlado pelo parent) */}
+        <div className="flex gap-1">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(activity)}
+              className="p-2 text-foreground-muted hover:text-dourado hover:bg-dourado/10 rounded-lg transition-colors"
+              title="Editar"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(activity.id)}
+              className="p-2 text-foreground-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+              title="Excluir"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Extra info */}

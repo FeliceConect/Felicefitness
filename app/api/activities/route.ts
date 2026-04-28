@@ -167,7 +167,79 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - Remover atividade
+// PATCH - Editar atividade (mesmo dia apenas; pontos não mexem)
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const activityId = searchParams.get('id')
+
+    if (!activityId) {
+      return NextResponse.json({ success: false, error: 'ID da atividade é obrigatório' }, { status: 400 })
+    }
+
+    // Carrega atividade pra validar dono e data
+    const { data: activity } = await (supabase as AnySupabase)
+      .from('fitness_activities')
+      .select('id, user_id, date')
+      .eq('id', activityId)
+      .single()
+
+    if (!activity) {
+      return NextResponse.json({ success: false, error: 'Atividade não encontrada' }, { status: 404 })
+    }
+    if (activity.user_id !== user.id) {
+      return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
+    }
+    if (activity.date !== getTodayDateSP()) {
+      return NextResponse.json(
+        { success: false, error: 'Só é possível editar atividades do dia atual' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    // Whitelist de campos editáveis. NÃO aceita data — não muda dia.
+    const updates: Record<string, unknown> = {}
+    const ALLOWED = [
+      'activity_type', 'custom_name', 'duration_minutes', 'intensity',
+      'calories_burned', 'distance_km', 'heart_rate_avg', 'notes', 'location',
+    ]
+    for (const k of ALLOWED) {
+      if (k in body) updates[k] = body[k]
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ success: false, error: 'Nenhum campo válido para atualizar' }, { status: 400 })
+    }
+
+    const { data: updated, error } = await (supabase as AnySupabase)
+      .from('fitness_activities')
+      .update(updates)
+      .eq('id', activityId)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Erro ao editar atividade:', error)
+      return NextResponse.json({ success: false, error: 'Erro ao editar atividade' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, activity: updated })
+  } catch (error) {
+    console.error('Erro ao processar requisição:', error)
+    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+  }
+}
+
+// DELETE - Remover atividade (mesmo dia apenas; pontos são revertidos)
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -188,6 +260,56 @@ export async function DELETE(request: NextRequest) {
         { success: false, error: 'ID da atividade é obrigatório' },
         { status: 400 }
       )
+    }
+
+    // Carrega atividade pra validar dono + data + saber se pontuou
+    const { data: activity } = await (supabase as AnySupabase)
+      .from('fitness_activities')
+      .select('id, user_id, date')
+      .eq('id', activityId)
+      .single()
+
+    if (!activity) {
+      return NextResponse.json({ success: false, error: 'Atividade não encontrada' }, { status: 404 })
+    }
+    if (activity.user_id !== user.id) {
+      return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
+    }
+    if (activity.date !== getTodayDateSP()) {
+      return NextResponse.json(
+        { success: false, error: 'Só é possível apagar atividades do dia atual' },
+        { status: 403 }
+      )
+    }
+
+    // Procura transação de pontos vinculada (reference_id = activity.id)
+    const { data: txList } = await (supabase as AnySupabase)
+      .from('fitness_point_transactions')
+      .select('id, points')
+      .eq('user_id', user.id)
+      .eq('category', 'workout')
+      .eq('reference_id', activityId)
+      .like('reason', 'Atividade%')
+
+    let pointsReverted = 0
+    if (txList && txList.length > 0) {
+      pointsReverted = (txList as Array<{ points: number }>).reduce((s, t) => s + (t.points || 0), 0)
+      // Apaga as transações
+      await (supabase as AnySupabase)
+        .from('fitness_point_transactions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('reference_id', activityId)
+        .like('reason', 'Atividade%')
+
+      // Reverte do leaderboard
+      if (pointsReverted > 0) {
+        await (supabase as AnySupabase).rpc('fitness_award_points_to_user', {
+          p_user_id: user.id,
+          p_delta: -pointsReverted,
+          p_allowed_ranking_categories: null,
+        })
+      }
     }
 
     const { error } = await (supabase as AnySupabase)

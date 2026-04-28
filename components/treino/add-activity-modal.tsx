@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Clock, Flame, MapPin, FileText, Plus } from 'lucide-react'
 import {
   ActivityType,
   IntensityLevel,
+  Activity,
   activityTypeLabels,
   intensityLabels
 } from '@/lib/activity/types'
@@ -26,11 +27,12 @@ interface AddActivityModalProps {
     date: string
   }) => void
   date: string // YYYY-MM-DD
+  editingActivity?: Activity | null
 }
 
 const ACTIVITY_TYPES = Object.entries(activityTypeLabels) as [ActivityType, typeof activityTypeLabels[ActivityType]][]
 
-export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityModalProps) {
+export function AddActivityModal({ isOpen, onClose, onSave, date, editingActivity }: AddActivityModalProps) {
   const [activityType, setActivityType] = useState<ActivityType | null>(null)
   const [customName, setCustomName] = useState('')
   const [duration, setDuration] = useState('')
@@ -41,6 +43,31 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
   const [location, setLocation] = useState('')
   const [step, setStep] = useState<'type' | 'details'>('type')
   const [saving, setSaving] = useState(false)
+
+  // Modo edição: pré-preenche tudo e pula a etapa de seleção de tipo
+  useEffect(() => {
+    if (isOpen && editingActivity) {
+      setActivityType(editingActivity.activity_type)
+      setCustomName(editingActivity.custom_name || '')
+      setDuration(String(editingActivity.duration_minutes))
+      setIntensity(editingActivity.intensity)
+      setCalories(editingActivity.calories_burned ? String(editingActivity.calories_burned) : '')
+      setDistance(editingActivity.distance_km ? String(editingActivity.distance_km) : '')
+      setNotes(editingActivity.notes || '')
+      setLocation(editingActivity.location || '')
+      setStep('details')
+    } else if (isOpen && !editingActivity) {
+      setActivityType(null)
+      setCustomName('')
+      setDuration('')
+      setIntensity('moderado')
+      setCalories('')
+      setDistance('')
+      setNotes('')
+      setLocation('')
+      setStep('type')
+    }
+  }, [isOpen, editingActivity])
 
   const handleSelectType = (type: ActivityType) => {
     setActivityType(type)
@@ -113,7 +140,11 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
               </button>
             )}
             <h2 className="text-lg font-bold text-foreground flex-1 text-center">
-              {step === 'type' ? 'Registrar Atividade' : activityType && activityTypeLabels[activityType].label}
+              {editingActivity
+                ? `Editar — ${activityType ? activityTypeLabels[activityType].label : ''}`
+                : step === 'type'
+                  ? 'Registrar Atividade'
+                  : activityType && activityTypeLabels[activityType].label}
             </h2>
             <button
               onClick={onClose}
@@ -302,6 +333,8 @@ export function AddActivityModal({ isOpen, onClose, onSave, date }: AddActivityM
               >
                 {saving ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : editingActivity ? (
+                  'Salvar alterações'
                 ) : (
                   <>
                     <Plus className="w-5 h-5" />

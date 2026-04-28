@@ -15,6 +15,7 @@ import { mealTypeLabels, mealTypeIcons, foodCategoryLabels } from '@/lib/nutriti
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
 import { useFoods } from '@/hooks/use-foods'
 import { createClient } from '@/lib/supabase/client'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 export default function MealDetailPage() {
   const router = useRouter()
@@ -202,6 +203,10 @@ export default function MealDetailPage() {
       </div>
     )
   }
+
+  // Travas de modificação: refeição só pode ser editada/excluída no
+  // mesmo dia (regra do programa — depois disso vira histórico).
+  const canModify = meal.data === getTodayDateSP()
 
   // Itens a exibir dependendo do modo
   const items = isEditing ? editedItems : isAdding ? [...meal.itens, ...newItems] : meal.itens
@@ -420,22 +425,15 @@ export default function MealDetailPage() {
 
     setDeleting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
-
-      // Deletar itens da refeição primeiro (CASCADE cuida disso, mas vamos ser explícitos)
-      await supabase
-        .from('fitness_meal_items')
-        .delete()
-        .eq('meal_id', meal.id)
-
-      // Deletar a refeição
-      await supabase
-        .from('fitness_meals')
-        .delete()
-        .eq('id', meal.id)
-        .eq('user_id', user.id)
-
+      // API faz: valida data=hoje, apaga refeição + items, e se restantes < 3
+      // reverte os 10 pts de "Todas refeicoes registradas" do dia.
+      const res = await fetch(`/api/meals/${meal.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!data.success) {
+        alert(data.error || 'Erro ao excluir refeição')
+        setDeleting(false)
+        return
+      }
       router.push('/alimentacao')
     } catch (error) {
       console.error('Erro ao deletar refeição:', error)
@@ -488,7 +486,7 @@ export default function MealDetailPage() {
             </div>
           </div>
 
-          {!isEditing && !isAdding && (
+          {!isEditing && !isAdding && canModify && (
             <div className="flex gap-2">
               {/* Botão Adicionar Mais (principal) */}
               <button
@@ -515,6 +513,11 @@ export default function MealDetailPage() {
                 <Trash2 className="w-5 h-5 text-red-400" />
               </button>
             </div>
+          )}
+          {!isEditing && !isAdding && !canModify && (
+            <span className="text-xs text-foreground-muted px-2 py-1 border border-border rounded-lg">
+              Apenas leitura
+            </span>
           )}
         </div>
       </div>

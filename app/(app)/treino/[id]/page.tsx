@@ -1,14 +1,16 @@
 "use client"
 
+import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Clock, Dumbbell, Play, CheckCircle, Loader2 } from 'lucide-react'
+import { ArrowLeft, Clock, Dumbbell, Play, CheckCircle, Loader2, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ExerciseCard } from '@/components/treino/exercise-card'
 import { useWorkouts } from '@/hooks/use-workouts'
 import { useExerciseHistory } from '@/hooks/use-exercise-history'
 import { formatDuration } from '@/lib/utils/format'
+import { getTodayDateSP } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 
 const typeLabels: Record<string, { label: string; color: string; bg: string }> = {
@@ -29,11 +31,33 @@ export default function WorkoutDetailPage() {
   const router = useRouter()
   const workoutId = params.id as string
 
-  const { getWorkoutById, loading } = useWorkouts()
+  const { getWorkoutById, loading, refresh } = useWorkouts()
   const workout = getWorkoutById(workoutId)
 
   // Histórico de pesos para mostrar últimas cargas
   const { getLastWeight } = useExerciseHistory()
+
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!workout) return
+    if (!confirm('Excluir este treino? Os pontos atribuídos (treino, PRs e cardio) serão revertidos.')) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/workouts/${workout.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!data.success) {
+        alert(data.error || 'Erro ao excluir treino')
+        setDeleting(false)
+        return
+      }
+      await refresh()
+      router.push('/treino')
+    } catch (error) {
+      console.error('Erro ao deletar treino:', error)
+      setDeleting(false)
+    }
+  }
 
   // Loading state
   if (loading) {
@@ -62,6 +86,8 @@ export default function WorkoutDetailPage() {
 
   const typeInfo = typeLabels[workout.tipo] || typeLabels.tradicional
   const isCompleted = workout.status === 'concluido'
+  // Treino só pode ser apagado se foi feito hoje. Editar não é permitido em nenhum caso.
+  const canDelete = isCompleted && workout.data === getTodayDateSP()
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -77,14 +103,26 @@ export default function WorkoutDetailPage() {
 
         {/* Content */}
         <div className="relative px-4 pt-12">
-          {/* Back button */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Voltar</span>
-          </button>
+          {/* Back + Delete (delete só hoje, treino concluído) */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-foreground-secondary hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Voltar</span>
+            </button>
+            {canDelete && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                title="Excluir treino (reverte pontos)"
+              >
+                {deleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+              </button>
+            )}
+          </div>
 
           {/* Workout info */}
           <motion.div

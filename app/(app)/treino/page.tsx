@@ -38,6 +38,7 @@ export default function TreinoPage() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loadingActivities, setLoadingActivities] = useState(false)
   const [showAddActivityModal, setShowAddActivityModal] = useState(false)
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
 
   // Buscar atividades do dia selecionado
   const fetchActivities = useCallback(async (date: string) => {
@@ -55,7 +56,7 @@ export default function TreinoPage() {
     }
   }, [])
 
-  // Salvar nova atividade
+  // Salvar nova atividade ou editar existente (PATCH se editingActivity, POST senão)
   const handleSaveActivity = async (activity: {
     activity_type: ActivityType
     custom_name?: string
@@ -68,15 +69,22 @@ export default function TreinoPage() {
     date: string
   }) => {
     try {
-      const response = await fetch('/api/activities', {
-        method: 'POST',
+      const url = editingActivity
+        ? `/api/activities?id=${editingActivity.id}`
+        : '/api/activities'
+      const method = editingActivity ? 'PATCH' : 'POST'
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(activity)
+        body: JSON.stringify(activity),
       })
 
       if (response.ok) {
-        // Recarregar atividades
+        setEditingActivity(null)
         fetchActivities(activity.date)
+      } else {
+        const data = await response.json().catch(() => null)
+        alert(data?.error || 'Erro ao salvar atividade')
       }
     } catch (error) {
       console.error('Erro ao salvar atividade:', error)
@@ -85,6 +93,7 @@ export default function TreinoPage() {
 
   // Deletar atividade
   const handleDeleteActivity = async (id: string) => {
+    if (!confirm('Excluir esta atividade? Os pontos atribuídos serão revertidos.')) return
     try {
       const response = await fetch(`/api/activities?id=${id}`, {
         method: 'DELETE'
@@ -92,10 +101,18 @@ export default function TreinoPage() {
 
       if (response.ok && selectedDay) {
         fetchActivities(format(selectedDay.date, 'yyyy-MM-dd'))
+      } else {
+        const data = await response.json().catch(() => null)
+        alert(data?.error || 'Erro ao excluir atividade')
       }
     } catch (error) {
       console.error('Erro ao deletar atividade:', error)
     }
+  }
+
+  const handleEditActivity = (activity: Activity) => {
+    setEditingActivity(activity)
+    setShowAddActivityModal(true)
   }
 
   // Buscar atividades quando o dia selecionado mudar
@@ -339,7 +356,8 @@ export default function TreinoPage() {
                 key={activity.id}
                 activity={activity}
                 index={index}
-                onDelete={handleDeleteActivity}
+                onDelete={selectedIsToday ? handleDeleteActivity : undefined}
+                onEdit={selectedIsToday ? handleEditActivity : undefined}
               />
             ))}
           </div>
@@ -499,12 +517,16 @@ export default function TreinoPage() {
         )}
       </AnimatePresence>
 
-      {/* Modal de adicionar atividade */}
+      {/* Modal de adicionar / editar atividade */}
       <AddActivityModal
         isOpen={showAddActivityModal}
-        onClose={() => setShowAddActivityModal(false)}
+        onClose={() => {
+          setShowAddActivityModal(false)
+          setEditingActivity(null)
+        }}
         onSave={handleSaveActivity}
         date={selectedDay ? format(selectedDay.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')}
+        editingActivity={editingActivity}
       />
     </div>
   )
