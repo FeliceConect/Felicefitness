@@ -1013,10 +1013,18 @@ export default function FeedPage() {
 
       {/* Fullscreen Post Modal */}
       {selectedPost && (
-        <div className="fixed inset-x-0 top-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center" style={{ height: '100dvh', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }} onClick={() => setSelectedPostId(null)}>
+        <div
+          className="fixed inset-x-0 top-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center"
+          style={{
+            height: '100dvh',
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+          }}
+          onClick={() => setSelectedPostId(null)}
+        >
           <div
             className="w-full bg-white rounded-t-3xl overflow-hidden flex flex-col animate-slide-up"
-            style={{ maxHeight: 'calc(100dvh - 80px - env(safe-area-inset-bottom, 0px))' }}
+            style={{ maxHeight: 'calc(100dvh - 80px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -1322,8 +1330,18 @@ export default function FeedPage() {
 
       {/* Create Post Modal */}
       {showCreate && (
-        <div className="fixed inset-x-0 top-0 z-50 bg-black/50 flex items-end sm:items-center justify-center sm:pb-0" style={{ height: '100dvh', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg flex flex-col" style={{ maxHeight: 'calc(100dvh - 100px - env(safe-area-inset-bottom, 0px))' }}>
+        <div
+          className="fixed inset-x-0 top-0 z-50 bg-black/50 flex items-end sm:items-center justify-center sm:pb-0"
+          style={{
+            height: '100dvh',
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+          }}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg flex flex-col"
+            style={{ maxHeight: 'calc(100dvh - 100px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))' }}
+          >
             <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
               <h3 className="text-lg font-semibold text-foreground">Novo Post</h3>
               <button

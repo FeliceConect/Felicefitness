@@ -300,7 +300,10 @@ export default function FormWizardPage() {
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Top bar with back + progress */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
+      <div
+        className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="flex items-center gap-3 px-4 py-3">
           <button
             onClick={() => router.push('/formularios')}
