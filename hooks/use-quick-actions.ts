@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getTodayDateSP, getCurrentTimeSP } from '@/lib/utils/date'
 import { DEFAULT_QUICK_ACTIONS } from '@/types/widgets'
+import { awardWaterGoalPoints } from '@/lib/services/points'
 import type { QuickAction } from '@/types/widgets'
 
 interface UseQuickActionsReturn {
@@ -42,6 +43,27 @@ export function useQuickActions(): UseQuickActionsReturn {
             const today = getTodayDateSP()
             const hora = getCurrentTimeSP()
 
+            // Total atual ANTES de inserir (pra detectar cruzamento da meta)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: prevLogs } = await (supabase as any)
+              .from('fitness_water_logs')
+              .select('quantidade_ml')
+              .eq('user_id', user.id)
+              .eq('data', today)
+            const prevTotal = (prevLogs || []).reduce(
+              (s: number, l: { quantidade_ml?: number }) => s + (l.quantidade_ml || 0),
+              0
+            )
+
+            // Meta de água do perfil (default 2000)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: profile } = await (supabase as any)
+              .from('fitness_profiles')
+              .select('meta_agua_ml')
+              .eq('id', user.id)
+              .single()
+            const goal = profile?.meta_agua_ml ?? 2000
+
             // Inserir novo log de água (consistente com useWaterLog)
             await supabase
               .from('fitness_water_logs')
@@ -51,6 +73,16 @@ export function useQuickActions(): UseQuickActionsReturn {
                 quantidade_ml: amount,
                 horario: hora,
               } as never)
+
+            // Award 5 pts ao cruzar a meta (server dedup diário)
+            const nextTotal = prevTotal + amount
+            if (prevTotal < goal && nextTotal >= goal) {
+              try {
+                await awardWaterGoalPoints()
+              } catch (awardErr) {
+                console.error('Erro ao atribuir pontos de água:', awardErr)
+              }
+            }
           } catch (error) {
             console.error('Error adding water:', error)
           }
