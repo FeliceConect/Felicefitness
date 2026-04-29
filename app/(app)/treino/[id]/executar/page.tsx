@@ -144,21 +144,17 @@ export default function WorkoutExecutionPage() {
 
     completeSet(data)
 
-    // Check if we got a new PR
+    // Check if we got a new PR (apenas celebração da UI; o registro real
+    // é feito pelo SQL trigger + função fitness_dedupe_workout_prs)
     setTimeout(() => {
-      if (state.newPRs.length > previousPRsCount ||
-          (currentExercise && data.weight > 0)) {
-        // For demo purposes, simulate PR detection occasionally
-        const isPR = Math.random() > 0.7 // 30% chance for demo
-        if (isPR && currentExercise) {
-          setLatestPR({
-            name: currentExercise.nome,
-            weight: data.weight,
-            reps: data.reps
-          })
-          setShowPRCelebration(true)
-          return
-        }
+      if (state.newPRs.length > previousPRsCount && currentExercise) {
+        setLatestPR({
+          name: currentExercise.nome,
+          weight: data.weight,
+          reps: data.reps
+        })
+        setShowPRCelebration(true)
+        return
       }
 
       // Start rest timer se ainda há séries a fazer no treino (independente da ordem)

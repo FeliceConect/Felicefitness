@@ -243,9 +243,16 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
         }
       }
 
-      // Re-leitura do estado final de is_pr: o trigger SQL pode ter
-      // desmarcado sets antigos quando um set mais pesado entrou no
-      // mesmo treino+exercício. Usamos só o que ficou marcado.
+      // Roda dedupe pós-batch: o trigger BEFORE INSERT em fitness_exercise_sets
+      // não enxerga os outros sets do mesmo .insert([...]) batch (ainda não
+      // commitados), então marca todos com is_pr=TRUE. A função RPC
+      // fitness_dedupe_workout_prs deixa só o set mais pesado por exercício
+      // marcado e apaga fitness_personal_records redundantes.
+      await (supabase as AnyTable).rpc('fitness_dedupe_workout_prs', {
+        p_workout_id: workoutRecordId,
+      })
+
+      // Re-leitura do estado final de is_pr (já deduplicado).
       const { data: finalPrSets } = await (supabase as AnyTable)
         .from('fitness_exercise_sets')
         .select('id, workout_exercise:workout_exercise_id(workout_id)')
