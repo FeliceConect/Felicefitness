@@ -41,7 +41,7 @@ export const POINT_VALUES: Record<PointAction, PointActionConfig> = {
   all_meals_logged: { points: 10, category: 'nutrition', reason: 'Todas refeicoes registradas' },
   water_goal_met: { points: 5, category: 'hydration', reason: 'Meta de agua atingida' },
   sleep_logged: { points: 3, category: 'sleep', reason: 'Sono registrado' },
-  pr_achieved: { points: 10, category: 'workout', reason: 'Personal Record' },
+  pr_achieved: { points: 3, category: 'workout', reason: 'Personal Record' },
   post_created: { points: 4, category: 'social', reason: 'Post no feed' },
   comment_or_reaction: { points: 1, category: 'social', reason: 'Interacao no feed' },
   form_completed: { points: 5, category: 'form_completion', reason: 'Formulario preenchido' },
