@@ -42,7 +42,7 @@ BEGIN
     WHERE user_id = NEW.user_id
       AND reason = 'Meta de agua atingida'
       AND source = 'automatic'
-      AND created_at::date = NEW.data;
+      AND (created_at AT TIME ZONE 'America/Sao_Paulo')::date = NEW.data;
 
     IF v_already = 0 THEN
       INSERT INTO fitness_point_transactions
@@ -81,7 +81,7 @@ BEGIN
     WHERE user_id = NEW.user_id
       AND reason = 'Todas refeicoes registradas'
       AND source = 'automatic'
-      AND created_at::date = NEW.data;
+      AND (created_at AT TIME ZONE 'America/Sao_Paulo')::date = NEW.data;
 
     IF v_already = 0 THEN
       INSERT INTO fitness_point_transactions
