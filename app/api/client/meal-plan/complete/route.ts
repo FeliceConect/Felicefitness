@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { awardPointsServer } from '@/lib/services/points-server'
 
 // POST - Registrar refeição do plano como completada
 export async function POST(request: NextRequest) {
@@ -116,6 +117,18 @@ export async function POST(request: NextRequest) {
           carboidratos: food.carbs || 0,
           gorduras: food.fat || 0
         })
+    }
+
+    // Award 10 pts quando 3+ refeições registradas no dia (dedup diário no
+    // awardPointsServer — só credita uma vez por dia mesmo se chamar várias).
+    const { count: mealsToday } = await admin
+      .from('fitness_meals')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('data', date)
+
+    if ((mealsToday ?? 0) >= 3) {
+      await awardPointsServer(user.id, 'all_meals_logged')
     }
 
     return NextResponse.json({
