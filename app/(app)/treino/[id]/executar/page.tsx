@@ -12,6 +12,7 @@ import { useWorkoutExecution } from '@/hooks/use-workout-execution'
 import { useRestTimer } from '@/hooks/use-rest-timer'
 import { useWorkouts } from '@/hooks/use-workouts'
 import { useSettings } from '@/hooks/use-settings'
+import { useProfile } from '@/hooks/use-profile'
 import { useExerciseHistory } from '@/hooks/use-exercise-history'
 import { cn } from '@/lib/utils'
 
@@ -60,6 +61,10 @@ export default function WorkoutExecutionPage() {
   // Get exercise history (last weights)
   const { getLastWeight } = useExerciseHistory()
 
+  // Peso do usuário para cálculo de calorias (MET × peso × horas).
+  const { profile } = useProfile()
+  const userWeightKg = profile?.peso_atual ?? 75
+
   const {
     state,
     startWorkout,
@@ -76,7 +81,7 @@ export default function WorkoutExecutionPage() {
     completedSetsCount,
     totalSets,
     exercisesStatus
-  } = useWorkoutExecution()
+  } = useWorkoutExecution(userWeightKg)
 
   const restTimer = useRestTimer({
     soundEnabled: settings?.workout?.som_timer ?? true,

@@ -63,7 +63,11 @@ interface UseWorkoutExecutionReturn {
 
 const STORAGE_KEY = 'felicefit_workout_execution'
 
-export function useWorkoutExecution(): UseWorkoutExecutionReturn {
+// MET aproximado para musculação moderada. Fórmula: kcal = MET × peso(kg) × horas.
+// Mantém consistência com cardio-input-modal.tsx (que usa MET por exercício).
+const MET_STRENGTH = 5
+
+export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecutionReturn {
   const [state, setState] = useState<WorkoutExecutionState>({
     workout: null,
     currentExerciseIndex: 0,
@@ -624,8 +628,10 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
 
     // Calcular calorias do cardio
     const cardioCalories = state.completedCardio.reduce((acc, c) => acc + (c.calorias || 0), 0)
-    // Calorias da musculação: MET * peso * horas (aproximado)
-    const strengthCalories = Math.round(state.elapsedTime / 60 * 5 * 80)
+    // Calorias da musculação: MET × peso(kg) × horas.
+    // elapsedTime está em segundos → /3600 converte pra horas.
+    // Bug anterior usava /60 (minutos) e peso fixo 80, dando ~80x o valor real.
+    const strengthCalories = Math.round((state.elapsedTime / 3600) * MET_STRENGTH * userWeightKg)
 
     const summary: WorkoutSummary = {
       workout: state.workout,
@@ -644,7 +650,7 @@ export function useWorkoutExecution(): UseWorkoutExecutionReturn {
     localStorage.removeItem(STORAGE_KEY)
 
     return summary
-  }, [state, totalSets])
+  }, [state, totalSets, userWeightKg])
 
   return {
     state,

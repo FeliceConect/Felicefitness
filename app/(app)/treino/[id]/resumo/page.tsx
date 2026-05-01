@@ -174,7 +174,9 @@ export default function WorkoutSummaryPage() {
       cardioExercises: summary.cardioExercises || [],
       difficulty: difficulty || undefined,
       energy: energy || undefined,
-      notes: notes || undefined
+      notes: notes || undefined,
+      // Mesmo valor exibido na tela — evita banco e display divergirem.
+      totalCalories: summary.caloriesBurned,
     }
 
     // Read streak BEFORE saving so we can detect transitions to 7/30.

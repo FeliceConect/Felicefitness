@@ -31,6 +31,10 @@ interface WorkoutSaveData {
   difficulty?: number
   energy?: number
   notes?: string
+  // Calorias totais já calculadas no resumo (musculação MET × peso × horas
+  // somada com cardio). Se ausente, usa fallback aproximado de 5 kcal/min
+  // + cardio. Evita duplo-cálculo entre display e banco.
+  totalCalories?: number
 }
 
 export interface SavedCardioAward {
@@ -92,11 +96,13 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
       // Calculate total volume
       const totalVolume = data.completedSets.reduce((acc, set) => acc + (set.weight * set.reps), 0)
 
-      // Calculate cardio calories
+      // Calculate cardio calories (fallback)
       const cardioCalories = data.cardioExercises?.reduce((acc, c) => acc + (c.calorias || 0), 0) || 0
 
-      // Estimate calories (rough estimate: 5 calories per minute of strength training + cardio calories)
-      const caloriesEstimated = Math.round(data.duracao * 5) + cardioCalories
+      // Calorias totais: prefere o valor calculado pelo resumo (MET × peso × horas
+      // + cardio). Sem ele, fallback de 5 kcal/min × min + cardio. Mantém
+      // consistência entre o que o usuário vê na tela e o que vai pro banco.
+      const caloriesEstimated = data.totalCalories ?? (Math.round(data.duracao * 5) + cardioCalories)
 
       // Group sets by exercise
       const exerciseMap = new Map<string, CompletedSetData[]>()
