@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { format } from 'date-fns'
+import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { getTodayISO } from '@/lib/utils/date'
+import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
 
 // Função para obter horário local do dispositivo
 function getLocalTime(): string {
@@ -63,6 +65,7 @@ interface UseWaterLogReturn {
 export function useWaterLog(date?: Date): UseWaterLogReturn {
   // Use timezone de São Paulo se não especificada uma data
   const dateStr = date ? format(date, 'yyyy-MM-dd') : getTodayISO()
+  const queryClient = useQueryClient()
 
   const [logs, setLogs] = useState<WaterLogItem[]>([])
   const [goal, setGoal] = useState(DEFAULT_WATER_GOAL)
@@ -185,6 +188,9 @@ export function useWaterLog(date?: Date): UseWaterLogReturn {
         }
       }
 
+      // Invalida o cache do dashboard para refletir o novo total de água.
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+
       return true
     } catch (err) {
       console.error('Erro ao adicionar água:', err)
@@ -195,7 +201,7 @@ export function useWaterLog(date?: Date): UseWaterLogReturn {
     } finally {
       setIsAdding(false)
     }
-  }, [dateStr, goal])
+  }, [dateStr, goal, queryClient])
 
   // Remover log
   const removeLog = useCallback(async (id: string): Promise<boolean> => {
@@ -217,6 +223,7 @@ export function useWaterLog(date?: Date): UseWaterLogReturn {
 
       if (deleteError) throw deleteError
 
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       return true
     } catch (err) {
       console.error('Erro ao remover log:', err)
@@ -226,7 +233,7 @@ export function useWaterLog(date?: Date): UseWaterLogReturn {
       ))
       return false
     }
-  }, [logs])
+  }, [logs, queryClient])
 
   // Atualizar meta
   const updateGoal = useCallback(async (ml: number) => {

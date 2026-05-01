@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
+import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
 import type { CompletedCardio, CardioIntensity } from '@/lib/workout/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,6 +51,7 @@ interface UseSaveWorkoutReturn {
 }
 
 export function useSaveWorkout(): UseSaveWorkoutReturn {
+  const queryClient = useQueryClient()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Lock síncrono: setSaving(true) é assíncrono e não impede chamadas
@@ -265,6 +268,10 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
         }
       }
 
+      // Treino salvo — invalida o snapshot do dashboard para refletir o novo total
+      // de treinos, treino do dia, PRs do mês e streak.
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+
       return { workoutId: workoutRecordId, prSetIds, cardioAwards }
     } catch (err) {
       console.error('Error saving workout:', err)
@@ -274,7 +281,7 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
       setSaving(false)
       inFlightRef.current = false
     }
-  }, [supabase])
+  }, [supabase, queryClient])
 
   return {
     saveWorkout,

@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
 import type {
   SleepLog,
   NewSleepLog,
@@ -20,6 +22,7 @@ import {
 type SupabaseRow = Record<string, any>
 
 export function useSleep(days: number = 30): UseSleepReturn {
+  const queryClient = useQueryClient()
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([])
   const [stats, setStats] = useState<SleepStats | null>(null)
   const [patterns, setPatterns] = useState<SleepPatterns | null>(null)
@@ -233,6 +236,7 @@ export function useSleep(days: number = 30): UseSleepReturn {
       // baseado na hora de dormir (faixas 6/3/0 pts). Sem chamada
       // client-side pra não conflitar com a regra escalonada.
 
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       await fetchSleepLogs()
     } catch (err) {
       console.error('Error logging sleep:', err)
@@ -300,6 +304,7 @@ export function useSleep(days: number = 30): UseSleepReturn {
 
       if (updateError) throw updateError
 
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       await fetchSleepLogs()
     } catch (err) {
       console.error('Error updating sleep log:', err)
@@ -317,6 +322,7 @@ export function useSleep(days: number = 30): UseSleepReturn {
 
       if (deleteError) throw deleteError
 
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       await fetchSleepLogs()
     } catch (err) {
       console.error('Error deleting sleep log:', err)

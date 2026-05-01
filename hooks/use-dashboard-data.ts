@@ -1,9 +1,15 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getTodayISO } from '@/lib/utils/date'
 import type { Profile } from '@/types/database'
+
+// Chave do cache do dashboard. Mutações que afetam o dashboard
+// (água, refeição, treino, sono, atividade) devem invalidar essa key
+// via DASHBOARD_QUERY_KEY ou queryClient.invalidateQueries({ queryKey: ['dashboard'] }).
+export const DASHBOARD_QUERY_KEY = ['dashboard'] as const
 
 export interface TodayWorkout {
   id: string
@@ -124,124 +130,161 @@ const mockMeals: TodayMeal[] = [
   { tipo: 'ceia', status: 'pendente' }
 ]
 
-export function useDashboardData(): DashboardData {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [todayWorkout, setTodayWorkout] = useState<TodayWorkout | null>(null)
-  const [todayMeals, setTodayMeals] = useState<TodayMeal[]>([])
-  const [waterTotal, setWaterTotal] = useState(0)
-  const [caloriesConsumed, setCaloriesConsumed] = useState(0)
-  const [proteinConsumed, setProteinConsumed] = useState(0)
-  const [workoutStats, setWorkoutStats] = useState<WorkoutStats>({ totalWorkouts: 0, prsThisMonth: 0 })
-  const [sleepLoggedToday, setSleepLoggedToday] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+interface DashboardSnapshot {
+  profile: Profile | null
+  todayWorkout: TodayWorkout | null
+  todayMeals: TodayMeal[]
+  waterTotal: number
+  caloriesConsumed: number
+  proteinConsumed: number
+  workoutStats: WorkoutStats
+  sleepLoggedToday: boolean
+}
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
+const EMPTY_SNAPSHOT: DashboardSnapshot = {
+  profile: null,
+  todayWorkout: null,
+  todayMeals: [],
+  waterTotal: 0,
+  caloriesConsumed: 0,
+  proteinConsumed: 0,
+  workoutStats: { totalWorkouts: 0, prsThisMonth: 0 },
+  sleepLoggedToday: false,
+}
 
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+const MOCK_SNAPSHOT: DashboardSnapshot = {
+  profile: mockProfile,
+  todayWorkout: mockWorkout,
+  todayMeals: mockMeals,
+  waterTotal: 1800,
+  caloriesConsumed: 1300,
+  proteinConsumed: 95,
+  workoutStats: { totalWorkouts: 0, prsThisMonth: 0 },
+  sleepLoggedToday: false,
+}
 
-      if (!user) {
-        // Usar dados mock se não houver usuário
-        setProfile(mockProfile)
-        setTodayWorkout(mockWorkout)
-        setTodayMeals(mockMeals)
-        setWaterTotal(1800)
-        setCaloriesConsumed(1300)
-        setProteinConsumed(95)
-        return
+async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return MOCK_SNAPSHOT
+  }
+
+  const today = getTodayISO()
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+
+  // BATCH 1 — 7 queries independentes em paralelo.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any
+  const [
+    profileResult,
+    sleepResult,
+    waterResult,
+    workoutTodayResult,
+    mealsResult,
+    totalWorkoutsResult,
+    prsResult,
+  ] = await Promise.all([
+    sb.from('fitness_profiles').select('*').eq('id', user.id).single(),
+    sb.from('fitness_sleep_logs').select('id').eq('user_id', user.id).gte('created_at', todayStart.toISOString()).limit(1),
+    sb.from('fitness_water_logs').select('quantidade_ml').eq('user_id', user.id).eq('data', today),
+    sb.from('fitness_workouts').select('id, nome, tipo, duracao_minutos, status').eq('user_id', user.id).eq('data', today).maybeSingle(),
+    sb.from('fitness_meals').select('tipo_refeicao, calorias_total, proteinas_total, horario').eq('user_id', user.id).eq('data', today),
+    sb.from('fitness_workouts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'concluido'),
+    sb.from('fitness_exercise_sets').select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id))', { count: 'exact', head: true }).eq('is_pr', true).eq('workout_exercise.workout.user_id', user.id).gte('created_at', startOfMonth.toISOString()),
+  ])
+
+  // Profile (com fallback para metadata do auth)
+  let profile: Profile | null = null
+  const { data: profileData, error: profileError } = profileResult
+  if (profileData) {
+    profile = profileData as Profile
+  } else {
+    const userName = user.user_metadata?.full_name ||
+                     user.user_metadata?.name ||
+                     user.email?.split('@')[0] ||
+                     'Usuário'
+    profile = {
+      ...mockProfile,
+      id: user.id,
+      nome: userName,
+      email: user.email || '',
+    }
+    if (profileError) {
+      console.warn('Perfil não encontrado, usando dados do auth:', profileError.message)
+    }
+  }
+
+  // Sleep hoje
+  const sleepLoggedToday = Array.isArray(sleepResult.data) && sleepResult.data.length > 0
+
+  // Água
+  let waterTotal = 0
+  if (waterResult.data && Array.isArray(waterResult.data)) {
+    waterTotal = waterResult.data.reduce(
+      (acc: number, log: { quantidade_ml: number | null }) => acc + (log.quantidade_ml || 0),
+      0
+    )
+  }
+
+  // Refeições de hoje + totais nutricionais
+  const mealsData = mealsResult.data
+  const mealTypes = ['cafe_manha', 'lanche_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia']
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mealsMap = new Map(mealsData?.map((m: any) => [m.tipo_refeicao, m]) || [])
+  const todayMeals: TodayMeal[] = mealTypes.map(tipo => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const meal = mealsMap.get(tipo) as any
+    if (meal) {
+      return {
+        tipo,
+        status: 'concluido' as const,
+        horario: meal.horario ?? undefined,
+        calorias: meal.calorias_total ?? undefined,
       }
+    }
+    return { tipo, status: 'pendente' as const }
+  })
 
-      const today = getTodayISO()
+  let caloriesConsumed = 0
+  let proteinConsumed = 0
+  if (mealsData && Array.isArray(mealsData)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    caloriesConsumed = mealsData.reduce((acc: number, m: any) => acc + (m.calorias_total || 0), 0)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    proteinConsumed = mealsData.reduce((acc: number, m: any) => acc + (m.proteinas_total || 0), 0)
+  }
 
-      // Buscar perfil
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profileData, error: profileError } = await (supabase as any)
-        .from('fitness_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+  // Stats de treinos (count) + PRs do mês
+  const workoutStats: WorkoutStats = {
+    totalWorkouts: totalWorkoutsResult.count || 0,
+    prsThisMonth: prsResult.count || 0,
+  }
 
-      if (profileData) {
-        setProfile(profileData as Profile)
-      } else {
-        // Usar dados do auth como fallback se perfil não existir
-        const userName = user.user_metadata?.full_name ||
-                         user.user_metadata?.name ||
-                         user.email?.split('@')[0] ||
-                         'Usuário'
-        setProfile({
-          ...mockProfile,
-          id: user.id,
-          nome: userName,
-          email: user.email || '',
-        })
+  // Treino de hoje — depende do resultado do batch 1
+  let todayWorkout: TodayWorkout | null = null
+  const workoutData = workoutTodayResult.data
+  if (workoutData) {
+    const { count: exerciseCount } = await sb
+      .from('fitness_workout_exercises')
+      .select('*', { count: 'exact', head: true })
+      .eq('workout_id', workoutData.id)
 
-        if (profileError) {
-          console.warn('Perfil não encontrado, usando dados do auth:', profileError.message)
-        }
-      }
-
-      // Buscar se registrou sono hoje (created_at >= meia-noite de hoje,
-      // mesma lógica do dedup em /api/points/award)
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: sleepTodayData } = await (supabase as any)
-        .from('fitness_sleep_logs')
-        .select('id')
-        .eq('user_id', user.id)
-        .gte('created_at', todayStart.toISOString())
-        .limit(1)
-
-      setSleepLoggedToday(Array.isArray(sleepTodayData) && sleepTodayData.length > 0)
-
-      // Buscar água
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: waterData } = await (supabase as any)
-        .from('fitness_water_logs')
-        .select('quantidade_ml')
-        .eq('user_id', user.id)
-        .eq('data', today)
-
-      if (waterData && Array.isArray(waterData)) {
-        const total = waterData.reduce(
-          (acc: number, log: { quantidade_ml: number | null }) => acc + (log.quantidade_ml || 0),
-          0
-        )
-        setWaterTotal(total)
-      }
-
-      // Buscar treino de hoje - primeiro buscar treino real (concluído ou em andamento)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: workoutData } = await (supabase as any)
-        .from('fitness_workouts')
-        .select('id, nome, tipo, duracao_minutos, status')
-        .eq('user_id', user.id)
-        .eq('data', today)
-        .maybeSingle()
-
-      if (workoutData) {
-        // Contar exercícios
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { count: exerciseCount } = await (supabase as any)
-          .from('fitness_workout_exercises')
-          .select('*', { count: 'exact', head: true })
-          .eq('workout_id', workoutData.id)
-
-        setTodayWorkout({
-          id: workoutData.id,
-          nome: workoutData.nome,
-          tipo: workoutData.tipo,
-          duracao_estimada: workoutData.duracao_minutos || 45,
-          exercicios_count: exerciseCount || 0,
-          status: (workoutData.status as TodayWorkout['status']) || 'pendente',
-          duracao_minutos: workoutData.duracao_minutos ?? undefined
-        })
-      } else {
+    todayWorkout = {
+      id: workoutData.id,
+      nome: workoutData.nome,
+      tipo: workoutData.tipo,
+      duracao_estimada: workoutData.duracao_minutos || 45,
+      exercicios_count: exerciseCount || 0,
+      status: (workoutData.status as TodayWorkout['status']) || 'pendente',
+      duracao_minutos: workoutData.duracao_minutos ?? undefined,
+    }
+  } else {
         // Não há treino real para hoje - buscar programa do profissional OU template local
         const nowSP = new Date(today + 'T12:00:00-03:00')
         const dayOfWeek = nowSP.getDay()
@@ -293,15 +336,15 @@ export function useDashboardData(): DashboardData {
                   )
 
                   if (todayTraining) {
-                    setTodayWorkout({
+                    todayWorkout = {
                       id: `template-${today}-${todayTraining.id}`,
                       nome: todayTraining.name || 'Treino do dia',
                       tipo: 'tradicional',
                       fase: 'Fase Base',
                       duracao_estimada: todayTraining.estimated_duration || 45,
                       exercicios_count: todayTraining.exercises?.length || 0,
-                      status: 'pendente'
-                    })
+                      status: 'pendente',
+                    }
                     foundWorkout = true
                   }
                 }
@@ -314,8 +357,7 @@ export function useDashboardData(): DashboardData {
 
         if (!foundWorkout && !hasProfessionalProgram) {
           // Só busca template local se NÃO tem programa do profissional
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: templateData, error: templateError } = await (supabase as any)
+          const { data: templateData } = await sb
             .from('fitness_workout_templates')
             .select(`
               id, nome, tipo, duracao_estimada_min,
@@ -327,120 +369,68 @@ export function useDashboardData(): DashboardData {
             .maybeSingle()
 
           if (templateData) {
-            setTodayWorkout({
+            todayWorkout = {
               id: `template-${today}-${templateData.id}`,
               nome: templateData.nome,
               tipo: templateData.tipo,
               duracao_estimada: templateData.duracao_estimada_min || 45,
               exercicios_count: templateData.exercicios?.length || 0,
-              status: 'pendente'
-            })
-          } else {
-            setTodayWorkout(null)
-          }
-        } else if (!foundWorkout && hasProfessionalProgram) {
-          setTodayWorkout(null)
-        }
-      }
-
-      // Buscar refeições de hoje
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: mealsData } = await (supabase as any)
-        .from('fitness_meals')
-        .select('tipo_refeicao, calorias_total, proteinas_total, horario')
-        .eq('user_id', user.id)
-        .eq('data', today)
-
-      const mealTypes = ['cafe_manha', 'lanche_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia']
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mealsMap = new Map(mealsData?.map((m: any) => [m.tipo_refeicao, m]) || [])
-
-      const meals: TodayMeal[] = mealTypes.map(tipo => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const meal = mealsMap.get(tipo) as any
-        if (meal) {
-          return {
-            tipo,
-            status: 'concluido' as const,
-            horario: meal.horario ?? undefined,
-            calorias: meal.calorias_total ?? undefined
+              status: 'pendente',
+            }
           }
         }
-        return { tipo, status: 'pendente' as const }
-      })
-
-      setTodayMeals(meals)
-
-      // Calcular totais de nutrição
-      if (mealsData && Array.isArray(mealsData)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalCal = mealsData.reduce((acc: number, m: any) => acc + (m.calorias_total || 0), 0)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalProt = mealsData.reduce((acc: number, m: any) => acc + (m.proteinas_total || 0), 0)
-        setCaloriesConsumed(totalCal)
-        setProteinConsumed(totalProt)
+        // Se hasProfessionalProgram mas não achou treino do dia, todayWorkout fica null (correto).
       }
-
-      // Buscar estatísticas de treinos
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { count: totalWorkoutsCount } = await (supabase as any)
-        .from('fitness_workouts')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'concluido')
-
-      // Buscar PRs do mês atual
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      startOfMonth.setHours(0, 0, 0, 0)
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { count: prsCount } = await (supabase as any)
-        .from('fitness_exercise_sets')
-        .select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id))', { count: 'exact', head: true })
-        .eq('is_pr', true)
-        .eq('workout_exercise.workout.user_id', user.id)
-        .gte('created_at', startOfMonth.toISOString())
-
-      setWorkoutStats({
-        totalWorkouts: totalWorkoutsCount || 0,
-        prsThisMonth: prsCount || 0
-      })
-
-    } catch (err) {
-      console.error('Erro ao carregar dados do dashboard:', err)
-      setError(err as Error)
-      // Usar dados mock em caso de erro
-      setProfile(mockProfile)
-      setTodayWorkout(mockWorkout)
-      setTodayMeals(mockMeals)
-      setWaterTotal(1800)
-      setCaloriesConsumed(1300)
-      setProteinConsumed(95)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
 
   return {
     profile,
     todayWorkout,
     todayMeals,
     waterTotal,
-    waterGoal: profile?.meta_agua_ml || 2000,
-    streak: profile?.streak_atual || 0,
     caloriesConsumed,
-    caloriesGoal: profile?.meta_calorias_diarias || 2500,
     proteinConsumed,
-    proteinGoal: profile?.meta_proteina_g || 170,
     workoutStats,
     sleepLoggedToday,
-    loading,
-    error,
-    refresh: fetchData
+  }
+}
+
+export function useDashboardData(): DashboardData {
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: DASHBOARD_QUERY_KEY,
+    queryFn: fetchDashboardSnapshot,
+    // Cache curto: dashboard atualiza muito (água, refeição, treino).
+    // Mutações invalidam explicitamente; staleTime evita re-fetch em
+    // navegação rápida (ex: voltar de /agua para /dashboard).
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  })
+
+  const refresh = useCallback(async () => {
+    // Force refetch — usado pelos listeners de visibility/focus.
+    await queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
+    await refetch()
+  }, [queryClient, refetch])
+
+  // Snapshot vazio enquanto carrega — componentes mostram skeleton se loading.
+  const snapshot = data || EMPTY_SNAPSHOT
+
+  return {
+    profile: snapshot.profile,
+    todayWorkout: snapshot.todayWorkout,
+    todayMeals: snapshot.todayMeals,
+    waterTotal: snapshot.waterTotal,
+    waterGoal: snapshot.profile?.meta_agua_ml || 2000,
+    streak: snapshot.profile?.streak_atual || 0,
+    caloriesConsumed: snapshot.caloriesConsumed,
+    caloriesGoal: snapshot.profile?.meta_calorias_diarias || 2500,
+    proteinConsumed: snapshot.proteinConsumed,
+    proteinGoal: snapshot.profile?.meta_proteina_g || 170,
+    workoutStats: snapshot.workoutStats,
+    sleepLoggedToday: snapshot.sleepLoggedToday,
+    loading: isLoading,
+    error: error as Error | null,
+    refresh,
   }
 }

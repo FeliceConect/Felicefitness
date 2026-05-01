@@ -2,6 +2,7 @@
 
 import { useState, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Trash2, Camera, Clock, Save, Sparkles } from 'lucide-react'
 import Link from 'next/link'
@@ -16,6 +17,7 @@ import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
 import { useFoods } from '@/hooks/use-foods'
 import { useDailyMeals } from '@/hooks/use-daily-meals'
+import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
 import { cn } from '@/lib/utils'
 
 const mealTypes: MealType[] = [
@@ -30,6 +32,7 @@ const mealTypes: MealType[] = [
 
 function NewMealContent() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const searchParams = useSearchParams()
   const { addToRecent, toggleFavorite } = useFoods()
   const { addMeal } = useDailyMeals()
@@ -148,6 +151,9 @@ function NewMealContent() {
         if (!result.success) {
           throw new Error(result.error || 'Erro ao salvar refeição')
         }
+        // Refeição inserida pelo endpoint — invalida o snapshot do dashboard
+        // (a rota não passa pelo useDailyMeals, então precisa invalidar aqui).
+        queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       } else {
         // No plan meal ID, save as independent meal
         await addMeal({

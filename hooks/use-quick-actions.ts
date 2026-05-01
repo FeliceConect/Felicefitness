@@ -2,10 +2,12 @@
 
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { getTodayDateSP, getCurrentTimeSP } from '@/lib/utils/date'
 import { DEFAULT_QUICK_ACTIONS } from '@/types/widgets'
 import { awardWaterGoalPoints } from '@/lib/services/points'
+import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
 import type { QuickAction } from '@/types/widgets'
 
 interface UseQuickActionsReturn {
@@ -21,6 +23,7 @@ interface UseQuickActionsReturn {
 
 export function useQuickActions(): UseQuickActionsReturn {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const supabase = createClient()
 
   // Executar ação
@@ -83,6 +86,8 @@ export function useQuickActions(): UseQuickActionsReturn {
                 console.error('Erro ao atribuir pontos de água:', awardErr)
               }
             }
+
+            queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
           } catch (error) {
             console.error('Error adding water:', error)
           }

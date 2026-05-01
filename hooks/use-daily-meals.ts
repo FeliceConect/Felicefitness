@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { format } from 'date-fns'
+import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
 import type {
   Meal,
   MealItem,
@@ -34,6 +36,7 @@ interface UseDailyMealsReturn {
 export function useDailyMeals(date?: Date): UseDailyMealsReturn {
   const targetDate = date || new Date()
   const dateStr = format(targetDate, 'yyyy-MM-dd')
+  const queryClient = useQueryClient()
 
   const [meals, setMeals] = useState<Meal[]>([])
   const [loading, setLoading] = useState(true)
@@ -287,6 +290,7 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         }
       }
 
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       console.log('=== addMeal: CONCLUÍDO ===')
     } catch (err) {
       console.error('Error adding meal:', err)
@@ -331,6 +335,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
       setMeals(prev =>
         prev.map(meal => (meal.id === id ? { ...meal, ...data } : meal))
       )
+
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
     } catch (err) {
       console.error('Error updating meal:', err)
       throw err
@@ -369,6 +375,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
 
       // Atualizar estado local
       setMeals(prev => prev.filter(meal => meal.id !== id))
+
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
     } catch (err) {
       console.error('Error deleting meal:', err)
       throw err

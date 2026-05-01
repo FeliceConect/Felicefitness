@@ -13,13 +13,6 @@ import { useGamification } from '@/hooks/use-gamification'
 import { cn } from '@/lib/utils'
 import { getTodayDateSP } from '@/lib/utils/date'
 import { createClient } from '@/lib/supabase/client'
-import {
-  awardWorkoutPoints,
-  awardPRPoints,
-  awardStreak7Points,
-  awardStreak30Points,
-  awardCardioInWorkoutPoints,
-} from '@/lib/services/points'
 import type { CompletedCardio, CardioExerciseType } from '@/lib/workout/types'
 
 interface CompletedSetData {
@@ -123,6 +116,7 @@ export default function WorkoutSummaryPage() {
   const [energy, setEnergy] = useState<number | null>(null)
   const [notes, setNotes] = useState('')
   const [saved, setSaved] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [summary, setSummary] = useState<WorkoutSummaryData>(getDefaultSummaryData())
   const [saveError, setSaveError] = useState<string | null>(null)
   // Synchronous lock — bloqueia cliques múltiplos antes de o estado `saving`
@@ -153,7 +147,9 @@ export default function WorkoutSummaryPage() {
     // Guarda síncrona contra cliques duplicados / concorrentes.
     if (savingRef.current || saved) return
     savingRef.current = true
-
+    // Feedback visual imediato — desabilita o botão antes de qualquer await,
+    // para que o usuário veja o spinner já no primeiro clique.
+    setSubmitting(true)
     setSaveError(null)
 
     // Prepare data for saving
@@ -161,6 +157,7 @@ export default function WorkoutSummaryPage() {
       // If we don't have workout data from execution, use from workout object
       if (!workout) {
         setSaveError('Dados do treino não encontrados')
+        setSubmitting(false)
         savingRef.current = false
         return
       }
@@ -180,84 +177,79 @@ export default function WorkoutSummaryPage() {
       notes: notes || undefined
     }
 
-    // Read streak BEFORE saving so we can detect transitions to 7/30
-    // (the SQL trigger trigger_update_streak updates streak_atual on insert)
+    // Read streak BEFORE saving so we can detect transitions to 7/30.
+    // Roda em paralelo com a auth.getUser para reduzir o waterfall.
     const supabase = createClient()
     const { data: { user: currentUser } } = await supabase.auth.getUser()
-    let oldStreak = 0
-    if (currentUser) {
+    const oldStreakPromise = currentUser
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profileBefore } = await (supabase as any)
-        .from('fitness_profiles')
-        .select('streak_atual')
-        .eq('id', currentUser.id)
-        .single()
-      oldStreak = profileBefore?.streak_atual || 0
-    }
+      ? (supabase as any)
+          .from('fitness_profiles')
+          .select('streak_atual')
+          .eq('id', currentUser.id)
+          .single()
+          .then((r: { data: { streak_atual?: number } | null }) => r.data?.streak_atual || 0)
+      : Promise.resolve(0)
 
-    // Save to database
+    // Foreground: salva o treino (precisa terminar antes de mostrar sucesso).
     const result = await saveWorkout(saveData)
 
-    if (result) {
-      const { workoutId: savedId, prSetIds, cardioAwards } = result
-
-      // Clear localStorage
-      localStorage.removeItem(SUMMARY_STORAGE_KEY)
-
-      // Award workout points (15 pts, dedup by workoutId)
-      try {
-        await awardWorkoutPoints(savedId)
-
-        // Award PR points (10 pts each, dedup by setId)
-        for (const setId of prSetIds) {
-          await awardPRPoints(setId)
-        }
-
-        // Award cardio inside workout (3-10 pts por intensidade, dedup por workout_exercise.id)
-        for (const cardio of cardioAwards) {
-          await awardCardioInWorkoutPoints(cardio.workoutExerciseId, cardio.intensity)
-        }
-
-        // Detect streak transitions (7 / 30 days) and award bonus
-        if (currentUser) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: profileAfter } = await (supabase as any)
-            .from('fitness_profiles')
-            .select('streak_atual')
-            .eq('id', currentUser.id)
-            .single()
-          const newStreak = profileAfter?.streak_atual || 0
-
-          if (oldStreak < 7 && newStreak >= 7) {
-            await awardStreak7Points()
-          }
-          if (oldStreak < 30 && newStreak >= 30) {
-            await awardStreak30Points()
-          }
-        }
-      } catch (awardErr) {
-        // pontos são best-effort; não bloqueia o fluxo
-        console.error('Erro ao atribuir pontos do treino:', awardErr)
-      }
-
-      // Add XP for completing workout
-      const baseXP = 100 // Base XP for completing a workout
-      const volumeBonus = Math.floor(summary.totalVolume / 1000) * 5 // 5 XP per ton of volume
-      const prBonus = summary.newPRs.length * 50 // 50 XP per PR
-      const totalXP = baseXP + volumeBonus + prBonus
-
-      await addXP(totalXP, `Treino concluído: ${saveData.nome}`, 'workout_completed')
-
-      // Refresh workouts data
-      await refresh()
-      setSaved(true)
-      setTimeout(() => {
-        router.push('/treino')
-      }, 1500)
-    } else {
+    if (!result) {
       setSaveError('Erro ao salvar treino. Tente novamente.')
+      setSubmitting(false)
       savingRef.current = false
+      return
     }
+
+    const { workoutId: savedId, prSetIds, cardioAwards } = result
+
+    // Sucesso visual IMEDIATO assim que o core save terminou.
+    localStorage.removeItem(SUMMARY_STORAGE_KEY)
+    setSaved(true)
+
+    // Background: pontos + streak + XP + refresh.
+    // São best-effort — se falharem, o treino já está salvo e dedup garante
+    // que uma reentrada futura também funciona.
+    void (async () => {
+      try {
+        const oldStreak = await oldStreakPromise
+
+        // Uma única round-trip consolidada: o endpoint roda todos os awards
+        // (workout, PRs, cardios, streak) em paralelo no servidor.
+        await fetch('/api/points/award-workout-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workoutId: savedId,
+            prSetIds,
+            cardioAwards: cardioAwards.map((c) => ({
+              workoutExerciseId: c.workoutExerciseId,
+              intensity: c.intensity,
+            })),
+            oldStreak,
+          }),
+        }).catch((err) => {
+          console.error('Erro no award-workout-complete:', err)
+        })
+
+        // XP é client-side (localStorage) — sem custo de rede.
+        const baseXP = 100
+        const volumeBonus = Math.floor(summary.totalVolume / 1000) * 5
+        const prBonus = summary.newPRs.length * 50
+        await addXP(
+          baseXP + volumeBonus + prBonus,
+          `Treino concluído: ${saveData.nome}`,
+          'workout_completed'
+        )
+
+        await refresh()
+      } catch (err) {
+        console.error('Erro em pontos/XP do treino (background):', err)
+      }
+    })()
+
+    // Navega de volta enquanto o background termina.
+    setTimeout(() => router.push('/treino'), 1500)
   }
 
   // Loading state
@@ -593,9 +585,9 @@ export default function WorkoutSummaryPage() {
             size="lg"
             className="w-full"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || submitting}
           >
-            {saving ? (
+            {(saving || submitting) ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 Salvando...
