@@ -325,18 +325,15 @@ export const notificationTemplates = {
       type: 'consulta',
       priority: 'high'
     }),
-    realizada: (profissional: string, pontos: number): NotificationPayload => ({
+    realizada: (profissional: string): NotificationPayload => ({
       title: 'Consulta Realizada!',
-      body: `Presença confirmada! +${pontos}pts. Obrigado por comparecer à consulta com ${profissional}.`,
+      body: `Presença confirmada! Obrigado por comparecer à consulta com ${profissional}.`,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
       tag: 'consulta-realizada',
       url: '/agenda',
       type: 'consulta',
       priority: 'normal',
-      actions: [
-        { action: 'ver-pontos', title: 'Ver Pontuação' }
-      ]
     }),
   },
 

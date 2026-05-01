@@ -57,30 +57,15 @@ export async function POST(
       )
     }
 
-    // Calcula quantos pontos vão sair (e de quem) ANTES de apagar
-    const { data: pointsToRemove } = await supabaseAdmin
-      .from('fitness_point_transactions')
-      .select('user_id, points')
-      .eq('reference_id', id)
-      .eq('category', 'attendance')
-
-    // Remover pontos de presença atribuídos
+    // Presença em consulta não pontua mais (decisão 2026-05-01).
+    // Apaga transações antigas se ainda existirem (compatibilidade com
+    // dados pré-decisão), mas sem reverter do ranking — o ledger e o
+    // ranking foram zerados pelo SQL retroativo da época da decisão.
     await supabaseAdmin
       .from('fitness_point_transactions')
       .delete()
       .eq('reference_id', id)
       .eq('category', 'attendance')
-
-    // Reverte do leaderboard (sem isso, o ranking fica inflado)
-    for (const tx of (pointsToRemove || [])) {
-      if (tx.points && tx.user_id) {
-        await supabaseAdmin.rpc('fitness_award_points_to_user', {
-          p_user_id: tx.user_id,
-          p_delta: -tx.points,
-          p_allowed_ranking_categories: null,
-        })
-      }
-    }
 
     // Reverter status para 'scheduled'
     const { data: updated, error } = await supabaseAdmin

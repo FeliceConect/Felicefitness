@@ -242,30 +242,13 @@ export async function DELETE(
     const hard = request.nextUrl.searchParams.get('hard') === 'true'
 
     if (hard) {
-      // Hard delete: remove registro e pontos de presença associados
-      // Lê o que será apagado primeiro para reverter o ranking
-      const { data: pointsToRemove } = await supabaseAdmin
-        .from('fitness_point_transactions')
-        .select('user_id, points')
-        .eq('reference_id', id)
-        .eq('category', 'attendance')
-
+      // Hard delete: remove registro. Presença não pontua mais
+      // (decisão 2026-05-01); apenas limpa transações antigas se houver.
       await supabaseAdmin
         .from('fitness_point_transactions')
         .delete()
         .eq('reference_id', id)
         .eq('category', 'attendance')
-
-      // Reverte do leaderboard
-      for (const tx of (pointsToRemove || [])) {
-        if (tx.points && tx.user_id) {
-          await supabaseAdmin.rpc('fitness_award_points_to_user', {
-            p_user_id: tx.user_id,
-            p_delta: -tx.points,
-            p_allowed_ranking_categories: null,
-          })
-        }
-      }
 
       const { error } = await supabaseAdmin
         .from('fitness_appointments')

@@ -13,9 +13,9 @@ function getAdminClient() {
   )
 }
 
-const ATTENDANCE_POINTS = 20
-
 // POST - Profissional marca consulta como realizada
+// Sem pontuação: presença em consulta é compulsória do programa
+// e não deve impactar o ranking (decidido em 2026-05-01).
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -98,59 +98,16 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Consulta já foi completada ou não pode ser alterada' }, { status: 409 })
     }
 
-    // Check if points were already awarded for this appointment
-    const { data: existingPoints } = await supabaseAdmin
-      .from('fitness_point_transactions')
-      .select('id')
-      .eq('reference_id', id)
-      .eq('category', 'attendance')
-      .limit(1)
-
-    if (existingPoints && existingPoints.length > 0) {
-      // Points already awarded, skip
-      return NextResponse.json({
-        success: true,
-        data: updated,
-        points_awarded: 0,
-        message: 'Pontos já foram atribuídos anteriormente',
-      })
-    }
-
-    // Atribuir pontos ao paciente
-    const { error: pointsError } = await supabaseAdmin
-      .from('fitness_point_transactions')
-      .insert({
-        user_id: appointment.patient_id,
-        points: ATTENDANCE_POINTS,
-        reason: 'Presença em consulta',
-        category: 'attendance',
-        source: isAdmin ? 'superadmin' : 'professional',
-        awarded_by: user.id,
-        reference_id: id,
-      })
-
-    if (pointsError) {
-      console.error('Erro ao atribuir pontos:', pointsError)
-    } else {
-      // Sincroniza com leaderboard (presença = ranking global, não por categoria)
-      await supabaseAdmin.rpc('fitness_award_points_to_user', {
-        p_user_id: appointment.patient_id,
-        p_delta: ATTENDANCE_POINTS,
-        p_allowed_ranking_categories: null,
-      })
-    }
-
-    // Notify patient about completed appointment + points
+    // Notifica o paciente sobre a presença confirmada (sem menção a pts)
     if (validatePushConfig()) {
       const prof = await getProfessionalNameForNotification(supabaseAdmin, updated.professional_id)
-      const payload = notificationTemplates.consulta.realizada(prof, ATTENDANCE_POINTS)
+      const payload = notificationTemplates.consulta.realizada(prof)
       sendNotificationToUser(supabaseAdmin, appointment.patient_id, payload).catch(() => {})
     }
 
     return NextResponse.json({
       success: true,
       data: updated,
-      points_awarded: ATTENDANCE_POINTS,
     })
   } catch (error) {
     console.error('Erro na API de completar consulta:', error)
