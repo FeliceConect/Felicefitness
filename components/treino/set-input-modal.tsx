@@ -29,8 +29,10 @@ export function SetInputModal({
 }: SetInputModalProps) {
   // Prioridade: último peso usado > peso sugerido do template > 0
   const initialWeight = lastWeight?.weight ?? suggestedWeight ?? 0
+  // Reps: prioridade último valor realizado > meta planejada do template > 12
+  const initialReps = lastWeight?.reps ?? (parseInt(targetReps) || 12)
   const [weight, setWeight] = useState(initialWeight)
-  const [reps, setReps] = useState(parseInt(targetReps) || 12)
+  const [reps, setReps] = useState(initialReps)
 
   // Track if modal was previously open to only reset on actual open
   const wasOpenRef = useRef(false)
@@ -40,7 +42,7 @@ export function SetInputModal({
     if (isOpen && !wasOpenRef.current) {
       // Modal is opening - reset values
       setWeight(lastWeight?.weight ?? suggestedWeight ?? 0)
-      setReps(parseInt(targetReps) || 12)
+      setReps(lastWeight?.reps ?? (parseInt(targetReps) || 12))
     }
     wasOpenRef.current = isOpen
   }, [isOpen, suggestedWeight, lastWeight, targetReps])
