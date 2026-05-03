@@ -2,10 +2,13 @@
 /**
  * Importa micronutrientes (ferro, colesterol, zinco, selênio, magnésio)
  * para alimentos já existentes em fitness_global_foods, fazendo UPDATE
- * por source_id (ID original da TBCA).
+ * por source_id (ID original da TBCA ou TACO).
  *
  * Uso:
- *   node scripts/import-tbca-micros.mjs <input.csv> [--out=<arquivo.sql>]
+ *   node scripts/import-tbca-micros.mjs <input.csv> [--out=<arquivo.sql>] [--source=tbca|taco]
+ *
+ * --source default 'tbca'. Use 'taco' quando o CSV vier da tabela TACO da
+ * UNICAMP (IDs numéricos, sem selênio).
  *
  * O CSV precisa ter cabeçalho com pelo menos:
  *   source_id, ferro, colesterol, zinco, selenio, magnesio
@@ -16,11 +19,11 @@
  * Supabase SQL editor ou via psql. NÃO modifica o banco diretamente
  * (mais seguro: o usuário revisa antes de aplicar).
  *
- * Unidades esperadas (mesma referência da TBCA, por 100g):
+ * Unidades esperadas (por 100g):
  *   ferro      mg
  *   colesterol mg
  *   zinco      mg
- *   selenio    µg (microgramas)
+ *   selenio    µg (microgramas) — TACO não mede, fica null
  *   magnesio   mg
  */
 
@@ -30,12 +33,19 @@ import { resolve } from 'node:path'
 const args = process.argv.slice(2)
 const inputPath = args.find((a) => !a.startsWith('--'))
 const outArg = args.find((a) => a.startsWith('--out='))
+const sourceArg = args.find((a) => a.startsWith('--source='))
 const outputPath = outArg
   ? outArg.slice('--out='.length)
   : 'supabase/migrations/20260503_food_micronutrients_data.sql'
+const sourceTag = sourceArg ? sourceArg.slice('--source='.length) : 'tbca'
 
 if (!inputPath) {
-  console.error('Uso: node scripts/import-tbca-micros.mjs <input.csv> [--out=<arquivo.sql>]')
+  console.error('Uso: node scripts/import-tbca-micros.mjs <input.csv> [--out=<arquivo.sql>] [--source=tbca|taco]')
+  process.exit(1)
+}
+
+if (!['tbca', 'taco'].includes(sourceTag)) {
+  console.error(`--source inválido: "${sourceTag}". Use 'tbca' ou 'taco'.`)
   process.exit(1)
 }
 
@@ -152,7 +162,7 @@ for (const r of dataRows) {
 const BATCH = 500
 const sqlParts = []
 sqlParts.push('-- ============================================================')
-sqlParts.push('-- IMPORT DE MICRONUTRIENTES NA TBCA')
+sqlParts.push(`-- IMPORT DE MICRONUTRIENTES — fonte: ${sourceTag.toUpperCase()}`)
 sqlParts.push(`-- Gerado em ${new Date().toISOString()} a partir de ${inputPath}`)
 sqlParts.push(`-- Total de updates: ${stats.updates}`)
 sqlParts.push('-- Idempotente: roda múltiplas vezes sem efeito colateral.')
@@ -172,7 +182,7 @@ for (let i = 0; i < updates.length; i += BATCH) {
       `magnesio = ${escapeSqlLiteral(u.magnesio)}`,
     ].join(', ')
     sqlParts.push(
-      `UPDATE fitness_global_foods SET ${sets} WHERE source = 'tbca' AND source_id = ${escapeSqlLiteral(u.sourceId)};`
+      `UPDATE fitness_global_foods SET ${sets} WHERE source = ${escapeSqlLiteral(sourceTag)} AND source_id = ${escapeSqlLiteral(u.sourceId)};`
     )
   }
   sqlParts.push('COMMIT;')

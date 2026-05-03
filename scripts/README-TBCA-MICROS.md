@@ -6,48 +6,56 @@ Pipeline para popular `fitness_global_foods` com **ferro, colesterol, zinco, sel
 
 Os micros aparecem **apenas no editor de plano alimentar** (`/portal/nutrition/[id]`), na seção "Resumo do dia → Micronutrientes". O paciente não vê. Se o alimento não tem dado preenchido, entra como zero (transparente, com aviso na UI).
 
-## Caminhos para popular os dados
+## Status — TACO já importada (2026-05-03)
 
-### Caminho A — TBCA completa (oficial, ~6300 alimentos)
+A migration `20260503_food_micronutrients_data_taco.sql` traz **580 alimentos básicos brasileiros** (TACO 4ª edição da UNICAMP) já populados com **ferro, colesterol, zinco e magnésio**. Selênio fica `null` (TACO não mede). Para aplicar: rodar o SQL no Supabase SQL editor.
 
-A TBCA (USP/FCF) **não publica download programático**. Quem tem acesso à versão Excel oficial precisa exportar para CSV com estas colunas exatas (cabeçalho na primeira linha):
+URL oficial da TACO (caso precise rebaixar):
+https://www.nepa.unicamp.br/publicacoes/tabela-taco/
+
+## Caminhos para mais cobertura
+
+### TBCA completa (~6300 alimentos, inclui selênio)
+
+A TBCA (USP/FCF) **não publica download programático** — verificado: nem URL fixo de Excel, nem API. Quem precisa da base completa solicita por e-mail ao time da TBCA (finalidade clínica/acadêmica).
+
+Quando tiver o arquivo, exporte um CSV com este cabeçalho:
 
 ```
 source_id,ferro,colesterol,zinco,selenio,magnesio
 ```
 
-- `source_id`: código da TBCA (ex: `C0066C`) — precisa bater com o que está em `fitness_global_foods.source_id` para o `UPDATE` encontrar a linha
-- `ferro` / `colesterol` / `zinco` / `magnesio`: em **mg por 100g**
-- `selenio`: em **µg por 100g** (microgramas — TBCA usa essa unidade pra Se)
-- Vazio, `NA`, `Tr` (traços), `nd`, `-` viram `NULL`
+- `source_id`: código da TBCA (ex: `C0066C`) — precisa bater com `fitness_global_foods.source_id`
+- `ferro` / `colesterol` / `zinco` / `magnesio`: **mg por 100g**
+- `selenio`: **µg por 100g** (microgramas)
+- Vazio, `NA`, `Tr`, `nd`, `-` viram `NULL`
 - Aceita vírgula ou ponto como separador decimal
 
-### Caminho B — preencher só os mais usados (rápido, focado)
+E rode:
 
-A nutri abre o arquivo `tbca-micros-template.csv`, pega no Excel/Numbers e preenche **30-50 alimentos** que ela mais usa nos cardápios. Mesmo formato. Ela consulta os valores na TBCA online (tbca.net.br) ou na TACO (UNICAMP).
+```bash
+node scripts/import-tbca-micros.mjs arquivo-tbca.csv --source=tbca
+```
 
-Tradeoff: cobertura menor, mas valida a feature pros casos reais antes de investir nos 6000+ restantes.
+### Preencher manual (focado no que a nutri usa)
+
+A nutri abre `tbca-micros-template.csv`, pega no Excel/Numbers e preenche **N alimentos** que usa muito. Consulta valores na TBCA online (tbca.net.br) ou TACO (UNICAMP). Mesmo formato + mesmo script.
 
 ## Como rodar o import
 
-Depois que tiver o CSV pronto:
-
 ```bash
-node scripts/import-tbca-micros.mjs caminho/do/arquivo.csv
+node scripts/import-tbca-micros.mjs caminho/do/arquivo.csv [--source=tbca|taco] [--out=arquivo.sql]
 ```
 
-Saída por padrão: `supabase/migrations/20260503_food_micronutrients_data.sql`. O script:
+- `--source` default `tbca`. Use `taco` quando o CSV for da TACO da UNICAMP (IDs numéricos `1..N`).
+- `--out` default `supabase/migrations/20260503_food_micronutrients_data.sql`.
 
-1. Parseia o CSV
+O script:
+
+1. Parseia o CSV (vírgula ou ponto-e-vírgula, aspas duplas com escape `""`)
 2. Pula linhas sem `source_id` ou sem nenhum micro preenchido
-3. Gera SQL com `UPDATE fitness_global_foods SET ferro=..., colesterol=...` em batches de 500 (cada batch envolto em `BEGIN/COMMIT` — se um batch falhar, os outros seguem)
+3. Gera SQL com `UPDATE fitness_global_foods SET ... WHERE source = '<source>' AND source_id = '...'` em batches de 500 (cada batch em `BEGIN/COMMIT`)
 4. Imprime um relatório (linhas lidas, updates gerados, pulados)
-
-Pra mudar o nome de saída:
-
-```bash
-node scripts/import-tbca-micros.mjs entrada.csv --out=supabase/seed-tbca-micros.sql
-```
 
 ## Aplicar o SQL
 
