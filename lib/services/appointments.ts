@@ -1,4 +1,5 @@
 import { getSupabase, getCurrentUserId, ServiceError } from './base'
+import { getTodayDateSP } from '@/lib/utils/date'
 import type {
   Appointment,
   AppointmentWithDetails,
@@ -53,7 +54,7 @@ export async function getNextAppointment(): Promise<AppointmentWithDetails | nul
   const supabase = getSupabase()
   const userId = await getCurrentUserId()
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayDateSP()
 
   const { data, error } = await supabase
     .from('fitness_appointments')

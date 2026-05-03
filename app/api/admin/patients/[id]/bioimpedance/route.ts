@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardBioimpedancePoints, recalculateChainFrom } from '@/lib/bioimpedance/award'
 import { notifyBioimpedanceRegistered } from '@/lib/notifications/bioimpedance'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -119,7 +120,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Momento inválido' }, { status: 400 })
     }
 
-    const data = body.data || new Date().toISOString().split('T')[0]
+    const data = body.data || getTodayDateSP()
 
     const { data: record, error } = await supabaseAdmin
       .from('fitness_body_compositions')

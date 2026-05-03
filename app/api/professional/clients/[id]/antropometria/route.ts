@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -140,7 +141,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayDateSP()
 
     const { data: record, error } = await supabaseAdmin
       .from('fitness_body_compositions')

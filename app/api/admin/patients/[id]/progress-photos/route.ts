@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { compressImageFile } from '@/lib/images/compress'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -117,7 +118,7 @@ export async function POST(
     const file = formData.get('file') as File | null
     const momento = formData.get('momento_avaliacao') as string | null
     const posicao = formData.get('posicao') as string | null
-    const data = (formData.get('data') as string | null) || new Date().toISOString().split('T')[0]
+    const data = (formData.get('data') as string | null) || getTodayDateSP()
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'Arquivo obrigatório' }, { status: 400 })

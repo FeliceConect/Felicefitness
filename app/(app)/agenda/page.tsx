@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Calendar, Clock, HistoryIcon } from 'lucide-react'
 import { AppointmentCard } from './components/appointment-card'
 import type { AppointmentWithDetails } from '@/types/appointments'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 type Tab = 'upcoming' | 'history'
 
@@ -14,7 +15,7 @@ export default function AgendaPage() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
-  const todayRef = useRef(new Date().toISOString().split('T')[0])
+  const todayRef = useRef(getTodayDateSP())
   const today = todayRef.current
 
   const fetchAppointments = useCallback(async () => {

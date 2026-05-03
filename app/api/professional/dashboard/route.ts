@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP, getMonthStartSP } from '@/lib/utils/date'
 
 // GET - Buscar estatísticas do dashboard do profissional
 export async function GET() {
@@ -81,7 +82,7 @@ export async function GET() {
     let mealsToday = 0
     let mealsTotal = 0
     if (professional.type === 'nutritionist' && clientIds.length > 0) {
-      const todayStr = today.toISOString().split('T')[0]
+      const todayStr = getTodayDateSP()
 
       const { data: meals } = await supabaseAdmin
         .from('fitness_meals')
@@ -92,12 +93,11 @@ export async function GET() {
       mealsToday = meals?.length || 0
 
       // Total de refeições no mês
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
       const { data: monthMeals } = await supabaseAdmin
         .from('fitness_meals')
         .select('id')
         .in('user_id', clientIds)
-        .gte('data', monthStart.toISOString().split('T')[0])
+        .gte('data', getMonthStartSP())
 
       mealsTotal = monthMeals?.length || 0
     }
@@ -106,7 +106,7 @@ export async function GET() {
     let workoutsToday = 0
     let workoutsTotal = 0
     if (professional.type === 'trainer' && clientIds.length > 0) {
-      const todayStr = today.toISOString().split('T')[0]
+      const todayStr = getTodayDateSP()
 
       const { data: workouts } = await supabaseAdmin
         .from('fitness_workouts')
@@ -117,12 +117,11 @@ export async function GET() {
       workoutsToday = workouts?.length || 0
 
       // Total de treinos no mês
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
       const { data: monthWorkouts } = await supabaseAdmin
         .from('fitness_workouts')
         .select('id')
         .in('user_id', clientIds)
-        .gte('data', monthStart.toISOString().split('T')[0])
+        .gte('data', getMonthStartSP())
 
       workoutsTotal = monthWorkouts?.length || 0
     }

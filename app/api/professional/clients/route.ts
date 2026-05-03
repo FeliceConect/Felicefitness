@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getDateOffsetSP } from '@/lib/utils/date'
 
 // GET - Buscar clientes do profissional (ou todos se admin com ?all=true)
 export async function GET(request: NextRequest) {
@@ -133,11 +134,9 @@ export async function GET(request: NextRequest) {
       .select('id, nome, email, peso_atual, altura_cm, objetivo, updated_at')
       .in('id', clientIds)
 
-    // Buscar estatísticas recentes para cada cliente
+    // Buscar estatísticas recentes para cada cliente (America/Sao_Paulo)
     const today = new Date()
-    const weekAgo = new Date(today)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const weekAgoStr = weekAgo.toISOString().split('T')[0]
+    const weekAgoStr = getDateOffsetSP(-7)
 
     // Buscar refeições e treinos da semana
     const [mealsResult, workoutsResult, hydrationResult] = await Promise.all([

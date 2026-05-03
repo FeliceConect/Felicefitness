@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP, getDateOffsetSP, getNowSaoPaulo } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -27,14 +28,12 @@ export async function GET(_request: NextRequest) {
 
     const db = getAdminClient()
 
-    // Calculate week range (Monday to Sunday)
-    const now = new Date()
-    const day = now.getDay() // 0=Sun, 1=Mon...
+    // Calculate week range (Monday to Sunday) — em America/Sao_Paulo
+    const nowSp = getNowSaoPaulo()
+    const day = nowSp.getDay() // 0=Sun, 1=Mon...
     const diffToMonday = day === 0 ? 6 : day - 1
-    const monday = new Date(now)
-    monday.setDate(now.getDate() - diffToMonday)
-    const weekStart = monday.toISOString().split('T')[0]
-    const weekEnd = now.toISOString().split('T')[0]
+    const weekStart = getDateOffsetSP(-diffToMonday)
+    const weekEnd = getTodayDateSP()
 
     // Workouts this week
     const { count: workoutCount } = await db

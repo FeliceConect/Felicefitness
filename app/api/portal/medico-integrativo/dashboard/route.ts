@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP, getDateOffsetSP, getNowSaoPaulo } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -41,7 +42,7 @@ export async function GET() {
       .eq('is_active', true)
 
     // Today's appointments
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayDateSP()
     const { data: todayAppointments } = await supabaseAdmin
       .from('fitness_appointments')
       .select('id, patient_id, date, start_time, end_time, status, appointment_type')
@@ -50,18 +51,17 @@ export async function GET() {
       .neq('status', 'cancelled')
       .order('start_time', { ascending: true })
 
-    // This week's appointments
-    const weekStart = new Date()
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-    const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekEnd.getDate() + 6)
+    // This week's appointments (Sunday-Saturday em America/Sao_Paulo)
+    const dowSp = getNowSaoPaulo().getDay()
+    const weekStartStr = getDateOffsetSP(-dowSp)
+    const weekEndStr = getDateOffsetSP(6 - dowSp)
 
     const { count: weekAppointments } = await supabaseAdmin
       .from('fitness_appointments')
       .select('id', { count: 'exact', head: true })
       .eq('professional_id', professional.id)
-      .gte('date', weekStart.toISOString().split('T')[0])
-      .lte('date', weekEnd.toISOString().split('T')[0])
+      .gte('date', weekStartStr)
+      .lte('date', weekEndStr)
       .neq('status', 'cancelled')
 
     // Recent notes
@@ -73,14 +73,13 @@ export async function GET() {
       .limit(5)
 
     // Upcoming appointments (next 7 days)
-    const nextWeek = new Date()
-    nextWeek.setDate(nextWeek.getDate() + 7)
+    const nextWeekStr = getDateOffsetSP(7)
     const { data: upcomingAppointments } = await supabaseAdmin
       .from('fitness_appointments')
       .select('id, patient_id, date, start_time, end_time, status, appointment_type')
       .eq('professional_id', professional.id)
       .gte('date', today)
-      .lte('date', nextWeek.toISOString().split('T')[0])
+      .lte('date', nextWeekStr)
       .neq('status', 'cancelled')
       .order('date', { ascending: true })
       .order('start_time', { ascending: true })

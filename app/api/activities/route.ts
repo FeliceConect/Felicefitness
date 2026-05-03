@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         activity_type: body.activity_type,
         custom_name: body.custom_name,
-        date: body.date || new Date().toISOString().split('T')[0],
+        date: body.date || getTodayDateSP(),
         duration_minutes: body.duration_minutes,
         intensity: body.intensity,
         calories_burned: body.calories_burned,

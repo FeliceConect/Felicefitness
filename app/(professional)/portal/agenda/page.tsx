@@ -20,6 +20,7 @@ import {
   APPOINTMENT_STATUS_COLORS,
 } from '@/types/appointments'
 import type { AppointmentStatus } from '@/types/appointments'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 interface ProfessionalAppointment {
   id: string
@@ -44,7 +45,7 @@ export default function ProfessionalAgendaPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'today' | 'upcoming' | 'past'>('upcoming')
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayDateSP()
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true)

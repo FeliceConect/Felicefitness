@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -23,7 +24,7 @@ export async function GET(_request: NextRequest) {
     }
 
     const db = getAdminClient()
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayDateSP()
 
     // Get all active challenges (current or upcoming)
     const { data: challenges } = await db

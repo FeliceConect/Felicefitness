@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { SleepCorrelations, UseSleepCorrelationsReturn } from '@/types/sleep'
 import { calculateSleepCorrelations, generateSleepTips } from '@/lib/sleep/correlations'
+import { getDateOffsetSP } from '@/lib/utils/date'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseRow = Record<string, any>
@@ -22,14 +23,13 @@ export function useSleepCorrelations(): UseSleepCorrelationsReturn {
       if (!user) throw new Error('Usuário não autenticado')
 
       // Fetch sleep logs (last 90 days for better correlation data)
-      const ninetyDaysAgo = new Date()
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+      const ninetyDaysAgoStr = getDateOffsetSP(-90)
 
       const { data: sleepData, error: sleepError } = await supabase
         .from('fitness_sleep_logs')
         .select('*')
         .eq('user_id', user.id)
-        .gte('data', ninetyDaysAgo.toISOString().split('T')[0])
+        .gte('data', ninetyDaysAgoStr)
         .order('data', { ascending: false })
 
       if (sleepError) throw sleepError
@@ -78,7 +78,7 @@ export function useSleepCorrelations(): UseSleepCorrelationsReturn {
         .select('data, status, nivel_dificuldade')
         .eq('user_id', user.id)
         .eq('status', 'concluido')
-        .gte('data', ninetyDaysAgo.toISOString().split('T')[0])
+        .gte('data', ninetyDaysAgoStr)
 
       const workoutLogs = (workoutData as SupabaseRow[])?.map(w => ({
         date: w.data,

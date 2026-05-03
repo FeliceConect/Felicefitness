@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 import type {
   Supplement,
   SupplementLog,
@@ -46,13 +47,11 @@ export function useSupplementHistory(days: number = 30): UseSupplementHistoryRet
         return
       }
 
-      // Calculate date range
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - days)
-
-      const startStr = startDate.toISOString().split('T')[0]
-      const endStr = endDate.toISOString().split('T')[0]
+      // Calculate date range (America/Sao_Paulo)
+      const startStr = getDateOffsetSP(-days)
+      const endStr = getTodayDateSP()
+      const startDate = new Date(startStr)
+      const endDate = new Date(endStr)
 
       // Fetch supplements
       const { data: supplementsData, error: supplementsError } = await supabase

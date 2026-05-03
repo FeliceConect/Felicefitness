@@ -20,6 +20,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
+import { getTodayDateSP } from '@/lib/utils/date'
 import {
   FORM_STATUS_LABELS,
   FORM_STATUS_COLORS,
@@ -682,7 +683,7 @@ export default function FormsPage() {
                   type="date"
                   value={sendDueDate}
                   onChange={(e) => setSendDueDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={getTodayDateSP()}
                   className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
                 />
               </div>

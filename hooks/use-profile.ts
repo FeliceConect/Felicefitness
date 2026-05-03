@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { UserProfile, ProfileStats, UseProfileReturn } from '@/types/settings'
+import { getMonthStartSP } from '@/lib/utils/date'
 
 export function useProfile(): UseProfileReturn {
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -65,9 +66,7 @@ export function useProfile(): UseProfileReturn {
 
   const fetchStats = async (userId: string) => {
     try {
-      const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      const monthStr = startOfMonth.toISOString().split('T')[0]
+      const monthStr = getMonthStartSP()
 
       const [
         workoutsTotal,

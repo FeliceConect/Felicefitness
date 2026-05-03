@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
+import { getDateOffsetSP } from '@/lib/utils/date'
 import type {
   SleepLog,
   NewSleepLog,
@@ -36,14 +37,11 @@ export function useSleep(days: number = 30): UseSleepReturn {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuário não autenticado')
 
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - days)
-
       const { data, error: fetchError } = await supabase
         .from('fitness_sleep_logs')
         .select('*')
         .eq('user_id', user.id)
-        .gte('data', startDate.toISOString().split('T')[0])
+        .gte('data', getDateOffsetSP(-days))
         .order('data', { ascending: false })
 
       if (fetchError) throw fetchError

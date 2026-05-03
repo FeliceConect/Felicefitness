@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendPushToMultiple, validatePushConfig } from '@/lib/notifications/push'
+import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -31,13 +32,10 @@ export async function GET(request: NextRequest) {
 
     const db = getAdminClient()
 
-    // Calculate week range (Mon-Sun in Brazil timezone)
-    const now = new Date()
-    const sunday = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
-    const monday = new Date(sunday)
-    monday.setDate(sunday.getDate() - 6)
-    const weekStart = monday.toISOString().split('T')[0]
-    const weekEnd = sunday.toISOString().split('T')[0]
+    // Calculate week range (Mon-Sun em America/Sao_Paulo)
+    // O cron dispara quando ainda é domingo no BRT.
+    const weekEnd = getTodayDateSP()
+    const weekStart = getDateOffsetSP(-6)
 
     // Get all active clients
     const { data: clients } = await db

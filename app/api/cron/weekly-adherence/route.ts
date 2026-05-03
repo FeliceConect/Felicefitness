@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardPointsServer } from '@/lib/services/points-server'
+import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -32,12 +33,8 @@ export async function GET(request: NextRequest) {
     // Janela: semana Seg-Dom que acabou (em America/Sao_Paulo)
     // O cron dispara Monday 02:00 UTC = Sunday 23:00 BRT.
     // "Hoje" no fuso BRT ainda é domingo; voltar 6 dias chega na segunda.
-    const nowSp = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
-    const sunday = new Date(nowSp)
-    const monday = new Date(sunday)
-    monday.setDate(sunday.getDate() - 6)
-    const weekStart = monday.toISOString().split('T')[0]
-    const weekEnd = sunday.toISOString().split('T')[0]
+    const weekEnd = getTodayDateSP()
+    const weekStart = getDateOffsetSP(-6)
     const referenceId = `wkadh-${weekStart}`
 
     // Pacientes ativos

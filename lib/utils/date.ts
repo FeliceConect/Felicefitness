@@ -155,3 +155,20 @@ export function getCurrentDayOfWeek(): string {
 export function getTodayISO(): string {
   return getTodayDateSP()
 }
+
+/**
+ * Retorna data offset por N dias a partir de hoje (SP), no formato YYYY-MM-DD.
+ * Ex: getDateOffsetSP(-7) → 7 dias atrás. getDateOffsetSP(7) → 7 dias à frente.
+ * USE em vez de `new Date(); d.setDate(d.getDate() - N); d.toISOString().split('T')[0]`
+ */
+export function getDateOffsetSP(daysOffset: number): string {
+  const ms = Date.now() + daysOffset * 24 * 60 * 60 * 1000
+  return formatInTimeZone(new Date(ms), SAO_PAULO_TIMEZONE, 'yyyy-MM-dd')
+}
+
+/**
+ * Retorna o primeiro dia do mês corrente (SP), no formato YYYY-MM-DD.
+ */
+export function getMonthStartSP(): string {
+  return formatInTimeZone(new Date(), SAO_PAULO_TIMEZONE, 'yyyy-MM') + '-01'
+}

@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -115,7 +116,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Desafio não disponível' }, { status: 404 })
     }
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayDateSP()
     if (challenge.end_date < today) {
       return NextResponse.json({ success: false, error: 'Desafio já encerrou' }, { status: 400 })
     }

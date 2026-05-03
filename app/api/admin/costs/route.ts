@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { formatDateSP } from '@/lib/utils/date'
 
 // GET - Buscar estatísticas de custos de API
 export async function GET(request: NextRequest) {
@@ -150,7 +151,7 @@ export async function GET(request: NextRequest) {
     // Agrupar por dia (para gráfico)
     const byDay: Record<string, number> = {}
     currentUsage?.forEach(row => {
-      const day = new Date(row.created_at).toISOString().split('T')[0]
+      const day = formatDateSP(new Date(row.created_at), 'yyyy-MM-dd')
       byDay[day] = (byDay[day] || 0) + (parseFloat(row.cost_usd) || 0)
     })
 

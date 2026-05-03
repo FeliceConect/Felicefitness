@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getDateOffsetSP } from '@/lib/utils/date'
 
 interface Assignment {
   client_id: string
@@ -120,10 +121,8 @@ export async function GET(request: NextRequest) {
     } else if (startDate && endDate) {
       query = query.gte('data', startDate).lte('data', endDate)
     } else {
-      // Ultimos 7 dias por padrao
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      query = query.gte('data', sevenDaysAgo.toISOString().split('T')[0])
+      // Ultimos 7 dias por padrao (America/Sao_Paulo)
+      query = query.gte('data', getDateOffsetSP(-7))
     }
 
     if (mealType) {

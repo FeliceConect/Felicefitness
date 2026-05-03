@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 
 export async function GET() {
   try {
@@ -42,8 +43,8 @@ export async function GET() {
     )
 
     // Buscar estatísticas
-    const today = new Date().toISOString().split('T')[0]
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const today = getTodayDateSP()
+    const threeDaysAgo = getDateOffsetSP(-3)
 
     // Total de clientes/usuários (todos exceto admin e super_admin)
     // Primeiro conta total, depois subtrai admins
@@ -76,7 +77,7 @@ export async function GET() {
       .eq('data', today)
 
     // Calcular taxa de adesão (treinos concluídos / treinos planejados nos últimos 7 dias)
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const weekAgo = getDateOffsetSP(-7)
 
     const { count: totalWorkoutsWeek } = await supabaseAdmin
       .from('fitness_workouts')

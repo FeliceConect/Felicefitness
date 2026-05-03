@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 
 // Tipos
 interface Exercise {
@@ -162,10 +163,9 @@ export async function POST(request: NextRequest) {
       ).join('\n')
     }
 
-    // Calcular datas de inicio e fim
-    const startsAt = new Date()
-    const endsAt = new Date()
-    endsAt.setDate(endsAt.getDate() + (plan.duration_weeks * 7))
+    // Calcular datas de inicio e fim (America/Sao_Paulo)
+    const startsAtStr = getTodayDateSP()
+    const endsAtStr = getDateOffsetSP(plan.duration_weeks * 7)
 
     // Criar o programa principal
     const { data: program, error: programError } = await supabaseAdmin
@@ -183,8 +183,8 @@ export async function POST(request: NextRequest) {
         equipment_needed: plan.equipment_needed || [],
         is_template: !targetClientId,
         is_active: true,
-        starts_at: startsAt.toISOString().split('T')[0],
-        ends_at: endsAt.toISOString().split('T')[0],
+        starts_at: startsAtStr,
+        ends_at: endsAtStr,
         notes
       })
       .select()

@@ -8,6 +8,7 @@
  * + tier logic of /api/points/award. The HTTP route delegates to this module.
  */
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 export type PointAction =
   | 'workout_completed'
@@ -186,7 +187,7 @@ export async function awardPointsServer(
   }
 
   // Update active challenge scores (best-effort)
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayDateSP()
   const { data: userChallenges } = await supabaseAdmin
     .from('fitness_challenge_participants')
     .select('challenge_id')

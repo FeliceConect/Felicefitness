@@ -1,6 +1,7 @@
 // Sistema de Desafios - Complexo Wellness Gamification
 
 import type { Challenge, ActiveChallenge, ChallengeType } from '@/types/gamification'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 /**
  * Desafios diários disponíveis
@@ -298,8 +299,8 @@ export function selectWeeklyChallenges(count: number = 2): Challenge[] {
 /**
  * Obtém desafios especiais ativos para a data atual
  */
-export function getActiveSpecialChallenges(date: Date = new Date()): Challenge[] {
-  const dateString = date.toISOString().split('T')[0]
+export function getActiveSpecialChallenges(date?: Date): Challenge[] {
+  const dateString = date ? date.toISOString().split('T')[0] : getTodayDateSP()
 
   return SPECIAL_CHALLENGES.filter(challenge => {
     if (!challenge.startDate || !challenge.endDate) return false

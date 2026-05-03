@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getDateOffsetSP } from '@/lib/utils/date'
 
 interface Assignment {
   client_id: string
@@ -212,10 +213,8 @@ export async function GET(request: NextRequest) {
     if (startDate && endDate) {
       query = query.gte('data', startDate).lte('data', endDate)
     } else {
-      // Ultimos 14 dias por padrao
-      const fourteenDaysAgo = new Date()
-      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-      query = query.gte('data', fourteenDaysAgo.toISOString().split('T')[0])
+      // Ultimos 14 dias por padrao (America/Sao_Paulo)
+      query = query.gte('data', getDateOffsetSP(-14))
     }
 
     // Limitar a 100 registros

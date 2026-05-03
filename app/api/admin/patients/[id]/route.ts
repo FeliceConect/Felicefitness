@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getDateOffsetSP } from '@/lib/utils/date'
 
 export async function GET(
   request: NextRequest,
@@ -44,11 +45,8 @@ export async function GET(
       }
     )
 
-    // Datas de referência
-    const today = new Date()
-    const thirtyDaysAgo = new Date(today)
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0]
+    // Datas de referência (America/Sao_Paulo)
+    const thirtyDaysAgoStr = getDateOffsetSP(-30)
 
     // Bloco 1 — Perfil + Equipe + Consultas
     // Bloco 2 — Tracking diário (30 dias)

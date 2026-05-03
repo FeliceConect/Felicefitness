@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         patient_id,
         professional_id: professional_id || null,
         created_by: user.id,
-        exam_date: exam_date || new Date().toISOString().split('T')[0],
+        exam_date: exam_date || getTodayDateSP(),
         exam_type: exam_type || 'outro',
         description: description || null,
         results,

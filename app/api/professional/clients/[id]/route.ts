@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getDateOffsetSP } from '@/lib/utils/date'
 
 // GET - Buscar detalhes de um cliente específico
 export async function GET(
@@ -74,16 +75,9 @@ export async function GET(
       )
     }
 
-    // Buscar dados dos últimos 7 dias
-    const today = new Date()
-    const weekAgo = new Date(today)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const weekAgoStr = weekAgo.toISOString().split('T')[0]
-
-    // Buscar dados dos últimos 30 dias para histórico
-    const monthAgo = new Date(today)
-    monthAgo.setDate(monthAgo.getDate() - 30)
-    const monthAgoStr = monthAgo.toISOString().split('T')[0]
+    // Datas de referência (America/Sao_Paulo)
+    const weekAgoStr = getDateOffsetSP(-7)
+    const monthAgoStr = getDateOffsetSP(-30)
 
     // Buscar refeições, treinos, hidratação, sono, peso
     const [

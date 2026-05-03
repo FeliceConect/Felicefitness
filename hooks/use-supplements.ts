@@ -16,6 +16,7 @@ import {
   calculateDailyProgress,
   getNextDose,
 } from '@/lib/supplements/calculations'
+import { getTodayDateSP, getNowSaoPaulo } from '@/lib/utils/date'
 
 export function useSupplements(): UseSupplementsReturn {
   const [supplements, setSupplements] = useState<Supplement[]>([])
@@ -27,7 +28,7 @@ export function useSupplements(): UseSupplementsReturn {
   const [error, setError] = useState<string | null>(null)
 
   const supabase = createClient()
-  const today = new Date()
+  const today = getNowSaoPaulo()
 
   // Fetch supplements and logs
   const fetchData = useCallback(async () => {
@@ -51,7 +52,7 @@ export function useSupplements(): UseSupplementsReturn {
       if (supplementsError) throw supplementsError
 
       // Fetch today's logs
-      const todayStr = today.toISOString().split('T')[0]
+      const todayStr = getTodayDateSP()
       const { data: logsData, error: logsError } = await supabase
         .from('fitness_suplemento_logs')
         .select('*')
@@ -152,7 +153,7 @@ export function useSupplements(): UseSupplementsReturn {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Usuário não autenticado')
 
-      const todayStr = today.toISOString().split('T')[0]
+      const todayStr = getTodayDateSP()
 
       // Check if log exists
       const { data: existingLog } = await supabase

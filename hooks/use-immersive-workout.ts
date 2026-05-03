@@ -353,7 +353,7 @@ export function useImmersiveWorkout({
         await supabase.from('treino_logs').insert({
           user_id: user.id,
           treino_id: workout.id,
-          data: new Date().toISOString().split('T')[0],
+          data: getTodayDateSP(),
           duracao: elapsedTime,
           volume_total: totalVolume,
           series_realizadas: allCompletedSets.length,

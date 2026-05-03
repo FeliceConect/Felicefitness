@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfessional } from '@/hooks/use-professional'
+import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 import {
   Utensils,
   Search,
@@ -132,23 +133,9 @@ export default function PortalMealsPage() {
         params.append('startDate', startDate)
         params.append('endDate', endDate)
       } else {
-        const today = new Date()
-        const start = new Date()
-
-        switch (dateRange) {
-          case '7d':
-            start.setDate(today.getDate() - 7)
-            break
-          case '14d':
-            start.setDate(today.getDate() - 14)
-            break
-          case '30d':
-            start.setDate(today.getDate() - 30)
-            break
-        }
-
-        params.append('startDate', start.toISOString().split('T')[0])
-        params.append('endDate', today.toISOString().split('T')[0])
+        const offset = dateRange === '7d' ? -7 : dateRange === '14d' ? -14 : -30
+        params.append('startDate', getDateOffsetSP(offset))
+        params.append('endDate', getTodayDateSP())
       }
 
       const response = await fetch(`/api/portal/client-meals?${params.toString()}`)

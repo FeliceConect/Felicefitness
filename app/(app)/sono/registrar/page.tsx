@@ -17,6 +17,7 @@ import {
   WakeFeelingInput,
 } from '@/components/sleep'
 import { calculateSleepDuration } from '@/lib/sleep/calculations'
+import { getDateOffsetSP } from '@/lib/utils/date'
 import { toast } from 'sonner'
 
 export default function RegistrarSonoPage() {
@@ -24,9 +25,7 @@ export default function RegistrarSonoPage() {
   const { logSleep } = useSleep()
 
   // Get yesterday's date as default (registering previous night's sleep)
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const defaultDate = yesterday.toISOString().split('T')[0]
+  const defaultDate = getDateOffsetSP(-1)
 
   const [saving, setSaving] = useState(false)
   const [date] = useState(defaultDate)
