@@ -86,7 +86,8 @@ export function DashboardContent() {
   // Next appointment
   const [nextAppointment, setNextAppointment] = useState<{
     professional_name: string
-    professional_type: string
+    professional_type: string | null
+    service_type?: string | null
     date: string
     start_time: string
     appointment_type: 'presencial' | 'online'

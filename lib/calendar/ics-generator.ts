@@ -1,6 +1,6 @@
 import { createEvent, type EventAttributes } from 'ics'
 import type { AppointmentWithDetails } from '@/types/appointments'
-import { PROFESSIONAL_TYPE_LABELS } from '@/types/appointments'
+import { PROFESSIONAL_TYPE_LABELS, SERVICE_TYPE_LABELS, type ServiceType } from '@/types/appointments'
 
 /**
  * Gera uma string ICS a partir de uma consulta.
@@ -11,11 +11,16 @@ export function generateAppointmentICS(appointment: AppointmentWithDetails): str
   const [startH, startM] = appointment.start_time.split(':').map(Number)
   const [endH, endM] = appointment.end_time.split(':').map(Number)
 
-  const profType = PROFESSIONAL_TYPE_LABELS[appointment.professional_type] || 'Profissional'
-  const title = `Consulta - ${appointment.professional_name} (${profType})`
+  const profType = appointment.professional_type
+    ? (PROFESSIONAL_TYPE_LABELS[appointment.professional_type] || 'Profissional')
+    : appointment.service_type && appointment.service_type in SERVICE_TYPE_LABELS
+      ? SERVICE_TYPE_LABELS[appointment.service_type as ServiceType]
+      : 'Atendimento'
+  const displayName = appointment.professional_name || profType
+  const title = `Consulta - ${displayName} (${profType})`
 
   const description = [
-    `Consulta com ${appointment.professional_name}`,
+    `Consulta com ${displayName}`,
     `Tipo: ${profType}`,
     appointment.appointment_type === 'online' && appointment.meeting_link
       ? `Link: ${appointment.meeting_link}`

@@ -58,13 +58,39 @@ export const PROFESSIONAL_TYPE_LABELS: Record<ProfessionalType, string> = {
 }
 
 // ============================================
+// SERVIÇOS SEM PROFISSIONAL DEDICADO
+// ============================================
+// Para tratamentos do Complexo (spa capilar, relaxamento, soroterapia)
+// que não têm um profissional específico atribuído à consulta.
+// O paciente apenas precisa comparecer no horário marcado.
+
+export type ServiceType = 'spa_capilar' | 'relaxamento' | 'soroterapia'
+
+export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
+  spa_capilar: 'Spa Capilar',
+  relaxamento: 'Spa Estético (Relaxamento)',
+  soroterapia: 'Soroterapia',
+}
+
+export const SERVICE_TYPE_ICONS: Record<ServiceType, string> = {
+  spa_capilar: '💆',
+  relaxamento: '🧖',
+  soroterapia: '💧',
+}
+
+export const SERVICE_TYPES: ServiceType[] = ['spa_capilar', 'relaxamento', 'soroterapia']
+
+// ============================================
 // ENTIDADE PRINCIPAL
 // ============================================
 
 export interface Appointment {
   id: string
   patient_id: string
-  professional_id: string
+  /** Profissional dedicado. Null quando a consulta é de um serviço (service_type setado). */
+  professional_id: string | null
+  /** Tipo de serviço sem profissional. Null quando há professional_id. */
+  service_type: ServiceType | null
   appointment_type: AppointmentType
   meeting_link: string | null
   date: string // DATE (YYYY-MM-DD)
@@ -88,8 +114,10 @@ export interface Appointment {
 // ============================================
 
 export interface AppointmentWithDetails extends Appointment {
-  professional_name: string
-  professional_type: ProfessionalType
+  /** Nome do profissional. Null para appointments de serviço. */
+  professional_name: string | null
+  /** Tipo do profissional. Null para appointments de serviço. */
+  professional_type: ProfessionalType | null
   patient_name?: string
   patient_email?: string
 }
@@ -100,7 +128,10 @@ export interface AppointmentWithDetails extends Appointment {
 
 export interface CreateAppointmentInput {
   patient_id: string
-  professional_id: string
+  /** Obrigatório se service_type não for fornecido. */
+  professional_id?: string
+  /** Obrigatório se professional_id não for fornecido. */
+  service_type?: ServiceType
   appointment_type: AppointmentType
   meeting_link?: string
   date: string
@@ -108,6 +139,21 @@ export interface CreateAppointmentInput {
   end_time: string
   location?: string
   notes?: string
+}
+
+/**
+ * Retorna o "título" da consulta para exibição: nome do profissional
+ * ou label do serviço, com fallback seguro.
+ */
+export function getAppointmentTitle(appt: {
+  professional_name?: string | null
+  service_type?: ServiceType | string | null
+}): string {
+  if (appt.professional_name) return appt.professional_name
+  if (appt.service_type && appt.service_type in SERVICE_TYPE_LABELS) {
+    return SERVICE_TYPE_LABELS[appt.service_type as ServiceType]
+  }
+  return 'Consulta'
 }
 
 export interface UpdateAppointmentInput {

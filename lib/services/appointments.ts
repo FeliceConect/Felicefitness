@@ -4,7 +4,9 @@ import type {
   Appointment,
   AppointmentWithDetails,
   AppointmentFilters,
+  ServiceType,
 } from '@/types/appointments'
+import { SERVICE_TYPE_LABELS } from '@/types/appointments'
 
 // ============================================
 // PACIENTE — Consultas do próprio paciente
@@ -182,16 +184,23 @@ async function enrichAppointments(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any
 
-  // Buscar profissionais
-  const professionalIds = Array.from(new Set(appointments.map(a => a.professional_id)))
-  const { data: professionals } = await sb
-    .from('fitness_professionals')
-    .select('id, display_name, type')
-    .in('id', professionalIds)
-
-  const profMap = new Map<string, { id: string; display_name: string; type: string }>(
-    (professionals || []).map((p: { id: string; display_name: string; type: string }) => [p.id, p])
+  // Buscar profissionais (apenas appointments com professional_id setado;
+  // appointments de serviço não têm um e usam service_type como label)
+  const professionalIds = Array.from(
+    new Set(appointments.map(a => a.professional_id).filter(Boolean) as string[])
   )
+
+  let profMap = new Map<string, { id: string; display_name: string; type: string }>()
+  if (professionalIds.length > 0) {
+    const { data: professionals } = await sb
+      .from('fitness_professionals')
+      .select('id, display_name, type')
+      .in('id', professionalIds)
+
+    profMap = new Map<string, { id: string; display_name: string; type: string }>(
+      (professionals || []).map((p: { id: string; display_name: string; type: string }) => [p.id, p])
+    )
+  }
 
   // Buscar pacientes se necessário
   let patientMap = new Map<string, { nome: string; email: string }>()
@@ -208,13 +217,16 @@ async function enrichAppointments(
   }
 
   return appointments.map(a => {
-    const prof = profMap.get(a.professional_id)
+    const prof = a.professional_id ? profMap.get(a.professional_id) : null
     const patient = includePatient ? patientMap.get(a.patient_id) : undefined
+    const serviceLabel = a.service_type && a.service_type in SERVICE_TYPE_LABELS
+      ? SERVICE_TYPE_LABELS[a.service_type as ServiceType]
+      : null
 
     return {
       ...a,
-      professional_name: prof?.display_name || 'Profissional',
-      professional_type: prof?.type || 'trainer',
+      professional_name: prof?.display_name || serviceLabel || 'Profissional',
+      professional_type: prof?.type || null,
       ...(patient && {
         patient_name: patient.nome,
         patient_email: patient.email,

@@ -3,6 +3,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendPushNotification, validatePushConfig } from '@/lib/notifications/push'
 import { notificationTemplates } from '@/lib/notifications/templates'
 import type { PushSubscription } from '@/types/notifications'
+import { SERVICE_TYPE_LABELS, type ServiceType } from '@/types/appointments'
 
 function getAdminClient() {
   return createAdminClient(
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
         // 24h Reminder — for tomorrow's appointments
         // ============================
         if (aptDate === tomorrowBR && !sentReminders.r24h) {
-          const prof = await getProfessionalName(supabase, apt.professional_id)
+          const prof = await getProfessionalName(supabase, apt.professional_id, apt.service_type)
           const payload = notificationTemplates.consulta.lembrete24h(prof, aptTime)
           await sendToUser(supabase, apt.patient_id, payload)
           sentReminders.r24h = true
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
           const diff = aptMinutes - nowMinutes
 
           if (diff > 0 && diff <= 90) {
-            const prof = await getProfessionalName(supabase, apt.professional_id)
+            const prof = await getProfessionalName(supabase, apt.professional_id, apt.service_type)
             const payload = notificationTemplates.consulta.lembrete1h(prof)
             await sendToUser(supabase, apt.patient_id, payload)
             sentReminders.r1h = true
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
           const diff = aptMinutes - nowMinutes
 
           if (diff > 0 && diff <= 30) {
-            const prof = await getProfessionalName(supabase, apt.professional_id)
+            const prof = await getProfessionalName(supabase, apt.professional_id, apt.service_type)
             const link = apt.appointment_type === 'online' ? apt.meeting_link : undefined
             const payload = notificationTemplates.consulta.lembrete15min(prof, link || undefined)
             await sendToUser(supabase, apt.patient_id, payload)
@@ -182,10 +183,21 @@ function timeToMinutes(time: string): number {
   return h * 60 + m
 }
 
+/**
+ * Retorna nome do profissional ou label do serviço para uso no lembrete.
+ * `professionalId` pode ser null para appointments de serviço (spa, etc.).
+ */
 async function getProfessionalName(
   supabase: ReturnType<typeof getAdminClient>,
-  professionalId: string
+  professionalId: string | null,
+  serviceType?: string | null
 ): Promise<string> {
+  if (!professionalId) {
+    if (serviceType && serviceType in SERVICE_TYPE_LABELS) {
+      return SERVICE_TYPE_LABELS[serviceType as ServiceType]
+    }
+    return 'Atendimento'
+  }
   const { data } = await supabase
     .from('fitness_professionals')
     .select('display_name')
@@ -238,8 +250,11 @@ async function sendToUser(
  */
 async function autoAssignForm(
   supabase: ReturnType<typeof getAdminClient>,
-  appointment: { id: string; patient_id: string; professional_id: string }
+  appointment: { id: string; patient_id: string; professional_id: string | null }
 ): Promise<boolean> {
+  // Appointments de serviço (sem profissional) não têm formulário de avaliação
+  if (!appointment.professional_id) return false
+
   // Check if there's already a recent (last 7 days) pending form
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)

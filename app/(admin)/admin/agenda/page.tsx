@@ -19,8 +19,8 @@ import {
   Trash2,
   RotateCcw,
 } from 'lucide-react'
-import type { AppointmentWithDetails, AppointmentStatus, AppointmentType } from '@/types/appointments'
-import { APPOINTMENT_STATUS_LABELS, APPOINTMENT_STATUS_COLORS, PROFESSIONAL_TYPE_LABELS } from '@/types/appointments'
+import type { AppointmentWithDetails, AppointmentStatus, AppointmentType, ServiceType } from '@/types/appointments'
+import { APPOINTMENT_STATUS_LABELS, APPOINTMENT_STATUS_COLORS, PROFESSIONAL_TYPE_LABELS, SERVICE_TYPES, SERVICE_TYPE_LABELS, SERVICE_TYPE_ICONS } from '@/types/appointments'
 
 type ProfessionalOption = { id: string; display_name: string; type: string }
 
@@ -297,7 +297,13 @@ export default function AdminAgendaPage() {
                           <Stethoscope className="w-4 h-4 text-foreground-muted" />
                           <div>
                             <p className="text-sm text-foreground">{apt.professional_name}</p>
-                            <p className="text-xs text-foreground-muted">{PROFESSIONAL_TYPE_LABELS[apt.professional_type]}</p>
+                            <p className="text-xs text-foreground-muted">
+                              {apt.professional_type
+                                ? PROFESSIONAL_TYPE_LABELS[apt.professional_type]
+                                : apt.service_type
+                                  ? 'Serviço'
+                                  : ''}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -430,7 +436,9 @@ function CreateAppointmentModal({
   onCreated: () => void
 }) {
   const [patientId, setPatientId] = useState('')
+  const [target, setTarget] = useState<'professional' | 'service'>('professional')
   const [professionalId, setProfessionalId] = useState('')
+  const [serviceType, setServiceType] = useState<ServiceType | ''>('')
   const [appointmentType, setAppointmentType] = useState<AppointmentType>('presencial')
   const [date, setDate] = useState('')
   const [startTime, setStartTime] = useState('')
@@ -478,8 +486,16 @@ function CreateAppointmentModal({
   }, [])
 
   const handleSubmit = async () => {
-    if (!patientId || !professionalId || !date || !startTime || !endTime) {
+    if (!patientId || !date || !startTime || !endTime) {
       setError('Preencha todos os campos obrigatórios')
+      return
+    }
+    if (target === 'professional' && !professionalId) {
+      setError('Selecione o profissional')
+      return
+    }
+    if (target === 'service' && !serviceType) {
+      setError('Selecione o serviço')
       return
     }
 
@@ -492,7 +508,8 @@ function CreateAppointmentModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patient_id: patientId,
-          professional_id: professionalId,
+          professional_id: target === 'professional' ? professionalId : undefined,
+          service_type: target === 'service' ? serviceType : undefined,
           appointment_type: appointmentType,
           date,
           start_time: startTime,
@@ -574,21 +591,60 @@ function CreateAppointmentModal({
             )}
           </div>
 
-          {/* Profissional */}
+          {/* Toggle Profissional / Serviço */}
           <div>
-            <label className="block text-sm text-foreground-muted mb-1">Profissional *</label>
-            <select
-              value={professionalId}
-              onChange={(e) => setProfessionalId(e.target.value)}
-              className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
-            >
-              <option value="">Selecione...</option>
-              {professionals.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.display_name} ({PROFESSIONAL_TYPE_LABELS[p.type as keyof typeof PROFESSIONAL_TYPE_LABELS] || p.type})
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm text-foreground-muted mb-1">Atendimento *</label>
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => { setTarget('professional'); setServiceType('') }}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  target === 'professional'
+                    ? 'bg-dourado text-foreground'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
+                }`}
+              >
+                Profissional
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTarget('service'); setProfessionalId('') }}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  target === 'service'
+                    ? 'bg-dourado text-foreground'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
+                }`}
+              >
+                Serviço
+              </button>
+            </div>
+            {target === 'professional' ? (
+              <select
+                value={professionalId}
+                onChange={(e) => setProfessionalId(e.target.value)}
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+              >
+                <option value="">Selecione um profissional...</option>
+                {professionals.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.display_name} ({PROFESSIONAL_TYPE_LABELS[p.type as keyof typeof PROFESSIONAL_TYPE_LABELS] || p.type})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value as ServiceType)}
+                className="w-full rounded-lg bg-background-elevated text-foreground text-sm px-3 py-2 border border-border"
+              >
+                <option value="">Selecione um serviço...</option>
+                {SERVICE_TYPES.map(s => (
+                  <option key={s} value={s}>
+                    {SERVICE_TYPE_ICONS[s]} {SERVICE_TYPE_LABELS[s]}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Tipo */}

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { generateAppointmentICS } from '@/lib/calendar/ics-generator'
-import type { AppointmentWithDetails } from '@/types/appointments'
+import type { AppointmentWithDetails, ServiceType } from '@/types/appointments'
+import { SERVICE_TYPE_LABELS } from '@/types/appointments'
 
 function getAdminClient() {
   return createAdminClient(
@@ -52,17 +53,24 @@ export async function GET(
       }
     }
 
-    // Buscar profissional
-    const { data: prof } = await supabaseAdmin
-      .from('fitness_professionals')
-      .select('id, display_name, type')
-      .eq('id', appointment.professional_id)
-      .single()
+    // Buscar profissional (ou usar label do serviço se for appointment sem profissional)
+    let prof: { display_name: string; type: string } | null = null
+    if (appointment.professional_id) {
+      const { data } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('id, display_name, type')
+        .eq('id', appointment.professional_id)
+        .single()
+      prof = data
+    }
+    const serviceLabel = appointment.service_type && appointment.service_type in SERVICE_TYPE_LABELS
+      ? SERVICE_TYPE_LABELS[appointment.service_type as ServiceType]
+      : null
 
     const appointmentWithDetails: AppointmentWithDetails = {
       ...appointment,
-      professional_name: prof?.display_name || 'Profissional',
-      professional_type: prof?.type || 'trainer',
+      professional_name: prof?.display_name || serviceLabel || 'Profissional',
+      professional_type: prof?.type || null,
     }
 
     const icsContent = generateAppointmentICS(appointmentWithDetails)

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import type { UpdateAppointmentInput } from '@/types/appointments'
+import type { UpdateAppointmentInput, ServiceType } from '@/types/appointments'
+import { SERVICE_TYPE_LABELS } from '@/types/appointments'
 
 function getAdminClient() {
   return createAdminClient(
@@ -48,30 +49,39 @@ export async function GET(
 
     const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin'
 
-    const { data: professional } = await supabaseAdmin
-      .from('fitness_professionals')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('id', appointment.professional_id)
-      .maybeSingle()
-
-    const isProfessional = !!professional
+    let isProfessional = false
+    if (appointment.professional_id) {
+      const { data: professional } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('id', appointment.professional_id)
+        .maybeSingle()
+      isProfessional = !!professional
+    }
 
     if (!isPatient && !isAdmin && !isProfessional) {
       return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
     }
 
-    // Enriquecer com dados do profissional
-    const { data: prof } = await supabaseAdmin
-      .from('fitness_professionals')
-      .select('id, display_name, type')
-      .eq('id', appointment.professional_id)
-      .single()
+    // Enriquecer com dados do profissional OU label do serviço
+    let prof: { display_name: string; type: string } | null = null
+    if (appointment.professional_id) {
+      const { data } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('id, display_name, type')
+        .eq('id', appointment.professional_id)
+        .single()
+      prof = data
+    }
+    const serviceLabel = appointment.service_type && appointment.service_type in SERVICE_TYPE_LABELS
+      ? SERVICE_TYPE_LABELS[appointment.service_type as ServiceType]
+      : null
 
     const enriched = {
       ...appointment,
-      professional_name: prof?.display_name || 'Profissional',
-      professional_type: prof?.type || 'trainer',
+      professional_name: prof?.display_name || serviceLabel || 'Profissional',
+      professional_type: prof?.type || null,
     }
 
     // Se admin ou profissional, incluir dados do paciente
@@ -129,6 +139,11 @@ export async function PATCH(
 
       if (!appointment) {
         return NextResponse.json({ success: false, error: 'Consulta não encontrada' }, { status: 404 })
+      }
+
+      // Consultas de serviço (sem profissional) só podem ser editadas por admin
+      if (!appointment.professional_id) {
+        return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
       }
 
       const { data: professional } = await supabaseAdmin

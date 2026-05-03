@@ -36,7 +36,11 @@ export function AppointmentCard({
   const [confirming, setConfirming] = useState(false)
   const [showReschedule, setShowReschedule] = useState(false)
 
-  const profType = PROFESSIONAL_TYPE_LABELS[appointment.professional_type] || 'Profissional'
+  const profType = appointment.professional_type
+    ? (PROFESSIONAL_TYPE_LABELS[appointment.professional_type] || 'Profissional')
+    : appointment.service_type
+      ? 'Atendimento'
+      : 'Profissional'
   const statusLabel = APPOINTMENT_STATUS_LABELS[appointment.status]
   const statusColor = APPOINTMENT_STATUS_COLORS[appointment.status]
 
@@ -206,7 +210,7 @@ export function AppointmentCard({
           }
           setShowReschedule(false)
         }}
-        professionalName={appointment.professional_name}
+        professionalName={appointment.professional_name || 'Atendimento'}
         date={dateFormatted}
         time={startTime}
       />

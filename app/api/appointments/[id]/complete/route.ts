@@ -51,6 +51,11 @@ export async function POST(
         return NextResponse.json({ success: false, error: 'Consulta não encontrada' }, { status: 404 })
       }
 
+      // Consultas de serviço só podem ser concluídas pelo admin
+      if (!appointment.professional_id) {
+        return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
+      }
+
       const { data: professional } = await supabaseAdmin
         .from('fitness_professionals')
         .select('id')
