@@ -696,6 +696,99 @@ export default function MealPlanDetailPage() {
             {/* Day Content */}
             {expandedDays.includes(dayIndex) && (
               <div className="border-t border-border p-4 space-y-4">
+                {/* Resumo vivo do dia — soma os macros conforme edita */}
+                {(() => {
+                  const totals = day.meals.reduce(
+                    (acc, m) => ({
+                      kcal: acc.kcal + (m.total_calories || 0),
+                      p: acc.p + (m.total_protein || 0),
+                      c: acc.c + (m.total_carbs || 0),
+                      g: acc.g + (m.total_fat || 0),
+                    }),
+                    { kcal: 0, p: 0, c: 0, g: 0 }
+                  )
+                  const macros: Array<{
+                    label: string
+                    current: number
+                    target?: number
+                    unit: string
+                    decimals: number
+                    barClass: string
+                    textClass: string
+                  }> = [
+                    { label: 'Calorias', current: totals.kcal, target: plan.calories_target, unit: 'kcal', decimals: 0, barClass: 'bg-orange-500', textClass: 'text-orange-600' },
+                    { label: 'Proteínas', current: totals.p, target: plan.protein_target, unit: 'g', decimals: 1, barClass: 'bg-green-500', textClass: 'text-green-600' },
+                    { label: 'Carboidratos', current: totals.c, target: plan.carbs_target, unit: 'g', decimals: 1, barClass: 'bg-blue-500', textClass: 'text-blue-600' },
+                    { label: 'Gorduras', current: totals.g, target: plan.fat_target, unit: 'g', decimals: 1, barClass: 'bg-yellow-500', textClass: 'text-yellow-600' },
+                  ]
+                  return (
+                    <div className="bg-dourado/5 border border-dourado/20 rounded-lg p-4">
+                      <h4 className="text-xs font-semibold text-foreground-secondary uppercase tracking-wide mb-3">
+                        Resumo do dia (atualiza ao editar)
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {macros.map((m) => {
+                          const pct = m.target && m.target > 0 ? Math.min(150, (m.current / m.target) * 100) : 0
+                          // 90-110% verde, 70-90 ou 110-120 amarelo, fora disso laranja/vermelho
+                          const status = !m.target
+                            ? 'neutral'
+                            : pct >= 90 && pct <= 110
+                              ? 'ok'
+                              : (pct >= 70 && pct < 90) || (pct > 110 && pct <= 120)
+                                ? 'near'
+                                : 'off'
+                          const diff = m.target ? m.current - m.target : 0
+                          return (
+                            <div key={m.label} className="space-y-1">
+                              <div className="flex items-baseline justify-between">
+                                <span className={`text-xs font-medium ${m.textClass}`}>{m.label}</span>
+                                {m.target ? (
+                                  <span className="text-[10px] text-foreground-muted">meta {m.target}{m.unit}</span>
+                                ) : null}
+                              </div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-lg font-bold text-foreground">
+                                  {m.current.toFixed(m.decimals)}
+                                </span>
+                                <span className="text-xs text-foreground-muted">{m.unit}</span>
+                                {m.target ? (
+                                  <span
+                                    className={`text-[11px] ml-auto ${
+                                      status === 'ok'
+                                        ? 'text-green-600'
+                                        : status === 'near'
+                                          ? 'text-yellow-600'
+                                          : 'text-red-600'
+                                    }`}
+                                  >
+                                    {diff >= 0 ? '+' : ''}{diff.toFixed(m.decimals)}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {m.target ? (
+                                <div className="h-1.5 bg-background-elevated rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full ${
+                                      status === 'ok'
+                                        ? 'bg-green-500'
+                                        : status === 'near'
+                                          ? 'bg-yellow-500'
+                                          : status === 'off' && pct > 100
+                                            ? 'bg-red-500'
+                                            : m.barClass
+                                    }`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {/* Meals */}
                 {day.meals.length === 0 ? (
                   <p className="text-center text-foreground-secondary py-4">
