@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { format, startOfWeek, addDays, isToday } from 'date-fns'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 interface Food {
   name: string
@@ -100,7 +101,7 @@ export function useMealPlan() {
   // Buscar refeições completadas hoje
   const fetchCompletedMeals = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayDateSP()
       const response = await fetch(`/api/client/meal-plan/complete?date=${today}`)
       const data = await response.json()
       if (data.success) {
@@ -195,7 +196,7 @@ export function useMealPlan() {
     alternativeIndex?: number
   ): Promise<boolean> => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayDateSP()
 
       // Get foods from the selected alternative
       let foods: Food[] = meal.foods

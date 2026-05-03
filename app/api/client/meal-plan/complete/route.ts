@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardPointsServer } from '@/lib/services/points-server'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 // POST - Registrar refeição do plano como completada
 export async function POST(request: NextRequest) {
@@ -165,7 +166,7 @@ export async function GET(request: NextRequest) {
     )
 
     const { searchParams } = new URL(request.url)
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const date = searchParams.get('date') || getTodayDateSP()
 
     // Buscar refeições completadas nesta data COM os itens (alimentos reais consumidos)
     const { data: completedMeals, error } = await admin
