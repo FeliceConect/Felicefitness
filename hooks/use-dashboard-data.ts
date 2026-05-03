@@ -71,6 +71,8 @@ export interface DashboardData {
   proteinGoal: number
   workoutStats: WorkoutStats
   sleepLoggedToday: boolean
+  /** Atividade física qualificada hoje (≥20min, intensidade ≥ moderada). */
+  hasQualifyingActivityToday: boolean
   loading: boolean
   error: Error | null
   refresh: () => Promise<void>
@@ -139,6 +141,7 @@ interface DashboardSnapshot {
   proteinConsumed: number
   workoutStats: WorkoutStats
   sleepLoggedToday: boolean
+  hasQualifyingActivityToday: boolean
 }
 
 const EMPTY_SNAPSHOT: DashboardSnapshot = {
@@ -150,6 +153,7 @@ const EMPTY_SNAPSHOT: DashboardSnapshot = {
   proteinConsumed: 0,
   workoutStats: { totalWorkouts: 0, prsThisMonth: 0 },
   sleepLoggedToday: false,
+  hasQualifyingActivityToday: false,
 }
 
 const MOCK_SNAPSHOT: DashboardSnapshot = {
@@ -161,6 +165,7 @@ const MOCK_SNAPSHOT: DashboardSnapshot = {
   proteinConsumed: 95,
   workoutStats: { totalWorkouts: 0, prsThisMonth: 0 },
   sleepLoggedToday: false,
+  hasQualifyingActivityToday: false,
 }
 
 async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
@@ -189,6 +194,7 @@ async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
     mealsResult,
     totalWorkoutsResult,
     prsResult,
+    activitiesTodayResult,
   ] = await Promise.all([
     sb.from('fitness_profiles').select('*').eq('id', user.id).single(),
     sb.from('fitness_sleep_logs').select('id').eq('user_id', user.id).gte('created_at', todayStart.toISOString()).limit(1),
@@ -197,7 +203,12 @@ async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
     sb.from('fitness_meals').select('tipo_refeicao, calorias_total, proteinas_total, horario').eq('user_id', user.id).eq('data', today),
     sb.from('fitness_workouts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'concluido'),
     sb.from('fitness_exercise_sets').select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id))', { count: 'exact', head: true }).eq('is_pr', true).eq('workout_exercise.workout.user_id', user.id).gte('created_at', startOfMonth.toISOString()),
+    sb.from('fitness_activities').select('id', { head: true, count: 'exact' }).eq('user_id', user.id).eq('date', today).gte('duration_minutes', 20).in('intensity', ['moderado', 'intenso', 'muito_intenso']),
   ])
+
+  // Atividade física qualificada hoje (≥20min, intensidade ≥ moderada)
+  // — equivalente a treino para o item "Treino" do daily score.
+  const hasQualifyingActivityToday = (activitiesTodayResult.count ?? 0) > 0
 
   // Profile (com fallback para metadata do auth)
   let profile: Profile | null = null
@@ -391,6 +402,7 @@ async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
     proteinConsumed,
     workoutStats,
     sleepLoggedToday,
+    hasQualifyingActivityToday,
   }
 }
 
@@ -429,6 +441,7 @@ export function useDashboardData(): DashboardData {
     proteinGoal: snapshot.profile?.meta_proteina_g || 170,
     workoutStats: snapshot.workoutStats,
     sleepLoggedToday: snapshot.sleepLoggedToday,
+    hasQualifyingActivityToday: snapshot.hasQualifyingActivityToday,
     loading: isLoading,
     error: error as Error | null,
     refresh,

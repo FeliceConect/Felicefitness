@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
+import { getTodayDateSP } from '@/lib/utils/date'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
 import { Calendar, Trophy, Globe, Droplets, Utensils, Dumbbell, MapPin, Video, ChevronRight, ClipboardList, BarChart3, Flame, Zap, Moon } from 'lucide-react'
@@ -36,6 +37,7 @@ export function DashboardContent() {
     proteinGoal,
     workoutStats,
     sleepLoggedToday,
+    hasQualifyingActivityToday,
     loading,
     refresh
   } = useDashboardData()
@@ -100,7 +102,7 @@ export function DashboardContent() {
   const [feedCount, setFeedCount] = useState(0)
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayDateSP()
     fetch(`/api/appointments?status=scheduled,confirmed&dateFrom=${today}&limit=1`)
       .then(r => r.json())
       .then(data => {
@@ -169,6 +171,7 @@ export function DashboardContent() {
   // Dados para o score diário
   const scoreData = {
     treinoConcluido: todayWorkout?.status === 'concluido',
+    atividadeCompleta: hasQualifyingActivityToday,
     alimentacaoPercent: caloriesGoal > 0 ? caloriesConsumed / caloriesGoal : 0,
     aguaPercent: waterGoal > 0 ? waterTotal / waterGoal : 0,
     sonoRegistrado: sleepLoggedToday

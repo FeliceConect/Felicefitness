@@ -27,7 +27,7 @@ export function DailyScore({ data }: DailyScoreProps) {
   }
 
   const items = [
-    { key: 'treino', label: 'Treino', done: data.treinoConcluido },
+    { key: 'treino', label: 'Treino', done: data.treinoConcluido || !!data.atividadeCompleta },
     { key: 'alimentacao', label: 'Alimentação', done: data.alimentacaoPercent >= 0.8 },
     { key: 'agua', label: 'Água', done: data.aguaPercent >= 0.8, percent: data.aguaPercent },
     { key: 'sono', label: 'Sono', done: data.sonoRegistrado }

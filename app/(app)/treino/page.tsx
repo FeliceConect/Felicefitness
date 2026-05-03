@@ -16,6 +16,8 @@ import type { DayWorkout } from '@/lib/workout/types'
 import type { Activity, ActivityType, IntensityLevel } from '@/lib/activity/types'
 import { AddActivityModal } from '@/components/treino/add-activity-modal'
 import { ActivityCard } from '@/components/treino/activity-card'
+import { useQueryClient } from '@tanstack/react-query'
+import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
 
 const typeIcons: Record<string, string> = {
   tradicional: '🏋️',
@@ -26,6 +28,7 @@ const typeIcons: Record<string, string> = {
 
 export default function TreinoPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { weekDays, upcomingWorkouts, recentWorkouts, loading } = useWorkouts()
   const { state, getSavedWorkoutId, clearSavedWorkout } = useWorkoutExecution()
   const [selectedDay, setSelectedDay] = useState<DayWorkout | null>(
@@ -82,6 +85,9 @@ export default function TreinoPage() {
       if (response.ok) {
         setEditingActivity(null)
         fetchActivities(activity.date)
+        // Atividade qualificada (≥20min, ≥ moderada) conta como treino no
+        // dashboard — invalida cache para refletir imediatamente.
+        queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       } else {
         const data = await response.json().catch(() => null)
         alert(data?.error || 'Erro ao salvar atividade')
@@ -101,6 +107,7 @@ export default function TreinoPage() {
 
       if (response.ok && selectedDay) {
         fetchActivities(format(selectedDay.date, 'yyyy-MM-dd'))
+        queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
       } else {
         const data = await response.json().catch(() => null)
         alert(data?.error || 'Erro ao excluir atividade')

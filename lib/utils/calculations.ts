@@ -3,6 +3,11 @@
  */
 export interface DailyScoreData {
   treinoConcluido: boolean
+  /**
+   * Atividade física qualificada feita hoje (≥20min, intensidade ≥ moderada).
+   * Conta como treino — equivalente a treino estruturado para o item "Treino".
+   */
+  atividadeCompleta?: boolean
   alimentacaoPercent: number    // 0-1
   aguaPercent: number           // 0-1
   sonoRegistrado: boolean
@@ -11,8 +16,8 @@ export interface DailyScoreData {
 export function calculateDailyScore(data: DailyScoreData): number {
   let score = 0
 
-  // Treino: 30 pontos
-  if (data.treinoConcluido) score += 30
+  // Treino: 30 pontos — atividade física qualificada conta como treino
+  if (data.treinoConcluido || data.atividadeCompleta) score += 30
 
   // Alimentação: até 30 pontos
   score += Math.min(data.alimentacaoPercent, 1) * 30
