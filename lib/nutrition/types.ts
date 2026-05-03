@@ -45,7 +45,14 @@ export interface Food {
   carboidratos: number
   gorduras: number
   fibras?: number
+  // Micronutrientes (por 100g/ml). Pedido pela nutri.
+  // sodio/ferro/colesterol/zinco/magnesio em mg, selenio em µg.
   sodio?: number
+  ferro?: number
+  colesterol?: number
+  zinco?: number
+  selenio?: number
+  magnesio?: number
   porcoes_comuns?: CommonPortion[] // Porções comuns para seleção rápida
   is_favorite?: boolean
   is_user_created?: boolean
@@ -105,6 +112,13 @@ export interface NutritionTotals {
   carboidratos: number
   gorduras: number
   fibras?: number
+  // Micronutrientes — exibidos no resumo do plano da nutri.
+  sodio?: number
+  ferro?: number
+  colesterol?: number
+  zinco?: number
+  selenio?: number
+  magnesio?: number
 }
 
 export interface NutritionProgress {

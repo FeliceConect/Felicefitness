@@ -8,15 +8,24 @@ import type {
   NutritionGoals
 } from './types'
 
-// Calcular macros de um alimento para uma quantidade específica
+// Calcular macros (e micros, se disponíveis) de um alimento para uma quantidade.
+// Os micros vêm da TBCA por 100g e são escalados pelo mesmo multiplier dos macros.
 export function calculateFoodMacros(food: Food, quantidade: number): NutritionTotals {
   const multiplier = quantidade / food.porcao_padrao
+  const scale1 = (v: number | undefined): number | undefined =>
+    v != null ? Math.round(v * multiplier * 10) / 10 : undefined
   return {
     calorias: Math.round(food.calorias * multiplier),
     proteinas: Math.round(food.proteinas * multiplier * 10) / 10,
     carboidratos: Math.round(food.carboidratos * multiplier * 10) / 10,
     gorduras: Math.round(food.gorduras * multiplier * 10) / 10,
-    fibras: food.fibras ? Math.round(food.fibras * multiplier * 10) / 10 : undefined
+    fibras: scale1(food.fibras),
+    sodio: scale1(food.sodio),
+    ferro: scale1(food.ferro),
+    colesterol: scale1(food.colesterol),
+    zinco: scale1(food.zinco),
+    selenio: scale1(food.selenio),
+    magnesio: scale1(food.magnesio),
   }
 }
 

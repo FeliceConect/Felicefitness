@@ -232,6 +232,9 @@ export async function GET(request: NextRequest) {
       console.error('Erro ao buscar alimentos do usuário:', userError)
     }
 
+    // Helper: converte campo numérico opcional do banco para number ou null.
+    const num = (v: unknown): number | null => (v != null && v !== '' ? Number(v) : null)
+
     // Formatar resultados
     const formattedGlobal = allGlobalFoods.map((f: SupabaseAny) => ({
       id: f.id,
@@ -244,8 +247,13 @@ export async function GET(request: NextRequest) {
       proteinas: Number(f.proteinas),
       carboidratos: Number(f.carboidratos),
       gorduras: Number(f.gorduras),
-      fibras: f.fibras ? Number(f.fibras) : null,
-      sodio: f.sodio ? Number(f.sodio) : null,
+      fibras: num(f.fibras),
+      sodio: num(f.sodio),
+      ferro: num(f.ferro),
+      colesterol: num(f.colesterol),
+      zinco: num(f.zinco),
+      selenio: num(f.selenio),
+      magnesio: num(f.magnesio),
       porcoes_comuns: f.porcoes_comuns,
       is_favorite: false,
       is_user_created: false,
@@ -264,8 +272,13 @@ export async function GET(request: NextRequest) {
       proteinas: Number(f.proteinas),
       carboidratos: Number(f.carboidratos),
       gorduras: Number(f.gorduras),
-      fibras: f.fibras ? Number(f.fibras) : null,
-      sodio: f.sodio ? Number(f.sodio) : null,
+      fibras: num(f.fibras),
+      sodio: num(f.sodio),
+      ferro: num(f.ferro),
+      colesterol: num(f.colesterol),
+      zinco: num(f.zinco),
+      selenio: num(f.selenio),
+      magnesio: num(f.magnesio),
       porcoes_comuns: f.porcoes_comuns,
       is_favorite: f.is_favorite || false,
       is_user_created: true,

@@ -42,6 +42,14 @@ interface Food {
   protein?: number
   carbs?: number
   fat?: number
+  // Micronutrientes (TBCA) — exibidos só no resumo da nutri.
+  // sodio/ferro/colesterol/zinco/magnesio em mg, selenio em µg.
+  sodio?: number
+  ferro?: number
+  colesterol?: number
+  zinco?: number
+  selenio?: number
+  magnesio?: number
 }
 
 // Formato novo para alternativas importadas por IA
@@ -707,6 +715,27 @@ export default function MealPlanDetailPage() {
                     }),
                     { kcal: 0, p: 0, c: 0, g: 0 }
                   )
+                  // Micros somados direto dos foods (não estão em meal.total_*).
+                  // Conta apenas alimentos que têm dado — evita falso zero.
+                  const micros = day.meals
+                    .flatMap((m) => m.foods)
+                    .reduce(
+                      (acc, f) => ({
+                        sodio:      acc.sodio      + (f.sodio      ?? 0),
+                        ferro:      acc.ferro      + (f.ferro      ?? 0),
+                        colesterol: acc.colesterol + (f.colesterol ?? 0),
+                        zinco:      acc.zinco      + (f.zinco      ?? 0),
+                        selenio:    acc.selenio    + (f.selenio    ?? 0),
+                        magnesio:   acc.magnesio   + (f.magnesio   ?? 0),
+                      }),
+                      { sodio: 0, ferro: 0, colesterol: 0, zinco: 0, selenio: 0, magnesio: 0 }
+                    )
+                  const microsAnyDataPresent = day.meals
+                    .flatMap((m) => m.foods)
+                    .some((f) =>
+                      f.sodio != null || f.ferro != null || f.colesterol != null ||
+                      f.zinco != null || f.selenio != null || f.magnesio != null
+                    )
                   const macros: Array<{
                     label: string
                     current: number
@@ -785,6 +814,46 @@ export default function MealPlanDetailPage() {
                           )
                         })}
                       </div>
+
+                      {/* Micronutrientes — só pra nutri ver enquanto monta o
+                          cardápio. Sem meta, sem barra. Aparece só se algum
+                          alimento da TBCA já tiver dado preenchido. */}
+                      {microsAnyDataPresent && (
+                        <div className="mt-4 pt-4 border-t border-dourado/20">
+                          <h4 className="text-xs font-semibold text-foreground-secondary uppercase tracking-wide mb-2">
+                            Micronutrientes
+                          </h4>
+                          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-xs">
+                            <div>
+                              <div className="text-foreground-muted">Sódio</div>
+                              <div className="text-foreground font-semibold">{micros.sodio.toFixed(0)} mg</div>
+                            </div>
+                            <div>
+                              <div className="text-foreground-muted">Ferro</div>
+                              <div className="text-foreground font-semibold">{micros.ferro.toFixed(1)} mg</div>
+                            </div>
+                            <div>
+                              <div className="text-foreground-muted">Colesterol</div>
+                              <div className="text-foreground font-semibold">{micros.colesterol.toFixed(0)} mg</div>
+                            </div>
+                            <div>
+                              <div className="text-foreground-muted">Zinco</div>
+                              <div className="text-foreground font-semibold">{micros.zinco.toFixed(1)} mg</div>
+                            </div>
+                            <div>
+                              <div className="text-foreground-muted">Selênio</div>
+                              <div className="text-foreground font-semibold">{micros.selenio.toFixed(1)} µg</div>
+                            </div>
+                            <div>
+                              <div className="text-foreground-muted">Magnésio</div>
+                              <div className="text-foreground font-semibold">{micros.magnesio.toFixed(0)} mg</div>
+                            </div>
+                          </div>
+                          <p className="mt-2 text-[10px] text-foreground-muted">
+                            Dados da TBCA. Alimentos sem registro entram como zero — não significa ausência real.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )
                 })()}
@@ -1092,7 +1161,14 @@ function FoodPickerSheet({
       calories: macros.calorias,
       protein: macros.proteinas,
       carbs: macros.carboidratos,
-      fat: macros.gorduras
+      fat: macros.gorduras,
+      // Micros — só preenchidos para alimentos da TBCA com dados.
+      sodio: macros.sodio,
+      ferro: macros.ferro,
+      colesterol: macros.colesterol,
+      zinco: macros.zinco,
+      selenio: macros.selenio,
+      magnesio: macros.magnesio,
     })
     setSelectedFood(null)
   }
