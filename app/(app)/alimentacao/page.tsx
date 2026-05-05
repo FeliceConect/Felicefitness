@@ -13,14 +13,20 @@ import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { useWaterLog } from '@/hooks/use-water-log'
 import { useMealPlan } from '@/hooks/use-meal-plan'
 import { useProfile } from '@/hooks/use-profile'
+import { useNutritionGoals } from '@/hooks/use-nutrition-goals'
+import { calculateNutritionProgress } from '@/lib/nutrition/calculations'
 import type { MealType } from '@/lib/nutrition/types'
 
 export default function AlimentacaoPage() {
   const router = useRouter()
-  const { meals, plannedMeals, totals, goals, progress, nextMeal, loading } = useDailyMeals()
+  const { meals, plannedMeals, totals, nextMeal, loading } = useDailyMeals()
   const { todayTotal: aguaConsumida } = useWaterLog()
   const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completedMealsData, isTrainingDay, completeMeal, loading: planLoading } = useMealPlan()
   const { profile } = useProfile()
+  // Metas reais (plano da nutri → perfil → cálculo dinâmico → fallback)
+  const { goals } = useNutritionGoals()
+  // Progresso recalculado com as metas reais
+  const progress = calculateNutritionProgress(totals, goals)
 
   const handleAddMeal = (tipo: MealType) => {
     router.push(`/alimentacao/refeicao/nova?tipo=${tipo}`)
@@ -205,7 +211,9 @@ export default function AlimentacaoPage() {
             <div>
               <p className="text-sm text-foreground-secondary">Refeições</p>
               <p className="text-xl font-bold text-foreground">
-                {meals.filter(m => m.status === 'concluido').length}/{plannedMeals.filter(p => !p.opcional).length}
+                {mealPlan && planMeals.length > 0
+                  ? `${planMeals.filter(m => completedMealIds.includes(m.meal_type) || completedMealIds.includes(m.id)).length}/${planMeals.length}`
+                  : `${meals.filter(m => m.status === 'concluido').length}/${plannedMeals.filter(p => !p.opcional).length}`}
               </p>
             </div>
             <div>
