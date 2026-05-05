@@ -26,6 +26,7 @@ import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { cn } from '@/lib/utils'
 import type { MealType, FoodCategory } from '@/lib/nutrition/types'
 import { mealTypeLabels, mealTypeIcons } from '@/lib/nutrition/types'
+import { compressImageClient } from '@/lib/images/compress-client'
 
 interface AnalyzedFood {
   nome: string
@@ -83,7 +84,7 @@ function AnalysisContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
-  const handleImageSelect = useCallback((file: File) => {
+  const handleImageSelect = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Selecione uma imagem válida')
       return
@@ -93,8 +94,19 @@ function AnalysisContent() {
       return
     }
 
-    // Show preview
-    const previewUrl = URL.createObjectURL(file)
+    // Comprimir antes de gerar base64 — uma foto típica de iPhone (4-8 MB)
+    // vira ~300-600 KB, evitando timeout/cancelamento da request em rede móvel
+    // (causa raiz do "Erro de conexão" relatado por clientes).
+    let processed = file
+    try {
+      processed = await compressImageClient(file, { maxDimension: 1600, quality: 0.82 })
+    } catch (err) {
+      // Se a compressão falhar, segue com o arquivo original
+      console.warn('Falha ao comprimir imagem, usando original:', err)
+    }
+
+    // Show preview (do arquivo comprimido)
+    const previewUrl = URL.createObjectURL(processed)
     setImagePreview(previewUrl)
     setResult(null)
     setError(null)
@@ -105,12 +117,12 @@ function AnalysisContent() {
       const base64 = (reader.result as string).split(',')[1]
       setImageBase64(base64)
     }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(processed)
   }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) handleImageSelect(file)
+    if (file) void handleImageSelect(file)
     e.target.value = ''
   }
 
