@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
+import { useNutritionGoals } from '@/hooks/use-nutrition-goals'
 import { getTodayDateSP } from '@/lib/utils/date'
 import { useGamification } from '@/hooks/use-gamification'
 import { useWaterLog } from '@/hooks/use-water-log'
@@ -29,18 +30,22 @@ export function DashboardContent() {
     profile,
     todayWorkout,
     todayMeals,
-    waterGoal,
     streak,
     caloriesConsumed,
-    caloriesGoal,
     proteinConsumed,
-    proteinGoal,
     workoutStats,
     sleepLoggedToday,
     hasQualifyingActivityToday,
     loading,
     refresh
   } = useDashboardData()
+
+  // Metas reais (plano da nutri → perfil → cálculo dinâmico → fallback)
+  // Substitui caloriesGoal/proteinGoal/waterGoal hardcoded do useDashboardData.
+  const { goals } = useNutritionGoals()
+  const caloriesGoal = goals.calorias
+  const proteinGoal = goals.proteinas
+  const waterGoal = goals.agua
 
   // Refresh automático quando o app volta ao foco
   useEffect(() => {
