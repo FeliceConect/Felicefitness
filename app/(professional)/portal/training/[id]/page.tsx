@@ -239,7 +239,9 @@ export default function TrainingProgramDetailPage() {
                 instructions: ex.instructions,
                 videoUrl: ex.video_url,
                 isWarmup: ex.is_warmup,
-                orderIndex: exIdx
+                orderIndex: exIdx,
+                set_type: ex.set_type ?? 'reps',
+                circuit_group: ex.circuit_group ?? null,
               }))
             }))
           }))
