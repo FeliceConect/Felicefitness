@@ -285,7 +285,9 @@ export async function PUT(
                 is_dropset: exercise.isDropset ?? exercise.is_dropset ?? false,
                 is_warmup: exercise.isWarmup ?? exercise.is_warmup ?? false,
                 order_index: exercise.orderIndex ?? exercise.order_index ?? 0,
-                notes: exercise.notes
+                notes: exercise.notes,
+                set_type: exercise.set_type ?? exercise.setType ?? 'reps',
+                circuit_group: exercise.circuit_group ?? exercise.circuitGroup ?? null,
               })
           }
         }

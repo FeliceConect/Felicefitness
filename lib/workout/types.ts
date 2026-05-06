@@ -39,6 +39,9 @@ export interface WorkoutTemplate {
   exercicios: TemplateExercise[]
 }
 
+/** Tipo da série: por repetições ou por tempo (isometria). */
+export type SetType = 'reps' | 'time'
+
 export interface TemplateExercise {
   id: string
   exercise_id: string
@@ -48,8 +51,14 @@ export interface TemplateExercise {
   repeticoes: string // "12" ou "30s" ou "10 cada"
   descanso: number // segundos
   carga_sugerida?: number
+  /** 'reps' (default) ou 'time' (isometria, ex: prancha 30s). */
+  set_type?: SetType
+  /** Segundos por série quando set_type='time'. */
+  tempo_segundos?: number
   is_superset?: boolean
-  superset_with?: string // id do exercício pareado
+  superset_with?: string // id do exercício pareado (legado)
+  /** Grupo de circuito: exercícios com mesmo número formam um circuito. NULL = solo. */
+  circuit_group?: number | null
   notas?: string
   video_url?: string
   instructions?: string
@@ -83,6 +92,8 @@ export interface WorkoutExercise {
   series: ExerciseSet[]
   notas?: string
   is_superset?: boolean
+  /** Grupo de circuito: exercícios com mesmo número formam um circuito. NULL = solo. */
+  circuit_group?: number | null
   video_url?: string
   instructions?: string
 }
@@ -96,6 +107,8 @@ export interface ExerciseSet {
   carga_planejada?: number
   carga_realizada?: number
   tempo_segundos?: number // para isométricos
+  /** 'reps' (default) ou 'time' (isometria). */
+  set_type?: SetType
   descanso?: number // segundos de descanso após esta série
   status: 'pendente' | 'concluido' | 'pulado'
   is_pr?: boolean

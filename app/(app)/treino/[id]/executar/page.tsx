@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { X, Pause, Loader2, Zap, PlayCircle, Clock } from 'lucide-react'
+import { X, Pause, Loader2, Zap, PlayCircle, Clock, StickyNote } from 'lucide-react'
 import { ExerciseProgressStrip } from '@/components/treino/exercise-progress-strip'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ const SetInputModal = dynamic(() => import('@/components/treino/set-input-modal'
 const CardioInputModal = dynamic(() => import('@/components/treino/cardio-input-modal').then(m => ({ default: m.CardioInputModal })), { ssr: false })
 const PRCelebration = dynamic(() => import('@/components/treino/pr-celebration').then(m => ({ default: m.PRCelebration })), { ssr: false })
 const ExerciseVideoModal = dynamic(() => import('@/components/treino/exercise-video-modal').then(m => ({ default: m.ExerciseVideoModal })), { ssr: false })
+const IsometricTimerModal = dynamic(() => import('@/components/treino/isometric-timer-modal').then(m => ({ default: m.IsometricTimerModal })), { ssr: false })
 import type { CompletedCardio } from '@/lib/workout/types'
 
 function formatTime(seconds: number): string {
@@ -40,6 +41,7 @@ export default function WorkoutExecutionPage() {
   const workoutId = params.id as string
 
   const [showSetInput, setShowSetInput] = useState(false)
+  const [showIsometricTimer, setShowIsometricTimer] = useState(false)
   const [showCardioInput, setShowCardioInput] = useState(false)
   const [showPRCelebration, setShowPRCelebration] = useState(false)
   const [latestPR, setLatestPR] = useState<{ name: string; weight: number; reps: number } | null>(null)
@@ -133,6 +135,14 @@ export default function WorkoutExecutionPage() {
     }
   }, [loading, workout, state.status, startWorkout])
 
+  // Handler para isometria — converte segundos em "reps" (re-uso do campo
+   // pra não quebrar o contrato; UI da série concluída lê set_type pra mostrar
+   // "30s" em vez de "×30").
+  const handleCompleteIsometric = (data: { seconds: number; weight: number }) => {
+    setShowIsometricTimer(false)
+    handleCompleteSet({ reps: data.seconds, weight: data.weight })
+  }
+
   // Handle set completion (new set or editing existing)
   const handleCompleteSet = (data: { reps: number; weight: number }) => {
     setShowSetInput(false)
@@ -144,8 +154,10 @@ export default function WorkoutExecutionPage() {
       return
     }
 
-    // Check if this will be a PR (before completing)
+    // Snapshot pra detectar transição de circuito após o setState assíncrono
     const previousPRsCount = state.newPRs.length
+    const previousCircuitGroup = currentExercise?.circuit_group ?? null
+    const previousExerciseId = currentExercise?.id
 
     completeSet(data)
 
@@ -161,6 +173,15 @@ export default function WorkoutExecutionPage() {
         setShowPRCelebration(true)
         return
       }
+
+      // Se acabamos de pular pra outro membro do mesmo circuito, NÃO inicia
+      // descanso — a transição entre membros do circuito é sem pausa.
+      const stillInSameCircuit =
+        previousCircuitGroup != null &&
+        currentExercise?.circuit_group === previousCircuitGroup &&
+        currentExercise?.id !== previousExerciseId
+
+      if (stillInSameCircuit) return
 
       // Start rest timer se ainda há séries a fazer no treino (independente da ordem)
       if ((completedSetsCount + 1) < totalSets && currentExercise) {
@@ -371,6 +392,23 @@ export default function WorkoutExecutionPage() {
               <h2 className="text-2xl font-bold text-foreground font-heading leading-tight">
                 {currentExercise.nome}
               </h2>
+              {/* Badge de circuito — mostra os "irmãos" do mesmo circuit_group */}
+              {currentExercise.circuit_group != null && (() => {
+                const partners = workout.exercicios.filter(
+                  ex => ex.circuit_group === currentExercise.circuit_group && ex.id !== currentExercise.id
+                )
+                if (partners.length === 0) return null
+                return (
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-vinho/10 border border-vinho/30">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-vinho">
+                      Circuito {currentExercise.circuit_group}
+                    </span>
+                    <span className="text-[11px] text-vinho/80">
+                      • com {partners.map(p => p.nome).join(', ')}
+                    </span>
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Series indicators */}
@@ -398,10 +436,14 @@ export default function WorkoutExecutionPage() {
                     )}
                   >
                     {isCompleted ? (
-                      <>
-                        <span className="text-xs leading-none">{completedSet.weight}kg</span>
-                        <span className="text-[10px] leading-none opacity-80">×{completedSet.reps}</span>
-                      </>
+                      currentExercise.series[index]?.set_type === 'time' ? (
+                        <span className="text-xs leading-none">{completedSet.reps}s</span>
+                      ) : (
+                        <>
+                          <span className="text-xs leading-none">{completedSet.weight}kg</span>
+                          <span className="text-[10px] leading-none opacity-80">×{completedSet.reps}</span>
+                        </>
+                      )
                     ) : index + 1}
                   </motion.div>
                 )
@@ -424,19 +466,31 @@ export default function WorkoutExecutionPage() {
                 </div>
 
                 <div className="flex items-center justify-center gap-5 my-3">
-                  <div className="text-center">
-                    <p className="text-5xl font-bold font-heading text-foreground leading-none">
-                      {lastWeight?.weight ?? currentSet.carga_planejada ?? '–'}
-                    </p>
-                    <p className="text-xs text-foreground-secondary mt-1.5 uppercase tracking-wider">kg</p>
-                  </div>
-                  <span className="text-2xl text-foreground-muted font-light">×</span>
-                  <div className="text-center">
-                    <p className="text-5xl font-bold font-heading text-foreground leading-none">
-                      {currentSet.repeticoes_planejadas}
-                    </p>
-                    <p className="text-xs text-foreground-secondary mt-1.5 uppercase tracking-wider">reps</p>
-                  </div>
+                  {currentSet.set_type === 'time' ? (
+                    /* Isometria: só tempo (carga é opcional, exibida no modal) */
+                    <div className="text-center">
+                      <p className="text-5xl font-bold font-heading text-foreground leading-none">
+                        {currentSet.tempo_segundos || parseInt(currentSet.repeticoes_planejadas || '30', 10) || 30}
+                      </p>
+                      <p className="text-xs text-foreground-secondary mt-1.5 uppercase tracking-wider">segundos</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-center">
+                        <p className="text-5xl font-bold font-heading text-foreground leading-none">
+                          {lastWeight?.weight ?? currentSet.carga_planejada ?? '–'}
+                        </p>
+                        <p className="text-xs text-foreground-secondary mt-1.5 uppercase tracking-wider">kg</p>
+                      </div>
+                      <span className="text-2xl text-foreground-muted font-light">×</span>
+                      <div className="text-center">
+                        <p className="text-5xl font-bold font-heading text-foreground leading-none">
+                          {currentSet.repeticoes_planejadas}
+                        </p>
+                        <p className="text-xs text-foreground-secondary mt-1.5 uppercase tracking-wider">reps</p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {lastWeight && (
@@ -455,6 +509,28 @@ export default function WorkoutExecutionPage() {
               <p className="text-center text-[11px] text-foreground-muted mb-3">
                 Toque nas séries verdes para editar
               </p>
+            )}
+
+            {/* Bloco de observações do personal — visível direto, sem precisar abrir "Como fazer" */}
+            {(currentExercise.notas || currentExercise.instructions ||
+              exerciseInstructions[currentExercise.exercise_id] ||
+              exerciseInstructions[currentExercise.nome?.toLowerCase()]) && (
+              <div className="mb-3 p-3 rounded-2xl bg-amber-500/8 border border-amber-500/25">
+                <div className="flex items-start gap-2">
+                  <StickyNote className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 mb-1">
+                      Observações
+                    </p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                      {currentExercise.notas ||
+                        currentExercise.instructions ||
+                        exerciseInstructions[currentExercise.exercise_id] ||
+                        exerciseInstructions[currentExercise.nome?.toLowerCase()]}
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Botão "Como fazer" — destaque maior */}
@@ -481,9 +557,15 @@ export default function WorkoutExecutionPage() {
               variant="gradient"
               size="lg"
               className="w-full"
-              onClick={() => setShowSetInput(true)}
+              onClick={() => {
+                if (currentSet?.set_type === 'time') {
+                  setShowIsometricTimer(true)
+                } else {
+                  setShowSetInput(true)
+                }
+              }}
             >
-              Concluir Série
+              {currentSet?.set_type === 'time' ? 'Iniciar Isometria' : 'Concluir Série'}
             </Button>
 
             <div className="grid grid-cols-3 gap-2">
@@ -532,6 +614,17 @@ export default function WorkoutExecutionPage() {
         lastWeight={editingSet ? { weight: editingSet.weight, reps: editingSet.reps } : lastWeight}
         onComplete={handleCompleteSet}
         onCancel={handleCancelEdit}
+      />
+
+      {/* Isometric timer modal — quando a série atual é por tempo */}
+      <IsometricTimerModal
+        isOpen={showIsometricTimer}
+        exerciseName={currentExercise?.nome || ''}
+        setNumber={state.currentSetIndex + 1}
+        targetSeconds={currentSet?.tempo_segundos || parseInt(currentSet?.repeticoes_planejadas || '30', 10) || 30}
+        suggestedWeight={currentSet?.carga_planejada}
+        onComplete={handleCompleteIsometric}
+        onCancel={() => setShowIsometricTimer(false)}
       />
 
       {/* Cardio input modal */}

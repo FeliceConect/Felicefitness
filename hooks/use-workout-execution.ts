@@ -451,15 +451,64 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
       const curEx = exercicios[prev.currentExerciseIndex]
       if (!curEx || !prev.workout) return baseNew
 
+      const curExCompleted = newCompleted.filter(cs => cs.exerciseId === curEx.id).length
+
+      // ────────────────────────────────────────────────────────
+      // CIRCUITO: se o exercício faz parte de um circuit_group,
+      // o fluxo é intercalado — após cada série, vai pro próximo
+      // exercício do mesmo circuito que ainda precisa fazer essa
+      // rodada. Só volta pra "próxima série" quando completou a
+      // rodada do circuito todo.
+      // ────────────────────────────────────────────────────────
+      const circuitGroup = curEx.circuit_group
+      if (circuitGroup != null) {
+        const circuitMembers = exercicios
+          .map((ex, idx) => ({ ex, idx }))
+          .filter(({ ex }) => ex.circuit_group === circuitGroup)
+
+        // Em qual rodada estávamos (1-indexed): a série que acabou de ser feita
+        const justCompletedRound = prev.currentSetIndex + 1
+
+        // Próximo membro do circuito que ainda não fez essa rodada
+        const nextInRound = circuitMembers.find(({ ex, idx }) => {
+          if (idx === prev.currentExerciseIndex) return false
+          const done = newCompleted.filter(cs => cs.exerciseId === ex.id).length
+          return done < justCompletedRound && done < ex.series.length
+        })
+
+        if (nextInRound) {
+          // Continua o circuito — próximo membro, mesma rodada (= série justCompletedRound)
+          // Sua próxima série é a primeira incompleta dele (que será essa rodada)
+          return {
+            ...baseNew,
+            currentExerciseIndex: nextInRound.idx,
+            currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, nextInRound.idx, newCompleted)
+          }
+        }
+
+        // Rodada completa: volta pro primeiro membro com séries pendentes pra próxima rodada
+        const firstWithPending = circuitMembers.find(({ ex }) => {
+          const done = newCompleted.filter(cs => cs.exerciseId === ex.id).length
+          return done < ex.series.length
+        })
+        if (firstWithPending) {
+          return {
+            ...baseNew,
+            currentExerciseIndex: firstWithPending.idx,
+            currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, firstWithPending.idx, newCompleted)
+          }
+        }
+        // Circuito inteiro completo: cai no fluxo de próximo exercício abaixo
+      }
+
       // Próxima série incompleta dentro do exercício atual
       const nextSetInCurrent = findFirstIncompleteSetIndexWithSnapshot(
         prev.workout,
         prev.currentExerciseIndex,
         newCompleted
       )
-      const curExCompleted = newCompleted.filter(cs => cs.exerciseId === curEx.id).length
 
-      // Se ainda há série pendente no exercício atual, segue nele
+      // Se ainda há série pendente no exercício atual (e não estamos em circuito), segue nele
       if (curExCompleted < curEx.series.length) {
         return { ...baseNew, currentSetIndex: nextSetInCurrent }
       }

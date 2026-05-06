@@ -58,6 +58,8 @@ interface TrainingExercise {
   notes: string | null
   video_url: string | null
   instructions: string | null
+  set_type?: 'reps' | 'time' | null
+  circuit_group?: number | null
 }
 
 interface UseWorkoutsReturn {
@@ -122,6 +124,8 @@ interface DBTemplateExercise {
   notas: string | null
   is_superset: boolean
   superset_grupo: number | null
+  set_type?: 'reps' | 'time' | null
+  circuit_group?: number | null
 }
 
 interface DBWorkoutExercise {
@@ -132,6 +136,7 @@ interface DBWorkoutExercise {
   ordem: number
   status: string
   notas: string | null
+  circuit_group?: number | null
 }
 
 interface DBWorkoutSet {
@@ -145,6 +150,8 @@ interface DBWorkoutSet {
   status: string
   tempo_descanso_real: number | null
   notas: string | null
+  set_type?: 'reps' | 'time' | null
+  tempo_segundos?: number | null
 }
 
 export function useWorkouts(): UseWorkoutsReturn {
@@ -269,12 +276,16 @@ export function useWorkouts(): UseWorkoutsReturn {
                   nome: ex.exercise_name,
                   ordem: ex.order_index,
                   series: ex.sets,
-                  repeticoes: ex.reps || '12',
+                  repeticoes: ex.reps || (ex.set_type === 'time' ? '30' : '12'),
                   descanso: ex.rest_seconds || 60,
                   carga_sugerida: ex.weight_suggestion ? parseFloat(ex.weight_suggestion) : undefined,
                   is_superset: false,
                   video_url: ex.video_url || undefined,
                   instructions: ex.instructions || undefined,
+                  notas: ex.notes || undefined,
+                  set_type: (ex.set_type as 'reps' | 'time' | undefined) || 'reps',
+                  tempo_segundos: ex.set_type === 'time' ? parseInt(ex.reps || '30') || 30 : undefined,
+                  circuit_group: ex.circuit_group ?? null,
                 }))
             }
           })
@@ -297,7 +308,11 @@ export function useWorkouts(): UseWorkoutsReturn {
             repeticoes: e.repeticoes,
             descanso: e.descanso_segundos || 45,
             carga_sugerida: e.carga_sugerida || undefined,
-            is_superset: e.is_superset || false
+            is_superset: e.is_superset || false,
+            notas: e.notas || undefined,
+            set_type: (e.set_type as 'reps' | 'time' | undefined) || 'reps',
+            tempo_segundos: e.set_type === 'time' ? parseInt(e.repeticoes || '30') || 30 : undefined,
+            circuit_group: e.circuit_group ?? null,
           }))
         }))
       }
@@ -326,12 +341,16 @@ export function useWorkouts(): UseWorkoutsReturn {
       nome: e.exercicio_nome,
       ordem: e.ordem,
       is_superset: false,
+      notas: e.notas || undefined,
+      circuit_group: e.circuit_group ?? null,
       series: (e.series || []).map(s => ({
         id: s.id,
         workout_exercise_id: s.workout_exercise_id,
         numero_serie: s.numero_serie,
         repeticoes_planejadas: s.repeticoes_planejadas || '',
         carga_planejada: s.carga_planejada || undefined,
+        tempo_segundos: s.tempo_segundos ?? undefined,
+        set_type: (s.set_type as 'reps' | 'time' | undefined) || 'reps',
         status: s.status as 'pendente' | 'concluido' | 'pulado'
       }))
     }))
@@ -357,6 +376,8 @@ export function useWorkouts(): UseWorkoutsReturn {
           nome: te.nome,
           ordem: te.ordem,
           is_superset: te.is_superset,
+          notas: te.notas,
+          circuit_group: te.circuit_group ?? null,
           video_url: te.video_url,
           instructions: te.instructions,
           series: Array.from({ length: te.series }, (_, i) => ({
@@ -365,6 +386,8 @@ export function useWorkouts(): UseWorkoutsReturn {
             numero_serie: i + 1,
             repeticoes_planejadas: te.repeticoes,
             carga_planejada: te.carga_sugerida,
+            tempo_segundos: te.tempo_segundos,
+            set_type: te.set_type || 'reps',
             status: 'pendente' as const
           }))
         }))

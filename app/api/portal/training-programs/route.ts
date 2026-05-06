@@ -272,7 +272,9 @@ export async function POST(request: NextRequest) {
                     is_dropset: exercise.isDropset || false,
                     is_warmup: exercise.isWarmup || false,
                     order_index: exercise.orderIndex || 0,
-                    notes: exercise.notes
+                    notes: exercise.notes,
+                    set_type: exercise.set_type || exercise.setType || 'reps',
+                    circuit_group: exercise.circuit_group ?? exercise.circuitGroup ?? null,
                   })
               }
             }

@@ -41,6 +41,10 @@ interface Exercise {
   video_url?: string
   is_warmup: boolean
   order_index: number
+  /** 'reps' (default) ou 'time' (isometria, ex: prancha 30s). */
+  set_type?: 'reps' | 'time'
+  /** Grupo de circuito: exercícios com mesmo número formam um circuito. */
+  circuit_group?: number | null
 }
 
 interface TrainingDay {
@@ -1017,6 +1021,8 @@ function ExerciseFormModal({
     instructions: initialExercise?.instructions ?? '',
     video_url: initialExercise?.video_url ?? '',
     is_warmup: initialExercise?.is_warmup ?? false,
+    set_type: initialExercise?.set_type ?? 'reps' as 'reps' | 'time',
+    circuit_group: initialExercise?.circuit_group?.toString() ?? '',
   }))
 
   function handleSubmit(e: React.FormEvent) {
@@ -1027,7 +1033,7 @@ function ExerciseFormModal({
       exercise_name: formData.exercise_name,
       muscle_group: formData.muscle_group,
       sets: parseInt(formData.sets) || 3,
-      reps: formData.reps || '10-12',
+      reps: formData.reps || (formData.set_type === 'time' ? '30' : '10-12'),
       rest_seconds: parseInt(formData.rest_seconds) || 60,
       tempo: formData.tempo,
       weight_suggestion: formData.weight_suggestion,
@@ -1035,7 +1041,9 @@ function ExerciseFormModal({
       instructions: formData.instructions,
       video_url: formData.video_url.trim() || undefined,
       is_warmup: formData.is_warmup,
-      order_index: initialExercise?.order_index ?? 0
+      order_index: initialExercise?.order_index ?? 0,
+      set_type: formData.set_type,
+      circuit_group: formData.circuit_group ? parseInt(formData.circuit_group) : null,
     })
   }
 
@@ -1082,6 +1090,37 @@ function ExerciseFormModal({
             </select>
           </div>
 
+          {/* Tipo da série: repetição vs tempo (isometria) */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Tipo da série
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, set_type: 'reps' })}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  formData.set_type === 'reps'
+                    ? 'bg-dourado text-white'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
+                }`}
+              >
+                Repetições
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, set_type: 'time' })}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  formData.set_type === 'time'
+                    ? 'bg-dourado text-white'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
+                }`}
+              >
+                Tempo (isometria)
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-foreground-secondary mb-1">Séries</label>
@@ -1094,12 +1133,14 @@ function ExerciseFormModal({
               />
             </div>
             <div>
-              <label className="block text-xs text-foreground-secondary mb-1">Reps</label>
+              <label className="block text-xs text-foreground-secondary mb-1">
+                {formData.set_type === 'time' ? 'Segundos' : 'Reps'}
+              </label>
               <input
                 type="text"
                 value={formData.reps}
                 onChange={(e) => setFormData({ ...formData, reps: e.target.value })}
-                placeholder="10-12"
+                placeholder={formData.set_type === 'time' ? '30' : '10-12'}
                 className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
               />
             </div>
@@ -1165,6 +1206,25 @@ function ExerciseFormModal({
             />
             <p className="text-xs text-foreground-muted mt-1">
               O paciente verá o vídeo dentro do app ao clicar em &ldquo;Como fazer&rdquo;.
+            </p>
+          </div>
+
+          {/* Circuito: agrupar com outros exercícios */}
+          <div>
+            <label className="block text-xs text-foreground-secondary mb-1">
+              Circuito (opcional)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={formData.circuit_group}
+              onChange={(e) => setFormData({ ...formData, circuit_group: e.target.value })}
+              placeholder="Vazio = exercício solo"
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
+            />
+            <p className="text-xs text-foreground-muted mt-1">
+              Exercícios com o mesmo número formam um circuito (executados em sequência sem descanso entre eles).
+              Ex: marque 1 nos 3 exercícios do bi/tri-set.
             </p>
           </div>
 
