@@ -779,104 +779,127 @@ export default function TrainingProgramDetailPage() {
                           {/* Day Content */}
                           {expandedDays.includes(dayKey) && (
                             <div className="border-t border-border p-3 space-y-3">
-                              {/* Exercises */}
-                              {day.exercises.length > 0 && (
-                                <div className="space-y-2">
-                                  {day.exercises.map((exercise, exIndex) => {
-                                    // Detecta se faz parte de circuito + se é o primeiro/último do grupo
-                                    // (pra agrupar visualmente com bordas)
-                                    const cg = exercise.circuit_group ?? null
-                                    const prevCg = exIndex > 0 ? (day.exercises[exIndex - 1].circuit_group ?? null) : null
-                                    const nextCg = exIndex < day.exercises.length - 1 ? (day.exercises[exIndex + 1].circuit_group ?? null) : null
-                                    const inCircuit = cg != null
-                                    const isFirstOfCircuit = inCircuit && cg !== prevCg
-                                    const isLastOfCircuit = inCircuit && cg !== nextCg
+                              {/* Exercises (agrupados visualmente quando em circuito) */}
+                              {day.exercises.length > 0 && (() => {
+                                // Agrupa exercícios consecutivos do mesmo circuito em "blocos"
+                                type Block =
+                                  | { kind: 'solo'; exercise: Exercise; index: number }
+                                  | { kind: 'circuit'; group: number; items: Array<{ exercise: Exercise; index: number }> }
+                                const blocks: Block[] = []
+                                day.exercises.forEach((ex, idx) => {
+                                  const cg = ex.circuit_group ?? null
+                                  if (cg == null) {
+                                    blocks.push({ kind: 'solo', exercise: ex, index: idx })
+                                    return
+                                  }
+                                  const last = blocks[blocks.length - 1]
+                                  if (last && last.kind === 'circuit' && last.group === cg) {
+                                    last.items.push({ exercise: ex, index: idx })
+                                  } else {
+                                    blocks.push({ kind: 'circuit', group: cg, items: [{ exercise: ex, index: idx }] })
+                                  }
+                                })
 
-                                    return (
-                                    <div
-                                      key={exIndex}
-                                      className={`flex items-center justify-between bg-white border px-3 py-2 gap-2 ${
-                                        inCircuit
-                                          ? `border-l-4 border-l-vinho border-r-border border-y-border ${
-                                              isFirstOfCircuit && isLastOfCircuit
-                                                ? 'rounded-lg'
-                                                : isFirstOfCircuit
-                                                  ? 'rounded-t-lg border-b-0'
-                                                  : isLastOfCircuit
-                                                    ? 'rounded-b-lg'
-                                                    : 'border-b-0'
-                                            }`
-                                          : 'border-border rounded-lg'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <GripVertical className="w-4 h-4 text-foreground-muted flex-shrink-0" />
-                                        <div className="min-w-0 flex-1">
-                                          <p className="text-foreground text-sm flex items-center gap-1.5 flex-wrap">
-                                            <span className="truncate">{exercise.exercise_name}</span>
-                                            {exercise.video_url && (
-                                              <span className="inline-flex items-center flex-shrink-0" title="Vídeo configurado">
-                                                <Video className="w-3.5 h-3.5 text-dourado" />
-                                              </span>
-                                            )}
-                                            {inCircuit && (
-                                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-vinho/10 text-vinho border border-vinho/30">
-                                                🔗 Circuito {cg}
-                                              </span>
-                                            )}
-                                            {exercise.set_type === 'time' && (
-                                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-dourado/15 text-dourado border border-dourado/30">
-                                                ⏱ Tempo
-                                              </span>
-                                            )}
-                                          </p>
-                                          <p className="text-xs text-foreground-secondary truncate">
-                                            {exercise.sets} x {exercise.reps}{exercise.set_type === 'time' ? 's' : ''} | {exercise.rest_seconds}s descanso
-                                            {exercise.is_warmup && ' • aquecimento'}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-0.5 flex-shrink-0">
-                                        <button
-                                          onClick={() => moveExercise(weekIndex, dayIndex, exIndex, 'up')}
-                                          disabled={exIndex === 0}
-                                          className="p-1.5 rounded text-foreground-secondary hover:text-foreground hover:bg-background-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                          title="Mover para cima"
-                                          aria-label="Mover exercício para cima"
-                                        >
-                                          <ArrowUp className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={() => moveExercise(weekIndex, dayIndex, exIndex, 'down')}
-                                          disabled={exIndex === day.exercises.length - 1}
-                                          className="p-1.5 rounded text-foreground-secondary hover:text-foreground hover:bg-background-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                          title="Mover para baixo"
-                                          aria-label="Mover exercício para baixo"
-                                        >
-                                          <ArrowDown className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={() => setEditingExercise({ weekIndex, dayIndex, exerciseIndex: exIndex, exercise })}
-                                          className="p-1.5 rounded text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                          title="Editar exercício"
-                                          aria-label="Editar exercício"
-                                        >
-                                          <Pencil className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={() => removeExercise(weekIndex, dayIndex, exIndex)}
-                                          className="p-1.5 rounded text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                          title="Remover exercício"
-                                          aria-label="Remover exercício"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
+                                // Linha de exercício reutilizável
+                                const renderExerciseRow = (exercise: Exercise, exIndex: number, opts: { borderless?: boolean } = {}) => (
+                                  <div
+                                    key={exIndex}
+                                    className={`flex items-center justify-between px-3 py-2 gap-2 ${
+                                      opts.borderless ? 'bg-transparent' : 'bg-white border border-border rounded-lg'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <GripVertical className="w-4 h-4 text-foreground-muted flex-shrink-0" />
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-foreground text-sm flex items-center gap-1.5 flex-wrap">
+                                          <span className="truncate">{exercise.exercise_name}</span>
+                                          {exercise.video_url && (
+                                            <span className="inline-flex items-center flex-shrink-0" title="Vídeo configurado">
+                                              <Video className="w-3.5 h-3.5 text-dourado" />
+                                            </span>
+                                          )}
+                                          {exercise.set_type === 'time' && (
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-dourado/15 text-dourado border border-dourado/30">
+                                              ⏱ Tempo
+                                            </span>
+                                          )}
+                                        </p>
+                                        <p className="text-xs text-foreground-secondary truncate">
+                                          {exercise.sets} x {exercise.reps}{exercise.set_type === 'time' ? 's' : ''} | {exercise.rest_seconds}s descanso
+                                          {exercise.is_warmup && ' • aquecimento'}
+                                        </p>
                                       </div>
                                     </div>
-                                    )
-                                  })}
-                                </div>
-                              )}
+                                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                                      <button
+                                        onClick={() => moveExercise(weekIndex, dayIndex, exIndex, 'up')}
+                                        disabled={exIndex === 0}
+                                        className="p-1.5 rounded text-foreground-secondary hover:text-foreground hover:bg-background-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        title="Mover para cima"
+                                        aria-label="Mover exercício para cima"
+                                      >
+                                        <ArrowUp className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => moveExercise(weekIndex, dayIndex, exIndex, 'down')}
+                                        disabled={exIndex === day.exercises.length - 1}
+                                        className="p-1.5 rounded text-foreground-secondary hover:text-foreground hover:bg-background-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        title="Mover para baixo"
+                                        aria-label="Mover exercício para baixo"
+                                      >
+                                        <ArrowDown className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingExercise({ weekIndex, dayIndex, exerciseIndex: exIndex, exercise })}
+                                        className="p-1.5 rounded text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                        title="Editar exercício"
+                                        aria-label="Editar exercício"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => removeExercise(weekIndex, dayIndex, exIndex)}
+                                        className="p-1.5 rounded text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                        title="Remover exercício"
+                                        aria-label="Remover exercício"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+
+                                return (
+                                  <div className="space-y-2">
+                                    {blocks.map((block, bIdx) =>
+                                      block.kind === 'solo' ? (
+                                        renderExerciseRow(block.exercise, block.index)
+                                      ) : (
+                                        <div
+                                          key={`circuit-${bIdx}-${block.group}`}
+                                          className="bg-vinho/5 border border-vinho/30 border-l-4 border-l-vinho rounded-lg overflow-hidden"
+                                        >
+                                          {/* Header do circuito */}
+                                          <div className="flex items-center gap-2 px-3 py-1.5 bg-vinho/10 border-b border-vinho/20">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-vinho">
+                                              🔗 Circuito {block.group}
+                                            </span>
+                                            <span className="text-[11px] text-vinho/80">
+                                              {block.items.length} exercícios em sequência sem descanso entre eles
+                                            </span>
+                                          </div>
+                                          {/* Membros do circuito — sem separador, divisor sutil */}
+                                          <div className="divide-y divide-vinho/15">
+                                            {block.items.map(({ exercise, index }) =>
+                                              renderExerciseRow(exercise, index, { borderless: true })
+                                            )}
+                                          </div>
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                )
+                              })()}
 
                               <button
                                 onClick={() => setShowAddExerciseModal({ weekIndex, dayIndex })}
