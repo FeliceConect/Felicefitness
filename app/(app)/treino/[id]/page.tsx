@@ -170,27 +170,77 @@ export default function WorkoutDetailPage() {
         </div>
       </div>
 
-      {/* Exercises list */}
+      {/* Exercises list — exercícios em circuito ficam num bloco único */}
       <div className="px-4 mt-8">
         <h2 className="text-lg font-semibold text-foreground mb-4">Exercícios</h2>
         <div className="space-y-3">
-          {workout.exercicios.map((exercise, index) => {
-            const isSuperset = exercise.is_superset
-            const supersetPartner = isSuperset
-              ? workout.exercicios.find(e => e.is_superset && e.id !== exercise.id && Math.abs(e.ordem - exercise.ordem) === 1)
-              : undefined
+          {(() => {
+            // Agrupa exercícios consecutivos do mesmo circuito em "blocos"
+            type Block =
+              | { kind: 'solo'; exercise: typeof workout.exercicios[number]; index: number }
+              | { kind: 'circuit'; group: number; items: Array<{ exercise: typeof workout.exercicios[number]; index: number }> }
+            const blocks: Block[] = []
+            workout.exercicios.forEach((ex, idx) => {
+              const cg = ex.circuit_group ?? null
+              if (cg == null) {
+                blocks.push({ kind: 'solo', exercise: ex, index: idx })
+                return
+              }
+              const last = blocks[blocks.length - 1]
+              if (last && last.kind === 'circuit' && last.group === cg) {
+                last.items.push({ exercise: ex, index: idx })
+              } else {
+                blocks.push({ kind: 'circuit', group: cg, items: [{ exercise: ex, index: idx }] })
+              }
+            })
 
-            return (
-              <ExerciseCard
-                key={exercise.id}
-                exercise={exercise}
-                index={index}
-                isSuperset={isSuperset}
-                supersetPartner={supersetPartner}
-                lastWeight={getLastWeight(exercise.nome)}
-              />
-            )
-          })}
+            return blocks.map((block, bIdx) => {
+              if (block.kind === 'solo') {
+                const ex = block.exercise
+                const isSuperset = ex.is_superset
+                const supersetPartner = isSuperset
+                  ? workout.exercicios.find(e => e.is_superset && e.id !== ex.id && Math.abs(e.ordem - ex.ordem) === 1)
+                  : undefined
+                return (
+                  <ExerciseCard
+                    key={ex.id}
+                    exercise={ex}
+                    index={block.index}
+                    isSuperset={isSuperset}
+                    supersetPartner={supersetPartner}
+                    lastWeight={getLastWeight(ex.nome)}
+                  />
+                )
+              }
+              // Bloco de circuito: wrapper único
+              return (
+                <div
+                  key={`circuit-${bIdx}-${block.group}`}
+                  className="bg-vinho/5 border border-vinho/30 border-l-4 border-l-vinho rounded-xl overflow-hidden"
+                >
+                  <div className="flex items-center gap-2 px-4 py-2 bg-vinho/10 border-b border-vinho/20">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-vinho">
+                      🔗 Circuito {block.group}
+                    </span>
+                    <span className="text-[11px] text-vinho/80">
+                      • {block.items.length} exercícios sem descanso entre eles
+                    </span>
+                  </div>
+                  <div className="divide-y divide-vinho/15">
+                    {block.items.map(({ exercise, index }) => (
+                      <ExerciseCard
+                        key={exercise.id}
+                        exercise={exercise}
+                        index={index}
+                        variant="circuit-member"
+                        lastWeight={getLastWeight(exercise.nome)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })
+          })()}
         </div>
       </div>
 

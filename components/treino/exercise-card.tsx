@@ -13,11 +13,14 @@ interface ExerciseCardProps {
   supersetPartner?: WorkoutExercise
   // Último peso realizado (passado pelo parent que tem acesso ao hook)
   lastWeight?: { weight: number; reps: number } | null
+  /** 'circuit-member' = renderiza sem card próprio (já está dentro de wrapper de circuito). */
+  variant?: 'default' | 'circuit-member'
 }
 
-export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, lastWeight }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, lastWeight, variant = 'default' }: ExerciseCardProps) {
   const totalSets = exercise.series.length
   const targetReps = exercise.series[0]?.repeticoes_planejadas || '12'
+  const isCircuitMember = variant === 'circuit-member'
 
   return (
     <motion.div
@@ -25,8 +28,10 @@ export function ExerciseCard({ exercise, index, isSuperset, supersetPartner, las
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        'bg-white border border-border rounded-xl overflow-hidden',
-        isSuperset && 'border-l-2 border-l-amber-500'
+        isCircuitMember
+          ? 'bg-transparent'
+          : 'bg-white border border-border rounded-xl overflow-hidden',
+        !isCircuitMember && isSuperset && 'border-l-2 border-l-amber-500'
       )}
     >
       {/* Superset indicator */}
