@@ -782,24 +782,56 @@ export default function TrainingProgramDetailPage() {
                               {/* Exercises */}
                               {day.exercises.length > 0 && (
                                 <div className="space-y-2">
-                                  {day.exercises.map((exercise, exIndex) => (
+                                  {day.exercises.map((exercise, exIndex) => {
+                                    // Detecta se faz parte de circuito + se é o primeiro/último do grupo
+                                    // (pra agrupar visualmente com bordas)
+                                    const cg = exercise.circuit_group ?? null
+                                    const prevCg = exIndex > 0 ? (day.exercises[exIndex - 1].circuit_group ?? null) : null
+                                    const nextCg = exIndex < day.exercises.length - 1 ? (day.exercises[exIndex + 1].circuit_group ?? null) : null
+                                    const inCircuit = cg != null
+                                    const isFirstOfCircuit = inCircuit && cg !== prevCg
+                                    const isLastOfCircuit = inCircuit && cg !== nextCg
+
+                                    return (
                                     <div
                                       key={exIndex}
-                                      className="flex items-center justify-between bg-white border border-border rounded-lg px-3 py-2 gap-2"
+                                      className={`flex items-center justify-between bg-white border px-3 py-2 gap-2 ${
+                                        inCircuit
+                                          ? `border-l-4 border-l-vinho border-r-border border-y-border ${
+                                              isFirstOfCircuit && isLastOfCircuit
+                                                ? 'rounded-lg'
+                                                : isFirstOfCircuit
+                                                  ? 'rounded-t-lg border-b-0'
+                                                  : isLastOfCircuit
+                                                    ? 'rounded-b-lg'
+                                                    : 'border-b-0'
+                                            }`
+                                          : 'border-border rounded-lg'
+                                      }`}
                                     >
                                       <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <GripVertical className="w-4 h-4 text-foreground-muted flex-shrink-0" />
                                         <div className="min-w-0 flex-1">
-                                          <p className="text-foreground text-sm flex items-center gap-1.5">
+                                          <p className="text-foreground text-sm flex items-center gap-1.5 flex-wrap">
                                             <span className="truncate">{exercise.exercise_name}</span>
                                             {exercise.video_url && (
                                               <span className="inline-flex items-center flex-shrink-0" title="Vídeo configurado">
                                                 <Video className="w-3.5 h-3.5 text-dourado" />
                                               </span>
                                             )}
+                                            {inCircuit && (
+                                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-vinho/10 text-vinho border border-vinho/30">
+                                                🔗 Circuito {cg}
+                                              </span>
+                                            )}
+                                            {exercise.set_type === 'time' && (
+                                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-dourado/15 text-dourado border border-dourado/30">
+                                                ⏱ Tempo
+                                              </span>
+                                            )}
                                           </p>
                                           <p className="text-xs text-foreground-secondary truncate">
-                                            {exercise.sets} x {exercise.reps} | {exercise.rest_seconds}s descanso
+                                            {exercise.sets} x {exercise.reps}{exercise.set_type === 'time' ? 's' : ''} | {exercise.rest_seconds}s descanso
                                             {exercise.is_warmup && ' • aquecimento'}
                                           </p>
                                         </div>
@@ -841,7 +873,8 @@ export default function TrainingProgramDetailPage() {
                                         </button>
                                       </div>
                                     </div>
-                                  ))}
+                                    )
+                                  })}
                                 </div>
                               )}
 
