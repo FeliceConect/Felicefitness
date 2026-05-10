@@ -176,14 +176,21 @@ export function useGamification(): UseGamificationReturn {
       const totalWaterMl = Object.values(waterByDay).reduce((sum: number, ml: number) => sum + ml, 0)
       const totalWaterLiters = Math.round(totalWaterMl / 1000)
 
-      // Calcular XP total
+      // XP base de atividades + XP cumulativo de conquistas já desbloqueadas
+      // (sem isso, conquistas dão XP só visualmente — some no próximo reload)
+      const unlockedAchievementCodes = (await getUserAchievementCodes()).map(a => a.code)
+      const achievementsXP = ACHIEVEMENTS
+        .filter(a => unlockedAchievementCodes.includes(a.id))
+        .reduce((sum, a) => sum + (a.xpReward || 0), 0)
+
       const calculatedXP =
         (workoutsCompleted || 0) * XP_VALUES.workout_completed +
         (waterGoalsMet || 0) * XP_VALUES.water_goal_met +
         (mealsLogged || 0) * XP_VALUES.meal_logged +
         (sleepLogs || 0) * XP_VALUES.sleep_logged +
         (prsAchieved || 0) * XP_VALUES.pr_achieved +
-        ((profile?.streak_atual || 0) * XP_VALUES.streak_bonus_per_day)
+        ((profile?.streak_atual || 0) * XP_VALUES.streak_bonus_per_day) +
+        achievementsXP
 
       // Calcular score de hoje
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -485,12 +492,18 @@ export function useGamification(): UseGamificationReturn {
             unlockedAt: new Date(),
           }))
           setUnlockedAchievements(prev => [...prev, ...newUserAchievements])
-          // Persiste no banco (best-effort, não bloqueia UI se uma falhar)
+          // Persiste no banco + credita XP imediato (próximo reload já vem
+          // pelo achievementsXP somado em calculateXPFromDatabase)
           for (const ach of newlyUnlocked) {
             try {
               await unlockAchievementByCode(ach.id)
             } catch (err) {
               console.error('Erro ao salvar conquista:', ach.id, err)
+            }
+            try {
+              await addXP(ach.xpReward, `Conquista: ${ach.name}`, 'achievement_unlocked')
+            } catch (err) {
+              console.error('Erro ao creditar XP da conquista:', ach.id, err)
             }
           }
           // Mostra modal só da primeira (pra não spammar)
