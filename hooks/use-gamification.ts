@@ -287,6 +287,98 @@ export function useGamification(): UseGamificationReturn {
       // (alinhado com o streak: ambos contam como "fez treino")
       const totalWorkoutsForAchievements = (workoutsCompleted || 0) + (qualifiedActivitiesTotal || 0)
 
+      // ─── PERFECT DAYS / PERFECT MACRO DAYS / PERFECT DAY STREAK ────
+      // Calcula score de cada dia dos últimos 60, agregando dados das
+      // tabelas de água, refeições, sono, treinos. Sem persistência de
+      // histórico de scores (futuro), recalcula em runtime.
+      const userCaloriesGoal = (profile as { meta_calorias_diarias?: number })?.meta_calorias_diarias ?? 2000
+
+      // Buscar dias com workout/atividade/sono nos últimos 60 dias
+      const sixtyDaysAgoStr = getDateOffsetSP(-59)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const [workoutsBy60, activitiesBy60, sleepsBy60] = await Promise.all([
+        (supabase as any).from('fitness_workouts')
+          .select('data')
+          .eq('user_id', user.id)
+          .eq('status', 'concluido')
+          .gte('data', sixtyDaysAgoStr),
+        (supabase as any).from('fitness_activities')
+          .select('date')
+          .eq('user_id', user.id)
+          .gte('date', sixtyDaysAgoStr)
+          .gte('duration_minutes', 20)
+          .in('intensity', ['moderado', 'intenso', 'muito_intenso']),
+        (supabase as any).from('fitness_sleep_logs')
+          .select('data')
+          .eq('user_id', user.id)
+          .gte('data', sixtyDaysAgoStr),
+      ])
+      const workoutDaysSet = new Set(((workoutsBy60.data || []) as Array<{ data: string }>).map(w => w.data))
+      const activityDaysSet = new Set(((activitiesBy60.data || []) as Array<{ date: string }>).map(a => a.date))
+      const sleepDaysSet = new Set(((sleepsBy60.data || []) as Array<{ data: string }>).map(s => s.data))
+
+      // Calorias e contagem de refeições por dia (já temos allMealsRows)
+      const caloriesByDay: { [key: string]: number } = {}
+      const mealsCountByDay: { [key: string]: number } = {}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: allMealsForScores } = await (supabase as any)
+        .from('fitness_meals')
+        .select('data, calorias_total')
+        .eq('user_id', user.id)
+        .gte('data', sixtyDaysAgoStr)
+      for (const m of (allMealsForScores || []) as Array<{ data: string; calorias_total: number | null }>) {
+        caloriesByDay[m.data] = (caloriesByDay[m.data] || 0) + (m.calorias_total || 0)
+        mealsCountByDay[m.data] = (mealsCountByDay[m.data] || 0) + 1
+      }
+
+      // Calcula score de cada dia + agrega
+      let perfectDays = 0
+      let perfectMacroDays = 0
+      let perfectDayStreak = 0
+      let streakStillCounting = true
+
+      for (let i = 0; i < 60; i++) {
+        const dateStr = getDateOffsetSP(-i)
+
+        const hasWorkout = workoutDaysSet.has(dateStr) || activityDaysSet.has(dateStr)
+        const workoutScore = hasWorkout ? 30 : 0
+
+        const waterMl = waterByDay[dateStr] || 0
+        const waterScore = userWaterGoalMl > 0
+          ? Math.min(25, Math.round((waterMl / userWaterGoalMl) * 25))
+          : 0
+
+        const mealsCount = mealsCountByDay[dateStr] || 0
+        const mealsScore = Math.min(30, mealsCount * 6)
+
+        const sleepScore = sleepDaysSet.has(dateStr) ? 15 : 0
+
+        const total = workoutScore + waterScore + mealsScore + sleepScore
+
+        // Perfect macros: ±5% da meta de calorias (se houve refeição)
+        if (mealsCount > 0 && userCaloriesGoal > 0) {
+          const cal = caloriesByDay[dateStr] || 0
+          const ratio = cal / userCaloriesGoal
+          if (ratio >= 0.95 && ratio <= 1.05) perfectMacroDays++
+        }
+
+        // Perfect day total
+        if (total >= 100) perfectDays++
+
+        // Perfect day streak: hoje pode ainda estar incompleto, então pula
+        // se for hoje e ainda não atingiu 100. Senão começa a contar a partir
+        // do primeiro dia perfeito do passado em sequência.
+        if (i === 0 && total < 100) {
+          // hoje incompleto — não conta nem quebra a streak
+          continue
+        }
+        if (streakStillCounting && total >= 100) {
+          perfectDayStreak++
+        } else {
+          streakStillCounting = false
+        }
+      }
+
       // XP base de atividades + XP cumulativo de conquistas já desbloqueadas
       // (sem isso, conquistas dão XP só visualmente — some no próximo reload)
       const unlockedAchievementCodes = (await getUserAchievementCodes()).map(a => a.code)
@@ -494,7 +586,7 @@ export function useGamification(): UseGamificationReturn {
         earlyWorkouts: earlyStructured || 0,
         mealsLogged: mealsLogged || 0,
         proteinStreakDays,
-        perfectMacroDays: 0, // Requer cruzar refeições com meta de calorias por dia (futuro)
+        perfectMacroDays,
         waterGoalsMet: waterGoalsMet || 0,
         waterStreakDays,
         totalWaterLiters,
@@ -502,8 +594,8 @@ export function useGamification(): UseGamificationReturn {
         progressPhotos: progressPhotos || 0,
         muscleGained,
         fatLost,
-        perfectDays: 0, // Requer histórico de scores diários (futuro)
-        perfectDayStreak: 0,
+        perfectDays,
+        perfectDayStreak,
         checkins: sleepLogs || 0,
         medicamentoStreak: 0
       }
