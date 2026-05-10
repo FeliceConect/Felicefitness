@@ -32,6 +32,9 @@ import {
   applyStreakFreezes,
 } from '@/lib/services/achievements'
 import type { FreezeInfo } from '@/lib/services/achievements'
+import { computeChallengeProgress } from '@/lib/gamification/challenge-progress'
+import type { ChallengeProgressContext } from '@/lib/gamification/challenge-progress'
+import { getDateOffsetSP } from '@/lib/utils/date'
 
 // XP values for different activities
 const XP_VALUES = {
@@ -104,7 +107,7 @@ export function useGamification(): UseGamificationReturn {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase as any)
         .from('fitness_profiles')
-        .select('streak_atual, maior_streak, pontos_totais, streak_freeze_used, streak_freeze_month, streak_last_activity_date, meta_agua_ml')
+        .select('streak_atual, maior_streak, pontos_totais, streak_freeze_used, streak_freeze_month, streak_last_activity_date, meta_agua_ml, meta_proteina_g, meta_calorias_diarias')
         .eq('id', user.id)
         .single()
 
@@ -255,6 +258,95 @@ export function useGamification(): UseGamificationReturn {
         extras: sleepScore
       }
 
+      // ─── Dados adicionais para progress de DESAFIOS ─────────────────
+      // Refeições do dia com macros (pra critérios protein_meal/protein_goal)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: todayMealsRows } = await (supabase as any)
+        .from('fitness_meals')
+        .select('tipo_refeicao, proteinas_total, calorias_total, horario')
+        .eq('user_id', user.id)
+        .eq('data', today)
+      const todayMealsArr = (todayMealsRows || []) as Array<{
+        tipo_refeicao: string
+        proteinas_total: number
+        calorias_total: number
+        horario?: string
+      }>
+      const todayProteinG = todayMealsArr.reduce((s, m) => s + (m.proteinas_total || 0), 0)
+      const todayCaloriesKcal = todayMealsArr.reduce((s, m) => s + (m.calorias_total || 0), 0)
+
+      // Hora do treino concluído de hoje (pra early_workout)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: todayWorkoutFull } = await (supabase as any)
+        .from('fitness_workouts')
+        .select('horario_inicio, horario_fim')
+        .eq('user_id', user.id)
+        .eq('data', today)
+        .eq('status', 'concluido')
+        .maybeSingle()
+      const todayWorkoutTime = todayWorkoutFull?.horario_inicio
+        ? String(todayWorkoutFull.horario_inicio).slice(0, 5)
+        : undefined
+
+      // PRs de hoje
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: todayPRsCount } = await (supabase as any)
+        .from('fitness_exercise_sets')
+        .select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id, data))', { count: 'exact', head: true })
+        .eq('is_pr', true)
+        .eq('workout_exercise.workout.user_id', user.id)
+        .eq('workout_exercise.workout.data', today)
+
+      // Treinos completos da semana (segunda a domingo SP)
+      const weekAgoStr = getDateOffsetSP(-6)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: weeklyWorkoutsCompleted } = await (supabase as any)
+        .from('fitness_workouts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'concluido')
+        .gte('data', weekAgoStr)
+        .lte('data', today)
+
+      // PRs da semana
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: weeklyPRsCount } = await (supabase as any)
+        .from('fitness_exercise_sets')
+        .select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id, data))', { count: 'exact', head: true })
+        .eq('is_pr', true)
+        .eq('workout_exercise.workout.user_id', user.id)
+        .gte('workout_exercise.workout.data', weekAgoStr)
+        .lte('workout_exercise.workout.data', today)
+
+      // Metas de proteína/calorias do perfil — fallback se nutri não definiu
+      const proteinGoalG = (profile as { meta_proteina_g?: number })?.meta_proteina_g ?? 130
+      const caloriesGoalKcal = (profile as { meta_calorias_diarias?: number })?.meta_calorias_diarias ?? 2000
+
+      // Contexto pra calcular progresso dos desafios ativos
+      const challengeCtx: ChallengeProgressContext = {
+        todayMealsCount: todayMealsCount || 0,
+        todayMeals: todayMealsArr.map(m => ({
+          tipo_refeicao: m.tipo_refeicao,
+          proteinas_total: m.proteinas_total || 0,
+          calorias_total: m.calorias_total || 0,
+        })),
+        plannedMealsCount: 5,
+        todayWaterMl: todayWater,
+        waterGoalMl,
+        todayProteinG,
+        proteinGoalG,
+        todayCaloriesKcal,
+        caloriesGoalKcal,
+        todayWorkoutCompleted: !!todayWorkout || (qualifyingActivityCount ?? 0) > 0,
+        todayWorkoutFull: !!todayWorkout,
+        todayWorkoutTime,
+        todayPRsCount: todayPRsCount || 0,
+        todayScoreTotal: workoutScore + waterScore + mealsScore + sleepScore,
+        weeklyWorkoutsCompleted: weeklyWorkoutsCompleted || 0,
+        weeklyPRsCount: weeklyPRsCount || 0,
+        currentStreak: profile?.streak_atual || 0,
+      }
+
       // Streak data
       const streakData: StreakData = {
         currentStreak: profile?.streak_atual || 0,
@@ -301,10 +393,11 @@ export function useGamification(): UseGamificationReturn {
         streakData,
         dailyScore,
         freezeInfo,
+        challengeCtx,
       }
     } catch (error) {
       console.error('Erro ao calcular XP:', error)
-      return { xp: 0, stats: null, streakData: getInitialStreakData(), dailyScore: null, freezeInfo: null }
+      return { xp: 0, stats: null, streakData: getInitialStreakData(), dailyScore: null, freezeInfo: null, challengeCtx: null }
     }
   }, [])
 
@@ -317,7 +410,7 @@ export function useGamification(): UseGamificationReturn {
   const loadGamificationData = useCallback(async () => {
     setLoading(true)
     try {
-      const { xp, stats, streakData, dailyScore, freezeInfo } = await calculateXPFromDatabase()
+      const { xp, stats, streakData, dailyScore, freezeInfo, challengeCtx } = await calculateXPFromDatabase()
 
       setTotalXP(xp)
       setCurrentLevel(getLevelFromXP(xp))
@@ -431,6 +524,26 @@ export function useGamification(): UseGamificationReturn {
         const dailyChallenges = generateDailyChallenges()
         const weeklyChallenges = generateWeeklyChallenges()
         activeChallengesToSet = [...dailyChallenges, ...weeklyChallenges]
+      }
+
+      // Atualiza progresso de cada desafio com dados reais do dia/semana.
+      // Award XP automático quando um desafio é concluído pela primeira vez
+      // (compara com o estado anterior do localStorage).
+      if (challengeCtx) {
+        const previouslyCompletedIds = new Set(
+          (savedData ? JSON.parse(savedData).activeChallenges || [] : [])
+            .filter((c: ActiveChallenge) => c.completed)
+            .map((c: ActiveChallenge) => c.id)
+        )
+        activeChallengesToSet = activeChallengesToSet.map(c => {
+          const result = computeChallengeProgress(c, challengeCtx)
+          const justCompleted = result.completed && !previouslyCompletedIds.has(c.id)
+          if (justCompleted) {
+            // Best-effort: credita XP pelo desafio recém-concluído
+            addXP(c.xpReward, `Desafio: ${c.name}`, 'challenge_completed').catch(() => {})
+          }
+          return { ...c, progress: result.progress, target: result.target, completed: result.completed }
+        })
       }
       setActiveChallenges(activeChallengesToSet)
 
