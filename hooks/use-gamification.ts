@@ -176,6 +176,117 @@ export function useGamification(): UseGamificationReturn {
       const totalWaterMl = Object.values(waterByDay).reduce((sum: number, ml: number) => sum + ml, 0)
       const totalWaterLiters = Math.round(totalWaterMl / 1000)
 
+      // ─── CAMPOS REAIS DE STATS PARA CONQUISTAS ─────────────────────
+      // Em vez de zeros, todos os campos de UserStats lidos do banco.
+      // Sem isso, conquistas como "10 treinos", "Madrugador", "Hidratação
+      // 7 dias seguidos" nunca desbloqueiam mesmo o paciente cumprindo.
+
+      // Atividades qualificadas (≥20min ≥ moderado) — total e antes das 7h.
+      // Conta como treino também (alinhado com regra do streak/score).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: qualifiedActivitiesTotal } = await (supabase as any)
+        .from('fitness_activities')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('duration_minutes', 20)
+        .in('intensity', ['moderado', 'intenso', 'muito_intenso'])
+
+      // Treinos estruturados antes das 7h (hora_inicio é nullable)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: earlyStructured } = await (supabase as any)
+        .from('fitness_workouts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'concluido')
+        .lt('hora_inicio', '07:00:00')
+
+      // Total de séries e reps (de todos os tempos)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: setsAggData } = await (supabase as any)
+        .from('fitness_exercise_sets')
+        .select('repeticoes_realizadas, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id))')
+        .eq('workout_exercise.workout.user_id', user.id)
+        .eq('status', 'concluido')
+      const totalSets = setsAggData?.length || 0
+      const totalReps = (setsAggData || []).reduce(
+        (s: number, row: { repeticoes_realizadas: number | null }) => s + (row.repeticoes_realizadas || 0),
+        0
+      )
+
+      // Helper local: subtrai 1 dia de uma string YYYY-MM-DD
+      const minusOneDay = (dateStr: string): string => {
+        const d = new Date(dateStr + 'T12:00:00')
+        d.setDate(d.getDate() - 1)
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      }
+
+      // Streak de água: dias consecutivos atingindo a meta (do perfil)
+      const userWaterGoalMl = profile?.meta_agua_ml ?? 2000
+      const sortedWaterDates = Object.keys(waterByDay).sort().reverse()
+      let waterStreakDays = 0
+      {
+        let expectedDate = today
+        for (const date of sortedWaterDates) {
+          if (date !== expectedDate) break
+          if ((waterByDay[date] || 0) < userWaterGoalMl) break
+          waterStreakDays++
+          expectedDate = minusOneDay(date)
+        }
+      }
+
+      // Streak de proteína: dias consecutivos atingindo a meta (do perfil
+      // ou padrão 130g). Carrega refeições agrupadas por dia.
+      const userProteinGoal = (profile as { meta_proteina_g?: number })?.meta_proteina_g ?? 130
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: allMealsRows } = await (supabase as any)
+        .from('fitness_meals')
+        .select('data, proteinas_total')
+        .eq('user_id', user.id)
+      const proteinByDay: { [key: string]: number } = {}
+      for (const m of (allMealsRows || []) as Array<{ data: string; proteinas_total: number | null }>) {
+        proteinByDay[m.data] = (proteinByDay[m.data] || 0) + (m.proteinas_total || 0)
+      }
+      const sortedProteinDates = Object.keys(proteinByDay).sort().reverse()
+      let proteinStreakDays = 0
+      {
+        let expectedDate = today
+        for (const date of sortedProteinDates) {
+          if (date !== expectedDate) break
+          if ((proteinByDay[date] || 0) < userProteinGoal) break
+          proteinStreakDays++
+          expectedDate = minusOneDay(date)
+        }
+      }
+
+      // Diff de bioimpedância: massa muscular ganha e gordura perdida
+      // entre primeira e última medição.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: firstBio } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select('massa_muscular_esqueletica_kg, massa_gordura_kg')
+        .eq('user_id', user.id)
+        .order('data', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: lastBio } = await (supabase as any)
+        .from('fitness_body_compositions')
+        .select('massa_muscular_esqueletica_kg, massa_gordura_kg')
+        .eq('user_id', user.id)
+        .order('data', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      const muscleGained = firstBio && lastBio
+        ? Math.max(0, (lastBio.massa_muscular_esqueletica_kg || 0) - (firstBio.massa_muscular_esqueletica_kg || 0))
+        : 0
+      const fatLost = firstBio && lastBio
+        ? Math.max(0, (firstBio.massa_gordura_kg || 0) - (lastBio.massa_gordura_kg || 0))
+        : 0
+
+      // Treinos efetivos = estruturados + atividades qualificadas
+      // (alinhado com o streak: ambos contam como "fez treino")
+      const totalWorkoutsForAchievements = (workoutsCompleted || 0) + (qualifiedActivitiesTotal || 0)
+
       // XP base de atividades + XP cumulativo de conquistas já desbloqueadas
       // (sem isso, conquistas dão XP só visualmente — some no próximo reload)
       const unlockedAchievementCodes = (await getUserAchievementCodes()).map(a => a.code)
@@ -184,7 +295,7 @@ export function useGamification(): UseGamificationReturn {
         .reduce((sum, a) => sum + (a.xpReward || 0), 0)
 
       const calculatedXP =
-        (workoutsCompleted || 0) * XP_VALUES.workout_completed +
+        totalWorkoutsForAchievements * XP_VALUES.workout_completed +
         (waterGoalsMet || 0) * XP_VALUES.water_goal_met +
         (mealsLogged || 0) * XP_VALUES.meal_logged +
         (sleepLogs || 0) * XP_VALUES.sleep_logged +
@@ -286,13 +397,13 @@ export function useGamification(): UseGamificationReturn {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: todayWorkoutFull } = await (supabase as any)
         .from('fitness_workouts')
-        .select('horario_inicio, horario_fim')
+        .select('hora_inicio, hora_fim')
         .eq('user_id', user.id)
         .eq('data', today)
         .eq('status', 'concluido')
         .maybeSingle()
-      const todayWorkoutTime = todayWorkoutFull?.horario_inicio
-        ? String(todayWorkoutFull.horario_inicio).slice(0, 5)
+      const todayWorkoutTime = todayWorkoutFull?.hora_inicio
+        ? String(todayWorkoutFull.hora_inicio).slice(0, 5)
         : undefined
 
       // PRs de hoje
@@ -371,24 +482,27 @@ export function useGamification(): UseGamificationReturn {
         lastActivityDate: profile?.streak_last_activity_date || lastWorkout?.data || null,
       }
 
-      // Build full UserStats
+      // Build full UserStats — TODOS os campos vêm de dados reais do
+      // banco. Cada usuário recebe retroativamente o que cumpriu ao
+      // abrir a tela de gamificação.
       const fullStats: UserStats = {
-        workoutsCompleted: workoutsCompleted || 0,
-        totalSets: 0,
-        totalReps: 0,
+        // Treino estruturado + atividade física qualificada conta junto
+        workoutsCompleted: totalWorkoutsForAchievements,
+        totalSets,
+        totalReps,
         prsAchieved: prsAchieved || 0,
-        earlyWorkouts: 0,
+        earlyWorkouts: earlyStructured || 0,
         mealsLogged: mealsLogged || 0,
-        proteinStreakDays: 0,
-        perfectMacroDays: 0,
+        proteinStreakDays,
+        perfectMacroDays: 0, // Requer cruzar refeições com meta de calorias por dia (futuro)
         waterGoalsMet: waterGoalsMet || 0,
-        waterStreakDays: 0,
+        waterStreakDays,
         totalWaterLiters,
         bioimpedances: bioimpedances || 0,
         progressPhotos: progressPhotos || 0,
-        muscleGained: 0,
-        fatLost: 0,
-        perfectDays: 0,
+        muscleGained,
+        fatLost,
+        perfectDays: 0, // Requer histórico de scores diários (futuro)
         perfectDayStreak: 0,
         checkins: sleepLogs || 0,
         medicamentoStreak: 0
