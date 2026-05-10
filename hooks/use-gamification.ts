@@ -619,6 +619,38 @@ export function useGamification(): UseGamificationReturn {
     loadGamificationData()
   }, [])
 
+  // Refresh quando o app volta ao foco — sem isso, conquistas/XP só
+  // atualizam se o paciente navegar pra uma página que use o hook.
+  // Cobre: PWA voltando do background, troca de aba, retorno do
+  // service worker, etc. Cooldown de 5min pra evitar refetch agressivo.
+  const lastRefreshRef = useRef<number>(Date.now())
+  useEffect(() => {
+    const REFRESH_COOLDOWN_MS = 5 * 60 * 1000
+
+    const tryRefresh = () => {
+      const now = Date.now()
+      if (now - lastRefreshRef.current >= REFRESH_COOLDOWN_MS) {
+        lastRefreshRef.current = now
+        loadGamificationData()
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') tryRefresh()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', tryRefresh)
+    window.addEventListener('pageshow', tryRefresh)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', tryRefresh)
+      window.removeEventListener('pageshow', tryRefresh)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Carregar dados do banco de dados
   const loadGamificationData = useCallback(async () => {
     setLoading(true)
