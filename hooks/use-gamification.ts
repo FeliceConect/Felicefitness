@@ -104,7 +104,7 @@ export function useGamification(): UseGamificationReturn {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase as any)
         .from('fitness_profiles')
-        .select('streak_atual, maior_streak, pontos_totais, streak_freeze_used, streak_freeze_month, streak_last_activity_date')
+        .select('streak_atual, maior_streak, pontos_totais, streak_freeze_used, streak_freeze_month, streak_last_activity_date, meta_agua_ml')
         .eq('id', user.id)
         .single()
 
@@ -192,6 +192,17 @@ export function useGamification(): UseGamificationReturn {
         .eq('status', 'concluido')
         .maybeSingle()
 
+      // Atividade qualificada hoje (≥20min, intensidade ≥ moderada) também
+      // conta como treino — alinhado com a regra do streak.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: qualifyingActivityCount } = await (supabase as any)
+        .from('fitness_activities')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .gte('duration_minutes', 20)
+        .in('intensity', ['moderado', 'intenso', 'muito_intenso'])
+
       const todayWater = waterByDay[today] || 0
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -220,10 +231,20 @@ export function useGamification(): UseGamificationReturn {
         .limit(1)
         .maybeSingle()
 
-      // Score do dia (0-100)
-      const workoutScore = todayWorkout ? 30 : 0
-      const waterScore = Math.min(30, Math.round((todayWater / 3000) * 30))
-      const mealsScore = Math.min(25, (todayMealsCount || 0) * 5)
+      // Score do dia (0-100) — pesos batem com SCORE_WEIGHTS exibidos:
+      // workout=30, nutrition=30, hydration=25, extras=15
+      const hasWorkoutOrActivity = !!todayWorkout || (qualifyingActivityCount ?? 0) > 0
+      const workoutScore = hasWorkoutOrActivity ? 30 : 0
+
+      // Hidratação: relativo à meta do perfil (não 3000ml fixo)
+      const waterGoalMl = profile?.meta_agua_ml ?? 2000
+      const waterScore = waterGoalMl > 0
+        ? Math.min(25, Math.round((todayWater / waterGoalMl) * 25))
+        : 0
+
+      // Nutrição: 6 pts por refeição, max 30 (= 5 refeições atinge o teto)
+      const mealsScore = Math.min(30, (todayMealsCount || 0) * 6)
+
       const sleepScore = todaySleep ? 15 : 0
 
       const dailyScore: DailyScoreBreakdown = {
@@ -314,6 +335,7 @@ export function useGamification(): UseGamificationReturn {
 
       // --- Load achievements from Supabase ---
       const dbAchievementCodes = await getUserAchievementCodes()
+      const dbUnlockedIds = dbAchievementCodes.map(a => a.code)
       if (dbAchievementCodes.length > 0) {
         const userAchievements: UserAchievement[] = dbAchievementCodes.map(a => ({
           id: a.code,
@@ -324,6 +346,7 @@ export function useGamification(): UseGamificationReturn {
       }
 
       // --- Check and apply streak freezes ---
+      let finalStreak = streakData
       if (freezeInfo && userIdRef.current) {
         const freezeResult = await applyStreakFreezes(
           userIdRef.current,
@@ -347,20 +370,69 @@ export function useGamification(): UseGamificationReturn {
         }
 
         setStreak(updatedStreak)
+        finalStreak = updatedStreak
       } else {
         setStreak(streakData)
       }
 
-      // Active challenges stay in localStorage (Phase 4 will migrate to DB)
+      // --- Auto-check achievements: desbloqueia o que estiver pendente
+      // sem esperar uma ação do usuário (ex: streak=7 desbloqueia
+      // "Primeira Faísca" e "Semana de Fogo" na hora). ---
+      if (stats) {
+        const newlyUnlocked = checkUnlockedAchievements(
+          stats,
+          getLevelFromXP(xp).level,
+          finalStreak.currentStreak,
+          dbUnlockedIds
+        )
+        if (newlyUnlocked.length > 0) {
+          const newUserAchievements: UserAchievement[] = newlyUnlocked.map(a => ({
+            id: a.id,
+            achievementId: a.id,
+            unlockedAt: new Date(),
+          }))
+          setUnlockedAchievements(prev => [...prev, ...newUserAchievements])
+          // Persiste no banco (best-effort, não bloqueia UI se uma falhar)
+          for (const ach of newlyUnlocked) {
+            try {
+              await unlockAchievementByCode(ach.id)
+            } catch (err) {
+              console.error('Erro ao salvar conquista:', ach.id, err)
+            }
+          }
+          // Mostra modal só da primeira (pra não spammar)
+          setShowAchievement(newlyUnlocked[0])
+        }
+      }
+
+      // Active challenges em localStorage. Regenera diários quando vira o
+      // dia e semanais quando vira a semana, em vez de deixar "Expirado".
+      const now = new Date()
       const savedData = localStorage.getItem('felicefit_gamification')
+      let activeChallengesToSet: ActiveChallenge[] = []
       if (savedData) {
         const data = JSON.parse(savedData)
-        setActiveChallenges(data.activeChallenges || [])
+        const saved: ActiveChallenge[] = (data.activeChallenges || []).map((c: ActiveChallenge & { expiresAt?: string | Date }) => ({
+          ...c,
+          expiresAt: c.expiresAt ? new Date(c.expiresAt) : undefined,
+        }))
+
+        // Mantém apenas os ainda válidos
+        const validDaily = saved.filter(c => c.type === 'daily' && c.expiresAt && c.expiresAt > now)
+        const validWeekly = saved.filter(c => c.type === 'weekly' && c.expiresAt && c.expiresAt > now)
+        const others = saved.filter(c => c.type !== 'daily' && c.type !== 'weekly')
+
+        // Regenera o que expirou
+        const dailyChallenges = validDaily.length > 0 ? validDaily : generateDailyChallenges()
+        const weeklyChallenges = validWeekly.length > 0 ? validWeekly : generateWeeklyChallenges()
+
+        activeChallengesToSet = [...dailyChallenges, ...weeklyChallenges, ...others]
       } else {
         const dailyChallenges = generateDailyChallenges()
         const weeklyChallenges = generateWeeklyChallenges()
-        setActiveChallenges([...dailyChallenges, ...weeklyChallenges])
+        activeChallengesToSet = [...dailyChallenges, ...weeklyChallenges]
       }
+      setActiveChallenges(activeChallengesToSet)
 
     } catch (error) {
       console.error('Erro ao carregar dados de gamificação:', error)
