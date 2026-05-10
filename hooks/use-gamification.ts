@@ -258,30 +258,40 @@ export function useGamification(): UseGamificationReturn {
         }
       }
 
-      // Diff de bioimpedância: massa muscular ganha e gordura perdida
-      // entre primeira e última medição.
+      // Diff de bioimpedância entre primeira e última medição.
+      // muscleGained: kg de massa muscular esquelética ganha (conquista
+      //   "Ganhe 2kg de massa muscular").
+      // fatLost: PERCENTUAL de gordura corporal perdido (conquista
+      //   "Perca 3% de gordura corporal" — % não kg!).
+      // Exige pelo menos 2 medições distintas — com 1 só não dá pra
+      // calcular diferença.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: firstBio } = await (supabase as any)
+      const { data: bioRows } = await (supabase as any)
         .from('fitness_body_compositions')
-        .select('massa_muscular_esqueletica_kg, massa_gordura_kg')
+        .select('id, data, massa_muscular_esqueletica_kg, percentual_gordura')
         .eq('user_id', user.id)
         .order('data', { ascending: true })
-        .limit(1)
-        .maybeSingle()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: lastBio } = await (supabase as any)
-        .from('fitness_body_compositions')
-        .select('massa_muscular_esqueletica_kg, massa_gordura_kg')
-        .eq('user_id', user.id)
-        .order('data', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      const muscleGained = firstBio && lastBio
-        ? Math.max(0, (lastBio.massa_muscular_esqueletica_kg || 0) - (firstBio.massa_muscular_esqueletica_kg || 0))
-        : 0
-      const fatLost = firstBio && lastBio
-        ? Math.max(0, (firstBio.massa_gordura_kg || 0) - (lastBio.massa_gordura_kg || 0))
-        : 0
+      const bioList = (bioRows || []) as Array<{
+        id: string
+        data: string
+        massa_muscular_esqueletica_kg: number | null
+        percentual_gordura: number | null
+      }>
+      let muscleGained = 0
+      let fatLost = 0
+      if (bioList.length >= 2) {
+        const first = bioList[0]
+        const last = bioList[bioList.length - 1]
+        muscleGained = Math.max(
+          0,
+          (last.massa_muscular_esqueletica_kg || 0) - (first.massa_muscular_esqueletica_kg || 0)
+        )
+        // Diferença em pontos percentuais (ex: 28% → 25% = 3 pontos)
+        fatLost = Math.max(
+          0,
+          (first.percentual_gordura || 0) - (last.percentual_gordura || 0)
+        )
+      }
 
       // Treinos efetivos = estruturados + atividades qualificadas
       // (alinhado com o streak: ambos contam como "fez treino")
