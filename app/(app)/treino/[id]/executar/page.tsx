@@ -23,6 +23,7 @@ const CardioInputModal = dynamic(() => import('@/components/treino/cardio-input-
 const PRCelebration = dynamic(() => import('@/components/treino/pr-celebration').then(m => ({ default: m.PRCelebration })), { ssr: false })
 const ExerciseVideoModal = dynamic(() => import('@/components/treino/exercise-video-modal').then(m => ({ default: m.ExerciseVideoModal })), { ssr: false })
 const IsometricTimerModal = dynamic(() => import('@/components/treino/isometric-timer-modal').then(m => ({ default: m.IsometricTimerModal })), { ssr: false })
+const CircuitRoundInputModal = dynamic(() => import('@/components/treino/circuit-round-input-modal').then(m => ({ default: m.CircuitRoundInputModal })), { ssr: false })
 import type { CompletedCardio } from '@/lib/workout/types'
 
 function formatTime(seconds: number): string {
@@ -42,6 +43,7 @@ export default function WorkoutExecutionPage() {
 
   const [showSetInput, setShowSetInput] = useState(false)
   const [showIsometricTimer, setShowIsometricTimer] = useState(false)
+  const [showCircuitRound, setShowCircuitRound] = useState(false)
   const [showCardioInput, setShowCardioInput] = useState(false)
   const [showPRCelebration, setShowPRCelebration] = useState(false)
   const [latestPR, setLatestPR] = useState<{ name: string; weight: number; reps: number } | null>(null)
@@ -71,6 +73,7 @@ export default function WorkoutExecutionPage() {
     state,
     startWorkout,
     completeSet,
+    completeCircuitRound,
     editCompletedSet,
     skipSet,
     skipExercise,
@@ -141,6 +144,32 @@ export default function WorkoutExecutionPage() {
   const handleCompleteIsometric = (data: { seconds: number; weight: number }) => {
     setShowIsometricTimer(false)
     handleCompleteSet({ reps: data.seconds, weight: data.weight })
+  }
+
+  // ─── CIRCUITO: helpers e handler para rodada em batch ─────────────
+  const isCurrentInCircuit = currentExercise?.circuit_group != null
+  const circuitMembers = workout && isCurrentInCircuit
+    ? workout.exercicios.filter(ex => ex.circuit_group === currentExercise!.circuit_group)
+    : []
+  // Total de rodadas = max de séries entre membros (geralmente são iguais)
+  const circuitTotalRounds = circuitMembers.length > 0
+    ? Math.max(...circuitMembers.map(m => m.series.length))
+    : 0
+  // Rodada atual = min de séries completas entre membros + 1
+  const circuitCurrentRound = circuitMembers.length > 0
+    ? Math.min(...circuitMembers.map(m =>
+        state.completedSets.filter(cs => cs.exerciseId === m.id).length
+      )) + 1
+    : 1
+
+  const handleCompleteCircuitRound = (entries: Array<{ exerciseId: string; reps: number; weight: number }>) => {
+    setShowCircuitRound(false)
+    completeCircuitRound(entries)
+    // Inicia descanso após a rodada (entre rodadas o descanso é normal)
+    if (circuitCurrentRound < circuitTotalRounds) {
+      const restTime = circuitMembers[0]?.series[circuitCurrentRound - 1]?.descanso || defaultRestTime
+      setTimeout(() => restTimer.start(restTime), 100)
+    }
   }
 
   // Handle set completion (new set or editing existing)
@@ -376,8 +405,144 @@ export default function WorkoutExecutionPage() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col px-6 pt-4 pb-2">
-        {/* Current exercise */}
-        {currentExercise && (
+        {/* Current exercise — usa view de circuito se aplicável */}
+        {currentExercise && isCurrentInCircuit ? (
+          /* ─── VISTA DE CIRCUITO: todos os membros juntos ─── */
+          <motion.div
+            key={`circuit-${currentExercise.circuit_group}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex-1 flex flex-col"
+          >
+            {/* Header do circuito */}
+            <div className="text-center mb-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-vinho mb-1.5">
+                🔗 Circuito {currentExercise.circuit_group} • {circuitMembers.length} exercícios
+              </p>
+              <h2 className="text-xl font-bold text-foreground font-heading leading-tight">
+                Rodada {Math.min(circuitCurrentRound, circuitTotalRounds)} de {circuitTotalRounds}
+              </h2>
+              <p className="text-xs text-foreground-secondary mt-1">
+                Sem descanso entre os exercícios
+              </p>
+            </div>
+
+            {/* Indicador único de rodada (uma bolinha por rodada, não por exercício) */}
+            <div className="flex justify-center gap-3 mb-4">
+              {Array.from({ length: circuitTotalRounds }).map((_, idx) => {
+                const roundIdx = idx + 1
+                const isCompleted = roundIdx < circuitCurrentRound
+                const isCurrent = roundIdx === circuitCurrentRound
+                return (
+                  <motion.div
+                    key={`round-${idx}`}
+                    animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
+                    transition={{ repeat: isCurrent ? Infinity : 0, duration: 2 }}
+                    className={cn(
+                      'w-12 h-12 rounded-full flex items-center justify-center text-base font-bold',
+                      isCompleted
+                        ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                        : isCurrent
+                          ? 'bg-gradient-to-br from-vinho to-vinho/70 text-white ring-2 ring-vinho/40 ring-offset-2 ring-offset-background shadow-md shadow-vinho/20'
+                          : 'bg-background-elevated text-foreground-muted'
+                    )}
+                  >
+                    {isCompleted ? '✓' : roundIdx}
+                  </motion.div>
+                )
+              })}
+            </div>
+
+            {/* Lista de exercícios do circuito empilhada */}
+            <div className="space-y-3 mb-4">
+              {circuitMembers.map((member, mIdx) => {
+                const memberCompletedRounds = state.completedSets.filter(cs => cs.exerciseId === member.id).length
+                const isAheadOfRound = memberCompletedRounds >= circuitCurrentRound
+                const isTime = member.series[0]?.set_type === 'time'
+                const memberInstructions = member.notas
+                  || member.instructions
+                  || exerciseInstructions[member.exercise_id]
+                  || exerciseInstructions[member.nome?.toLowerCase()]
+
+                return (
+                  <div
+                    key={member.id}
+                    className={cn(
+                      'bg-white border rounded-2xl p-4',
+                      isAheadOfRound ? 'border-emerald-500/40' : 'border-border'
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-secondary">
+                          {mIdx + 1}º exercício
+                        </p>
+                        <h3 className="text-base font-bold text-foreground truncate">
+                          {member.nome}
+                        </h3>
+                      </div>
+                      {isAheadOfRound && (
+                        <span className="text-[10px] font-bold uppercase text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-full flex-shrink-0">
+                          ✓ Feito
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 text-sm text-foreground-secondary">
+                      <span>
+                        <span className="font-semibold text-foreground">
+                          {member.series[circuitCurrentRound - 1]?.repeticoes_planejadas || member.series[0]?.repeticoes_planejadas}
+                        </span>
+                        {isTime ? 's' : ' reps'}
+                      </span>
+                      {member.series[circuitCurrentRound - 1]?.carga_planejada != null && !isTime && (
+                        <span>
+                          <span className="font-semibold text-foreground">
+                            {member.series[circuitCurrentRound - 1].carga_planejada}
+                          </span>
+                          {' kg'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Observações visíveis abaixo do exercício */}
+                    {memberInstructions && (
+                      <div className="mt-3 p-2.5 rounded-lg bg-amber-500/8 border border-amber-500/25">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 mb-1">
+                          Observações
+                        </p>
+                        <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
+                          {memberInstructions}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Botão "Como fazer" próprio do exercício */}
+                    {(member.video_url
+                      || exerciseVideoUrls[member.exercise_id]
+                      || exerciseVideoUrls[member.nome?.toLowerCase()]) && (
+                      <button
+                        onClick={() => {
+                          // Abre o vídeo desse membro específico (jumpToExercise
+                          // não interfere com o circuito — só muda o currentExercise
+                          // pra o vídeo abrir o conteúdo certo)
+                          const memberIdx = workout.exercicios.findIndex(e => e.id === member.id)
+                          if (memberIdx >= 0) jumpToExercise(memberIdx)
+                          setShowVideoModal(true)
+                        }}
+                        className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-gradient-to-r from-dourado/10 to-vinho/10 hover:from-dourado/20 hover:to-vinho/20 border border-dourado/30 active:scale-[0.98] transition-all"
+                      >
+                        <PlayCircle className="w-4 h-4 text-dourado" />
+                        <span className="text-xs font-semibold text-dourado">Como fazer este exercício</span>
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        ) : currentExercise && (
+          /* ─── VISTA NORMAL (1 exercício) ─── */
           <motion.div
             key={currentExercise.id}
             initial={{ opacity: 0, y: 20 }}
@@ -392,23 +557,6 @@ export default function WorkoutExecutionPage() {
               <h2 className="text-2xl font-bold text-foreground font-heading leading-tight">
                 {currentExercise.nome}
               </h2>
-              {/* Badge de circuito — mostra os "irmãos" do mesmo circuit_group */}
-              {currentExercise.circuit_group != null && (() => {
-                const partners = workout.exercicios.filter(
-                  ex => ex.circuit_group === currentExercise.circuit_group && ex.id !== currentExercise.id
-                )
-                if (partners.length === 0) return null
-                return (
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-vinho/10 border border-vinho/30">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-vinho">
-                      Circuito {currentExercise.circuit_group}
-                    </span>
-                    <span className="text-[11px] text-vinho/80">
-                      • com {partners.map(p => p.nome).join(', ')}
-                    </span>
-                  </div>
-                )
-              })()}
             </div>
 
             {/* Series indicators */}
@@ -556,16 +704,25 @@ export default function WorkoutExecutionPage() {
             <Button
               variant="gradient"
               size="lg"
-              className="w-full"
+              className={cn(
+                'w-full',
+                isCurrentInCircuit && 'bg-gradient-to-r from-vinho to-vinho/80'
+              )}
               onClick={() => {
-                if (currentSet?.set_type === 'time') {
+                if (isCurrentInCircuit) {
+                  setShowCircuitRound(true)
+                } else if (currentSet?.set_type === 'time') {
                   setShowIsometricTimer(true)
                 } else {
                   setShowSetInput(true)
                 }
               }}
             >
-              {currentSet?.set_type === 'time' ? 'Iniciar Isometria' : 'Concluir Série'}
+              {isCurrentInCircuit
+                ? `Concluir Rodada ${Math.min(circuitCurrentRound, circuitTotalRounds)}`
+                : currentSet?.set_type === 'time'
+                  ? 'Iniciar Isometria'
+                  : 'Concluir Série'}
             </Button>
 
             <div className="grid grid-cols-3 gap-2">
@@ -626,6 +783,23 @@ export default function WorkoutExecutionPage() {
         onComplete={handleCompleteIsometric}
         onCancel={() => setShowIsometricTimer(false)}
       />
+
+      {/* Circuit round input modal — abre quando paciente termina a rodada
+          de um circuito; permite registrar reps/peso de todos os membros
+          de uma vez */}
+      {isCurrentInCircuit && circuitMembers.length > 0 && (
+        <CircuitRoundInputModal
+          isOpen={showCircuitRound}
+          members={circuitMembers}
+          roundNumber={Math.min(circuitCurrentRound, circuitTotalRounds)}
+          totalRounds={circuitTotalRounds}
+          lastWeights={Object.fromEntries(
+            circuitMembers.map(m => [m.id, getLastWeight(m.nome)])
+          )}
+          onComplete={handleCompleteCircuitRound}
+          onCancel={() => setShowCircuitRound(false)}
+        />
+      )}
 
       {/* Cardio input modal */}
       <CardioInputModal

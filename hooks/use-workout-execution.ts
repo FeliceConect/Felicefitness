@@ -37,6 +37,8 @@ interface UseWorkoutExecutionReturn {
   // Ações
   startWorkout: (workout: Workout, forceNew?: boolean) => void
   completeSet: (data: { reps: number; weight: number }) => void
+  /** Completa todas as séries de uma rodada de circuito de uma vez. */
+  completeCircuitRound: (entries: Array<{ exerciseId: string; reps: number; weight: number }>) => void
   editCompletedSet: (exerciseId: string, setNumber: number, data: { reps: number; weight: number }) => void
   skipSet: () => void
   skipExercise: () => void
@@ -557,6 +559,101 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     })
   }, [checkForPR])
 
+  /**
+   * Completa todas as séries de uma rodada de circuito de uma vez.
+   *
+   * Recebe uma lista de {exerciseId, reps, weight} para cada membro do
+   * circuito. Insere todas as séries em um único setState (evita race
+   * de chamadas em loop) e avança para a próxima rodada — ou para o
+   * próximo exercício após o circuito quando todas as rodadas terminam.
+   */
+  const completeCircuitRound = useCallback((
+    entries: Array<{ exerciseId: string; reps: number; weight: number }>
+  ) => {
+    if (entries.length === 0) return
+
+    // Calcula PRs ANTES do setState (checkForPR depende do state atual,
+    // não do snapshot dentro do updater)
+    const newSets: CompletedSet[] = []
+    const newPRsList: PersonalRecord[] = []
+    for (const entry of entries) {
+      const exercise = state.workout?.exercicios.find(e => e.id === entry.exerciseId)
+      if (!exercise) continue
+
+      // numero da série = quantas já foram feitas + 1 nesse exercício
+      const alreadyDone = state.completedSets.filter(cs => cs.exerciseId === entry.exerciseId).length
+      const setNumber = alreadyDone + 1
+
+      const pr = checkForPR(exercise.exercise_id, exercise.nome, entry.weight, entry.reps)
+      if (pr) newPRsList.push(pr)
+      newSets.push({
+        exerciseId: entry.exerciseId,
+        exerciseName: exercise.nome,
+        setNumber,
+        reps: entry.reps,
+        weight: entry.weight,
+        isPR: !!pr,
+      })
+    }
+
+    setState(prev => {
+      if (!prev.workout) return prev
+      const newCompleted = [...prev.completedSets, ...newSets]
+      const newPRs = [...prev.newPRs, ...newPRsList]
+
+      const exercicios = prev.workout.exercicios
+      const curEx = exercicios[prev.currentExerciseIndex]
+      if (!curEx) return { ...prev, completedSets: newCompleted, newPRs }
+
+      const circuitGroup = curEx.circuit_group
+      if (circuitGroup == null) {
+        // Fallback: comportamento normal
+        return { ...prev, completedSets: newCompleted, newPRs }
+      }
+
+      // Próxima rodada: primeiro membro do circuito que ainda tem séries pendentes
+      const circuitMembers = exercicios
+        .map((ex, idx) => ({ ex, idx }))
+        .filter(({ ex }) => ex.circuit_group === circuitGroup)
+
+      const firstWithPending = circuitMembers.find(({ ex }) => {
+        const done = newCompleted.filter(cs => cs.exerciseId === ex.id).length
+        return done < ex.series.length
+      })
+
+      if (firstWithPending) {
+        return {
+          ...prev,
+          completedSets: newCompleted,
+          newPRs,
+          currentExerciseIndex: firstWithPending.idx,
+          currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(
+            prev.workout,
+            firstWithPending.idx,
+            newCompleted
+          ),
+        }
+      }
+
+      // Circuito todo concluído: pula pra próximo exercício fora do circuito
+      const nextExIndex = findNextIncompleteExerciseIndex(
+        prev.workout,
+        newCompleted,
+        prev.currentExerciseIndex
+      )
+      if (nextExIndex === -1) {
+        return { ...prev, completedSets: newCompleted, newPRs, status: 'completed' }
+      }
+      return {
+        ...prev,
+        completedSets: newCompleted,
+        newPRs,
+        currentExerciseIndex: nextExIndex,
+        currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, nextExIndex, newCompleted),
+      }
+    })
+  }, [state.workout, state.completedSets, checkForPR])
+
   const skipSet = useCallback(() => {
     if (!currentExercise) return
 
@@ -705,6 +802,7 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     state,
     startWorkout,
     completeSet,
+    completeCircuitRound,
     editCompletedSet,
     skipSet,
     skipExercise,
