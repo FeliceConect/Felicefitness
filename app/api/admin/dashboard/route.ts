@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
+import { getTodayDateSP, getDateOffsetSP, getMonthStartSP } from '@/lib/utils/date'
 
 export async function GET() {
   try {
@@ -94,15 +94,14 @@ export async function GET() {
       ? Math.round((completedWorkoutsWeek || 0) / totalWorkoutsWeek * 100)
       : 0
 
-    // Custo de API no mês atual
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0, 0, 0, 0)
+    // Custo de API no mês atual — usa início do mês em SP (não UTC do
+    // servidor, que vira "novo mês" 3h antes do real em BRT)
+    const startOfMonthSP = new Date(`${getMonthStartSP()}T00:00:00-03:00`).toISOString()
 
     const { data: apiUsageData } = await supabaseAdmin
       .from('fitness_api_usage')
       .select('cost_usd')
-      .gte('created_at', startOfMonth.toISOString())
+      .gte('created_at', startOfMonthSP)
 
     const apiCostMonth = apiUsageData
       ? apiUsageData.reduce((sum, row) => sum + (parseFloat(row.cost_usd) || 0), 0) * 5.5 // Converter para BRL

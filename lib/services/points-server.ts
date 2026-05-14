@@ -8,7 +8,7 @@
  * + tier logic of /api/points/award. The HTTP route delegates to this module.
  */
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getTodayDateSP } from '@/lib/utils/date'
+import { getTodayDateSP, getStartOfTodaySP } from '@/lib/utils/date'
 
 export type PointAction =
   | 'workout_completed'
@@ -139,16 +139,18 @@ export async function awardPointsServer(
       return { success: true, duplicate: true, message: 'Pontos ja atribuidos para esta acao' }
     }
   } else {
-    // Dedup per-day (one award per action+source per day)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // Dedup per-day (one award per action+source per day) — usa início do
+    // dia em America/Sao_Paulo. NÃO use new Date() + setHours no servidor
+    // (UTC) porque após 21h BRT a janela "hoje" já é o dia seguinte UTC,
+    // fazendo o dedup falhar e dar pontos novamente.
+    const startOfDaySP = getStartOfTodaySP()
     const { data: todayExisting } = await supabaseAdmin
       .from('fitness_point_transactions')
       .select('id')
       .eq('user_id', userId)
       .eq('reason', config.reason)
       .eq('source', 'automatic')
-      .gte('created_at', today.toISOString())
+      .gte('created_at', startOfDaySP)
       .limit(1)
 
     if (todayExisting && todayExisting.length > 0) {

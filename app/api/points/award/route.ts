@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardPointsServer, POINT_VALUES, type PointAction } from '@/lib/services/points-server'
+import { getStartOfTodaySP, getMonthStartSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -83,26 +84,23 @@ export async function GET(request: NextRequest) {
 
     const totalPoints = (allPoints || []).reduce((sum, p) => sum + p.points, 0)
 
-    // Points today
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // Points today — usa início do dia em SP (servidor é UTC, e new Date()
+    // + setHours(0) retorna meia-noite UTC = 21h BRT do dia anterior)
     const { data: todayPoints } = await supabaseAdmin
       .from('fitness_point_transactions')
       .select('points')
       .eq('user_id', user.id)
-      .gte('created_at', today.toISOString())
+      .gte('created_at', getStartOfTodaySP())
 
     const todayTotal = (todayPoints || []).reduce((sum, p) => sum + p.points, 0)
 
-    // Points this month
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
+    // Points this month — primeiro dia do mês em SP
+    const monthStartSP = `${getMonthStartSP()}T00:00:00-03:00`
     const { data: monthPoints } = await supabaseAdmin
       .from('fitness_point_transactions')
       .select('points')
       .eq('user_id', user.id)
-      .gte('created_at', monthStart.toISOString())
+      .gte('created_at', new Date(monthStartSP).toISOString())
 
     const monthTotal = (monthPoints || []).reduce((sum, p) => sum + p.points, 0)
 

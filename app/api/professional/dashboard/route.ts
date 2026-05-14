@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getTodayDateSP, getMonthStartSP } from '@/lib/utils/date'
+import { getTodayDateSP, getMonthStartSP, getStartOfTodaySP } from '@/lib/utils/date'
 
 // GET - Buscar estatísticas do dashboard do profissional
 export async function GET() {
@@ -69,13 +69,13 @@ export async function GET() {
       clientsData = data || []
     }
 
-    // Calcular clientes ativos hoje (que atualizaram perfil nas últimas 24h)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // Calcular clientes ativos hoje (que atualizaram perfil hoje SP)
+    // — usa início do dia em SP, não UTC do servidor
+    const startOfTodaySP = new Date(getStartOfTodaySP())
     const activeToday = clientsData.filter(c => {
       if (!c.updated_at) return false
       const updated = new Date(c.updated_at)
-      return updated >= today
+      return updated >= startOfTodaySP
     }).length
 
     // Buscar refeições de hoje dos clientes (se nutricionista)

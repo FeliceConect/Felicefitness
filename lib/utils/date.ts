@@ -172,3 +172,20 @@ export function getDateOffsetSP(daysOffset: number): string {
 export function getMonthStartSP(): string {
   return formatInTimeZone(new Date(), SAO_PAULO_TIMEZONE, 'yyyy-MM') + '-01'
 }
+
+/**
+ * Retorna o INÍCIO do dia atual em SP no formato ISO UTC.
+ * Ex: 2026-05-13T03:00:00.000Z (meia-noite SP = 03:00 UTC).
+ *
+ * USE para filtros tipo `.gte('created_at', getStartOfTodaySP())` quando
+ * quiser pegar tudo que aconteceu desde meia-noite no fuso de SP.
+ *
+ * NUNCA use `new Date(); d.setHours(0,0,0,0); d.toISOString()` no
+ * servidor — isso retorna meia-noite UTC, que em BRT é 21h do dia
+ * anterior, fazendo o "hoje" pular indevidamente.
+ */
+export function getStartOfTodaySP(): string {
+  const todayDateSP = getTodayDateSP() // YYYY-MM-DD em SP
+  // Brasil aboliu DST — sempre -03:00. Construa string ISO com offset SP.
+  return new Date(`${todayDateSP}T00:00:00-03:00`).toISOString()
+}
