@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Workout, WorkoutExercise, ExerciseSet, CompletedSet, CompletedCardio, PersonalRecord, WorkoutSummary } from '@/lib/workout/types'
-import { getExercisePR } from '@/lib/workout/mock-data'
 
 type ExecutionStatus = 'not_started' | 'in_progress' | 'resting' | 'completed'
 export type ExerciseProgress = 'pending' | 'in_progress' | 'completed'
@@ -379,52 +378,14 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     })
   }, [state.status, state.workout?.id])
 
-  const checkForPR = useCallback((exerciseId: string, exerciseName: string, weight: number, reps: number): PersonalRecord | null => {
-    const currentPR = getExercisePR(exerciseId)
-
-    if (!currentPR) {
-      // Primeiro registro é PR
-      return {
-        id: `pr-${Date.now()}`,
-        user_id: 'mock-user',
-        exercise_id: exerciseId,
-        exercise_name: exerciseName,
-        weight,
-        reps,
-        data: new Date().toISOString(),
-        workout_id: state.workout?.id || ''
-      }
-    }
-
-    // Verificar se é PR
-    if (weight > currentPR.weight && reps >= currentPR.reps) {
-      return {
-        id: `pr-${Date.now()}`,
-        user_id: 'mock-user',
-        exercise_id: exerciseId,
-        exercise_name: exerciseName,
-        weight,
-        reps,
-        data: new Date().toISOString(),
-        workout_id: state.workout?.id || ''
-      }
-    }
-
-    if (weight >= currentPR.weight && reps > currentPR.reps) {
-      return {
-        id: `pr-${Date.now()}`,
-        user_id: 'mock-user',
-        exercise_id: exerciseId,
-        exercise_name: exerciseName,
-        weight,
-        reps,
-        data: new Date().toISOString(),
-        workout_id: state.workout?.id || ''
-      }
-    }
-
+  // Badge de PR durante o treino foi desativado — a detecção mock gerava
+  // falso positivo em todos os exercícios (UUID real não bate com IDs
+  // hardcoded). A pontuação de PR real é feita server-side pelo trigger
+  // check_and_create_pr e retornada via prSetIds no save. Quando houver
+  // histórico real plugado, esta função pode ser reativada.
+  const checkForPR = useCallback((_exerciseId: string, _exerciseName: string, _weight: number, _reps: number): PersonalRecord | null => {
     return null
-  }, [state.workout])
+  }, [])
 
   const completeSet = useCallback((data: { reps: number; weight: number }) => {
     if (!currentExercise || !currentSet) return

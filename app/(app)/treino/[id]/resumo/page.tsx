@@ -163,6 +163,17 @@ export default function WorkoutSummaryPage() {
       }
     }
 
+    // Mapa nome→circuit_group derivado dos exercícios do treino em execução.
+    // Garante que o INSERT preserve agrupamento de biset/triset.
+    const exerciseGroups: Record<string, number | null> = {}
+    if (workout?.exercicios) {
+      for (const ex of workout.exercicios) {
+        if (ex.circuit_group != null) {
+          exerciseGroups[ex.nome] = ex.circuit_group
+        }
+      }
+    }
+
     const saveData = {
       workoutId: summary.workoutId || workoutId,
       templateId: summary.templateId || workout?.template_id,
@@ -177,6 +188,7 @@ export default function WorkoutSummaryPage() {
       notes: notes || undefined,
       // Mesmo valor exibido na tela — evita banco e display divergirem.
       totalCalories: summary.caloriesBurned,
+      exerciseGroups,
     }
 
     // Read streak BEFORE saving so we can detect transitions to 7/30.

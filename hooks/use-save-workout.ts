@@ -35,6 +35,10 @@ interface WorkoutSaveData {
   // somada com cardio). Se ausente, usa fallback aproximado de 5 kcal/min
   // + cardio. Evita duplo-cálculo entre display e banco.
   totalCalories?: number
+  // Mapa nome→circuit_group derivado de workout.exercicios. Preserva o
+  // agrupamento de biset/triset no INSERT — sem isso o workout instance
+  // fica com circuit_group=null e a UI não consegue mostrar agrupado.
+  exerciseGroups?: Record<string, number | null>
 }
 
 export interface SavedCardioAward {
@@ -146,7 +150,11 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
       // 2. Create workout exercises and sets
       let exerciseOrder = 0
       for (const [exerciseName, sets] of Array.from(exerciseMap.entries())) {
-        // Create workout exercise
+        // Create workout exercise — preserva circuit_group do template em
+        // execução (vem do programa do profissional). Sem isso o INSERT
+        // grava null e perde o agrupamento de biset/triset.
+        const circuitGroup = data.exerciseGroups?.[exerciseName] ?? null
+
         const { data: exerciseRecord, error: exerciseError } = await (supabase as AnyTable)
           .from('fitness_workout_exercises')
           .insert({
@@ -155,6 +163,7 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
             exercicio_nome: exerciseName,
             ordem: exerciseOrder,
             status: 'concluido',
+            circuit_group: circuitGroup,
             notas: null
           })
           .select()
@@ -165,7 +174,10 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
           throw exerciseError
         }
 
-        // Create sets for this exercise
+        // Create sets for this exercise.
+        // is_pr é decidido SOMENTE pelo trigger check_and_create_pr no banco
+        // (fonte única de verdade). Cliente envia false; PR real é setado
+        // pelo trigger BEFORE INSERT comparando contra histórico do paciente.
         const setsToInsert = sets.map(set => ({
           workout_exercise_id: exerciseRecord.id,
           numero_serie: set.setNumber,
@@ -174,7 +186,7 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
           carga: set.weight,
           unidade_carga: 'kg',
           status: 'concluido',
-          is_pr: set.isPR,
+          is_pr: false,
           notas: null
         }))
 

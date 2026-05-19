@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { format, startOfWeek, addDays, isToday, isBefore, isAfter, parseISO, getDay } from 'date-fns'
 import { getTodayISO } from '@/lib/utils/date'
 import type { Workout, WorkoutTemplate, DayWorkout, WorkoutExercise } from '@/lib/workout/types'
+import { normalizeCircuitGroups } from '@/lib/workout/normalize-circuits'
 
 // Tipos para programas de treino do profissional
 interface TrainingProgram {
@@ -299,7 +300,9 @@ export function useWorkouts(): UseWorkoutsReturn {
           fase: (t.fase || 'base') as 'base' | 'construcao' | 'pico',
           dia_semana: t.dia_semana || 0,
           duracao_estimada: t.duracao_estimada_min || 30,
-          exercicios: (t.exercicios || []).map(e => ({
+          // Normaliza biset/triset legado (is_superset/superset_grupo) → circuit_group
+          // para o executar tratar como circuito (todos juntos na tela).
+          exercicios: normalizeCircuitGroups((t.exercicios || []).map(e => ({
             id: e.id,
             exercise_id: e.exercise_id || '',
             nome: e.exercicio_nome,
@@ -309,11 +312,12 @@ export function useWorkouts(): UseWorkoutsReturn {
             descanso: e.descanso_segundos || 45,
             carga_sugerida: e.carga_sugerida || undefined,
             is_superset: e.is_superset || false,
+            superset_grupo: e.superset_grupo ?? null,
             notas: e.notas || undefined,
             set_type: (e.set_type as 'reps' | 'time' | undefined) || 'reps',
             tempo_segundos: e.set_type === 'time' ? parseInt(e.repeticoes || '30') || 30 : undefined,
             circuit_group: e.circuit_group ?? null,
-          }))
+          })))
         }))
       }
 
@@ -334,26 +338,46 @@ export function useWorkouts(): UseWorkoutsReturn {
 
   // Converter workout do banco para o tipo interno
   const convertWorkout = useCallback((w: DBWorkout & { exercicios?: (DBWorkoutExercise & { series?: DBWorkoutSet[] })[] }, template?: WorkoutTemplate): Workout => {
-    const exercicios: WorkoutExercise[] = (w.exercicios || []).map(e => ({
-      id: e.id,
-      workout_id: e.workout_id,
-      exercise_id: e.exercise_id || '',
-      nome: e.exercicio_nome,
-      ordem: e.ordem,
-      is_superset: false,
-      notas: e.notas || undefined,
-      circuit_group: e.circuit_group ?? null,
-      series: (e.series || []).map(s => ({
-        id: s.id,
-        workout_exercise_id: s.workout_exercise_id,
-        numero_serie: s.numero_serie,
-        repeticoes_planejadas: s.repeticoes_planejadas || '',
-        carga_planejada: s.carga_planejada || undefined,
-        tempo_segundos: s.tempo_segundos ?? undefined,
-        set_type: (s.set_type as 'reps' | 'time' | undefined) || 'reps',
-        status: s.status as 'pendente' | 'concluido' | 'pulado'
-      }))
-    }))
+    // Lookup do template por ordem para sobrepor circuit_group/is_superset
+    // quando o workout_exercises foi gravado sem grupo (instâncias legadas).
+    const templateByOrdem = new Map<number, WorkoutTemplate['exercicios'][number]>()
+    if (template) {
+      for (const te of template.exercicios) {
+        templateByOrdem.set(te.ordem, te)
+      }
+    }
+
+    const exerciciosRaw: WorkoutExercise[] = (w.exercicios || []).map(e => {
+      const te = templateByOrdem.get(e.ordem)
+      return {
+        id: e.id,
+        workout_id: e.workout_id,
+        exercise_id: e.exercise_id || '',
+        nome: e.exercicio_nome,
+        ordem: e.ordem,
+        is_superset: te?.is_superset ?? false,
+        notas: e.notas || undefined,
+        // workout_exercises pode ter sido criado sem circuit_group;
+        // resgata do template quando disponível.
+        circuit_group: e.circuit_group ?? te?.circuit_group ?? null,
+        video_url: te?.video_url,
+        instructions: te?.instructions,
+        series: (e.series || []).map(s => ({
+          id: s.id,
+          workout_exercise_id: s.workout_exercise_id,
+          numero_serie: s.numero_serie,
+          repeticoes_planejadas: s.repeticoes_planejadas || '',
+          carga_planejada: s.carga_planejada || undefined,
+          tempo_segundos: s.tempo_segundos ?? undefined,
+          set_type: (s.set_type as 'reps' | 'time' | undefined) || 'reps',
+          status: s.status as 'pendente' | 'concluido' | 'pulado'
+        }))
+      }
+    })
+
+    // Aplica detecção de run sintético (caso template não tenha circuit_group
+    // mas tenha is_superset adjacente).
+    const exercicios: WorkoutExercise[] = normalizeCircuitGroups(exerciciosRaw)
 
     // Se não tem exercícios no workout mas tem template, usar do template
     if (exercicios.length === 0 && template) {
