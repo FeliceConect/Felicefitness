@@ -23,8 +23,10 @@
 -- ============================================================
 
 WITH active_programs AS (
-  -- Pacientes com exatamente 1 programa ativo
-  SELECT client_id, MIN(id) AS program_id
+  -- Pacientes com exatamente 1 programa ativo. Postgres não tem MIN(uuid);
+  -- como o HAVING COUNT(*) = 1 garante linha única, pegamos o id via
+  -- array_agg sem ambiguidade.
+  SELECT client_id, (array_agg(id))[1] AS program_id
   FROM fitness_training_programs
   WHERE is_active = true
   GROUP BY client_id
