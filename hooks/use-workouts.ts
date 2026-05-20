@@ -488,6 +488,7 @@ export function useWorkouts(): UseWorkoutsReturn {
             nome: te.nome,
             ordem: te.ordem,
             is_superset: te.is_superset,
+            circuit_group: te.circuit_group ?? null,
             video_url: te.video_url,
             instructions: te.instructions,
             series: Array.from({ length: te.series }, (_, si) => ({
@@ -611,6 +612,7 @@ export function useWorkouts(): UseWorkoutsReturn {
             nome: te.nome,
             ordem: te.ordem,
             is_superset: te.is_superset,
+            circuit_group: te.circuit_group ?? null,
             video_url: te.video_url,
             instructions: te.instructions,
             series: Array.from({ length: te.series }, (_, si) => ({
@@ -691,6 +693,9 @@ export function useWorkouts(): UseWorkoutsReturn {
               nome: te.nome,
               ordem: te.ordem,
               is_superset: te.is_superset,
+              // Preserva agrupamento do template — sem isso a UI de circuito
+              // não dispara e o save grava null, perpetuando o problema.
+              circuit_group: te.circuit_group ?? null,
               video_url: te.video_url,
               instructions: te.instructions,
               series: Array.from({ length: te.series }, (_, i) => ({
