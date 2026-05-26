@@ -463,6 +463,14 @@ export default function WorkoutExecutionPage() {
                   || member.instructions
                   || exerciseInstructions[member.exercise_id]
                   || exerciseInstructions[member.nome?.toLowerCase()]
+                // Peso a exibir: planejado pelo profissional ou, na falta dele,
+                // último peso usado pelo paciente nesse exercício. Sem fallback,
+                // a UI ficava só com reps (sem kg) quando o programa não
+                // detalhava carga por série, e o paciente perdia a referência.
+                const memberLastWeight = getLastWeight(member.nome)
+                const plannedWeight = member.series[circuitCurrentRound - 1]?.carga_planejada
+                  ?? member.series[0]?.carga_planejada
+                const displayWeight = plannedWeight ?? memberLastWeight?.weight ?? null
 
                 return (
                   <div
@@ -495,12 +503,15 @@ export default function WorkoutExecutionPage() {
                         </span>
                         {isTime ? 's' : ' reps'}
                       </span>
-                      {member.series[circuitCurrentRound - 1]?.carga_planejada != null && !isTime && (
+                      {!isTime && displayWeight != null && (
                         <span>
                           <span className="font-semibold text-foreground">
-                            {member.series[circuitCurrentRound - 1].carga_planejada}
+                            {displayWeight}
                           </span>
                           {' kg'}
+                          {plannedWeight == null && memberLastWeight && (
+                            <span className="ml-1 text-[10px] text-foreground-muted">(último)</span>
+                          )}
                         </span>
                       )}
                     </div>

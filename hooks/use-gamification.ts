@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getTodayISO } from '@/lib/utils/date'
+import { QUALIFYING_ACTIVITY_OR_FILTER } from '@/lib/scoring/qualifying-activity-filter'
 import type {
   Level,
   Achievement,
@@ -181,15 +182,14 @@ export function useGamification(): UseGamificationReturn {
       // Sem isso, conquistas como "10 treinos", "Madrugador", "Hidratação
       // 7 dias seguidos" nunca desbloqueiam mesmo o paciente cumprindo.
 
-      // Atividades qualificadas (≥20min ≥ moderado) — total e antes das 7h.
-      // Conta como treino também (alinhado com regra do streak/score).
+      // Atividades qualificadas (moderado+ ≥20min OU leve ≥30min) — total
+      // e antes das 7h. Conta como treino (alinhado com a regra do streak/score).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count: qualifiedActivitiesTotal } = await (supabase as any)
         .from('fitness_activities')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .gte('duration_minutes', 20)
-        .in('intensity', ['moderado', 'intenso', 'muito_intenso'])
+        .or(QUALIFYING_ACTIVITY_OR_FILTER)
 
       // Treinos estruturados antes das 7h (hora_inicio é nullable)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -316,8 +316,7 @@ export function useGamification(): UseGamificationReturn {
           .select('date')
           .eq('user_id', user.id)
           .gte('date', sixtyDaysAgoStr)
-          .gte('duration_minutes', 20)
-          .in('intensity', ['moderado', 'intenso', 'muito_intenso']),
+          .or(QUALIFYING_ACTIVITY_OR_FILTER),
         (supabase as any).from('fitness_sleep_logs')
           .select('data')
           .eq('user_id', user.id)
@@ -415,7 +414,7 @@ export function useGamification(): UseGamificationReturn {
         .eq('status', 'concluido')
         .maybeSingle()
 
-      // Atividade qualificada hoje (≥20min, intensidade ≥ moderada) também
+      // Atividade qualificada hoje (moderado+ ≥20min OU leve ≥30min) também
       // conta como treino — alinhado com a regra do streak.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count: qualifyingActivityCount } = await (supabase as any)
@@ -423,8 +422,7 @@ export function useGamification(): UseGamificationReturn {
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('date', today)
-        .gte('duration_minutes', 20)
-        .in('intensity', ['moderado', 'intenso', 'muito_intenso'])
+        .or(QUALIFYING_ACTIVITY_OR_FILTER)
 
       const todayWater = waterByDay[today] || 0
 

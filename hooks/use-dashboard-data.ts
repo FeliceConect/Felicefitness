@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getTodayISO } from '@/lib/utils/date'
+import { QUALIFYING_ACTIVITY_OR_FILTER } from '@/lib/scoring/qualifying-activity-filter'
 import type { Profile } from '@/types/database'
 
 // Chave do cache do dashboard. Mutações que afetam o dashboard
@@ -203,10 +204,10 @@ async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
     sb.from('fitness_meals').select('tipo_refeicao, calorias_total, proteinas_total, horario').eq('user_id', user.id).eq('data', today),
     sb.from('fitness_workouts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'concluido'),
     sb.from('fitness_exercise_sets').select('*, workout_exercise:fitness_workout_exercises!inner(workout:fitness_workouts!inner(user_id))', { count: 'exact', head: true }).eq('is_pr', true).eq('workout_exercise.workout.user_id', user.id).gte('created_at', startOfMonth.toISOString()),
-    sb.from('fitness_activities').select('id', { head: true, count: 'exact' }).eq('user_id', user.id).eq('date', today).gte('duration_minutes', 20).in('intensity', ['moderado', 'intenso', 'muito_intenso']),
+    sb.from('fitness_activities').select('id', { head: true, count: 'exact' }).eq('user_id', user.id).eq('date', today).or(QUALIFYING_ACTIVITY_OR_FILTER),
   ])
 
-  // Atividade física qualificada hoje (≥20min, intensidade ≥ moderada)
+  // Atividade física qualificada hoje (moderado+ ≥20min OU leve ≥30min)
   // — equivalente a treino para o item "Treino" do daily score.
   const hasQualifyingActivityToday = (activitiesTodayResult.count ?? 0) > 0
 

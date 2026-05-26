@@ -13,6 +13,9 @@ export interface ExerciseStatus {
   totalSets: number
   completedSets: number
   status: ExerciseProgress
+  // Permite ao strip agrupar membros consecutivos do mesmo biset/triset
+  // num único chip — sem isso, cada exercício do circuito vira uma bolinha.
+  circuitGroup: number | null
 }
 
 interface WorkoutExecutionState {
@@ -269,7 +272,8 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
       name: ex.nome,
       totalSets: total,
       completedSets: completed,
-      status
+      status,
+      circuitGroup: ex.circuit_group ?? null
     }
   })
 
