@@ -489,7 +489,7 @@ export default function PortalWorkoutsPage() {
                             )}
 
                             {/* Stats do treino */}
-                            <div className="mt-4 grid grid-cols-4 gap-2">
+                            <div className="mt-4 grid grid-cols-3 gap-2">
                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                                 <p className="text-xs text-blue-600">Duração</p>
                                 <p className="text-lg font-bold text-blue-700">{formatDuration(workout.duration_minutes)}</p>
@@ -501,10 +501,6 @@ export default function PortalWorkoutsPage() {
                               <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
                                 <p className="text-xs text-green-600">Séries</p>
                                 <p className="text-lg font-bold text-green-700">{workout.total_sets || 0}</p>
-                              </div>
-                              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                                <p className="text-xs text-purple-600">Volume</p>
-                                <p className="text-lg font-bold text-purple-700">{formatVolume(workout.total_volume)}</p>
                               </div>
                             </div>
 
