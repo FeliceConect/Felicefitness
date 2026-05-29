@@ -115,7 +115,7 @@ export async function GET(
       // Hidratação (30 dias)
       supabaseAdmin
         .from('fitness_water_logs')
-        .select('id, data, quantidade_ml, quantidade')
+        .select('id, data, quantidade_ml')
         .eq('user_id', patientId)
         .gte('data', thirtyDaysAgoStr)
         .order('data', { ascending: false }),
@@ -123,7 +123,7 @@ export async function GET(
       // Sono (30 dias)
       supabaseAdmin
         .from('fitness_sleep_logs')
-        .select('id, data, duracao_minutos, duracao, qualidade, hora_dormir, hora_acordar')
+        .select('id, data, duracao_minutos, qualidade, hora_dormir, hora_acordar')
         .eq('user_id', patientId)
         .gte('data', thirtyDaysAgoStr)
         .order('data', { ascending: false }),
@@ -330,7 +330,7 @@ export async function GET(
     const waterByDay: Record<string, number> = {}
     for (const h of water) {
       const day = h.data as string
-      const ml = (h.quantidade_ml as number) || (h.quantidade as number) || 0
+      const ml = (h.quantidade_ml as number) || 0
       waterByDay[day] = (waterByDay[day] || 0) + ml
     }
     const waterDays = Object.keys(waterByDay).length
@@ -349,9 +349,9 @@ export async function GET(
       ? +(sleepRecords.reduce((s: number, r: Record<string, unknown>) => s + ((r.qualidade as number) || 0), 0) / sleepRecords.length).toFixed(1)
       : 0
 
-    // Peso
+    // Peso — usa peso do perfil; se ausente, cai para a medição corporal mais recente
     const bodyComp = bodyCompResult.data || []
-    const currentWeight = profile.peso_atual
+    const currentWeight = profile.peso_atual ?? (bodyComp.length > 0 ? bodyComp[0].peso : null)
     const weightChange = bodyComp.length >= 2
       ? +((bodyComp[0].peso || 0) - (bodyComp[bodyComp.length - 1].peso || 0)).toFixed(1)
       : 0
@@ -360,6 +360,31 @@ export async function GET(
     const formTotal = formAssignments.length
     const formPending = formAssignments.filter((f: { status: string }) => f.status === 'pending' || f.status === 'sent').length
     const formCompleted = formAssignments.filter((f: { status: string }) => f.status === 'completed').length
+
+    // Ranking — current_position não é mantido no banco; calcular ao vivo
+    // espelhando o leaderboard do paciente (app/api/rankings/route.ts): ordena
+    // por total_points desc e considera apenas perfis elegíveis (client /
+    // super_admin / sem role), ignorando profissionais órfãos em
+    // fitness_ranking_participants. Assim a posição aqui == a que o paciente vê.
+    const rankingParticipant = rankingResult.data?.[0] || null
+    let rankingPosition: number | null = null
+    if (rankingParticipant) {
+      const [{ data: allParts }, { data: eligibleProfiles }] = await Promise.all([
+        supabaseAdmin
+          .from('fitness_ranking_participants')
+          .select('user_id, total_points')
+          .eq('ranking_id', rankingParticipant.ranking_id)
+          .order('total_points', { ascending: false }),
+        supabaseAdmin
+          .from('fitness_profiles')
+          .select('id')
+          .or('role.eq.client,role.eq.super_admin,role.is.null'),
+      ])
+      const eligibleIds = new Set((eligibleProfiles || []).map((p: { id: string }) => p.id))
+      const eligible = (allParts || []).filter((p: { user_id: string }) => eligibleIds.has(p.user_id))
+      const idx = eligible.findIndex((p: { user_id: string }) => p.user_id === patientId)
+      rankingPosition = idx >= 0 ? idx + 1 : null
+    }
 
     return NextResponse.json({
       success: true,
@@ -525,9 +550,9 @@ export async function GET(
         return grouped
       })(),
 
-      ranking: rankingResult.data?.[0] ? {
-        position: rankingResult.data[0].current_position,
-        totalPoints: rankingResult.data[0].total_points,
+      ranking: rankingParticipant ? {
+        position: rankingPosition,
+        totalPoints: rankingParticipant.total_points,
       } : null,
 
       mealPlan: mealPlanResult.data?.[0] || null,

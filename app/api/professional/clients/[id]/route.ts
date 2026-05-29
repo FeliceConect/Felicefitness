@@ -172,9 +172,10 @@ export async function GET(
       ? (sleepRecords.reduce((sum: number, s: Record<string, unknown>) => sum + ((s.qualidade as number) || 0), 0) / sleepRecords.length).toFixed(1)
       : '0'
 
-    // Progresso de peso
+    // Progresso de peso — usa peso do perfil; se ausente, cai para a medição corporal mais recente
     const weightHistory = weightResult.data || []
-    const currentWeight = profile.peso_atual
+    const latestWeight = weightHistory.length > 0 ? weightHistory[0].peso : null
+    const currentWeight = profile.peso_atual ?? latestWeight
     const oldestWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].peso : currentWeight
     const weightChange = currentWeight && oldestWeight ? (currentWeight - oldestWeight).toFixed(1) : 0
 
@@ -188,7 +189,7 @@ export async function GET(
         nome: profile.nome,
         email: profile.email,
         foto: profile.foto_url,
-        peso: profile.peso_atual,
+        peso: currentWeight,
         altura: profile.altura_cm,
         objetivo: profile.objetivo,
         meta_calorias: profile.meta_calorias,
