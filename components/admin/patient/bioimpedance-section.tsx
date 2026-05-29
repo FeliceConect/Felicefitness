@@ -181,7 +181,7 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
   const [showCompare, setShowCompare] = useState(false)
   const [compareA, setCompareA] = useState<string>('')
   const [compareB, setCompareB] = useState<string>('')
-  const [chartMetric, setChartMetric] = useState<'peso' | 'massa_muscular_esqueletica_kg' | 'percentual_gordura' | 'gordura_visceral'>('peso')
+  const [chartMetric, setChartMetric] = useState<'peso' | 'massa_gordura_kg' | 'massa_muscular_esqueletica_kg' | 'percentual_gordura' | 'gordura_visceral'>('peso')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchRecords = async () => {
@@ -338,12 +338,13 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
 
   // Deltas vs. linha imediatamente mais antiga (records[i+1], já vem ordenado DESC)
   const deltas = useMemo(() => {
-    const out: Record<string, { peso: number | null; musc: number | null; gord: number | null; visceral: number | null }> = {}
+    const out: Record<string, { peso: number | null; gorduraKg: number | null; musc: number | null; gord: number | null; visceral: number | null }> = {}
     for (let i = 0; i < records.length - 1; i++) {
       const curr = records[i]
       const prev = records[i + 1]
       out[curr.id] = {
         peso: curr.peso != null && prev.peso != null ? round1(curr.peso - prev.peso) : null,
+        gorduraKg: curr.massa_gordura_kg != null && prev.massa_gordura_kg != null ? round1(curr.massa_gordura_kg - prev.massa_gordura_kg) : null,
         musc: curr.massa_muscular_esqueletica_kg != null && prev.massa_muscular_esqueletica_kg != null ? round1(curr.massa_muscular_esqueletica_kg - prev.massa_muscular_esqueletica_kg) : null,
         gord: curr.percentual_gordura != null && prev.percentual_gordura != null ? round1(curr.percentual_gordura - prev.percentual_gordura) : null,
         visceral: curr.gordura_visceral != null && prev.gordura_visceral != null ? curr.gordura_visceral - prev.gordura_visceral : null,
@@ -437,6 +438,7 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
                 <option value="peso">Peso (kg)</option>
                 <option value="massa_muscular_esqueletica_kg">Massa Muscular Esq. (kg)</option>
                 <option value="percentual_gordura">% Gordura</option>
+                <option value="massa_gordura_kg">Massa Gordura (kg)</option>
                 <option value="gordura_visceral">Gordura Visceral</option>
               </select>
             </div>
@@ -560,6 +562,7 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
                   <th className="text-center px-3 py-2 text-foreground-secondary font-medium">Momento</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Peso <span className="text-[10px] text-foreground-muted">Δ</span></th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">% Gord. <span className="text-[10px] text-foreground-muted">Δ</span></th>
+                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Gordura (kg) <span className="text-[10px] text-foreground-muted">Δ</span></th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Musc. Esq. <span className="text-[10px] text-foreground-muted">Δ</span></th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">IMC</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">TMB</th>
@@ -589,6 +592,7 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
                       <td className="px-3 py-2 text-center text-foreground-secondary text-xs">{r.momento_avaliacao || '-'}</td>
                       <td className="px-3 py-2 text-right whitespace-nowrap">{r.peso ?? '-'}{renderDelta(d?.peso, true)}</td>
                       <td className="px-3 py-2 text-right text-amber-600 whitespace-nowrap">{r.percentual_gordura ?? '-'}{renderDelta(d?.gord, true)}</td>
+                      <td className="px-3 py-2 text-right text-amber-700 font-medium whitespace-nowrap">{r.massa_gordura_kg ?? '-'}{renderDelta(d?.gorduraKg, true)}</td>
                       <td className="px-3 py-2 text-right text-blue-600 whitespace-nowrap">{r.massa_muscular_esqueletica_kg ?? '-'}{renderDelta(d?.musc, false)}</td>
                       <td className="px-3 py-2 text-right text-purple-600">{r.imc ?? '-'}</td>
                       <td className="px-3 py-2 text-right text-green-600">{r.taxa_metabolica_basal ?? '-'}</td>
