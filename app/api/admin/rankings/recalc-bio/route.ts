@@ -53,10 +53,15 @@ async function loadChains(supabaseAdmin: any): Promise<Map<string, ChainRow[]>> 
   return byUser
 }
 
-// "anterior" = registro mais recente com data ESTRITAMENTE menor (espelha getPreviousRecord).
+function hasComposition(r: ChainRow): boolean {
+  return r.massa_gordura_kg != null || r.massa_muscular_esqueletica_kg != null || r.gordura_visceral != null
+}
+
+// "anterior" = bioimpedância REAL mais recente com data ESTRITAMENTE menor
+// (espelha getPreviousRecord: ignora registros que só têm peso).
 function previousOf(chain: ChainRow[], i: number): ChainRow | null {
   for (let j = i - 1; j >= 0; j--) {
-    if (chain[j].data < chain[i].data) return chain[j]
+    if (chain[j].data < chain[i].data && hasComposition(chain[j])) return chain[j]
   }
   return null
 }

@@ -24,7 +24,9 @@ export async function getPreviousRecord(
   currentRecordId: string,
   currentDate: string
 ): Promise<BioSnapshot | null> {
-  // Busca o registro anterior do mesmo paciente por data.
+  // Busca a última bioimpedância REAL anterior (por data). Ignora registros que
+  // só têm peso, sem composição (gordura/músculo/visceral) — eles não servem de
+  // base de comparação e, se entrassem, zerariam os deltas indevidamente.
   // Ordenação secundária por created_at garante determinismo quando há
   // múltiplas medições na mesma data.
   const { data } = await supabaseAdmin
@@ -33,6 +35,7 @@ export async function getPreviousRecord(
     .eq('user_id', userId)
     .neq('id', currentRecordId)
     .lt('data', currentDate)
+    .or('massa_gordura_kg.not.is.null,massa_muscular_esqueletica_kg.not.is.null,gordura_visceral.not.is.null')
     .order('data', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(1)
