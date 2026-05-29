@@ -2,37 +2,41 @@
  * Calculador de pontos da evolução de bioimpedância.
  *
  * Regras definidas por Leonardo (Complexo Felice):
- * - Perda de peso: +10 pts por cada 1 kg perdido  (ganhar peso = -10 pts/kg)
- * - Ganho de massa muscular esquelética: +15 pts por cada 1 kg  (perder = -15 pts/kg)
- * - Perda de gordura visceral: +20 pts por cada 1 ponto perdido  (ganhar = -20 pts/ponto)
+ * - Perda de GORDURA (massa de gordura): +10 pts por cada 1 kg perdido (ganhar = -10 pts/kg)
+ * - Ganho de massa muscular esquelética: +15 pts por cada 1 kg (perder = -15 pts/kg)
+ * - Perda de gordura visceral: +20 pts por cada 1 nível perdido (ganhar = -20 pts/nível)
  *
- * Valores fracionários são proporcionais (ex: -0,5 kg → +5 pts).
- * O total final é arredondado para inteiro.
+ * NÃO pontua peso isolado de propósito: peso = gordura + músculo + água, então
+ * pontuar peso premiaria perda de músculo e penalizaria ganho de músculo, além de
+ * contar em dobro com a gordura. A massa de gordura isola a evolução real.
+ *
+ * Valores fracionários são proporcionais (ex: -0,5 kg gordura → +5 pts).
+ * O total final é arredondado para inteiro e PODE SER NEGATIVO (regressão penaliza).
  */
 
 export interface BioSnapshot {
-  peso: number | null
+  massa_gordura_kg: number | null
   massa_muscular_esqueletica_kg: number | null
   gordura_visceral: number | null
 }
 
 export interface PointsBreakdown {
-  delta_peso_kg: number | null
+  delta_gordura_kg: number | null
   delta_muscular_kg: number | null
   delta_visceral: number | null
-  pts_peso: number
+  pts_gordura: number
   pts_muscular: number
   pts_visceral: number
   total: number
   reason: string
 }
 
-const WEIGHT_PTS_PER_KG = 10
+const FAT_PTS_PER_KG = 10
 const MUSCLE_PTS_PER_KG = 15
 const VISCERAL_PTS_PER_POINT = 20
 
 export const BIO_POINT_RULES = {
-  WEIGHT_PTS_PER_KG,
+  FAT_PTS_PER_KG,
   MUSCLE_PTS_PER_KG,
   VISCERAL_PTS_PER_POINT,
 } as const
@@ -47,12 +51,12 @@ export function calculateBioimpedancePoints(
 ): PointsBreakdown | null {
   if (!previous) return null
 
-  // Δ peso: perder peso = positivo. (anterior - novo)
-  let delta_peso_kg: number | null = null
-  let pts_peso = 0
-  if (previous.peso != null && current.peso != null) {
-    delta_peso_kg = round2(previous.peso - current.peso)
-    pts_peso = Math.round(delta_peso_kg * WEIGHT_PTS_PER_KG)
+  // Δ gordura: perder gordura = positivo. (anterior - novo)
+  let delta_gordura_kg: number | null = null
+  let pts_gordura = 0
+  if (previous.massa_gordura_kg != null && current.massa_gordura_kg != null) {
+    delta_gordura_kg = round2(previous.massa_gordura_kg - current.massa_gordura_kg)
+    pts_gordura = Math.round(delta_gordura_kg * FAT_PTS_PER_KG)
   }
 
   // Δ massa muscular: ganhar músculo = positivo. (novo - anterior)
@@ -71,17 +75,17 @@ export function calculateBioimpedancePoints(
     pts_visceral = Math.round(delta_visceral * VISCERAL_PTS_PER_POINT)
   }
 
-  const total = pts_peso + pts_muscular + pts_visceral
+  const total = pts_gordura + pts_muscular + pts_visceral
 
   return {
-    delta_peso_kg,
+    delta_gordura_kg,
     delta_muscular_kg,
     delta_visceral,
-    pts_peso,
+    pts_gordura,
     pts_muscular,
     pts_visceral,
     total,
-    reason: buildReason({ delta_peso_kg, delta_muscular_kg, delta_visceral, total, pts_peso, pts_muscular, pts_visceral }),
+    reason: buildReason({ delta_gordura_kg, delta_muscular_kg, delta_visceral, total, pts_gordura, pts_muscular, pts_visceral }),
   }
 }
 
@@ -91,9 +95,9 @@ function round2(n: number): number {
 
 function buildReason(p: Omit<PointsBreakdown, 'reason'>): string {
   const parts: string[] = []
-  if (p.delta_peso_kg != null && p.pts_peso !== 0) {
-    const sign = p.delta_peso_kg > 0 ? '-' : '+'
-    parts.push(`${sign}${Math.abs(p.delta_peso_kg)}kg peso`)
+  if (p.delta_gordura_kg != null && p.pts_gordura !== 0) {
+    const sign = p.delta_gordura_kg > 0 ? '-' : '+'
+    parts.push(`${sign}${Math.abs(p.delta_gordura_kg)}kg gordura`)
   }
   if (p.delta_muscular_kg != null && p.pts_muscular !== 0) {
     const sign = p.delta_muscular_kg > 0 ? '+' : '-'

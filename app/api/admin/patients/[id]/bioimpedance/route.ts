@@ -198,7 +198,7 @@ export async function POST(
       recordId: record.id,
       currentDate: record.data,
       current: {
-        peso: record.peso,
+        massa_gordura_kg: record.massa_gordura_kg,
         massa_muscular_esqueletica_kg: record.massa_muscular_esqueletica_kg,
         gordura_visceral: record.gordura_visceral,
       },

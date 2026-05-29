@@ -29,7 +29,7 @@ export async function getPreviousRecord(
   // múltiplas medições na mesma data.
   const { data } = await supabaseAdmin
     .from('fitness_body_compositions')
-    .select('peso, massa_muscular_esqueletica_kg, gordura_visceral')
+    .select('massa_gordura_kg, massa_muscular_esqueletica_kg, gordura_visceral')
     .eq('user_id', userId)
     .neq('id', currentRecordId)
     .lt('data', currentDate)
@@ -135,7 +135,7 @@ export async function recalculateChainFrom(
 ): Promise<number> {
   const { data: chain } = await supabaseAdmin
     .from('fitness_body_compositions')
-    .select('id, data, peso, massa_muscular_esqueletica_kg, gordura_visceral')
+    .select('id, data, massa_gordura_kg, massa_muscular_esqueletica_kg, gordura_visceral')
     .eq('user_id', patientId)
     .gte('data', fromDate)
     .order('data', { ascending: true })
@@ -151,7 +151,7 @@ export async function recalculateChainFrom(
       recordId: row.id,
       currentDate: row.data,
       current: {
-        peso: row.peso,
+        massa_gordura_kg: row.massa_gordura_kg,
         massa_muscular_esqueletica_kg: row.massa_muscular_esqueletica_kg,
         gordura_visceral: row.gordura_visceral,
       },
