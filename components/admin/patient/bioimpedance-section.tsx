@@ -156,6 +156,13 @@ const CAMPOS: GrupoDef[] = [
   ] },
 ]
 
+// Campos numéricos (derivados de CAMPOS) vs. campos de texto/data.
+// Usado para NÃO aplicar parseFloat em campos não-numéricos — em especial
+// avaliador_id, um UUID que virava 24 e quebrava o UPDATE com
+// "invalid input syntax for type uuid".
+const NUMERIC_KEYS = new Set<string>(CAMPOS.flatMap(g => g.rows.flat().map(c => c.key)))
+const TEXT_KEYS = new Set<string>(['data', 'momento_avaliacao', 'horario_coleta', 'notas'])
+
 function round1(n: number): number {
   return Math.round(n * 10) / 10
 }
@@ -245,10 +252,11 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
 
   const openEdit = (record: BioRecord) => {
     const filled: FormState = {}
-    const skipKeys = new Set(['id', 'fonte', 'foto_url', 'impedancia_dados', 'idade_metabolica'])
+    // Allowlist: só campos editáveis. Evita arrastar id/user_id/avaliador_id/
+    // created_at para o form (avaliador_id é UUID e quebrava o UPDATE).
     Object.entries(record).forEach(([k, v]) => {
-      if (skipKeys.has(k)) return
-      if (v != null) filled[k] = v as string | number
+      if (v == null) return
+      if (NUMERIC_KEYS.has(k) || TEXT_KEYS.has(k)) filled[k] = v as string | number
     })
     setForm(filled)
     setFotoUrl(record.foto_url)
@@ -283,11 +291,15 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
       Object.keys(form).forEach(k => {
         const v = form[k]
         if (v === '' || v == null) return
-        body[k] = typeof v === 'string' ? parseFloat(v) : v
+        if (NUMERIC_KEYS.has(k)) {
+          // só parseFloat em campos numéricos — nunca em UUID/texto/data
+          const n = typeof v === 'number' ? v : parseFloat(v)
+          if (!Number.isNaN(n)) body[k] = n
+        } else if (TEXT_KEYS.has(k)) {
+          body[k] = v
+        }
+        // chaves não reconhecidas (avaliador_id, user_id, created_at) são ignoradas
       })
-      if (form.momento_avaliacao) body.momento_avaliacao = form.momento_avaliacao
-      if (form.data) body.data = form.data
-      if (form.horario_coleta) body.horario_coleta = form.horario_coleta
 
       const url = editingId
         ? `/api/admin/patients/${patientId}/bioimpedance/${editingId}`
