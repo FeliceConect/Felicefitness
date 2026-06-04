@@ -10,6 +10,11 @@
  * pontuar peso premiaria perda de músculo e penalizaria ganho de músculo, além de
  * contar em dobro com a gordura. A massa de gordura isola a evolução real.
  *
+ * TRAVA DE SANIDADE: variações fisicamente impossíveis entre duas medições
+ * (ex.: +6,9 kg de músculo) são quase sempre erro de digitação ou medições
+ * incompatíveis. Cada métrica fora dos limites plausíveis é IGNORADA (0 pts) e
+ * sinalizada no motivo, em vez de pontuar valores absurdos.
+ *
  * Valores fracionários são proporcionais (ex: -0,5 kg gordura → +5 pts).
  * O total final é arredondado para inteiro e PODE SER NEGATIVO (regressão penaliza).
  */
@@ -35,10 +40,20 @@ const FAT_PTS_PER_KG = 10
 const MUSCLE_PTS_PER_KG = 15
 const VISCERAL_PTS_PER_POINT = 20
 
+// Limites de plausibilidade da variação entre DUAS medições. Acima disso, a
+// métrica é ignorada (não pontua) e marcada para revisão. Generosos de propósito
+// — só pegam erro grosseiro, nunca uma evolução real.
+const MAX_PLAUSIBLE_FAT_KG = 15
+const MAX_PLAUSIBLE_MUSCLE_KG = 5
+const MAX_PLAUSIBLE_VISCERAL = 5
+
 export const BIO_POINT_RULES = {
   FAT_PTS_PER_KG,
   MUSCLE_PTS_PER_KG,
   VISCERAL_PTS_PER_POINT,
+  MAX_PLAUSIBLE_FAT_KG,
+  MAX_PLAUSIBLE_MUSCLE_KG,
+  MAX_PLAUSIBLE_VISCERAL,
 } as const
 
 /**
@@ -51,12 +66,18 @@ export function calculateBioimpedancePoints(
 ): PointsBreakdown | null {
   if (!previous) return null
 
+  const flags: string[] = []
+
   // Δ gordura: perder gordura = positivo. (anterior - novo)
   let delta_gordura_kg: number | null = null
   let pts_gordura = 0
   if (previous.massa_gordura_kg != null && current.massa_gordura_kg != null) {
     delta_gordura_kg = round2(previous.massa_gordura_kg - current.massa_gordura_kg)
-    pts_gordura = Math.round(delta_gordura_kg * FAT_PTS_PER_KG)
+    if (Math.abs(delta_gordura_kg) > MAX_PLAUSIBLE_FAT_KG) {
+      flags.push('gordura')
+    } else {
+      pts_gordura = Math.round(delta_gordura_kg * FAT_PTS_PER_KG)
+    }
   }
 
   // Δ massa muscular: ganhar músculo = positivo. (novo - anterior)
@@ -64,7 +85,11 @@ export function calculateBioimpedancePoints(
   let pts_muscular = 0
   if (previous.massa_muscular_esqueletica_kg != null && current.massa_muscular_esqueletica_kg != null) {
     delta_muscular_kg = round2(current.massa_muscular_esqueletica_kg - previous.massa_muscular_esqueletica_kg)
-    pts_muscular = Math.round(delta_muscular_kg * MUSCLE_PTS_PER_KG)
+    if (Math.abs(delta_muscular_kg) > MAX_PLAUSIBLE_MUSCLE_KG) {
+      flags.push('músculo')
+    } else {
+      pts_muscular = Math.round(delta_muscular_kg * MUSCLE_PTS_PER_KG)
+    }
   }
 
   // Δ visceral: perder = positivo. (anterior - novo)
@@ -72,10 +97,19 @@ export function calculateBioimpedancePoints(
   let pts_visceral = 0
   if (previous.gordura_visceral != null && current.gordura_visceral != null) {
     delta_visceral = round2(previous.gordura_visceral - current.gordura_visceral)
-    pts_visceral = Math.round(delta_visceral * VISCERAL_PTS_PER_POINT)
+    if (Math.abs(delta_visceral) > MAX_PLAUSIBLE_VISCERAL) {
+      flags.push('visceral')
+    } else {
+      pts_visceral = Math.round(delta_visceral * VISCERAL_PTS_PER_POINT)
+    }
   }
 
   const total = pts_gordura + pts_muscular + pts_visceral
+
+  let reason = buildReason({ delta_gordura_kg, delta_muscular_kg, delta_visceral, total, pts_gordura, pts_muscular, pts_visceral })
+  if (flags.length > 0) {
+    reason += ` [revisar: variação implausível ignorada em ${flags.join(', ')}]`
+  }
 
   return {
     delta_gordura_kg,
@@ -85,7 +119,7 @@ export function calculateBioimpedancePoints(
     pts_muscular,
     pts_visceral,
     total,
-    reason: buildReason({ delta_gordura_kg, delta_muscular_kg, delta_visceral, total, pts_gordura, pts_muscular, pts_visceral }),
+    reason,
   }
 }
 
