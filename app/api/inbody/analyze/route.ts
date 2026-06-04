@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { compressImage } from '@/lib/images/compress'
+import { logApiUsage } from '@/lib/admin/api-usage'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -228,6 +229,16 @@ Regras:
               ],
         },
       ],
+    })
+
+    // Registrar custo de uso da OpenAI (best-effort — nunca quebra a request)
+    await logApiUsage({
+      userId: user.id,
+      feature: 'inbody_ocr',
+      model: 'gpt-4o',
+      tokensInput: response.usage?.prompt_tokens || 0,
+      tokensOutput: response.usage?.completion_tokens || 0,
+      endpoint: '/api/inbody/analyze',
     })
 
     const rawContent = response.choices[0]?.message?.content || ''

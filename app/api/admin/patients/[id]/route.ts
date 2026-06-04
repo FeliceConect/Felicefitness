@@ -349,12 +349,27 @@ export async function GET(
       ? +(sleepRecords.reduce((s: number, r: Record<string, unknown>) => s + ((r.qualidade as number) || 0), 0) / sleepRecords.length).toFixed(1)
       : 0
 
-    // Peso — usa peso do perfil; se ausente, cai para a medição corporal mais recente
+    // Peso — usa peso do perfil; se ausente, cai para a última medição corporal
+    // COM peso preenchido (o registro mais recente pode ter o campo em branco).
     const bodyComp = bodyCompResult.data || []
-    const currentWeight = profile.peso_atual ?? (bodyComp.length > 0 ? bodyComp[0].peso : null)
-    const weightChange = bodyComp.length >= 2
-      ? +((bodyComp[0].peso || 0) - (bodyComp[bodyComp.length - 1].peso || 0)).toFixed(1)
-      : 0
+    // bodyComp vem ordenado do mais recente para o mais antigo.
+    const weighed = bodyComp.filter((b: { peso: number | null }) => b.peso != null)
+    const latestWeighed = weighed[0] || null
+    const currentWeight = profile.peso_atual ?? (latestWeighed ? latestWeighed.peso : null)
+
+    // Variação ~30 dias: do peso mais recente vs. o registro com peso ~30 dias
+    // antes (ou o mais antigo disponível). Nunca usa registros sem peso.
+    let weightChange = 0
+    if (latestWeighed && weighed.length >= 2) {
+      const latestDate = new Date(latestWeighed.data)
+      const cutoff = new Date(latestDate)
+      cutoff.setDate(cutoff.getDate() - 30)
+      const baseline = weighed.find((b: { data: string }) => new Date(b.data) <= cutoff)
+        || weighed[weighed.length - 1]
+      if (baseline && baseline !== latestWeighed) {
+        weightChange = +((latestWeighed.peso) - (baseline.peso)).toFixed(1)
+      }
+    }
 
     // Formulários contagem
     const formTotal = formAssignments.length

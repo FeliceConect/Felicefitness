@@ -47,11 +47,16 @@ export async function GET(request: NextRequest) {
     const noteType = searchParams.get('noteType')
     const appointmentId = searchParams.get('appointmentId')
 
+    // Super admin vê o prontuário completo (notas de qualquer profissional).
+    // Demais profissionais veem apenas as próprias notas.
+    const isSuperAdmin = professional.type === 'super_admin'
+
     let query = supabaseAdmin
       .from('fitness_professional_notes')
       .select('*')
-      .eq('professional_id', professional.id)
       .order('created_at', { ascending: false })
+
+    if (!isSuperAdmin) query = query.eq('professional_id', professional.id)
 
     if (patientId) query = query.eq('patient_id', patientId)
     if (noteType) query = query.eq('note_type', noteType)

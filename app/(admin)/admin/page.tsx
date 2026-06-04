@@ -103,7 +103,7 @@ export default function AdminDashboard() {
       value: `R$ ${stats.apiCostMonth.toFixed(2)}`,
       icon: DollarSign,
       color: 'from-cyan-500 to-teal-600',
-      change: 'Dezembro'
+      change: new Date().toLocaleDateString('pt-BR', { month: 'long', timeZone: 'America/Sao_Paulo' }).replace(/^./, (c) => c.toUpperCase())
     },
     {
       title: 'Clientes em Risco',

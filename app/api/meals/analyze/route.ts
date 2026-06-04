@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logApiUsage } from '@/lib/admin/api-usage'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -108,6 +109,16 @@ Regras:
           ],
         },
       ],
+    })
+
+    // Registrar custo de uso da OpenAI (best-effort — nunca quebra a request)
+    await logApiUsage({
+      userId: user.id,
+      feature: 'meal_analysis',
+      model: 'gpt-4o',
+      tokensInput: response.usage?.prompt_tokens || 0,
+      tokensOutput: response.usage?.completion_tokens || 0,
+      endpoint: '/api/meals/analyze',
     })
 
     const rawContent = response.choices[0]?.message?.content || ''

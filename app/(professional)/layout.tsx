@@ -9,7 +9,6 @@ import {
   Utensils,
   Dumbbell,
   MessageSquare,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -109,7 +108,6 @@ export default function ProfessionalLayout({ children }: ProfessionalLayoutProps
     { href: '/portal/agenda', icon: CalendarDays, label: 'Agenda', show: true },
     { href: '/portal/forms', icon: ClipboardList, label: 'Formulários', show: true },
     { href: '/portal/messages', icon: MessageSquare, label: 'Mensagens', show: true },
-    { href: '/portal/settings', icon: Settings, label: 'Configurações', show: !isCoach && !isPhysiotherapist && !isMedicoIntegrativo },
     { href: '/dashboard', icon: Smartphone, label: 'Ir para o App', show: isMedicoIntegrativo },
   ].filter(item => item.show)
 

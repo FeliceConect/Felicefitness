@@ -46,18 +46,41 @@ export async function GET() {
     const today = getTodayDateSP()
     const threeDaysAgo = getDateOffsetSP(-3)
 
-    // Total de clientes/usuários (todos exceto admin e super_admin)
-    // Primeiro conta total, depois subtrai admins
-    const { count: totalUsers } = await supabaseAdmin
+    // Clientes = somente quem tem role 'client'. Profissionais e admins NÃO
+    // são pacientes e não devem entrar nas métricas/alertas de clientes.
+    const { data: clientRows } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
+      .eq('role', 'client')
+    const clientIds = (clientRows || []).map((c: { id: string }) => c.id)
+    const clientIdSet = new Set(clientIds)
+    const totalClients = clientIds.length
 
-    const { count: totalAdmins } = await supabaseAdmin
-      .from('fitness_profiles')
-      .select('*', { count: 'exact', head: true })
-      .in('role', ['super_admin', 'admin'])
-
-    const totalClients = (totalUsers || 0) - (totalAdmins || 0)
+    // user_ids de CLIENTES com qualquer atividade (treino, refeição, água ou
+    // sono) desde uma data (YYYY-MM-DD em fuso SP). Considera todas as formas
+    // de atividade, não só treino.
+    // Cada fonte de atividade com sua respectiva coluna de data (a maioria usa
+    // 'data'; fitness_activities usa 'date').
+    const activitySources = [
+      { table: 'fitness_workouts', dateCol: 'data' },
+      { table: 'fitness_meals', dateCol: 'data' },
+      { table: 'fitness_water_logs', dateCol: 'data' },
+      { table: 'fitness_sleep_logs', dateCol: 'data' },
+      { table: 'fitness_activities', dateCol: 'date' },
+    ]
+    const clientsActiveSince = async (sinceDate: string): Promise<Set<string>> => {
+      const active = new Set<string>()
+      for (const { table, dateCol } of activitySources) {
+        const { data } = await supabaseAdmin
+          .from(table)
+          .select('user_id')
+          .gte(dateCol, sinceDate)
+        for (const row of ((data || []) as { user_id: string }[])) {
+          if (clientIdSet.has(row.user_id)) active.add(row.user_id)
+        }
+      }
+      return active
+    }
 
     // Total de profissionais
     const { count: totalProfessionals } = await supabaseAdmin
@@ -65,16 +88,8 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
 
-    // Usuários ativos hoje (que fizeram alguma atividade)
-    const { count: activeTodayWorkouts } = await supabaseAdmin
-      .from('fitness_workouts')
-      .select('*', { count: 'exact', head: true })
-      .eq('data', today)
-
-    const { count: activeTodayMeals } = await supabaseAdmin
-      .from('fitness_meals')
-      .select('*', { count: 'exact', head: true })
-      .eq('data', today)
+    // Clientes ativos hoje (qualquer atividade registrada na data de hoje, SP)
+    const activeToday = (await clientsActiveSince(today)).size
 
     // Calcular taxa de adesão (treinos concluídos / treinos planejados nos últimos 7 dias)
     const weekAgo = getDateOffsetSP(-7)
@@ -107,21 +122,10 @@ export async function GET() {
       ? apiUsageData.reduce((sum, row) => sum + (parseFloat(row.cost_usd) || 0), 0) * 5.5 // Converter para BRL
       : 0
 
-    // Clientes em risco (sem atividade há 3+ dias)
-    const { data: activeUsersRecent } = await supabaseAdmin
-      .from('fitness_workouts')
-      .select('user_id')
-      .gte('data', threeDaysAgo)
-
-    const activeUserIds = new Set(activeUsersRecent?.map(w => w.user_id) || [])
-
-    // Buscar todos os usuários não-admin
-    const { data: allClients } = await supabaseAdmin
-      .from('fitness_profiles')
-      .select('id, role')
-
-    const nonAdminClients = allClients?.filter(c => !['super_admin', 'admin'].includes(c.role)) || []
-    const clientsAtRisk = nonAdminClients.filter(c => !activeUserIds.has(c.id)).length
+    // Clientes em risco: role 'client' SEM nenhuma atividade (treino, refeição,
+    // água ou sono) nos últimos 3 dias.
+    const activeRecentSet = await clientsActiveSince(threeDaysAgo)
+    const clientsAtRisk = clientIds.filter((id) => !activeRecentSet.has(id)).length
 
     // Top performers (ranking)
     const { data: activeRankings } = await supabaseAdmin
@@ -224,7 +228,7 @@ export async function GET() {
       stats: {
         totalClients: totalClients || 0,
         totalProfessionals: totalProfessionals || 0,
-        activeToday: Math.max(activeTodayWorkouts || 0, activeTodayMeals || 0),
+        activeToday,
         complianceRate,
         apiCostMonth,
         clientsAtRisk

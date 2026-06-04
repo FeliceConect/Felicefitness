@@ -403,6 +403,15 @@ export default function PatientDetailPage() {
   const weightTrend = stats.weight.change30d
   const WeightIcon = weightTrend > 0 ? TrendingUp : weightTrend < 0 ? TrendingDown : Minus
 
+  // Último valor preenchido de cada métrica corporal. Os registros vêm do mais
+  // recente para o mais antigo, e o mais recente pode ter campos em branco —
+  // então buscamos o primeiro com valor em vez de usar sempre o índice [0].
+  const latestBody = (key: 'peso' | 'massa_muscular' | 'gordura_percentual'): number | null => {
+    const found = bodyComposition.find((b) => b[key] != null)
+    return found ? (found[key] as number) : null
+  }
+  const pesoCorpoAtual = latestBody('peso')
+
   // === Support view: apenas identificação + dados antropométricos (com cadastro) ===
   if (isSupport) {
     return (
@@ -843,21 +852,21 @@ export default function PatientDetailPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               <StatCard
                 label="Peso"
-                value={bodyComposition[0].peso ? `${bodyComposition[0].peso}kg` : '-'}
+                value={pesoCorpoAtual ? `${pesoCorpoAtual}kg` : '-'}
               />
               <StatCard
                 label="% Gordura"
-                value={bodyComposition[0].gordura_percentual ? `${bodyComposition[0].gordura_percentual}%` : '-'}
+                value={latestBody('gordura_percentual') ? `${latestBody('gordura_percentual')}%` : '-'}
               />
               <StatCard
                 label="Massa Muscular"
-                value={bodyComposition[0].massa_muscular ? `${bodyComposition[0].massa_muscular}kg` : '-'}
+                value={latestBody('massa_muscular') ? `${latestBody('massa_muscular')}kg` : '-'}
               />
               <StatCard
                 label="IMC"
                 value={
-                  bodyComposition[0].peso && patient.altura_cm
-                    ? (bodyComposition[0].peso / ((patient.altura_cm / 100) ** 2)).toFixed(1)
+                  pesoCorpoAtual && patient.altura_cm
+                    ? (pesoCorpoAtual / ((patient.altura_cm / 100) ** 2)).toFixed(1)
                     : '-'
                 }
               />

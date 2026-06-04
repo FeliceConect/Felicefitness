@@ -172,12 +172,17 @@ export async function GET(
       ? (sleepRecords.reduce((sum: number, s: Record<string, unknown>) => sum + ((s.qualidade as number) || 0), 0) / sleepRecords.length).toFixed(1)
       : '0'
 
-    // Progresso de peso — usa peso do perfil; se ausente, cai para a medição corporal mais recente
+    // Progresso de peso — usa peso do perfil; se ausente, cai para a última
+    // medição corporal COM peso preenchido (o registro mais recente pode estar
+    // em branco). Variação = peso mais recente vs. o mais antigo com peso.
     const weightHistory = weightResult.data || []
-    const latestWeight = weightHistory.length > 0 ? weightHistory[0].peso : null
+    const weighed = weightHistory.filter((w: { peso: number | null }) => w.peso != null)
+    const latestWeight = weighed.length > 0 ? weighed[0].peso : null
     const currentWeight = profile.peso_atual ?? latestWeight
-    const oldestWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].peso : currentWeight
-    const weightChange = currentWeight && oldestWeight ? (currentWeight - oldestWeight).toFixed(1) : 0
+    const oldestWeight = weighed.length > 0 ? weighed[weighed.length - 1].peso : null
+    const weightChange = latestWeight && oldestWeight && weighed.length >= 2
+      ? +(latestWeight - oldestWeight).toFixed(1)
+      : 0
 
     // Última bioimpedância
     const lastBioimpedance = bioimpedanceResult.data?.[0] || null
