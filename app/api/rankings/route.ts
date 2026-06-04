@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getMonthStartSP } from '@/lib/utils/date'
 
 function getAdminClient() {
   return createAdminClient(
@@ -106,6 +107,70 @@ export async function GET(request: NextRequest) {
         leaderboard,
       }
     }))
+
+    // Ranking MENSAL automático: calculado dos pontos do mês corrente (fuso SP).
+    // Renova-se sozinho a cada mês — não precisa criar nem zerar nada, por isso
+    // não depende de cron. Usa a mesma whitelist de elegíveis e visibilidade.
+    const startOfMonthSP = new Date(`${getMonthStartSP()}T00:00:00-03:00`).toISOString()
+    const { data: monthTx } = await supabaseAdmin
+      .from('fitness_point_transactions')
+      .select('user_id, points')
+      .gte('created_at', startOfMonthSP)
+
+    const monthlyTotals = {}
+    for (const tx of (monthTx || [])) {
+      if (!clientIds.has(tx.user_id)) continue
+      monthlyTotals[tx.user_id] = (monthlyTotals[tx.user_id] || 0) + (tx.points || 0)
+    }
+    const monthlySorted = Object.entries(monthlyTotals)
+      .map(([uid, pts]) => ({ user_id: uid, total_points: Math.max(0, pts) }))
+      .filter(p => p.total_points > 0)
+      .sort((a, b) => b.total_points - a.total_points)
+
+    const monthlyUserIndex = monthlySorted.findIndex(p => p.user_id === user.id)
+
+    let monthlyLeaderboard = []
+    if (includeLeaderboard) {
+      const top = monthlySorted.slice(0, limit)
+      if (top.length > 0) {
+        const ids = top.map(p => p.user_id)
+        const { data: profiles } = await supabaseAdmin
+          .from('fitness_profiles')
+          .select('id, nome, apelido_ranking, ranking_visivel, nivel, streak_atual')
+          .in('id', ids)
+        const profileMap = {}
+        for (const p of (profiles || [])) profileMap[p.id] = p
+        monthlyLeaderboard = top.map((p, index) => {
+          const profile = profileMap[p.user_id]
+          const isVisible = profile?.ranking_visivel !== false
+          return {
+            position: index + 1,
+            user_id: p.user_id,
+            display_name: isVisible
+              ? (profile?.apelido_ranking || profile?.nome?.split(' ')[0] || `Atleta #${p.user_id.substring(0, 4)}`)
+              : `Atleta #${p.user_id.substring(0, 4)}`,
+            total_points: p.total_points,
+            nivel: profile?.nivel || 1,
+            streak: profile?.streak_atual || 0,
+            is_current_user: p.user_id === user.id,
+          }
+        })
+      }
+    }
+
+    const MES_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    const mesLabel = MES_PT[parseInt(getMonthStartSP().split('-')[1], 10) - 1] || ''
+    rankingsWithData.push({
+      id: 'monthly-auto',
+      name: 'Ranking Mensal',
+      type: 'monthly',
+      category: null,
+      description: mesLabel,
+      user_position: monthlyUserIndex >= 0 ? monthlyUserIndex + 1 : null,
+      user_points: monthlyUserIndex >= 0 ? monthlySorted[monthlyUserIndex].total_points : 0,
+      total_participants: monthlySorted.length,
+      leaderboard: monthlyLeaderboard,
+    })
 
     // Also return legacy XP-based ranking data for backwards compatibility
     const { data: xpProfile } = await supabaseAdmin

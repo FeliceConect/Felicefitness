@@ -136,7 +136,7 @@ export default function RankingPage() {
     try {
       // Fetch multi-ranking data + challenges
       const [rankRes, legacyRes, pointsRes, challengeRes] = await Promise.all([
-        fetch('/api/rankings?leaderboard=true&limit=20'),
+        fetch('/api/rankings?leaderboard=true&limit=10'),
         fetch('/api/ranking'),
         fetch('/api/points/award?limit=10'),
         fetch('/api/challenges'),
