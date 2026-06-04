@@ -90,6 +90,7 @@ const TX_TO_RANKING_CATEGORIES: Record<string, string[]> = {
 export interface AwardPointsServerResult {
   success: boolean
   duplicate?: boolean
+  skipped?: boolean
   points?: number
   message?: string
   error?: string
@@ -102,6 +103,43 @@ function getAdminClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
+}
+
+/**
+ * Regra (A): um "Personal Record" só vale pontos se vencer um recorde REAL
+ * anterior. Há histórico quando existe um fitness_personal_records do mesmo
+ * exercício em OUTRO treino. Na primeira vez num exercício (caso clássico
+ * pós-reset do desafio, com histórico zerado) há só o registro deste próprio
+ * treino → é apenas baseline e NÃO deve pontuar ("PR fantasma").
+ */
+async function prHasPriorHistory(
+  supabaseAdmin: ReturnType<typeof getAdminClient>,
+  userId: string,
+  setId: string
+): Promise<boolean> {
+  const { data: se } = await supabaseAdmin
+    .from('fitness_exercise_sets')
+    .select('workout_exercise_id')
+    .eq('id', setId)
+    .single()
+  if (!se?.workout_exercise_id) return false
+
+  const { data: we } = await supabaseAdmin
+    .from('fitness_workout_exercises')
+    .select('exercicio_nome, workout_id')
+    .eq('id', se.workout_exercise_id)
+    .single()
+  if (!we?.exercicio_nome) return false
+
+  const { count } = await supabaseAdmin
+    .from('fitness_personal_records')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('exercicio_nome', we.exercicio_nome)
+    .eq('tipo_record', 'carga_maxima')
+    .neq('workout_id', we.workout_id)
+
+  return (count ?? 0) > 0
 }
 
 /**
@@ -124,6 +162,15 @@ export async function awardPointsServer(
   }
 
   const supabaseAdmin = getAdminClient()
+
+  // Regra (A) do PR: só pontua recorde que vence histórico real. Primeira vez
+  // num exercício (sem histórico) é baseline e não pontua.
+  if (action === 'pr_achieved' && referenceId) {
+    const real = await prHasPriorHistory(supabaseAdmin, userId, referenceId)
+    if (!real) {
+      return { success: true, skipped: true, message: 'PR de primeira vez (sem histórico) — baseline, não pontua' }
+    }
+  }
 
   // Dedup by reference_id (specific event)
   if (referenceId) {
