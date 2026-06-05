@@ -1434,6 +1434,7 @@ export interface Database {
           post_id: string
           user_id: string
           content: string
+          parent_comment_id: string | null
           is_visible: boolean
           created_at: string
           updated_at: string
@@ -1443,6 +1444,7 @@ export interface Database {
           post_id: string
           user_id: string
           content: string
+          parent_comment_id?: string | null
           is_visible?: boolean
           created_at?: string
           updated_at?: string
@@ -1452,6 +1454,7 @@ export interface Database {
           post_id?: string
           user_id?: string
           content?: string
+          parent_comment_id?: string | null
           is_visible?: boolean
           updated_at?: string
         }

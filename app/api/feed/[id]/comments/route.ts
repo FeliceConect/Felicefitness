@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fromZonedTime } from 'date-fns-tz'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { notifyComment } from '@/lib/notifications/social'
+import { notifyComment, notifyCommentReply } from '@/lib/notifications/social'
 import { getTodayDateSP, SAO_PAULO_TIMEZONE } from '@/lib/utils/date'
 
 const MAX_COMMENTS_AWARDED_PER_DAY = 2
@@ -69,7 +69,22 @@ export async function GET(
       is_own: c.user_id === user.id,
     }))
 
-    return NextResponse.json({ success: true, comments: enriched })
+    // Aninha respostas (1 nível) sob o comentário pai. Comments já vêm em ordem asc.
+    const repliesByParent: Record<string, typeof enriched> = {}
+    for (const c of enriched) {
+      if (c.parent_comment_id) {
+        (repliesByParent[c.parent_comment_id] ||= []).push(c)
+      }
+    }
+    const nested = enriched
+      .filter(c => !c.parent_comment_id)
+      .map(c => ({
+        ...c,
+        replies: repliesByParent[c.id] || [],
+        reply_count: (repliesByParent[c.id] || []).length,
+      }))
+
+    return NextResponse.json({ success: true, comments: nested })
   } catch (error) {
     console.error('Erro:', error)
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
@@ -92,9 +107,29 @@ export async function POST(
     const { id: postId } = await params
     const body = await request.json()
     const { content } = body
+    const requestedParentId: string | null = body.parent_comment_id || null
 
     if (!content?.trim()) {
       return NextResponse.json({ success: false, error: 'Conteúdo obrigatório' }, { status: 400 })
+    }
+
+    // Resolve a resposta: valida o comentário-alvo e achata para 1 nível.
+    // storageParentId = comentário de 1º nível (o que vai pro banco).
+    // repliedToAuthorId = autor do comentário em que a pessoa clicou "Responder" (p/ notificar).
+    let storageParentId: string | null = null
+    let repliedToAuthorId: string | null = null
+    if (requestedParentId) {
+      const { data: target } = await supabaseAdmin
+        .from('fitness_community_comments')
+        .select('id, post_id, parent_comment_id, user_id')
+        .eq('id', requestedParentId)
+        .single()
+
+      if (target && target.post_id === postId) {
+        repliedToAuthorId = target.user_id
+        storageParentId = target.parent_comment_id || target.id
+      }
+      // Alvo inválido (não existe / outro post) → vira comentário de 1º nível.
     }
 
     const { data: comment, error: insertError } = await supabaseAdmin
@@ -103,6 +138,7 @@ export async function POST(
         post_id: postId,
         user_id: user.id,
         content: content.trim(),
+        parent_comment_id: storageParentId,
         is_visible: true,
       })
       .select()
@@ -147,6 +183,8 @@ export async function POST(
     const alreadyForThisPost = (existingCommentPoints?.length ?? 0) > 0
     const underDailyCap = (commentsAwardedToday ?? 0) < MAX_COMMENTS_AWARDED_PER_DAY
 
+    // Respostas pontuam igual a comentários: mesma regra (1× por post + teto de 2/dia).
+    let pointsAwarded = 0
     if (!alreadyForThisPost && underDailyCap) {
       await supabaseAdmin
         .from('fitness_point_transactions')
@@ -165,31 +203,47 @@ export async function POST(
         p_delta: 1,
         p_allowed_ranking_categories: null,
       })
+      pointsAwarded = 1
     }
 
-    // Send push notification to post author (fire-and-forget)
+    // Push notifications (fire-and-forget). Para resposta: notifica quem foi
+    // respondido + dono do post (sem duplicar e sem notificar a si mesmo).
     const { data: post } = await supabaseAdmin
       .from('fitness_community_posts')
       .select('user_id')
       .eq('id', postId)
       .single()
 
-    if (post) {
-      notifyComment(post.user_id, user.id, content.trim()).catch(() => {})
+    const preview = content.trim()
+    if (storageParentId && repliedToAuthorId) {
+      // É uma resposta
+      if (repliedToAuthorId !== user.id) {
+        notifyCommentReply(repliedToAuthorId, user.id, preview).catch(() => {})
+      }
+      if (post && post.user_id !== user.id && post.user_id !== repliedToAuthorId) {
+        notifyComment(post.user_id, user.id, preview).catch(() => {})
+      }
+    } else if (post) {
+      // Comentário de 1º nível
+      notifyComment(post.user_id, user.id, preview).catch(() => {})
     }
 
-    // Get author name
+    // Get author name + role
     const { data: profile } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('nome, display_name, apelido_ranking')
+      .select('nome, display_name, apelido_ranking, role')
       .eq('id', user.id)
       .single()
 
     return NextResponse.json({
       success: true,
+      points_awarded: pointsAwarded,
       comment: {
         ...comment,
         author_name: profile?.display_name || profile?.apelido_ranking || profile?.nome?.split(' ')[0] || 'Anonimo',
+        author_role: profile?.role || 'client',
+        replies: [],
+        reply_count: 0,
         is_own: true,
       },
     })

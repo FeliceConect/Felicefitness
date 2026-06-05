@@ -170,6 +170,35 @@ export async function notifyComment(
   })
 }
 
+/** Notify the author of a comment that someone replied to it */
+export async function notifyCommentReply(
+  commentAuthorId: string,
+  replierId: string,
+  replyPreview: string,
+): Promise<void> {
+  // Don't notify yourself
+  if (commentAuthorId === replierId) return
+
+  const userInfo = await getUserInfo(replierId)
+  if (!userInfo) return
+
+  const prefix = userInfo.isProfessional ? `${userInfo.roleLabel} ` : ''
+  const preview = replyPreview.length > 60 ? replyPreview.slice(0, 57) + '...' : replyPreview
+
+  await sendToUser(commentAuthorId, {
+    title: '↩️ Responderam seu comentário',
+    body: `${prefix}${userInfo.displayName}: ${preview}`,
+    type: 'feed_comment',
+    url: '/feed',
+    tag: `comment-reply-${commentAuthorId}`,
+    data: {
+      replierId,
+      isProfessional: userInfo.isProfessional,
+      role: userInfo.role,
+    },
+  })
+}
+
 const POST_TYPE_LABELS: Record<string, string> = {
   free_text: 'publicou no feed',
   workout: 'compartilhou um treino',

@@ -66,10 +66,13 @@ interface Comment {
   post_id: string
   user_id: string
   content: string
+  parent_comment_id?: string | null
   created_at: string
   author_name: string
   author_role?: string
   is_own: boolean
+  replies?: Comment[]
+  reply_count?: number
 }
 
 const POST_TYPES = [
@@ -176,6 +179,8 @@ export default function FeedPage() {
   const [loadingComments, setLoadingComments] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+  // Reply target: comentário em que a pessoa clicou "Responder" (null = comentário de 1º nível)
+  const [replyingTo, setReplyingTo] = useState<{ replyToId: string; authorName: string } | null>(null)
 
   // Unread feed badge + new posts banner
   const { markAsRead, details: unreadDetails, refetch: refetchUnread } = useUnreadFeed()
@@ -344,6 +349,7 @@ export default function FeedPage() {
         .finally(() => setLoadingComments(null))
     }
     setNewComment('')
+    setReplyingTo(null)
     setMentionOpen(false)
     setMentionResults([])
   }, [selectedPostId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -508,27 +514,56 @@ export default function FeedPage() {
     }
   }
 
+  // Abre o modo de resposta para um comentário (de 1º nível ou resposta).
+  const startReply = (comment: Comment) => {
+    setReplyingTo({ replyToId: comment.id, authorName: comment.author_name })
+    const firstName = comment.author_name.split(' ')[0]
+    setNewComment(`@${firstName} `)
+    setMentionOpen(false)
+    setTimeout(() => commentInputRef.current?.focus(), 50)
+  }
+
   const handleComment = async (postId: string) => {
     if (!newComment.trim()) return
+    const isReply = !!replyingTo
     setSubmittingComment(true)
     try {
       const res = await fetch(`/api/feed/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment.trim() }),
+        body: JSON.stringify({
+          content: newComment.trim(),
+          parent_comment_id: replyingTo?.replyToId || null,
+        }),
       })
       const data = await res.json()
       if (data.success) {
-        setComments(prev => ({
-          ...prev,
-          [postId]: [...(prev[postId] || []), data.comment],
-        }))
+        const created: Comment = data.comment
+        // O servidor achata para 1 nível: created.parent_comment_id é o id do
+        // comentário-raiz da thread (ou null se for de 1º nível).
+        const threadParentId: string | null = created.parent_comment_id || null
+        setComments(prev => {
+          const list = prev[postId] || []
+          if (threadParentId) {
+            return {
+              ...prev,
+              [postId]: list.map(c =>
+                c.id === threadParentId
+                  ? { ...c, replies: [...(c.replies || []), created], reply_count: (c.reply_count || 0) + 1 }
+                  : c
+              ),
+            }
+          }
+          return { ...prev, [postId]: [...list, created] }
+        })
         setNewComment('')
-        // Update comment count
+        setReplyingTo(null)
+        // Update comment count (respostas também contam)
         setPosts(prev => prev.map(p =>
           p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p
         ))
-        toast.success('Comentario enviado! +1 pt')
+        const base = isReply ? 'Resposta enviada!' : 'Comentario enviado!'
+        toast.success(data.points_awarded > 0 ? `${base} +1 pt` : base)
       } else {
         toast.error(data.error || 'Erro ao comentar')
       }
@@ -626,6 +661,38 @@ export default function FeedPage() {
       ) : (
         <span key={i}>{part}</span>
       )
+    )
+  }
+
+  // Renderiza um comentário (de 1º nível ou resposta) com botão "Responder"
+  const renderCommentRow = (comment: Comment, isReply: boolean) => {
+    const isProfessional = comment.author_role && PROFESSIONAL_ROLES[comment.author_role]
+    return (
+      <div key={comment.id} className={`flex gap-2.5 ${isReply ? 'pl-3 py-1.5' : 'px-4 py-2.5'} ${isProfessional ? 'bg-dourado/5 border-l-2 border-l-dourado' : ''}`}>
+        <div className={`${isReply ? 'w-6 h-6' : 'w-7 h-7'} rounded-full flex items-center justify-center flex-shrink-0 ${isProfessional ? 'bg-gradient-to-br from-dourado to-vinho' : 'bg-gradient-to-br from-foreground-muted/30 to-foreground-muted/10'}`}>
+          <span className={`${isReply ? 'text-[10px]' : 'text-xs'} font-medium ${isProfessional ? 'text-white' : 'text-foreground-secondary'}`}>
+            {comment.author_name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className={`text-xs font-medium ${isProfessional ? 'text-dourado' : 'text-foreground'}`}>{comment.author_name}</span>
+            {isProfessional && (
+              <span className={`text-[8px] px-1 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[comment.author_role!].color}`}>
+                {PROFESSIONAL_ROLES[comment.author_role!].label}
+              </span>
+            )}
+            <span className="text-[10px] text-foreground-muted">{formatDate(comment.created_at)}</span>
+          </div>
+          <p className="text-xs text-foreground-secondary leading-relaxed">{renderTextWithMentions(comment.content)}</p>
+          <button
+            onClick={() => startReply(comment)}
+            className="mt-0.5 text-[10px] font-medium text-foreground-muted hover:text-dourado transition-colors"
+          >
+            Responder
+          </button>
+        </div>
+      </div>
     )
   }
 
@@ -1251,30 +1318,16 @@ export default function FeedPage() {
                     <Loader2 className="w-5 h-5 text-dourado animate-spin" />
                   </div>
                 ) : (
-                  (comments[selectedPost.id] || []).map(comment => {
-                    const isProfessional = comment.author_role && PROFESSIONAL_ROLES[comment.author_role]
-                    return (
-                      <div key={comment.id} className={`px-4 py-2.5 flex gap-2.5 ${isProfessional ? 'bg-dourado/5 border-l-2 border-l-dourado' : ''}`}>
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isProfessional ? 'bg-gradient-to-br from-dourado to-vinho' : 'bg-gradient-to-br from-foreground-muted/30 to-foreground-muted/10'}`}>
-                          <span className={`text-xs font-medium ${isProfessional ? 'text-white' : 'text-foreground-secondary'}`}>
-                            {comment.author_name.charAt(0).toUpperCase()}
-                          </span>
+                  (comments[selectedPost.id] || []).map(comment => (
+                    <div key={comment.id}>
+                      {renderCommentRow(comment, false)}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="ml-9 border-l border-border/60">
+                          {comment.replies.map(reply => renderCommentRow(reply, true))}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-xs font-medium ${isProfessional ? 'text-dourado' : 'text-foreground'}`}>{comment.author_name}</span>
-                            {isProfessional && (
-                              <span className={`text-[8px] px-1 py-0.5 rounded-full font-semibold border ${PROFESSIONAL_ROLES[comment.author_role!].color}`}>
-                                {PROFESSIONAL_ROLES[comment.author_role!].label}
-                              </span>
-                            )}
-                            <span className="text-[10px] text-foreground-muted">{formatDate(comment.created_at)}</span>
-                          </div>
-                          <p className="text-xs text-foreground-secondary leading-relaxed">{renderTextWithMentions(comment.content)}</p>
-                        </div>
-                      </div>
-                    )
-                  })
+                      )}
+                    </div>
+                  ))
                 )}
 
                 {/* Add comment input */}
@@ -1303,6 +1356,20 @@ export default function FeedPage() {
                       ))}
                     </div>
                   )}
+                  {replyingTo && (
+                    <div className="flex items-center justify-between px-3 pt-2 -mb-1">
+                      <span className="text-[11px] text-foreground-muted">
+                        Respondendo a <span className="text-dourado font-medium">{replyingTo.authorName}</span>
+                      </span>
+                      <button
+                        onClick={() => setReplyingTo(null)}
+                        className="text-foreground-muted hover:text-foreground-secondary p-0.5"
+                        aria-label="Cancelar resposta"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <div className="p-3 flex items-center gap-2">
                     <input
                       ref={commentInputRef}
@@ -1311,7 +1378,7 @@ export default function FeedPage() {
                       onChange={(e) => handleCommentChange(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !submittingComment && handleComment(selectedPost.id)}
                       className="flex-1 px-3 py-2 rounded-full bg-background-input border border-border text-sm text-foreground placeholder-foreground-muted focus:outline-none focus:ring-1 focus:ring-dourado/50"
-                      placeholder="Comentar... (@ para mencionar)"
+                      placeholder={replyingTo ? `Respondendo ${replyingTo.authorName}...` : 'Comentar... (@ para mencionar)'}
                     />
                     <button
                       onClick={() => handleComment(selectedPost.id)}
