@@ -48,6 +48,7 @@ export default function WorkoutExecutionPage() {
   const [showPRCelebration, setShowPRCelebration] = useState(false)
   const [latestPR, setLatestPR] = useState<{ name: string; weight: number; reps: number } | null>(null)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false)
   // Estado para edição de série completada
   const [editingSet, setEditingSet] = useState<{ exerciseId: string; setNumber: number; weight: number; reps: number; exerciseName: string } | null>(null)
   const [showVideoModal, setShowVideoModal] = useState(false)
@@ -85,7 +86,8 @@ export default function WorkoutExecutionPage() {
     progress,
     completedSetsCount,
     totalSets,
-    exercisesStatus
+    exercisesStatus,
+    hasIncompleteExercises
   } = useWorkoutExecution(userWeightKg)
 
   const restTimer = useRestTimer({
@@ -279,10 +281,27 @@ export default function WorkoutExecutionPage() {
         // Completed sets for saving to database
         completedSets: state.completedSets,
         // Cardio exercises
-        cardioExercises: summary.cardioExercises || []
+        cardioExercises: summary.cardioExercises || [],
+        // Exercícios planejados do treino — usado no save para registrar como
+        // 'pulado' os que não foram realizados (visível ao personal/superadmin)
+        plannedExercises: (workout.exercicios || []).map(ex => ({
+          name: ex.nome,
+          totalSets: ex.series?.length || 0,
+          circuitGroup: ex.circuit_group ?? null,
+        }))
       }
       localStorage.setItem('felicefit_workout_summary', JSON.stringify(summaryData))
       router.push(`/treino/${workoutId}/resumo`)
+    }
+  }
+
+  // Clique em "Finalizar treino": se ainda há exercícios não feitos, confirma
+  // antes de salvar. Sem pendências, finaliza direto.
+  const handleFinishClick = () => {
+    if (hasIncompleteExercises) {
+      setShowFinishConfirm(true)
+    } else {
+      handleFinishWorkout()
     }
   }
 
@@ -768,6 +787,14 @@ export default function WorkoutExecutionPage() {
                 )}
               </Button>
             </div>
+
+            <Button
+              variant="ghost"
+              className="w-full mt-1 text-foreground-secondary hover:text-foreground"
+              onClick={handleFinishClick}
+            >
+              Finalizar treino
+            </Button>
           </div>
         </div>
       )}
@@ -904,6 +931,55 @@ export default function WorkoutExecutionPage() {
                   }}
                 >
                   Descartar Treino
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Finish confirmation — quando ainda há exercícios não realizados */}
+      <AnimatePresence>
+        {showFinishConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full"
+            >
+              <h3 className="text-xl font-bold text-foreground mb-2">Finalizar sem fazer tudo?</h3>
+              <p className="text-foreground-secondary mb-3">
+                Você ainda não fez {exercisesStatus.filter(e => e.status !== 'completed').length} exercício(s). Eles ficarão registrados como{' '}
+                <span className="font-medium text-red-500">não realizados</span> para o seu profissional ver.
+              </p>
+              <div className="max-h-40 overflow-y-auto mb-5 space-y-1">
+                {exercisesStatus.filter(e => e.status !== 'completed').map(e => (
+                  <div key={e.exerciseId} className="flex items-center justify-between text-sm bg-background-elevated rounded-lg px-3 py-1.5">
+                    <span className="text-foreground">{e.name}</span>
+                    <span className="text-foreground-muted text-xs">{e.completedSets}/{e.totalSets} séries</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                <Button
+                  variant="gradient"
+                  className="w-full"
+                  onClick={() => setShowFinishConfirm(false)}
+                >
+                  Continuar treino
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => { setShowFinishConfirm(false); handleFinishWorkout() }}
+                >
+                  Finalizar mesmo assim
                 </Button>
               </div>
             </motion.div>

@@ -44,6 +44,8 @@ interface WorkoutSummaryData {
   completedSets?: CompletedSetData[]
   // Cardio exercises
   cardioExercises?: CompletedCardio[]
+  // Exercícios planejados — para registrar os não realizados como 'pulado'
+  plannedExercises?: Array<{ name: string; totalSets: number; circuitGroup: number | null }>
 }
 
 // Icons for cardio types
@@ -189,6 +191,7 @@ export default function WorkoutSummaryPage() {
       // Mesmo valor exibido na tela — evita banco e display divergirem.
       totalCalories: summary.caloriesBurned,
       exerciseGroups,
+      plannedExercises: summary.plannedExercises || [],
     }
 
     // Read streak BEFORE saving so we can detect transitions to 7/30.

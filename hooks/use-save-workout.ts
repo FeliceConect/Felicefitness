@@ -39,6 +39,10 @@ interface WorkoutSaveData {
   // agrupamento de biset/triset no INSERT — sem isso o workout instance
   // fica com circuit_group=null e a UI não consegue mostrar agrupado.
   exerciseGroups?: Record<string, number | null>
+  // Exercícios planejados do treino. Os que não tiverem nenhuma série feita
+  // são gravados como status 'pulado' para o profissional/superadmin verem
+  // no portal que ficaram de fora neste dia.
+  plannedExercises?: Array<{ name: string; totalSets: number; circuitGroup: number | null }>
 }
 
 export interface SavedCardioAward {
@@ -204,6 +208,30 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
         // tiverem sido inseridos — o trigger SQL pode "substituir" PRs
         // dentro do mesmo treino quando uma carga maior aparece.)
 
+        exerciseOrder++
+      }
+
+      // 2b. Exercícios planejados NÃO realizados (sem nenhuma série feita) são
+      // gravados como 'pulado' — assim o profissional/superadmin veem no portal
+      // que ficaram de fora neste dia.
+      const completedNames = new Set(Array.from(exerciseMap.keys()))
+      for (const planned of (data.plannedExercises || [])) {
+        if (completedNames.has(planned.name)) continue
+        const { error: skipError } = await (supabase as AnyTable)
+          .from('fitness_workout_exercises')
+          .insert({
+            workout_id: workoutRecordId,
+            exercise_id: null,
+            exercicio_nome: planned.name,
+            ordem: exerciseOrder,
+            status: 'pulado',
+            circuit_group: planned.circuitGroup ?? null,
+            notas: null
+          })
+        if (skipError) {
+          console.error('Error creating skipped exercise:', skipError)
+          throw skipError
+        }
         exerciseOrder++
       }
 

@@ -267,6 +267,7 @@ export async function GET(request: NextRequest) {
         return {
           id: ex.id,
           exercise_name: ex.exercicio_nome,
+          status: mapStatus(ex.status),
           sets_completed: setsData.filter(s => s.completed).length,
           sets_data: setsData,
           notes: ex.notas

@@ -32,6 +32,7 @@ interface Client {
 interface WorkoutExercise {
   id: string
   exercise_name: string
+  status?: string
   sets_completed: number
   sets_data: Array<{
     reps: number
@@ -542,9 +543,16 @@ export default function PortalWorkoutsPage() {
                                       className="bg-background-elevated rounded-lg px-3 py-2"
                                     >
                                       <div className="flex items-center justify-between">
-                                        <p className="font-medium text-foreground">{exercise.exercise_name}</p>
+                                        <p className="font-medium text-foreground flex items-center gap-2">
+                                          {exercise.exercise_name}
+                                          {exercise.status === 'skipped' && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                                              <XCircle className="w-3 h-3" /> Pulado
+                                            </span>
+                                          )}
+                                        </p>
                                         <p className="text-sm text-foreground-secondary">
-                                          {exercise.sets_completed} séries
+                                          {exercise.status === 'skipped' ? 'Não realizado' : `${exercise.sets_completed} séries`}
                                         </p>
                                       </div>
                                       {exercise.sets_data && exercise.sets_data.length > 0 && (
