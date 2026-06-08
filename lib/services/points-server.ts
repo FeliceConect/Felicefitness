@@ -78,7 +78,7 @@ export const CARDIO_INTENSITY_ACTION: Record<'leve' | 'moderado' | 'intenso' | '
   muito_intenso: 'cardio_muito_intenso',
 }
 
-const TX_TO_RANKING_CATEGORIES: Record<string, string[]> = {
+export const TX_TO_RANKING_CATEGORIES: Record<string, string[]> = {
   nutrition: ['nutrition'],
   workout: ['workout'],
   consistency: ['consistency'],
