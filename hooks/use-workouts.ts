@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { format, startOfWeek, addDays, isToday, isBefore, isAfter, parseISO, getDay } from 'date-fns'
+import { format, startOfWeek, addDays, isToday, isBefore, isAfter, parseISO, getDay, differenceInCalendarWeeks } from 'date-fns'
 import { getTodayISO } from '@/lib/utils/date'
 import type { Workout, WorkoutTemplate, DayWorkout, WorkoutExercise } from '@/lib/workout/types'
 import { normalizeCircuitGroups } from '@/lib/workout/normalize-circuits'
@@ -22,6 +22,7 @@ interface TrainingProgram {
   is_active: boolean
   starts_at: string | null
   ends_at: string | null
+  created_at?: string | null
   weeks?: TrainingWeek[]
 }
 
@@ -37,7 +38,7 @@ interface TrainingWeek {
 interface TrainingDay {
   id: string
   week_id: string
-  day_of_week: number
+  day_of_week: number | null
   day_number: number | null
   name: string | null
   muscle_groups: string[]
@@ -230,66 +231,115 @@ export function useWorkouts(): UseWorkoutsReturn {
       let convertedTemplates: WorkoutTemplate[] = []
 
       if (programData && programData.weeks && programData.weeks.length > 0) {
-        // Usar programa do profissional - pegar a primeira semana ativa
+        // Split de treinos = dias com exercícios da 1ª semana cadastrada (ex.: A, B, C).
+        // O personal pode cadastrar só 1 semana — ela se repete e roda ao longo do programa.
         const activeWeek = programData.weeks[0]
+        const splitDays = (activeWeek?.days || []).filter(
+          (day: TrainingDay) => day.exercises && day.exercises.length > 0
+        )
 
-        if (activeWeek && activeWeek.days) {
-          // Filtrar dias com exercícios
-          const daysWithExercises = activeWeek.days.filter(
-            (day: TrainingDay) => day.exercises && day.exercises.length > 0
-          )
+        if (splitDays.length > 0) {
+          const n = splitDays.length
+          // Quantos dias por semana o paciente treina (definido pelo personal).
+          const daysPerWeek = Math.min(Math.max(programData.days_per_week || n, 1), 7)
 
-          // Distribuir os treinos ao longo da semana
-          // Se o programa tem days_per_week, usar para distribuir uniformemente
-          // Caso contrário, usar quantidade de dias cadastrados
-          const numDays = daysWithExercises.length
-
-          // Mapeamento de distribuição de treinos pela semana (1 = segunda, 6 = sábado)
-          // Evita domingo (0) por padrão
+          // Distribuição padrão de dias da semana (1=seg ... 6=sáb), evita domingo por padrão.
           const dayDistribution: Record<number, number[]> = {
-            1: [1], // 1 treino: segunda
-            2: [1, 4], // 2 treinos: segunda e quinta
-            3: [1, 3, 5], // 3 treinos: segunda, quarta, sexta
-            4: [1, 2, 4, 5], // 4 treinos: seg, ter, qui, sex
-            5: [1, 2, 3, 4, 5], // 5 treinos: seg a sex
-            6: [1, 2, 3, 4, 5, 6], // 6 treinos: seg a sab
-            7: [0, 1, 2, 3, 4, 5, 6] // 7 treinos: todos os dias
+            1: [1],
+            2: [1, 4],
+            3: [1, 3, 5],
+            4: [1, 2, 4, 5],
+            5: [1, 2, 3, 4, 5],
+            6: [1, 2, 3, 4, 5, 6],
+            7: [0, 1, 2, 3, 4, 5, 6]
           }
 
-          const distribution = dayDistribution[numDays] || dayDistribution[Math.min(numDays, 7)]
-
-          convertedTemplates = daysWithExercises.map((day: TrainingDay, index: number) => {
-            // Se o dia já tem day_of_week definido, usar. Senão, distribuir automaticamente
-            const dayOfWeek = day.day_of_week ?? distribution[index % distribution.length]
-
-            return {
-              id: day.id,
-              nome: day.name || `Treino ${String.fromCharCode(65 + index)}`,
-              tipo: 'tradicional' as const,
-              fase: 'base' as const,
-              dia_semana: dayOfWeek,
-              duracao_estimada: day.estimated_duration || 60,
-              exercicios: (day.exercises || [])
-                .sort((a: TrainingExercise, b: TrainingExercise) => a.order_index - b.order_index)
-                .map((ex: TrainingExercise) => ({
-                  id: ex.id,
-                  exercise_id: ex.id,
-                  nome: ex.exercise_name,
-                  ordem: ex.order_index,
-                  series: ex.sets,
-                  repeticoes: ex.reps || (ex.set_type === 'time' ? '30' : '12'),
-                  descanso: ex.rest_seconds || 60,
-                  carga_sugerida: ex.weight_suggestion ? parseFloat(ex.weight_suggestion) : undefined,
-                  is_superset: false,
-                  video_url: ex.video_url || undefined,
-                  instructions: ex.instructions || undefined,
-                  notas: ex.notes || undefined,
-                  set_type: (ex.set_type as 'reps' | 'time' | undefined) || 'reps',
-                  tempo_segundos: ex.set_type === 'time' ? parseInt(ex.reps || '30') || 30 : undefined,
-                  circuit_group: ex.circuit_group ?? null,
-                }))
+          // Índice da semana atual no programa — gira a rotação a cada semana
+          // (ex.: 3 treinos em 4 dias → ABCA, BCAB, CABC...).
+          // Âncora: data de início; se ausente, data de criação do programa.
+          let weekIndex = 0
+          const anchorStr = programData.starts_at || programData.created_at
+          if (anchorStr) {
+            try {
+              weekIndex = Math.max(
+                0,
+                differenceInCalendarWeeks(new Date(), parseISO(anchorStr), { weekStartsOn: 1 })
+              )
+            } catch {
+              weekIndex = 0
             }
-          })
+          }
+
+          // Ordena dias da semana com segunda primeiro e domingo por último.
+          const weekdayOrder = (wd: number) => (wd === 0 ? 7 : wd)
+
+          // 1) Treinos com dia da semana FIXADO pelo personal — mantém como está.
+          const usedWeekdays = new Set<number>()
+          const slots: Array<{ day: TrainingDay; dayOfWeek: number }> = []
+          for (const day of splitDays) {
+            if (day.day_of_week != null) {
+              slots.push({ day, dayOfWeek: day.day_of_week })
+              usedWeekdays.add(day.day_of_week)
+            }
+          }
+
+          // 2) Preenche os dias restantes (até daysPerWeek) automaticamente,
+          //    girando os treinos não-fixados (ou todos, se todos forem fixados).
+          const autoSlots = Math.max(0, daysPerWeek - slots.length)
+          if (autoSlots > 0) {
+            const unpinned = splitDays.filter((d: TrainingDay) => d.day_of_week == null)
+            const pool = unpinned.length > 0 ? unpinned : splitDays
+
+            const preferred = dayDistribution[daysPerWeek] || dayDistribution[7]
+            const freeWeekdays: number[] = []
+            for (const wd of preferred) {
+              if (!usedWeekdays.has(wd)) freeWeekdays.push(wd)
+            }
+            // Fallback: se faltarem dias livres, varre seg→sáb→dom.
+            if (freeWeekdays.length < autoSlots) {
+              for (const wd of [1, 2, 3, 4, 5, 6, 0]) {
+                if (freeWeekdays.length >= autoSlots) break
+                if (!usedWeekdays.has(wd) && !freeWeekdays.includes(wd)) freeWeekdays.push(wd)
+              }
+            }
+
+            for (let k = 0; k < autoSlots && k < freeWeekdays.length; k++) {
+              const day = pool[(weekIndex * autoSlots + k) % pool.length]
+              slots.push({ day, dayOfWeek: freeWeekdays[k] })
+              usedWeekdays.add(freeWeekdays[k])
+            }
+          }
+
+          // Ordena os treinos da semana por dia (seg → dom).
+          slots.sort((a, b) => weekdayOrder(a.dayOfWeek) - weekdayOrder(b.dayOfWeek))
+
+          convertedTemplates = slots.map(({ day, dayOfWeek }) => ({
+            id: day.id,
+            nome: day.name || `Treino ${String.fromCharCode(65 + splitDays.indexOf(day))}`,
+            tipo: 'tradicional' as const,
+            fase: 'base' as const,
+            dia_semana: dayOfWeek,
+            duracao_estimada: day.estimated_duration || programData.session_duration || 60,
+            exercicios: (day.exercises || [])
+              .sort((a: TrainingExercise, b: TrainingExercise) => a.order_index - b.order_index)
+              .map((ex: TrainingExercise) => ({
+                id: ex.id,
+                exercise_id: ex.id,
+                nome: ex.exercise_name,
+                ordem: ex.order_index,
+                series: ex.sets,
+                repeticoes: ex.reps || (ex.set_type === 'time' ? '30' : '12'),
+                descanso: ex.rest_seconds || 60,
+                carga_sugerida: ex.weight_suggestion ? parseFloat(ex.weight_suggestion) : undefined,
+                is_superset: false,
+                video_url: ex.video_url || undefined,
+                instructions: ex.instructions || undefined,
+                notas: ex.notes || undefined,
+                set_type: (ex.set_type as 'reps' | 'time' | undefined) || 'reps',
+                tempo_segundos: ex.set_type === 'time' ? parseInt(ex.reps || '30') || 30 : undefined,
+                circuit_group: ex.circuit_group ?? null,
+              }))
+          }))
         }
       } else {
         // Usar templates do próprio usuário

@@ -21,7 +21,8 @@ import {
   Pencil,
   Video,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Flame
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 import { toast } from 'sonner'
@@ -102,6 +103,12 @@ const GOAL_LABELS: Record<string, string> = {
   functional: 'Funcional',
   custom: 'Personalizado'
 }
+
+const DIFFICULTY_OPTIONS = [
+  { value: 'beginner', label: 'Iniciante' },
+  { value: 'intermediate', label: 'Intermediário' },
+  { value: 'advanced', label: 'Avançado' },
+]
 
 const WEEKDAY_OPTIONS = [
   { value: 1, label: 'Segunda' },
@@ -261,6 +268,24 @@ export default function TrainingProgramDetailPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function updateProgramNumber(
+    field: 'duration_weeks' | 'days_per_week' | 'session_duration',
+    value: string
+  ) {
+    if (!program) return
+    // Permite limpar o campo temporariamente (vira 0) sem quebrar a digitação.
+    const parsed = value === '' ? 0 : parseInt(value, 10)
+    if (Number.isNaN(parsed) || parsed < 0) return
+    setProgram({ ...program, [field]: parsed })
+    setHasChanges(true)
+  }
+
+  function updateProgramDifficulty(value: string) {
+    if (!program) return
+    setProgram({ ...program, difficulty: value })
+    setHasChanges(true)
   }
 
   function toggleWeek(weekIndex: number) {
@@ -605,22 +630,70 @@ export default function TrainingProgramDetailPage() {
         </button>
       </div>
 
-      {/* Program Info */}
+      {/* Program Info — editável pelo personal */}
       <div className="bg-white rounded-xl p-4 border border-border">
-        <div className="flex flex-wrap gap-4 text-sm">
+        <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+          {/* Número de semanas */}
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-foreground-secondary" />
-            <span className="text-foreground">{program.duration_weeks} semanas</span>
+            <input
+              type="number"
+              min={1}
+              max={52}
+              value={program.duration_weeks ?? ''}
+              onChange={(e) => updateProgramNumber('duration_weeks', e.target.value)}
+              className="w-16 px-2 py-1 bg-white border border-border rounded-lg text-foreground text-center focus:outline-none focus:border-dourado"
+              aria-label="Número de semanas do programa"
+            />
+            <span className="text-foreground-secondary">semanas</span>
           </div>
+          {/* Dias por semana */}
           <div className="flex items-center gap-2">
             <Dumbbell className="w-4 h-4 text-foreground-secondary" />
-            <span className="text-foreground">{program.days_per_week}x por semana</span>
+            <input
+              type="number"
+              min={1}
+              max={7}
+              value={program.days_per_week ?? ''}
+              onChange={(e) => updateProgramNumber('days_per_week', e.target.value)}
+              className="w-16 px-2 py-1 bg-white border border-border rounded-lg text-foreground text-center focus:outline-none focus:border-dourado"
+              aria-label="Dias de treino por semana"
+            />
+            <span className="text-foreground-secondary">x por semana</span>
           </div>
+          {/* Tempo por sessão */}
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-foreground-secondary" />
-            <span className="text-foreground">{program.session_duration} min/sessão</span>
+            <input
+              type="number"
+              min={0}
+              max={300}
+              step={5}
+              value={program.session_duration ?? ''}
+              onChange={(e) => updateProgramNumber('session_duration', e.target.value)}
+              className="w-16 px-2 py-1 bg-white border border-border rounded-lg text-foreground text-center focus:outline-none focus:border-dourado"
+              aria-label="Tempo por sessão em minutos"
+            />
+            <span className="text-foreground-secondary">min/sessão</span>
+          </div>
+          {/* Intensidade / nível */}
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-foreground-secondary" />
+            <select
+              value={program.difficulty ?? ''}
+              onChange={(e) => updateProgramDifficulty(e.target.value)}
+              className="px-2 py-1 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
+              aria-label="Intensidade do treino"
+            >
+              {DIFFICULTY_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
         </div>
+        <p className="text-xs text-foreground-muted mt-3">
+          Edite os valores e clique em <span className="font-medium text-foreground-secondary">Salvar</span> para aplicar.
+        </p>
       </div>
 
       {/* Client Assignment */}
