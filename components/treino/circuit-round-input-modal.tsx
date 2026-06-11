@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { formatLastSet } from '@/lib/workout/format-last-set'
 import type { WorkoutExercise } from '@/lib/workout/types'
 
 export interface CircuitRoundEntry {
@@ -22,6 +23,12 @@ interface CircuitRoundInputModalProps {
   totalRounds: number
   /** Última carga/reps de cada exercício, indexada por exerciseId. */
   lastWeights: Record<string, { weight: number; reps: number } | null>
+  /**
+   * Modo edição: valores já registrados da rodada (indexados na mesma ordem
+   * de members). Quando presente, o modal pré-preenche com eles e o botão
+   * vira "Salvar" — o caller decide aplicar via editCompletedSet.
+   */
+  initialEntries?: CircuitRoundEntry[] | null
   onComplete: (entries: CircuitRoundEntry[]) => void
   onCancel: () => void
 }
@@ -37,12 +44,20 @@ export function CircuitRoundInputModal({
   roundNumber,
   totalRounds,
   lastWeights,
+  initialEntries,
   onComplete,
   onCancel,
 }: CircuitRoundInputModalProps) {
-  // Inicializa entries com sugestão = última carga/reps (ou planejado)
-  const buildInitialEntries = (): CircuitRoundEntry[] =>
-    members.map(m => {
+  const isEditing = initialEntries != null
+  // Inicializa entries: em edição usa os valores já registrados; senão,
+  // sugestão = última carga/reps (ou planejado)
+  const buildInitialEntries = (): CircuitRoundEntry[] => {
+    if (initialEntries) {
+      return members.map(m =>
+        initialEntries.find(e => e.exerciseId === m.id) ?? { exerciseId: m.id, reps: 0, weight: 0 }
+      )
+    }
+    return members.map(m => {
       const last = lastWeights[m.id]
       const targetSet = m.series[roundNumber - 1] ?? m.series[0]
       const plannedReps = parseInt(targetSet?.repeticoes_planejadas || '12', 10) || 12
@@ -53,18 +68,19 @@ export function CircuitRoundInputModal({
         weight: last?.weight ?? plannedWeight,
       }
     })
+  }
 
   const [entries, setEntries] = useState<CircuitRoundEntry[]>(buildInitialEntries)
   const wasOpenRef = useRef(false)
 
-  // Reset quando o modal abre (novo round)
+  // Reset quando o modal abre (novo round ou edição de outra rodada)
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
       setEntries(buildInitialEntries())
     }
     wasOpenRef.current = isOpen
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, roundNumber])
+  }, [isOpen, roundNumber, initialEntries])
 
   if (!isOpen) return null
 
@@ -98,7 +114,7 @@ export function CircuitRoundInputModal({
                   🔗 Rodada {roundNumber} de {totalRounds}
                 </p>
                 <h3 className="text-base font-medium text-foreground mt-0.5">
-                  Registrar a rodada inteira
+                  {isEditing ? 'Editar rodada registrada' : 'Registrar a rodada inteira'}
                 </h3>
               </div>
               <button
@@ -126,7 +142,10 @@ export function CircuitRoundInputModal({
 
                     {last && (
                       <p className="text-[11px] text-foreground-secondary mb-2">
-                        Última: <span className="font-semibold text-foreground">{last.weight}kg × {last.reps}{isTime ? 's' : ''}</span>
+                        Último treino:{' '}
+                        <span className="font-semibold text-foreground">
+                          {formatLastSet(last, isTime)}
+                        </span>
                       </p>
                     )}
 
@@ -212,7 +231,7 @@ export function CircuitRoundInputModal({
                 onClick={() => onComplete(entries)}
               >
                 <Check className="w-5 h-5 mr-2" />
-                Concluir Rodada {roundNumber}
+                {isEditing ? `Salvar Rodada ${roundNumber}` : `Concluir Rodada ${roundNumber}`}
               </Button>
             </div>
           </motion.div>

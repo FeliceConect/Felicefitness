@@ -14,6 +14,7 @@ import { useWorkouts } from '@/hooks/use-workouts'
 import { useSettings } from '@/hooks/use-settings'
 import { useProfile } from '@/hooks/use-profile'
 import { useExerciseHistory } from '@/hooks/use-exercise-history'
+import { formatLastSet } from '@/lib/workout/format-last-set'
 import { cn } from '@/lib/utils'
 
 // Lazy load modals — only needed when user triggers them
@@ -51,6 +52,8 @@ export default function WorkoutExecutionPage() {
   const [showFinishConfirm, setShowFinishConfirm] = useState(false)
   // Estado para edição de série completada
   const [editingSet, setEditingSet] = useState<{ exerciseId: string; setNumber: number; weight: number; reps: number; exerciseName: string } | null>(null)
+  // Rodada de circuito em edição (1-indexed) — null = registrando rodada nova
+  const [editingCircuitRound, setEditingCircuitRound] = useState<number | null>(null)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [exerciseVideoUrls, setExerciseVideoUrls] = useState<Record<string, string>>({})
   const [exerciseInstructions, setExerciseInstructions] = useState<Record<string, string>>({})
@@ -163,15 +166,35 @@ export default function WorkoutExecutionPage() {
         state.completedSets.filter(cs => cs.exerciseId === m.id).length
       )) + 1
     : 1
+  // Circuito 100% concluído (usuário voltou nele pelo strip pra revisar/editar)
+  const circuitAllDone = circuitMembers.length > 0 && circuitMembers.every(m =>
+    state.completedSets.filter(cs => cs.exerciseId === m.id).length >= m.series.length
+  )
 
   const handleCompleteCircuitRound = (entries: Array<{ exerciseId: string; reps: number; weight: number }>) => {
     setShowCircuitRound(false)
+
+    // Edição de rodada já registrada: atualiza cada série, sem criar novas
+    if (editingCircuitRound != null) {
+      for (const entry of entries) {
+        editCompletedSet(entry.exerciseId, editingCircuitRound, { reps: entry.reps, weight: entry.weight })
+      }
+      setEditingCircuitRound(null)
+      return
+    }
+
     completeCircuitRound(entries)
     // Inicia descanso após a rodada (entre rodadas o descanso é normal)
     if (circuitCurrentRound < circuitTotalRounds) {
       const restTime = circuitMembers[0]?.series[circuitCurrentRound - 1]?.descanso || defaultRestTime
       setTimeout(() => restTimer.start(restTime), 100)
     }
+  }
+
+  // Abre o modal da rodada em modo edição, pré-preenchido com o que foi feito
+  const handleEditCircuitRound = (round: number) => {
+    setEditingCircuitRound(round)
+    setShowCircuitRound(true)
   }
 
   // Handle set completion (new set or editing existing)
@@ -446,31 +469,45 @@ export default function WorkoutExecutionPage() {
               </p>
             </div>
 
-            {/* Indicador único de rodada (uma bolinha por rodada, não por exercício) */}
-            <div className="flex justify-center gap-3 mb-4">
+            {/* Indicador único de rodada (uma bolinha por rodada, não por exercício).
+                Rodadas verdes são tocáveis pra reabrir e editar o que foi registrado. */}
+            <div className="flex justify-center gap-3 mb-2">
               {Array.from({ length: circuitTotalRounds }).map((_, idx) => {
                 const roundIdx = idx + 1
                 const isCompleted = roundIdx < circuitCurrentRound
                 const isCurrent = roundIdx === circuitCurrentRound
                 return (
-                  <motion.div
+                  <motion.button
                     key={`round-${idx}`}
+                    type="button"
                     animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ repeat: isCurrent ? Infinity : 0, duration: 2 }}
+                    onClick={() => handleEditCircuitRound(roundIdx)}
+                    disabled={!isCompleted}
+                    aria-label={isCompleted ? `Editar rodada ${roundIdx}` : `Rodada ${roundIdx}`}
                     className={cn(
                       'w-12 h-12 rounded-full flex items-center justify-center text-base font-bold',
                       isCompleted
-                        ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                        ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-400 active:scale-95 transition-all shadow-sm shadow-emerald-500/30'
                         : isCurrent
                           ? 'bg-gradient-to-br from-vinho to-vinho/70 text-white ring-2 ring-vinho/40 ring-offset-2 ring-offset-background shadow-md shadow-vinho/20'
                           : 'bg-background-elevated text-foreground-muted'
                     )}
                   >
                     {isCompleted ? '✓' : roundIdx}
-                  </motion.div>
+                  </motion.button>
                 )
               })}
             </div>
+
+            {/* Hint para edição (mesmo padrão da vista normal) */}
+            {circuitCurrentRound > 1 ? (
+              <p className="text-center text-[11px] text-foreground-muted mb-3">
+                Toque nas rodadas verdes para editar
+              </p>
+            ) : (
+              <div className="mb-2" />
+            )}
 
             {/* Lista de exercícios do circuito empilhada */}
             <div className="space-y-3 mb-4">
@@ -522,7 +559,7 @@ export default function WorkoutExecutionPage() {
                         </span>
                         {isTime ? 's' : ' reps'}
                       </span>
-                      {!isTime && displayWeight != null && (
+                      {!isTime && displayWeight != null && displayWeight > 0 && (
                         <span>
                           <span className="font-semibold text-foreground">
                             {displayWeight}
@@ -534,6 +571,20 @@ export default function WorkoutExecutionPage() {
                         </span>
                       )}
                     </div>
+
+                    {/* Referência do treino anterior — sempre que houver histórico,
+                        mesmo com carga 0 (peso corporal) ou isometria */}
+                    {memberLastWeight && (
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-dourado" />
+                        <p className="text-[11px] text-foreground-secondary">
+                          Último treino:{' '}
+                          <span className="text-foreground font-semibold">
+                            {formatLastSet(memberLastWeight, isTime)}
+                          </span>
+                        </p>
+                      </div>
+                    )}
 
                     {/* Observações visíveis abaixo do exercício */}
                     {memberInstructions && (
@@ -599,11 +650,14 @@ export default function WorkoutExecutionPage() {
                 const isCurrent = index === state.currentSetIndex
 
                 return (
-                  <motion.div
+                  <motion.button
                     key={set.id}
+                    type="button"
                     animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ repeat: isCurrent ? Infinity : 0, duration: 2 }}
-                    onClick={() => isCompleted && handleEditCompletedSet(currentExercise.id, index + 1)}
+                    onClick={() => handleEditCompletedSet(currentExercise.id, index + 1)}
+                    disabled={!isCompleted}
+                    aria-label={isCompleted ? `Editar série ${index + 1}` : `Série ${index + 1}`}
                     className={cn(
                       'w-12 h-12 rounded-full flex flex-col items-center justify-center text-lg font-bold',
                       isCompleted
@@ -623,7 +677,7 @@ export default function WorkoutExecutionPage() {
                         </>
                       )
                     ) : index + 1}
-                  </motion.div>
+                  </motion.button>
                 )
               })}
             </div>
@@ -675,7 +729,10 @@ export default function WorkoutExecutionPage() {
                   <div className="border-t border-border/60 pt-3 mt-3 flex items-center justify-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-dourado" />
                     <p className="text-[11px] text-foreground-secondary">
-                      Último treino: <span className="text-foreground font-semibold">{lastWeight.weight}kg × {lastWeight.reps}</span>
+                      Último treino:{' '}
+                      <span className="text-foreground font-semibold">
+                        {formatLastSet(lastWeight, currentSet?.set_type === 'time')}
+                      </span>
                     </p>
                   </div>
                 )}
@@ -740,7 +797,13 @@ export default function WorkoutExecutionPage() {
               )}
               onClick={() => {
                 if (isCurrentInCircuit) {
-                  setShowCircuitRound(true)
+                  // Circuito já finalizado: reabrir é edição da última rodada,
+                  // nunca registro de rodada nova (criaria séries fantasma)
+                  if (circuitAllDone) {
+                    handleEditCircuitRound(circuitTotalRounds)
+                  } else {
+                    setShowCircuitRound(true)
+                  }
                 } else if (currentSet?.set_type === 'time') {
                   setShowIsometricTimer(true)
                 } else {
@@ -749,7 +812,9 @@ export default function WorkoutExecutionPage() {
               }}
             >
               {isCurrentInCircuit
-                ? `Concluir Rodada ${Math.min(circuitCurrentRound, circuitTotalRounds)}`
+                ? circuitAllDone
+                  ? `Editar Rodada ${circuitTotalRounds}`
+                  : `Concluir Rodada ${Math.min(circuitCurrentRound, circuitTotalRounds)}`
                 : currentSet?.set_type === 'time'
                   ? 'Iniciar Isometria'
                   : 'Concluir Série'}
@@ -829,13 +894,26 @@ export default function WorkoutExecutionPage() {
         <CircuitRoundInputModal
           isOpen={showCircuitRound}
           members={circuitMembers}
-          roundNumber={Math.min(circuitCurrentRound, circuitTotalRounds)}
+          roundNumber={editingCircuitRound ?? Math.min(circuitCurrentRound, circuitTotalRounds)}
           totalRounds={circuitTotalRounds}
           lastWeights={Object.fromEntries(
             circuitMembers.map(m => [m.id, getLastWeight(m.nome)])
           )}
+          initialEntries={
+            editingCircuitRound != null
+              ? circuitMembers.map(m => {
+                  const cs = state.completedSets.find(
+                    c => c.exerciseId === m.id && c.setNumber === editingCircuitRound
+                  )
+                  return { exerciseId: m.id, reps: cs?.reps ?? 0, weight: cs?.weight ?? 0 }
+                })
+              : null
+          }
           onComplete={handleCompleteCircuitRound}
-          onCancel={() => setShowCircuitRound(false)}
+          onCancel={() => {
+            setShowCircuitRound(false)
+            setEditingCircuitRound(null)
+          }}
         />
       )}
 

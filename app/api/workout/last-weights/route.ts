@@ -79,14 +79,17 @@ export async function GET() {
       ])
     )
 
-    // Buscar sets desses exercícios
+    // Buscar sets desses exercícios.
+    // NÃO filtrar carga > 0: exercícios de peso corporal/isometria (comuns em
+    // biset/triset) são salvos com carga 0 e ainda assim o paciente precisa
+    // ver as repetições do treino anterior. Cardio é excluído pela unidade
+    // ('km' = distância, não carga) em vez do valor.
     const { data: sets, error: setsError } = await (supabase as AnySupabase)
       .from('fitness_exercise_sets')
-      .select('id, workout_exercise_id, carga, repeticoes_realizadas, created_at')
+      .select('id, workout_exercise_id, carga, repeticoes_realizadas, unidade_carga, created_at')
       .in('workout_exercise_id', exerciseIds)
       .eq('status', 'concluido')
-      .not('carga', 'is', null)
-      .gt('carga', 0)
+      .or('unidade_carga.is.null,unidade_carga.eq.kg')
       .order('created_at', { ascending: false })
 
     if (setsError) {
@@ -106,6 +109,9 @@ export async function GET() {
 
       const exerciseName = exerciseInfo.name
       if (!exerciseName) continue
+
+      // Sem carga E sem reps não há referência útil pro paciente
+      if (!set.carga && !set.repeticoes_realizadas) continue
 
       // Normalizar nome para comparação (lowercase, sem acentos)
       const normalizedName = exerciseName

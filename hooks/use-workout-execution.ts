@@ -387,12 +387,19 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
   // hardcoded). A pontuação de PR real é feita server-side pelo trigger
   // check_and_create_pr e retornada via prSetIds no save. Quando houver
   // histórico real plugado, esta função pode ser reativada.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const checkForPR = useCallback((_exerciseId: string, _exerciseName: string, _weight: number, _reps: number): PersonalRecord | null => {
     return null
   }, [])
 
   const completeSet = useCallback((data: { reps: number; weight: number }) => {
     if (!currentExercise || !currentSet) return
+
+    // Exercício já 100% completo (usuário voltou nele pelo strip): não há
+    // série nova a registrar — registrar de novo duplicaria setNumber e
+    // inflaria volume/pontos. Edição é feita tocando nas séries verdes.
+    const alreadyDoneCount = state.completedSets.filter(cs => cs.exerciseId === currentExercise.id).length
+    if (alreadyDoneCount >= currentExercise.series.length) return
 
     const pr = checkForPR(currentExercise.exercise_id, currentExercise.nome, data.weight, data.reps)
 
@@ -495,7 +502,7 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
         currentSetIndex: findFirstIncompleteSetIndexWithSnapshot(prev.workout, nextExIndex, newCompleted)
       }
     })
-  }, [currentExercise, currentSet, state.currentSetIndex, checkForPR])
+  }, [currentExercise, currentSet, state.currentSetIndex, state.completedSets, checkForPR])
 
   const editCompletedSet = useCallback((exerciseId: string, setNumber: number, data: { reps: number; weight: number }) => {
     setState(prev => {
@@ -547,6 +554,9 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
 
       // numero da série = quantas já foram feitas + 1 nesse exercício
       const alreadyDone = state.completedSets.filter(cs => cs.exerciseId === entry.exerciseId).length
+      // Membro já completou todas as rodadas planejadas: não criar série
+      // extra (aconteceria ao reabrir um circuito finalizado pelo strip)
+      if (alreadyDone >= exercise.series.length) continue
       const setNumber = alreadyDone + 1
 
       const pr = checkForPR(exercise.exercise_id, exercise.nome, entry.weight, entry.reps)
