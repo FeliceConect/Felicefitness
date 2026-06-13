@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { format, startOfWeek, addDays, isToday, isBefore, isAfter, parseISO, getDay, differenceInCalendarWeeks } from 'date-fns'
+import { format, startOfWeek, addDays, isToday, isBefore } from 'date-fns'
+import { computeWeeklyTrainingSlots } from '@/lib/workout/weekly-rotation'
 import { getTodayISO } from '@/lib/utils/date'
 import type { Workout, WorkoutTemplate, DayWorkout, WorkoutExercise } from '@/lib/workout/types'
 import { normalizeCircuitGroups } from '@/lib/workout/normalize-circuits'
@@ -239,79 +240,13 @@ export function useWorkouts(): UseWorkoutsReturn {
         )
 
         if (splitDays.length > 0) {
-          const n = splitDays.length
-          // Quantos dias por semana o paciente treina (definido pelo personal).
-          const daysPerWeek = Math.min(Math.max(programData.days_per_week || n, 1), 7)
-
-          // Distribuição padrão de dias da semana (1=seg ... 6=sáb), evita domingo por padrão.
-          const dayDistribution: Record<number, number[]> = {
-            1: [1],
-            2: [1, 4],
-            3: [1, 3, 5],
-            4: [1, 2, 4, 5],
-            5: [1, 2, 3, 4, 5],
-            6: [1, 2, 3, 4, 5, 6],
-            7: [0, 1, 2, 3, 4, 5, 6]
-          }
-
-          // Índice da semana atual no programa — gira a rotação a cada semana
-          // (ex.: 3 treinos em 4 dias → ABCA, BCAB, CABC...).
-          // Âncora: data de início; se ausente, data de criação do programa.
-          let weekIndex = 0
-          const anchorStr = programData.starts_at || programData.created_at
-          if (anchorStr) {
-            try {
-              weekIndex = Math.max(
-                0,
-                differenceInCalendarWeeks(new Date(), parseISO(anchorStr), { weekStartsOn: 1 })
-              )
-            } catch {
-              weekIndex = 0
-            }
-          }
-
-          // Ordena dias da semana com segunda primeiro e domingo por último.
-          const weekdayOrder = (wd: number) => (wd === 0 ? 7 : wd)
-
-          // 1) Treinos com dia da semana FIXADO pelo personal — mantém como está.
-          const usedWeekdays = new Set<number>()
-          const slots: Array<{ day: TrainingDay; dayOfWeek: number }> = []
-          for (const day of splitDays) {
-            if (day.day_of_week != null) {
-              slots.push({ day, dayOfWeek: day.day_of_week })
-              usedWeekdays.add(day.day_of_week)
-            }
-          }
-
-          // 2) Preenche os dias restantes (até daysPerWeek) automaticamente,
-          //    girando os treinos não-fixados (ou todos, se todos forem fixados).
-          const autoSlots = Math.max(0, daysPerWeek - slots.length)
-          if (autoSlots > 0) {
-            const unpinned = splitDays.filter((d: TrainingDay) => d.day_of_week == null)
-            const pool = unpinned.length > 0 ? unpinned : splitDays
-
-            const preferred = dayDistribution[daysPerWeek] || dayDistribution[7]
-            const freeWeekdays: number[] = []
-            for (const wd of preferred) {
-              if (!usedWeekdays.has(wd)) freeWeekdays.push(wd)
-            }
-            // Fallback: se faltarem dias livres, varre seg→sáb→dom.
-            if (freeWeekdays.length < autoSlots) {
-              for (const wd of [1, 2, 3, 4, 5, 6, 0]) {
-                if (freeWeekdays.length >= autoSlots) break
-                if (!usedWeekdays.has(wd) && !freeWeekdays.includes(wd)) freeWeekdays.push(wd)
-              }
-            }
-
-            for (let k = 0; k < autoSlots && k < freeWeekdays.length; k++) {
-              const day = pool[(weekIndex * autoSlots + k) % pool.length]
-              slots.push({ day, dayOfWeek: freeWeekdays[k] })
-              usedWeekdays.add(freeWeekdays[k])
-            }
-          }
-
-          // Ordena os treinos da semana por dia (seg → dom).
-          slots.sort((a, b) => weekdayOrder(a.dayOfWeek) - weekdayOrder(b.dayOfWeek))
+          // Distribui os treinos pelos dias da semana com rotação cíclica (fonte única,
+          // compartilhada com o Dashboard via lib/workout/weekly-rotation).
+          const slots = computeWeeklyTrainingSlots({
+            splitDays,
+            daysPerWeek: programData.days_per_week,
+            anchorDate: programData.starts_at || programData.created_at,
+          })
 
           convertedTemplates = slots.map(({ day, dayOfWeek }) => ({
             id: day.id,
