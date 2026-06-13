@@ -40,6 +40,7 @@ interface Participant {
 interface LastMessage {
   content: string
   sender_type: string
+  sender_id: string
   created_at: string
 }
 
@@ -50,6 +51,7 @@ interface Conversation {
   lastMessage: LastMessage | null
   lastMessageAt: string
   isActive: boolean
+  category?: 'patient' | 'team'
 }
 
 interface MessageMetadata {
@@ -209,6 +211,10 @@ export default function ChatPage() {
   const [loadingConversations, setLoadingConversations] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
+  // Tipo do usuário ('super_admin' habilita abas Pacientes | Equipe)
+  const [userType, setUserType] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<'patient' | 'team'>('patient')
+
   // Thread state
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -262,6 +268,7 @@ export default function ChatPage() {
       const data = await res.json()
       if (data.success) {
         setConversations(data.conversations)
+        if (data.userType) setUserType(data.userType)
       }
     } catch (err) {
       console.error('Erro ao buscar conversas:', err)
@@ -934,6 +941,17 @@ export default function ChatPage() {
   // =========================================================================
   // RENDER: Conversation list view
   // =========================================================================
+  const isSuperAdmin = userType === 'super_admin'
+  const patientConversations = conversations.filter((c) => (c.category ?? 'patient') === 'patient')
+  const teamConversations = conversations.filter((c) => c.category === 'team')
+  const patientUnread = patientConversations.reduce((sum, c) => sum + c.unreadCount, 0)
+  const teamUnread = teamConversations.reduce((sum, c) => sum + c.unreadCount, 0)
+  const visibleConversations = isSuperAdmin
+    ? activeTab === 'patient'
+      ? patientConversations
+      : teamConversations
+    : conversations
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -969,6 +987,46 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {/* Tabs Pacientes | Equipe (apenas super_admin) */}
+      {isSuperAdmin && (
+        <div className="mt-3 mx-3">
+          <div className="flex gap-1 p-1 bg-background-elevated rounded-full border border-border">
+            <button
+              onClick={() => setActiveTab('patient')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-medium transition-all ${
+                activeTab === 'patient'
+                  ? 'bg-white text-foreground shadow-sm'
+                  : 'text-foreground-muted hover:text-foreground-secondary'
+              }`}
+              aria-pressed={activeTab === 'patient'}
+            >
+              Pacientes
+              {patientUnread > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-dourado text-white text-[10px] font-bold flex items-center justify-center">
+                  {patientUnread > 9 ? '9+' : patientUnread}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-medium transition-all ${
+                activeTab === 'team'
+                  ? 'bg-white text-foreground shadow-sm'
+                  : 'text-foreground-muted hover:text-foreground-secondary'
+              }`}
+              aria-pressed={activeTab === 'team'}
+            >
+              Equipe
+              {teamUnread > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-vinho text-white text-[10px] font-bold flex items-center justify-center">
+                  {teamUnread > 9 ? '9+' : teamUnread}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Conversation list */}
       <div className="mt-2 mx-3">
         <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
@@ -980,7 +1038,7 @@ export default function ChatPage() {
               <div className="border-t border-border" />
               <ConversationSkeleton />
             </>
-          ) : conversations.length === 0 ? (
+          ) : visibleConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
               <div className="w-16 h-16 rounded-2xl bg-dourado/10 flex items-center justify-center mb-5">
                 <MessageSquare className="w-8 h-8 text-dourado" />
@@ -989,7 +1047,11 @@ export default function ChatPage() {
                 Nenhuma conversa
               </h2>
               <p className="text-sm text-foreground-secondary max-w-xs mb-6">
-                Suas conversas com nutricionistas, personal trainers e coaches aparecerão aqui.
+                {isSuperAdmin && activeTab === 'team'
+                  ? 'Suas conversas com a equipe (nutricionistas, personal trainers e coaches) aparecerão aqui.'
+                  : isSuperAdmin
+                  ? 'Suas conversas com os pacientes aparecerão aqui.'
+                  : 'Suas conversas com nutricionistas, personal trainers e coaches aparecerão aqui.'}
               </p>
               <button
                 onClick={openNewConversation}
@@ -1001,7 +1063,7 @@ export default function ChatPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {conversations.map((conv) => {
+              {visibleConversations.map((conv) => {
                 const TypeIcon = professionalTypeIcon(conv.participant.type)
 
                 return (
@@ -1049,7 +1111,7 @@ export default function ChatPage() {
                         <p className={`text-sm truncate mt-0.5 ${
                           conv.unreadCount > 0 ? 'text-foreground-secondary font-medium' : 'text-foreground-muted'
                         }`}>
-                          {conv.lastMessage.sender_type === 'client' ? 'Voce: ' : ''}
+                          {conv.lastMessage.sender_id === currentUserId ? 'Você: ' : ''}
                           {truncate(conv.lastMessage.content)}
                         </p>
                       ) : (
@@ -1075,7 +1137,7 @@ export default function ChatPage() {
       </div>
 
       {/* Info footer */}
-      {conversations.length > 0 && (
+      {visibleConversations.length > 0 && (
         <div className="mx-3 mt-4 mb-2">
           <div className="bg-background-elevated/50 rounded-xl p-4 border border-border">
             <p className="text-xs text-foreground-muted text-center leading-relaxed">

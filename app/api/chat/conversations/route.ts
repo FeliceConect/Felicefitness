@@ -33,9 +33,123 @@ export async function GET() {
       .eq('user_id', user.id)
       .single()
 
+    // Verificar role — super_admin (Líder) precisa ver os dois lados da conversa:
+    // onde é o profissional (pacientes) E onde é o cliente (mensagens à equipe)
+    const { data: roleProfile } = await supabaseAdmin
+      .from('fitness_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    const isSuperAdmin = roleProfile?.role === 'super_admin'
+
     let conversations = []
 
-    if (professional) {
+    if (isSuperAdmin) {
+      const myProfessionalId = professional?.id || null
+
+      // Conversas onde o super_admin é o PROFISSIONAL (Líder) → pacientes (e equipe que o procurou)
+      const asProfessionalRes = myProfessionalId
+        ? await supabaseAdmin
+            .from('fitness_conversations')
+            .select('id, client_id, professional_id, last_message_at, client_unread_count, professional_unread_count, is_active, created_at')
+            .eq('professional_id', myProfessionalId)
+        : null
+      const asProfessional = asProfessionalRes?.data || []
+
+      // Conversas onde o super_admin é o CLIENTE → sempre com outros profissionais (equipe)
+      const { data: asClientRaw } = await supabaseAdmin
+        .from('fitness_conversations')
+        .select('id, client_id, professional_id, last_message_at, client_unread_count, professional_unread_count, is_active, created_at')
+        .eq('client_id', user.id)
+      const asClient = asClientRaw || []
+
+      // Perfis do "outro lado" nas conversas onde sou Líder (o client_id) — define paciente vs equipe
+      const otherUserIds = Array.from(new Set(asProfessional.map(c => c.client_id)))
+      const { data: otherProfiles } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email, role')
+        .in('id', otherUserIds)
+      const otherProfileMap = new Map((otherProfiles || []).map(p => [p.id, p]))
+
+      // Profissionais do "outro lado" nas conversas onde sou cliente
+      const otherProfIds = Array.from(new Set(asClient.map(c => c.professional_id)))
+      const { data: clientSideProfs } = await supabaseAdmin
+        .from('fitness_professionals')
+        .select('id, user_id, type, specialty')
+        .in('id', otherProfIds)
+      const clientSideProfMap = new Map((clientSideProfs || []).map(p => [p.id, p]))
+      const clientSideUserIds = (clientSideProfs || []).map(p => p.user_id)
+      const { data: clientSideProfiles } = await supabaseAdmin
+        .from('fitness_profiles')
+        .select('id, nome, email')
+        .in('id', clientSideUserIds)
+      const clientSideProfileMap = new Map((clientSideProfiles || []).map(p => [p.id, p]))
+
+      // Última mensagem de cada conversa
+      const allIds = [...asProfessional.map(c => c.id), ...asClient.map(c => c.id)]
+      const { data: lastMessages } = await supabaseAdmin
+        .from('fitness_messages')
+        .select('conversation_id, content, sender_type, sender_id, created_at')
+        .in('conversation_id', allIds)
+        .order('created_at', { ascending: false })
+      const lastMessageMap = new Map<string, { content: string; sender_type: string; sender_id: string; created_at: string }>()
+      ;(lastMessages || []).forEach(msg => {
+        if (!lastMessageMap.has(msg.conversation_id)) lastMessageMap.set(msg.conversation_id, msg)
+      })
+
+      // Conversas onde sou Líder: o outro é client_id (paciente ou membro da equipe que me procurou)
+      const fromProfessional = asProfessional.map(conv => {
+        const other = otherProfileMap.get(conv.client_id)
+        const isTeam = !!other?.role && other.role !== 'client'
+        return {
+          id: conv.id,
+          participant: {
+            id: conv.client_id,
+            nome: other?.nome || (isTeam ? 'Profissional' : 'Paciente'),
+            email: other?.email || '',
+            foto: null,
+          },
+          unreadCount: conv.professional_unread_count,
+          lastMessage: lastMessageMap.get(conv.id) || null,
+          lastMessageAt: conv.last_message_at,
+          isActive: conv.is_active,
+          category: isTeam ? 'team' : 'patient',
+        }
+      })
+
+      // Conversas onde sou cliente: o outro é sempre um profissional (equipe)
+      const fromClient = asClient.map(conv => {
+        const prof = clientSideProfMap.get(conv.professional_id)
+        const profProfile = prof ? clientSideProfileMap.get(prof.user_id) : null
+        return {
+          id: conv.id,
+          participant: {
+            id: prof?.user_id || '',
+            nome: profProfile?.nome || 'Profissional',
+            email: profProfile?.email || '',
+            foto: null,
+            type: prof?.type,
+            specialty: prof?.specialty,
+          },
+          unreadCount: conv.client_unread_count,
+          lastMessage: lastMessageMap.get(conv.id) || null,
+          lastMessageAt: conv.last_message_at,
+          isActive: conv.is_active,
+          category: 'team',
+        }
+      })
+
+      // Dedupe defensivo + ordenar por última mensagem (mais recente primeiro)
+      const seen = new Set()
+      conversations = [...fromProfessional, ...fromClient]
+        .filter(c => {
+          if (seen.has(c.id)) return false
+          seen.add(c.id)
+          return true
+        })
+        .sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime())
+
+    } else if (professional) {
       // É profissional - buscar conversas onde é o profissional
       const { data, error } = await supabaseAdmin
         .from('fitness_conversations')
@@ -66,11 +180,11 @@ export async function GET() {
       const conversationIds = data?.map(c => c.id) || []
       const { data: lastMessages } = await supabaseAdmin
         .from('fitness_messages')
-        .select('conversation_id, content, sender_type, created_at')
+        .select('conversation_id, content, sender_type, sender_id, created_at')
         .in('conversation_id', conversationIds)
         .order('created_at', { ascending: false })
 
-      const lastMessageMap = new Map<string, { content: string; sender_type: string; created_at: string }>()
+      const lastMessageMap = new Map<string, { content: string; sender_type: string; sender_id: string; created_at: string }>()
       lastMessages?.forEach(msg => {
         if (!lastMessageMap.has(msg.conversation_id)) {
           lastMessageMap.set(msg.conversation_id, msg)
@@ -129,11 +243,11 @@ export async function GET() {
       const conversationIds = data?.map(c => c.id) || []
       const { data: lastMessages } = await supabaseAdmin
         .from('fitness_messages')
-        .select('conversation_id, content, sender_type, created_at')
+        .select('conversation_id, content, sender_type, sender_id, created_at')
         .in('conversation_id', conversationIds)
         .order('created_at', { ascending: false })
 
-      const lastMessageMap = new Map<string, { content: string; sender_type: string; created_at: string }>()
+      const lastMessageMap = new Map<string, { content: string; sender_type: string; sender_id: string; created_at: string }>()
       lastMessages?.forEach(msg => {
         if (!lastMessageMap.has(msg.conversation_id)) {
           lastMessageMap.set(msg.conversation_id, msg)
@@ -163,7 +277,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       conversations,
-      userType: professional ? 'professional' : 'client'
+      userType: isSuperAdmin ? 'super_admin' : (professional ? 'professional' : 'client')
     })
 
   } catch (error) {
