@@ -67,7 +67,7 @@ export async function GET() {
       const otherUserIds = Array.from(new Set(asProfessional.map(c => c.client_id)))
       const { data: otherProfiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email, role')
+        .select('id, nome, email, role, is_active')
         .in('id', otherUserIds)
       const otherProfileMap = new Map((otherProfiles || []).map(p => [p.id, p]))
 
@@ -75,13 +75,13 @@ export async function GET() {
       const otherProfIds = Array.from(new Set(asClient.map(c => c.professional_id)))
       const { data: clientSideProfs } = await supabaseAdmin
         .from('fitness_professionals')
-        .select('id, user_id, type, specialty')
+        .select('id, user_id, type, specialty, is_active')
         .in('id', otherProfIds)
       const clientSideProfMap = new Map((clientSideProfs || []).map(p => [p.id, p]))
       const clientSideUserIds = (clientSideProfs || []).map(p => p.user_id)
       const { data: clientSideProfiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email')
+        .select('id, nome, email, is_active')
         .in('id', clientSideUserIds)
       const clientSideProfileMap = new Map((clientSideProfiles || []).map(p => [p.id, p]))
 
@@ -98,7 +98,10 @@ export async function GET() {
       })
 
       // Conversas onde sou Líder: o outro é client_id (paciente ou membro da equipe que me procurou)
-      const fromProfessional = asProfessional.map(conv => {
+      // Esconde participantes inativos
+      const fromProfessional = asProfessional
+        .filter(conv => otherProfileMap.get(conv.client_id)?.is_active !== false)
+        .map(conv => {
         const other = otherProfileMap.get(conv.client_id)
         const isTeam = !!other?.role && other.role !== 'client'
         return {
@@ -118,7 +121,15 @@ export async function GET() {
       })
 
       // Conversas onde sou cliente: o outro é sempre um profissional (equipe)
-      const fromClient = asClient.map(conv => {
+      // Esconde profissionais inativos (registro ou perfil desativado)
+      const fromClient = asClient
+        .filter(conv => {
+          const prof = clientSideProfMap.get(conv.professional_id)
+          if (prof?.is_active === false) return false
+          const profProfile = prof ? clientSideProfileMap.get(prof.user_id) : null
+          return profProfile?.is_active !== false
+        })
+        .map(conv => {
         const prof = clientSideProfMap.get(conv.professional_id)
         const profProfile = prof ? clientSideProfileMap.get(prof.user_id) : null
         return {
@@ -171,7 +182,7 @@ export async function GET() {
       const clientIds = data?.map(c => c.client_id) || []
       const { data: clients } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email')
+        .select('id, nome, email, is_active')
         .in('id', clientIds)
 
       const clientMap = new Map(clients?.map(c => [c.id, c]) || [])
@@ -191,7 +202,9 @@ export async function GET() {
         }
       })
 
-      conversations = data?.map(conv => {
+      conversations = (data || [])
+        .filter(conv => clientMap.get(conv.client_id)?.is_active !== false)
+        .map(conv => {
         const client = clientMap.get(conv.client_id)
         return {
         id: conv.id,
@@ -200,7 +213,7 @@ export async function GET() {
         lastMessage: lastMessageMap.get(conv.id) || null,
         lastMessageAt: conv.last_message_at,
         isActive: conv.is_active
-      }}) || []
+      }})
 
     } else {
       // É cliente - buscar conversas onde é o cliente
@@ -224,13 +237,13 @@ export async function GET() {
       const professionalIds = data?.map(c => c.professional_id) || []
       const { data: professionals } = await supabaseAdmin
         .from('fitness_professionals')
-        .select('id, user_id, type, specialty')
+        .select('id, user_id, type, specialty, is_active')
         .in('id', professionalIds)
 
       const professionalUserIds = professionals?.map(p => p.user_id) || []
       const { data: professionalProfiles } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email')
+        .select('id, nome, email, is_active')
         .in('id', professionalUserIds)
 
       const profileMap = new Map(professionalProfiles?.map(p => [p.id, p]) || [])
@@ -254,7 +267,13 @@ export async function GET() {
         }
       })
 
-      conversations = data?.map(conv => {
+      conversations = (data || [])
+        .filter(conv => {
+          const prof = professionalMap.get(conv.professional_id)
+          if (prof?.is_active === false) return false
+          return prof?.profile?.is_active !== false
+        })
+        .map(conv => {
         const prof = professionalMap.get(conv.professional_id)
         return {
           id: conv.id,
@@ -271,7 +290,7 @@ export async function GET() {
           lastMessageAt: conv.last_message_at,
           isActive: conv.is_active
         }
-      }) || []
+      })
     }
 
     return NextResponse.json({

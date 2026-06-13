@@ -242,6 +242,8 @@ export default function ChatPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const pollConversationsRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollMessagesRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Rastreia se o usuário está no fim da conversa — evita puxar o scroll enquanto lê mensagens antigas
+  const isAtBottomRef = useRef(true)
 
   // -------------------------------------------------------------------------
   // Auth: get current user id
@@ -316,14 +318,22 @@ export default function ChatPage() {
     setMessages([])
     setLoadingMessages(true)
     setNewMessage('')
+    isAtBottomRef.current = true // nova conversa abre fixada no fim
     fetchMessages(conv.id)
   }, [fetchMessages])
 
-  // Polling for messages when in thread view
+  // Atualiza isAtBottomRef conforme o usuário rola a área de mensagens
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+  }
+
+  // Polling for messages when in thread view (pausa enquanto o usuário lê mensagens antigas)
   useEffect(() => {
     if (view === 'thread' && activeConversation) {
       pollMessagesRef.current = setInterval(() => {
-        fetchMessages(activeConversation.id)
+        if (isAtBottomRef.current) fetchMessages(activeConversation.id)
       }, 5000)
     }
     return () => {
@@ -331,9 +341,9 @@ export default function ChatPage() {
     }
   }, [view, activeConversation, fetchMessages])
 
-  // Auto-scroll to latest message
+  // Auto-scroll to latest message (só quando o usuário já está no fim)
   useEffect(() => {
-    if (view === 'thread' && messages.length > 0) {
+    if (view === 'thread' && messages.length > 0 && isAtBottomRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, view])
@@ -436,6 +446,7 @@ export default function ChatPage() {
     const content = newMessage.trim()
     setSending(true)
     setNewMessage('')
+    isAtBottomRef.current = true // ao enviar, volta a acompanhar o fim
 
     // Se tem anexo, faz upload primeiro (sem optimistic, porque precisa do storage_path real)
     let attachmentData: Awaited<ReturnType<typeof uploadPendingFile>> | null = null
@@ -760,6 +771,7 @@ export default function ChatPage() {
         {/* Messages area */}
         <div
           ref={messagesContainerRef}
+          onScroll={handleMessagesScroll}
           className="flex-1 overflow-y-auto overscroll-contain"
         >
           {loadingMessages ? (
