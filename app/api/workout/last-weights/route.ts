@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 type AnySupabase = any
 
 // GET /api/workout/last-weights
-// Busca os últimos pesos e repetições realizados por exercício
+// Busca os últimos pesos e repetições realizados por exercício (treino anterior).
 export async function GET() {
   try {
     const supabase = await createClient()
@@ -22,113 +22,73 @@ export async function GET() {
       )
     }
 
-    // Abordagem: buscar treinos concluídos do usuário, depois seus exercícios e sets
-    // Primeiro, buscar IDs dos treinos concluídos do usuário
-    const { data: workouts, error: workoutsError } = await (supabase as AnySupabase)
-      .from('fitness_workouts')
-      .select('id, data')
-      .eq('user_id', user.id)
-      .eq('status', 'concluido')
-      .order('data', { ascending: false })
-      .limit(50) // Últimos 50 treinos
-
-    if (workoutsError) {
-      console.error('Erro ao buscar treinos:', workoutsError)
-      return NextResponse.json(
-        { error: 'Erro ao buscar treinos' },
-        { status: 500 }
-      )
-    }
-
-    if (!workouts || workouts.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {}
-      })
-    }
-
-    const workoutIds = workouts.map((w: { id: string }) => w.id)
-    const workoutDates = new Map<string, string>(workouts.map((w: { id: string; data: string }) => [w.id, w.data]))
-
-    // Buscar exercícios desses treinos
-    const { data: exercises, error: exercisesError } = await (supabase as AnySupabase)
-      .from('fitness_workout_exercises')
-      .select('id, workout_id, exercicio_nome')
-      .in('workout_id', workoutIds)
-
-    if (exercisesError) {
-      console.error('Erro ao buscar exercícios:', exercisesError)
-      return NextResponse.json(
-        { error: 'Erro ao buscar exercícios' },
-        { status: 500 }
-      )
-    }
-
-    if (!exercises || exercises.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {}
-      })
-    }
-
-    const exerciseIds = exercises.map((e: { id: string }) => e.id)
-    const exerciseMap = new Map<string, { workoutId: string; name: string }>(
-      exercises.map((e: { id: string; workout_id: string; exercicio_nome: string }) => [
-        e.id,
-        { workoutId: e.workout_id, name: e.exercicio_nome }
-      ])
-    )
-
-    // Buscar sets desses exercícios.
-    // NÃO filtrar carga > 0: exercícios de peso corporal/isometria (comuns em
-    // biset/triset) são salvos com carga 0 e ainda assim o paciente precisa
-    // ver as repetições do treino anterior. Cardio é excluído pela unidade
-    // ('km' = distância, não carga) em vez do valor.
+    // Uma única query com JOIN embarcado (set → exercício → treino), filtrando
+    // direto por user_id. Antes buscávamos os treinos, depois montávamos um
+    // .in('workout_exercise_id', [...centenas de UUIDs...]) — para quem tem
+    // muitos treinos a URL estourava o limite do PostgREST (414 "URI too long"),
+    // a query falhava e o histórico de cargas sumia para TODOS os exercícios
+    // (inclusive dentro dos circuitos).
+    //
+    // Filtros:
+    // - set e treino concluídos (status='concluido')
+    // - carga 0 incluída (peso corporal/isometria ainda têm reps de referência)
+    // - cardio excluído pela unidade ('km' = distância, não carga)
     const { data: sets, error: setsError } = await (supabase as AnySupabase)
       .from('fitness_exercise_sets')
-      .select('id, workout_exercise_id, carga, repeticoes_realizadas, unidade_carga, created_at')
-      .in('workout_exercise_id', exerciseIds)
+      .select(`
+        carga,
+        repeticoes_realizadas,
+        unidade_carga,
+        created_at,
+        workout_exercise:fitness_workout_exercises!inner(
+          exercicio_nome,
+          workout:fitness_workouts!inner(user_id, data, status)
+        )
+      `)
       .eq('status', 'concluido')
+      .eq('workout_exercise.workout.user_id', user.id)
+      .eq('workout_exercise.workout.status', 'concluido')
       .or('unidade_carga.is.null,unidade_carga.eq.kg')
       .order('created_at', { ascending: false })
+      .limit(5000)
 
     if (setsError) {
       console.error('Erro ao buscar sets:', setsError)
       return NextResponse.json(
-        { error: 'Erro ao buscar sets' },
+        { error: 'Erro ao buscar histórico' },
         { status: 500 }
       )
     }
 
-    // Agrupar por nome do exercício e pegar apenas o mais recente
+    // Agrupar por nome do exercício (normalizado) e manter só o mais recente
+    // (a lista já vem ordenada por created_at desc).
     const exerciseWeights: Record<string, { weight: number; reps: number; date: string }> = {}
 
     for (const set of sets || []) {
-      const exerciseInfo = exerciseMap.get(set.workout_exercise_id)
-      if (!exerciseInfo) continue
-
-      const exerciseName = exerciseInfo.name
+      // Relação to-one: PostgREST retorna objeto, mas normalizamos por garantia.
+      const we = Array.isArray(set.workout_exercise) ? set.workout_exercise[0] : set.workout_exercise
+      const exerciseName: string | undefined = we?.exercicio_nome
       if (!exerciseName) continue
 
-      // Sem carga E sem reps não há referência útil pro paciente
+      // Sem carga E sem reps não há referência útil pro paciente.
       if (!set.carga && !set.repeticoes_realizadas) continue
 
-      // Normalizar nome para comparação (lowercase, sem acentos)
+      // Normalizar nome para comparação (lowercase, sem acentos).
       const normalizedName = exerciseName
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .trim()
 
-      // Se já temos esse exercício, pular (já temos o mais recente por causa do order by)
+      // Já temos o mais recente desse exercício — pular.
       if (exerciseWeights[normalizedName]) continue
 
-      const workoutDate = workoutDates.get(exerciseInfo.workoutId) || ''
+      const workout = Array.isArray(we?.workout) ? we.workout[0] : we?.workout
 
       exerciseWeights[normalizedName] = {
         weight: set.carga || 0,
         reps: set.repeticoes_realizadas || 0,
-        date: workoutDate
+        date: workout?.data || ''
       }
     }
 
