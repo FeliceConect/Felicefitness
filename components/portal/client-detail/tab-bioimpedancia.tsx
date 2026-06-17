@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Activity, TrendingUp, Scale } from 'lucide-react'
+import { Activity, TrendingUp, Scale, ArrowUp, ArrowDown } from 'lucide-react'
 
 interface BioimpedanceRecord {
   id: string
@@ -38,6 +38,36 @@ const METRICS = [
   { key: 'gordura_visceral', label: 'Gord. Visceral', color: 'text-red-500' },
   { key: 'score_inbody', label: 'Score InBody', color: 'text-dourado' },
 ] as const
+
+// Métricas em que MENOR é melhor (queda = melhora → seta verde).
+// As demais (massa muscular/magra, água, proteína, minerais, TMB, score)
+// seguem "maior é melhor".
+const LOWER_IS_BETTER = new Set<string>([
+  'peso',
+  'percentual_gordura',
+  'massa_gordura_kg',
+  'imc',
+  'gordura_visceral',
+  'cintura_quadril',
+])
+
+const round1 = (n: number) => Math.round(n * 10) / 10
+
+// Seta de variação vs. a medição anterior (mais antiga). Verde = melhorou,
+// vermelho = piorou. Não renderiza nada quando não há base de comparação.
+function DeltaArrow({ field, curr, prev }: { field: string; curr: number | null; prev: number | null }) {
+  if (curr == null || prev == null) return null
+  const diff = round1(curr - prev)
+  if (diff === 0) return null
+  const good = LOWER_IS_BETTER.has(field) ? diff < 0 : diff > 0
+  const Icon = diff > 0 ? ArrowUp : ArrowDown
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[10px] ml-1 ${good ? 'text-green-600' : 'text-red-600'}`}>
+      <Icon className="w-2.5 h-2.5" />
+      {Math.abs(diff)}
+    </span>
+  )
+}
 
 export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
   const [records, setRecords] = useState<BioimpedanceRecord[]>([])
@@ -239,25 +269,30 @@ export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
                 </tr>
               </thead>
               <tbody>
-                {records.map((r) => (
-                  <tr key={r.id} className="border-t border-border hover:bg-background-elevated/50">
-                    <td className="px-3 py-2.5 text-foreground-secondary font-medium">{r.momento ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-foreground">{formatDate(r.data)}</td>
-                    <td className="px-3 py-2.5 text-right text-foreground">{r.peso ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-amber-500">{r.percentual_gordura ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-amber-600">{r.massa_gordura_kg ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-blue-500">{r.massa_muscular ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-blue-600">{r.massa_magra ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-cyan-500">{r.agua_corporal ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-emerald-500">{r.proteina ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-purple-400">{r.minerais ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-purple-500">{r.imc ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-green-500">{r.metabolismo_basal ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-red-500">{r.gordura_visceral ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-orange-500">{r.cintura_quadril ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-dourado">{r.score_inbody ?? '-'}</td>
-                  </tr>
-                ))}
+                {records.map((r, i) => {
+                  // Comparação com a medição anterior (mais antiga = próxima linha,
+                  // pois a lista está ordenada do mais recente para o mais antigo).
+                  const prev = records[i + 1]
+                  return (
+                    <tr key={r.id} className="border-t border-border hover:bg-background-elevated/50">
+                      <td className="px-3 py-2.5 text-foreground-secondary font-medium">{r.momento ?? '-'}</td>
+                      <td className="px-3 py-2.5 text-foreground">{formatDate(r.data)}</td>
+                      <td className="px-3 py-2.5 text-right text-foreground">{r.peso ?? '-'}<DeltaArrow field="peso" curr={r.peso} prev={prev?.peso ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-amber-500">{r.percentual_gordura ?? '-'}<DeltaArrow field="percentual_gordura" curr={r.percentual_gordura} prev={prev?.percentual_gordura ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-amber-600">{r.massa_gordura_kg ?? '-'}<DeltaArrow field="massa_gordura_kg" curr={r.massa_gordura_kg} prev={prev?.massa_gordura_kg ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-blue-500">{r.massa_muscular ?? '-'}<DeltaArrow field="massa_muscular" curr={r.massa_muscular} prev={prev?.massa_muscular ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-blue-600">{r.massa_magra ?? '-'}<DeltaArrow field="massa_magra" curr={r.massa_magra} prev={prev?.massa_magra ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-cyan-500">{r.agua_corporal ?? '-'}<DeltaArrow field="agua_corporal" curr={r.agua_corporal} prev={prev?.agua_corporal ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-emerald-500">{r.proteina ?? '-'}<DeltaArrow field="proteina" curr={r.proteina} prev={prev?.proteina ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-purple-400">{r.minerais ?? '-'}<DeltaArrow field="minerais" curr={r.minerais} prev={prev?.minerais ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-purple-500">{r.imc ?? '-'}<DeltaArrow field="imc" curr={r.imc} prev={prev?.imc ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-green-500">{r.metabolismo_basal ?? '-'}<DeltaArrow field="metabolismo_basal" curr={r.metabolismo_basal} prev={prev?.metabolismo_basal ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-red-500">{r.gordura_visceral ?? '-'}<DeltaArrow field="gordura_visceral" curr={r.gordura_visceral} prev={prev?.gordura_visceral ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-orange-500">{r.cintura_quadril ?? '-'}<DeltaArrow field="cintura_quadril" curr={r.cintura_quadril} prev={prev?.cintura_quadril ?? null} /></td>
+                      <td className="px-3 py-2.5 text-right text-dourado">{r.score_inbody ?? '-'}<DeltaArrow field="score_inbody" curr={r.score_inbody} prev={prev?.score_inbody ?? null} /></td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
