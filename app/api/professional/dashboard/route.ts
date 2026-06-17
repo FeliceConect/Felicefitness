@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getTodayDateSP, getMonthStartSP, getStartOfTodaySP } from '@/lib/utils/date'
+import { getMealTypeLabel } from '@/lib/nutrition/types'
 
 // GET - Buscar estatísticas do dashboard do profissional
 export async function GET() {
@@ -49,10 +50,10 @@ export async function GET() {
       .eq('professional_id', professional.id)
       .eq('is_active', true)
 
-    const clientIds = assignments?.map(a => a.client_id) || []
-    const totalClients = clientIds.length
+    const assignedClientIds = assignments?.map(a => a.client_id) || []
 
-    // Buscar dados dos clientes
+    // Buscar dados dos clientes — apenas pacientes ativos (desativados não
+    // aparecem mais no portal dos profissionais)
     let clientsData: Array<{
       id: string
       nome: string | null
@@ -60,14 +61,20 @@ export async function GET() {
       updated_at: string | null
     }> = []
 
-    if (clientIds.length > 0) {
+    if (assignedClientIds.length > 0) {
       const { data } = await supabaseAdmin
         .from('fitness_profiles')
         .select('id, nome, email, updated_at')
-        .in('id', clientIds)
+        .in('id', assignedClientIds)
+        .eq('is_active', true)
 
       clientsData = data || []
     }
+
+    // IDs efetivos = pacientes ativos atribuídos. Toda contagem/consulta abaixo
+    // usa estes IDs para não incluir pacientes desativados.
+    const clientIds = clientsData.map(c => c.id)
+    const totalClients = clientIds.length
 
     // Calcular clientes ativos hoje (que atualizaram perfil hoje SP)
     // — usa início do dia em SP, não UTC do servidor
@@ -138,11 +145,11 @@ export async function GET() {
     if (clientIds.length > 0) {
       const clientMap = new Map(clientsData.map(c => [c.id, c.nome || 'Cliente']))
 
-      // Últimas refeições
+      // Últimas refeições (nomes corretos das colunas: tipo_refeicao / calorias_total)
       if (professional.type === 'nutritionist') {
         const { data: recentMeals } = await supabaseAdmin
           .from('fitness_meals')
-          .select('id, user_id, tipo, calorias, created_at')
+          .select('id, user_id, tipo_refeicao, calorias_total, created_at')
           .in('user_id', clientIds)
           .order('created_at', { ascending: false })
           .limit(5)
@@ -153,16 +160,16 @@ export async function GET() {
             clientName: clientMap.get(meal.user_id) || 'Cliente',
             clientId: meal.user_id,
             date: meal.created_at,
-            details: `${meal.tipo} - ${meal.calorias || 0} kcal`
+            details: `${getMealTypeLabel(meal.tipo_refeicao)} - ${Math.round(meal.calorias_total || 0)} kcal`
           })
         })
       }
 
-      // Últimos treinos
+      // Últimos treinos (coluna correta: duracao_minutos)
       if (professional.type === 'trainer') {
         const { data: recentWorkouts } = await supabaseAdmin
           .from('fitness_workouts')
-          .select('id, user_id, nome, duracao, created_at')
+          .select('id, user_id, nome, duracao_minutos, created_at')
           .in('user_id', clientIds)
           .order('created_at', { ascending: false })
           .limit(5)
@@ -173,7 +180,7 @@ export async function GET() {
             clientName: clientMap.get(workout.user_id) || 'Cliente',
             clientId: workout.user_id,
             date: workout.created_at,
-            details: `${workout.nome} - ${workout.duracao || 0} min`
+            details: `${workout.nome} - ${workout.duracao_minutos || 0} min`
           })
         })
       }

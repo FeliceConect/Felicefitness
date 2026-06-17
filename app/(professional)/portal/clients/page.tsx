@@ -15,6 +15,7 @@ import {
   Target
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
+import { formatObjetivo } from '@/lib/utils/objetivo'
 
 interface Client {
   id: string
@@ -244,10 +245,10 @@ export default function ClientsPage() {
 
                   {/* Quick Stats */}
                   <div className="flex flex-wrap items-center gap-4 text-sm">
-                    {client.objetivo && (
+                    {formatObjetivo(client.objetivo) && (
                       <div className="flex items-center gap-1 text-foreground">
                         <Target className="w-4 h-4 text-dourado" />
-                        {client.objetivo}
+                        {formatObjetivo(client.objetivo)}
                       </div>
                     )}
                     {(isNutritionist || isSuperAdmin) && (

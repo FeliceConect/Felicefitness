@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
         .from('fitness_profiles')
         .select('id')
         .eq('role', 'client')
+        .eq('is_active', true)
 
       clientIds = allClients?.map(c => c.id) || []
 
@@ -115,6 +116,7 @@ export async function GET(request: NextRequest) {
         .from('fitness_client_assignments')
         .select('client_id, assigned_at, notes, is_active')
         .eq('professional_id', professional!.id)
+        .eq('is_active', true)
 
       if (!assignmentData || assignmentData.length === 0) {
         return NextResponse.json({
@@ -128,11 +130,13 @@ export async function GET(request: NextRequest) {
       clientIds = assignmentData.map(a => a.client_id)
     }
 
-    // Buscar perfis dos clientes
+    // Buscar perfis dos clientes (apenas ativos — pacientes desativados não
+    // devem mais aparecer no portal dos profissionais)
     const { data: profiles } = await supabaseAdmin
       .from('fitness_profiles')
       .select('id, nome, email, peso_atual, altura_cm, objetivo, updated_at')
       .in('id', clientIds)
+      .eq('is_active', true)
 
     // Buscar estatísticas recentes para cada cliente (America/Sao_Paulo)
     const today = new Date()

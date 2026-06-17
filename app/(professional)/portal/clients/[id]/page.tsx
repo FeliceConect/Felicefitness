@@ -22,6 +22,8 @@ import {
   Moon
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
+import { formatObjetivo } from '@/lib/utils/objetivo'
+import { getMealTypeLabel } from '@/lib/nutrition/types'
 import { AwardPointsModal } from '@/components/portal/points/award-points-modal'
 import {
   TabProntuario,
@@ -86,10 +88,18 @@ interface WeekStats {
   }
 }
 
+interface MealItem {
+  nome: string
+  quantidade: number | null
+  unidade: string | null
+  calorias: number | null
+}
+
 interface Meal {
   id: string
   tipo: string
   descricao: string | null
+  itens?: MealItem[]
   calorias: number | null
   proteinas: number | null
   carboidratos: number | null
@@ -110,6 +120,7 @@ interface Workout {
 
 interface Bioimpedance {
   data: string
+  momento?: string | null
   peso: number | null
   massa_muscular: number | null
   gordura_corporal: number | null
@@ -181,6 +192,10 @@ export default function ClientDetailPage() {
     return new Date(dateStr).toLocaleDateString('pt-BR')
   }
 
+  // Lista compacta de alimentos da refeição (nomes separados por vírgula)
+  const formatMealItems = (itens?: MealItem[]) =>
+    (itens || []).map(i => i.nome).filter(Boolean).join(', ')
+
   const calculateAge = (birthDate: string) => {
     const birth = new Date(birthDate)
     const today = new Date()
@@ -201,17 +216,6 @@ export default function ClientDetailPage() {
       muito_ativo: 'Extremamente ativo'
     }
     return levels[level] || level
-  }
-
-  const getMealTypeLabel = (tipo: string) => {
-    const types: Record<string, string> = {
-      cafe: 'Café da manhã',
-      almoco: 'Almoço',
-      jantar: 'Jantar',
-      lanche: 'Lanche',
-      ceia: 'Ceia'
-    }
-    return types[tipo] || tipo
   }
 
   if (loading) {
@@ -310,10 +314,10 @@ export default function ClientDetailPage() {
                   <span>| {client.genero === 'masculino' ? 'Masculino' : 'Feminino'}</span>
                 )}
               </div>
-              {client.objetivo && (
+              {formatObjetivo(client.objetivo) && (
                 <div className="flex items-center gap-2 mt-2">
                   <Target className="w-4 h-4 text-dourado" />
-                  <span className="text-foreground">{client.objetivo}</span>
+                  <span className="text-foreground">{formatObjetivo(client.objetivo)}</span>
                 </div>
               )}
               {client.nivel_atividade && (
@@ -466,7 +470,7 @@ export default function ClientDetailPage() {
         <div className="bg-white rounded-xl border border-border p-4">
           <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <Activity className="w-5 h-5 text-dourado" />
-            Última Bioimpedância ({formatDate(bioimpedance.data)})
+            Última Bioimpedância {bioimpedance.momento ? `(${bioimpedance.momento} • ${formatDate(bioimpedance.data)})` : `(${formatDate(bioimpedance.data)})`}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="text-center p-3 bg-background-elevated rounded-lg">
@@ -482,7 +486,7 @@ export default function ClientDetailPage() {
               <p className="text-xs text-foreground-muted">Gordura Corporal</p>
             </div>
             <div className="text-center p-3 bg-background-elevated rounded-lg">
-              <p className="text-xl font-bold text-cyan-400">{bioimpedance.agua_corporal || '-'}%</p>
+              <p className="text-xl font-bold text-cyan-400">{bioimpedance.agua_corporal ?? '-'}{bioimpedance.agua_corporal != null ? ' L' : ''}</p>
               <p className="text-xs text-foreground-muted">Água Corporal</p>
             </div>
             <div className="text-center p-3 bg-background-elevated rounded-lg">
@@ -538,9 +542,11 @@ export default function ClientDetailPage() {
                         <span className="text-foreground font-medium">{getMealTypeLabel(meal.tipo)}</span>
                         <span className="text-xs text-foreground-muted">{formatDate(meal.data)}</span>
                       </div>
-                      {meal.descricao && (
+                      {(meal.itens && meal.itens.length > 0) ? (
+                        <p className="text-sm text-foreground-secondary truncate">{formatMealItems(meal.itens)}</p>
+                      ) : meal.descricao ? (
                         <p className="text-sm text-foreground-secondary truncate">{meal.descricao}</p>
-                      )}
+                      ) : null}
                       <div className="flex gap-3 mt-2 text-xs">
                         <span className="text-green-400">{meal.calorias || 0} kcal</span>
                         <span className="text-blue-400">{meal.proteinas || 0}g P</span>
@@ -632,6 +638,21 @@ export default function ClientDetailPage() {
                         {meal.gorduras || 0}g Gordura
                       </span>
                     </div>
+                    {meal.itens && meal.itens.length > 0 && (
+                      <ul className="mt-3 space-y-1 border-t border-border pt-3">
+                        {meal.itens.map((item, idx) => (
+                          <li key={idx} className="flex items-center justify-between text-sm text-foreground-secondary">
+                            <span className="truncate">
+                              {item.nome}
+                              {item.quantidade ? ` — ${item.quantidade}${item.unidade || 'g'}` : ''}
+                            </span>
+                            {item.calorias != null && (
+                              <span className="text-foreground-muted ml-2 flex-shrink-0">{Math.round(item.calorias)} kcal</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               ))}

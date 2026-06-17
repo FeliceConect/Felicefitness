@@ -53,23 +53,38 @@ export async function GET(
     // Fetch bioimpedance records
     const { data: records, error } = await supabaseAdmin
       .from('fitness_body_compositions')
-      .select('id, data, peso, massa_muscular_esqueletica_kg, massa_gordura_kg, agua_corporal_l, minerais_kg, taxa_metabolica_basal, gordura_visceral, pontuacao_inbody, imc')
+      .select('id, data, momento_avaliacao, fonte, peso, massa_muscular_esqueletica_kg, massa_gordura_kg, percentual_gordura, agua_corporal_l, minerais_kg, taxa_metabolica_basal, gordura_visceral, pontuacao_inbody, imc, impedancia_dados')
       .eq('user_id', params.id)
       .order('data', { ascending: false })
-      .limit(30)
+      .limit(50)
 
     if (error) {
       console.error('Erro ao buscar bioimpedância:', error)
       return NextResponse.json({ success: false, error: 'Erro ao buscar dados' }, { status: 500 })
     }
 
+    // Considerar apenas medições reais (InBody / avaliações M0, M1, M2...),
+    // ignorando registros de peso manuais sem dados de composição corporal.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mapped = (records || []).map((r: any) => ({
+    const isRealBioimpedance = (r: any) =>
+      r.momento_avaliacao != null ||
+      r.fonte === 'inbody' ||
+      r.impedancia_dados != null ||
+      r.pontuacao_inbody != null ||
+      r.massa_muscular_esqueletica_kg != null ||
+      r.massa_gordura_kg != null ||
+      r.percentual_gordura != null ||
+      r.agua_corporal_l != null ||
+      r.taxa_metabolica_basal != null
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapped = (records || []).filter(isRealBioimpedance).map((r: any) => ({
       id: r.id,
       data: r.data,
+      momento: r.momento_avaliacao ?? null,
       peso: r.peso,
       massa_muscular: r.massa_muscular_esqueletica_kg,
-      gordura_corporal: r.massa_gordura_kg,
+      gordura_corporal: r.percentual_gordura ?? r.massa_gordura_kg,
       agua_corporal: r.agua_corporal_l,
       massa_ossea: r.minerais_kg,
       metabolismo_basal: r.taxa_metabolica_basal,

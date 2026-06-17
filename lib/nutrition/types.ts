@@ -167,6 +167,38 @@ export const mealTypeIcons: Record<MealType, string> = {
   ceia: '🌜'
 }
 
+// Mapa abrangente de tipos de refeição — cobre tanto os valores em português
+// (refeições registradas pelo paciente) quanto em inglês (planos alimentares /
+// dados de seed). Use esta função sempre que exibir `tipo_refeicao`/`meal_type`.
+const ALL_MEAL_TYPE_LABELS: Record<string, string> = {
+  // Português (refeições registradas pelo paciente)
+  cafe_manha: 'Café da Manhã',
+  cafe: 'Café da Manhã',
+  lanche_manha: 'Lanche da Manhã',
+  almoco: 'Almoço',
+  lanche_tarde: 'Lanche da Tarde',
+  lanche: 'Lanche',
+  pre_treino: 'Pré-Treino',
+  jantar: 'Jantar',
+  ceia: 'Ceia',
+  // Inglês (planos alimentares / dados importados)
+  breakfast: 'Café da Manhã',
+  morning_snack: 'Lanche da Manhã',
+  lunch: 'Almoço',
+  afternoon_snack: 'Lanche da Tarde',
+  pre_workout: 'Pré-Treino',
+  snack: 'Lanche',
+  dinner: 'Jantar',
+  supper: 'Ceia',
+}
+
+/** Retorna o rótulo em português para qualquer valor de tipo de refeição. */
+export function getMealTypeLabel(tipo?: string | null): string {
+  if (!tipo) return 'Refeição'
+  const key = tipo.toLowerCase().trim()
+  return ALL_MEAL_TYPE_LABELS[key] || tipo
+}
+
 export const foodCategoryLabels: Record<FoodCategory, { label: string; icon: string }> = {
   proteina: { label: 'Proteínas', icon: '🥩' },
   carboidrato: { label: 'Carboidratos', icon: '🍚' },

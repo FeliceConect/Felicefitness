@@ -79,14 +79,15 @@ export async function GET(
     const weekAgoStr = getDateOffsetSP(-7)
     const monthAgoStr = getDateOffsetSP(-30)
 
-    // Buscar refeições, treinos, hidratação, sono, peso
+    // Buscar refeições, treinos, hidratação, sono, peso, bioimpedância e plano ativo
     const [
       mealsResult,
       workoutsResult,
       hydrationResult,
       sleepResult,
       weightResult,
-      bioimpedanceResult
+      bioimpedanceResult,
+      mealPlanResult
     ] = await Promise.all([
       supabaseAdmin
         .from('fitness_meals')
@@ -123,9 +124,16 @@ export async function GET(
         .from('fitness_body_compositions')
         .select('*')
         .eq('user_id', clientId)
-        .not('impedancia_dados', 'is', null)
         .order('data', { ascending: false })
-        .limit(5)
+        .limit(30),
+      supabaseAdmin
+        .from('fitness_meal_plans')
+        .select('calories_target, protein_target, carbs_target, fat_target, water_target')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
     ])
 
     // Calcular estatísticas de refeições
@@ -158,7 +166,7 @@ export async function GET(
     }
     const daysWithHydration = Object.keys(waterByDay).length
     const avgDailyWater = daysWithHydration > 0 ? Math.round(totalWater / daysWithHydration) : 0
-    const waterGoalMl = (profile.meta_agua as number) || 2000
+    const waterGoalMl = (profile.meta_agua_ml as number) || 2000
     const daysGoalMet = Object.values(waterByDay).filter(ml => ml >= waterGoalMl).length
 
     // Calcular média de sono
@@ -184,8 +192,48 @@ export async function GET(
       ? +(latestWeight - oldestWeight).toFixed(1)
       : 0
 
-    // Última bioimpedância
-    const lastBioimpedance = bioimpedanceResult.data?.[0] || null
+    // Última bioimpedância — considerar apenas medições reais (InBody / avaliação),
+    // ignorando registros de peso manuais sem dados de composição.
+    const isRealBioimpedance = (r: Record<string, unknown>) =>
+      r.momento_avaliacao != null ||
+      r.fonte === 'inbody' ||
+      r.impedancia_dados != null ||
+      r.pontuacao_inbody != null ||
+      r.massa_muscular_esqueletica_kg != null ||
+      r.massa_gordura_kg != null ||
+      r.percentual_gordura != null ||
+      r.agua_corporal_l != null ||
+      r.taxa_metabolica_basal != null
+    const lastBioimpedance = (bioimpedanceResult.data || []).find(isRealBioimpedance) || null
+
+    // Plano alimentar ativo — usado como fallback das metas quando o perfil não as tem
+    const activePlan = mealPlanResult.data as {
+      calories_target?: number | null
+      protein_target?: number | null
+      carbs_target?: number | null
+      fat_target?: number | null
+      water_target?: number | null
+    } | null
+
+    // Detalhamento das refeições recentes (itens/alimentos)
+    const recentMealsSlice = meals.slice(0, 10)
+    const recentMealIds = recentMealsSlice.map(m => m.id)
+    const itemsByMeal: Record<string, Array<{ nome: string; quantidade: number | null; unidade: string | null; calorias: number | null }>> = {}
+    if (recentMealIds.length > 0) {
+      const { data: mealItems } = await supabaseAdmin
+        .from('fitness_meal_items')
+        .select('meal_id, nome_alimento, quantidade, unidade, calorias')
+        .in('meal_id', recentMealIds)
+      for (const it of mealItems || []) {
+        const list = itemsByMeal[it.meal_id] || (itemsByMeal[it.meal_id] = [])
+        list.push({
+          nome: it.nome_alimento,
+          quantidade: it.quantidade,
+          unidade: it.unidade,
+          calorias: it.calorias,
+        })
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -197,11 +245,12 @@ export async function GET(
         peso: currentWeight,
         altura: profile.altura_cm,
         objetivo: profile.objetivo,
-        meta_calorias: profile.meta_calorias,
-        meta_proteinas: profile.meta_proteinas,
-        meta_carboidratos: profile.meta_carboidratos,
-        meta_gorduras: profile.meta_gorduras,
-        meta_agua: profile.meta_agua,
+        // Metas: nomes corretos das colunas do perfil, com fallback no plano ativo
+        meta_calorias: profile.meta_calorias_diarias ?? activePlan?.calories_target ?? null,
+        meta_proteinas: profile.meta_proteina_g ?? activePlan?.protein_target ?? null,
+        meta_carboidratos: profile.meta_carboidrato_g ?? activePlan?.carbs_target ?? null,
+        meta_gorduras: profile.meta_gordura_g ?? activePlan?.fat_target ?? null,
+        meta_agua: profile.meta_agua_ml ?? activePlan?.water_target ?? 2000,
         data_nascimento: profile.data_nascimento,
         genero: profile.genero,
         nivel_atividade: profile.nivel_atividade,
@@ -256,9 +305,11 @@ export async function GET(
           }))
         }
       },
-      recentMeals: meals.slice(0, 10).map(m => ({
+      recentMeals: recentMealsSlice.map(m => ({
         id: m.id,
         tipo: m.tipo_refeicao,
+        descricao: m.notas || m.analise_ia || null,
+        itens: itemsByMeal[m.id] || [],
         calorias: m.calorias_total,
         proteinas: m.proteinas_total,
         carboidratos: m.carboidratos_total,
@@ -277,9 +328,11 @@ export async function GET(
       })),
       bioimpedance: lastBioimpedance ? {
         data: lastBioimpedance.data,
+        momento: lastBioimpedance.momento_avaliacao ?? null,
         peso: lastBioimpedance.peso,
         massa_muscular: lastBioimpedance.massa_muscular_esqueletica_kg,
-        gordura_corporal: lastBioimpedance.massa_gordura_kg,
+        // % de gordura — preferir o percentual real; cair para massa gorda
+        gordura_corporal: lastBioimpedance.percentual_gordura ?? lastBioimpedance.massa_gordura_kg,
         agua_corporal: lastBioimpedance.agua_corporal_l,
         massa_ossea: lastBioimpedance.minerais_kg,
         metabolismo_basal: lastBioimpedance.taxa_metabolica_basal
