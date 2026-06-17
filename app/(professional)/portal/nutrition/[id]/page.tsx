@@ -600,38 +600,42 @@ export default function MealPlanDetailPage() {
       </div>
 
       {/* Macros Summary */}
-      {(plan.calories_target || plan.protein_target || plan.carbs_target || plan.fat_target) && (
-        <div className="bg-white rounded-xl p-4 border border-border">
-          <h3 className="text-sm font-medium text-foreground-secondary mb-3">Metas Diárias</h3>
-          <div className="flex flex-wrap gap-4">
-            {plan.calories_target && (
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-orange-500" />
-                <span className="text-foreground font-medium">{plan.calories_target}</span>
-                <span className="text-foreground-muted text-sm">kcal</span>
-              </div>
-            )}
-            {plan.protein_target && (
-              <div className="flex items-center gap-2">
-                <span className="text-green-600 font-medium">P:</span>
-                <span className="text-foreground">{plan.protein_target}g</span>
-              </div>
-            )}
-            {plan.carbs_target && (
-              <div className="flex items-center gap-2">
-                <span className="text-blue-600 font-medium">C:</span>
-                <span className="text-foreground">{plan.carbs_target}g</span>
-              </div>
-            )}
-            {plan.fat_target && (
-              <div className="flex items-center gap-2">
-                <span className="text-yellow-600 font-medium">G:</span>
-                <span className="text-foreground">{plan.fat_target}g</span>
-              </div>
-            )}
-          </div>
+      <div className="bg-white rounded-xl p-4 border border-border">
+        <div className="flex items-center gap-2 mb-3">
+          <Flame className="w-4 h-4 text-orange-500" />
+          <h3 className="text-sm font-medium text-foreground-secondary">Metas Diárias</h3>
         </div>
-      )}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {([
+            { field: 'calories_target', label: 'Calorias', unit: 'kcal', labelClass: 'text-orange-600' },
+            { field: 'protein_target', label: 'Proteína', unit: 'g', labelClass: 'text-green-600' },
+            { field: 'carbs_target', label: 'Carboidratos', unit: 'g', labelClass: 'text-blue-600' },
+            { field: 'fat_target', label: 'Gorduras', unit: 'g', labelClass: 'text-yellow-600' },
+            { field: 'water_target', label: 'Água', unit: 'ml', labelClass: 'text-cyan-600' },
+          ] as const).map(({ field, label, unit, labelClass }) => (
+            <div key={field}>
+              <label className={`block text-xs font-medium mb-1 ${labelClass}`}>{label}</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  value={plan[field] ?? ''}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    const num = raw === '' ? undefined : Math.max(0, Math.round(Number(raw)))
+                    setPlan({ ...plan, [field]: Number.isNaN(num as number) ? undefined : num })
+                    setHasChanges(true)
+                  }}
+                  placeholder="—"
+                  className="w-full px-2 py-1.5 bg-background-input border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                />
+                <span className="text-xs text-foreground-muted flex-shrink-0">{unit}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Client Assignment */}
       {!plan.is_template && (
