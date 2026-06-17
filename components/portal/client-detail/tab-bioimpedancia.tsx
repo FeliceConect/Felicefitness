@@ -8,14 +8,18 @@ interface BioimpedanceRecord {
   data: string
   momento: string | null
   peso: number | null
+  percentual_gordura: number | null
+  massa_gordura_kg: number | null
   massa_muscular: number | null
-  gordura_corporal: number | null
+  massa_magra: number | null
   agua_corporal: number | null
-  massa_ossea: number | null
+  proteina: number | null
+  minerais: number | null
+  imc: number | null
   metabolismo_basal: number | null
   gordura_visceral: number | null
+  cintura_quadril: number | null
   score_inbody: number | null
-  imc: number | null
 }
 
 interface TabBioimpedanciaProps {
@@ -24,8 +28,10 @@ interface TabBioimpedanciaProps {
 
 const METRICS = [
   { key: 'peso', label: 'Peso (kg)', color: 'text-foreground' },
+  { key: 'percentual_gordura', label: 'Gordura (%)', color: 'text-amber-500' },
+  { key: 'massa_gordura_kg', label: 'Massa Gorda (kg)', color: 'text-amber-600' },
   { key: 'massa_muscular', label: 'Massa Muscular (kg)', color: 'text-blue-500' },
-  { key: 'gordura_corporal', label: 'Gordura (%)', color: 'text-amber-500' },
+  { key: 'massa_magra', label: 'Massa Magra (kg)', color: 'text-blue-600' },
   { key: 'agua_corporal', label: 'Água (L)', color: 'text-cyan-500' },
   { key: 'imc', label: 'IMC', color: 'text-purple-500' },
   { key: 'metabolismo_basal', label: 'TMB (kcal)', color: 'text-green-500' },
@@ -91,12 +97,17 @@ export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: 'Peso', value: latest.peso, unit: 'kg', color: 'text-foreground' },
+              { label: 'Gordura', value: latest.percentual_gordura, unit: '%', color: 'text-amber-500' },
+              { label: 'Massa Gorda', value: latest.massa_gordura_kg, unit: 'kg', color: 'text-amber-600' },
               { label: 'Massa Muscular', value: latest.massa_muscular, unit: 'kg', color: 'text-blue-500' },
-              { label: 'Gordura', value: latest.gordura_corporal, unit: '%', color: 'text-amber-500' },
+              { label: 'Massa Magra', value: latest.massa_magra, unit: 'kg', color: 'text-blue-600' },
               { label: 'Água', value: latest.agua_corporal, unit: 'L', color: 'text-cyan-500' },
+              { label: 'Proteína', value: latest.proteina, unit: 'kg', color: 'text-emerald-500' },
+              { label: 'Minerais', value: latest.minerais, unit: 'kg', color: 'text-purple-400' },
               { label: 'IMC', value: latest.imc, unit: '', color: 'text-purple-500' },
               { label: 'TMB', value: latest.metabolismo_basal, unit: 'kcal', color: 'text-green-500' },
               { label: 'Gord. Visceral', value: latest.gordura_visceral, unit: '', color: 'text-red-500' },
+              { label: 'Cintura/Quadril', value: latest.cintura_quadril, unit: '', color: 'text-orange-500' },
               { label: 'Score InBody', value: latest.score_inbody, unit: '', color: 'text-dourado' },
             ].map((item) => (
               <div key={item.label} className="text-center p-3 bg-background-elevated rounded-lg">
@@ -207,18 +218,23 @@ export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
             <h3 className="text-lg font-semibold text-foreground">Histórico</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm whitespace-nowrap">
               <thead>
                 <tr className="bg-background-elevated">
                   <th className="text-left px-3 py-2 text-foreground-secondary font-medium">Momento</th>
                   <th className="text-left px-3 py-2 text-foreground-secondary font-medium">Data</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Peso</th>
-                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Musc.</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Gord.%</th>
+                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Gord. (kg)</th>
+                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Musc.</th>
+                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Magra</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Água (L)</th>
+                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Proteína</th>
+                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Minerais</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">IMC</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">TMB</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Visceral</th>
+                  <th className="text-right px-3 py-2 text-foreground-secondary font-medium">C/Q</th>
                   <th className="text-right px-3 py-2 text-foreground-secondary font-medium">Score</th>
                 </tr>
               </thead>
@@ -228,12 +244,17 @@ export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
                     <td className="px-3 py-2.5 text-foreground-secondary font-medium">{r.momento ?? '-'}</td>
                     <td className="px-3 py-2.5 text-foreground">{formatDate(r.data)}</td>
                     <td className="px-3 py-2.5 text-right text-foreground">{r.peso ?? '-'}</td>
+                    <td className="px-3 py-2.5 text-right text-amber-500">{r.percentual_gordura ?? '-'}</td>
+                    <td className="px-3 py-2.5 text-right text-amber-600">{r.massa_gordura_kg ?? '-'}</td>
                     <td className="px-3 py-2.5 text-right text-blue-500">{r.massa_muscular ?? '-'}</td>
-                    <td className="px-3 py-2.5 text-right text-amber-500">{r.gordura_corporal ?? '-'}</td>
+                    <td className="px-3 py-2.5 text-right text-blue-600">{r.massa_magra ?? '-'}</td>
                     <td className="px-3 py-2.5 text-right text-cyan-500">{r.agua_corporal ?? '-'}</td>
+                    <td className="px-3 py-2.5 text-right text-emerald-500">{r.proteina ?? '-'}</td>
+                    <td className="px-3 py-2.5 text-right text-purple-400">{r.minerais ?? '-'}</td>
                     <td className="px-3 py-2.5 text-right text-purple-500">{r.imc ?? '-'}</td>
                     <td className="px-3 py-2.5 text-right text-green-500">{r.metabolismo_basal ?? '-'}</td>
                     <td className="px-3 py-2.5 text-right text-red-500">{r.gordura_visceral ?? '-'}</td>
+                    <td className="px-3 py-2.5 text-right text-orange-500">{r.cintura_quadril ?? '-'}</td>
                     <td className="px-3 py-2.5 text-right text-dourado">{r.score_inbody ?? '-'}</td>
                   </tr>
                 ))}

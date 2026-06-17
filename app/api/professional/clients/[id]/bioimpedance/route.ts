@@ -50,10 +50,10 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Paciente nao vinculado' }, { status: 403 })
     }
 
-    // Fetch bioimpedance records
+    // Fetch bioimpedance records — todos os campos relevantes para análise
     const { data: records, error } = await supabaseAdmin
       .from('fitness_body_compositions')
-      .select('id, data, momento_avaliacao, fonte, peso, massa_muscular_esqueletica_kg, massa_gordura_kg, percentual_gordura, agua_corporal_l, minerais_kg, taxa_metabolica_basal, gordura_visceral, pontuacao_inbody, imc, impedancia_dados')
+      .select('id, data, momento_avaliacao, fonte, peso, percentual_gordura, massa_gordura_kg, massa_muscular_esqueletica_kg, massa_livre_gordura_kg, agua_corporal_l, proteina_kg, minerais_kg, imc, taxa_metabolica_basal, gordura_visceral, relacao_cintura_quadril, pontuacao_inbody, impedancia_dados')
       .eq('user_id', params.id)
       .order('data', { ascending: false })
       .limit(50)
@@ -63,19 +63,23 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Erro ao buscar dados' }, { status: 500 })
     }
 
-    // Considerar apenas medições reais (InBody / avaliações M0, M1, M2...),
-    // ignorando registros de peso manuais sem dados de composição corporal.
+    // Considerar apenas medições reais (InBody / avaliações M0, M1, M2...).
+    // O `momento` ou a `fonte` sozinhos NÃO bastam — exige-se ao menos uma
+    // métrica de composição corporal preenchida; assim registros vazios
+    // (só com momento) não aparecem.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const isRealBioimpedance = (r: any) =>
-      r.momento_avaliacao != null ||
-      r.fonte === 'inbody' ||
       r.impedancia_dados != null ||
       r.pontuacao_inbody != null ||
-      r.massa_muscular_esqueletica_kg != null ||
-      r.massa_gordura_kg != null ||
       r.percentual_gordura != null ||
+      r.massa_gordura_kg != null ||
+      r.massa_muscular_esqueletica_kg != null ||
+      r.massa_livre_gordura_kg != null ||
       r.agua_corporal_l != null ||
-      r.taxa_metabolica_basal != null
+      r.proteina_kg != null ||
+      r.minerais_kg != null ||
+      r.taxa_metabolica_basal != null ||
+      r.gordura_visceral != null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapped = (records || []).filter(isRealBioimpedance).map((r: any) => ({
@@ -83,14 +87,18 @@ export async function GET(
       data: r.data,
       momento: r.momento_avaliacao ?? null,
       peso: r.peso,
+      percentual_gordura: r.percentual_gordura,
+      massa_gordura_kg: r.massa_gordura_kg,
       massa_muscular: r.massa_muscular_esqueletica_kg,
-      gordura_corporal: r.percentual_gordura ?? r.massa_gordura_kg,
+      massa_magra: r.massa_livre_gordura_kg,
       agua_corporal: r.agua_corporal_l,
-      massa_ossea: r.minerais_kg,
+      proteina: r.proteina_kg,
+      minerais: r.minerais_kg,
+      imc: r.imc,
       metabolismo_basal: r.taxa_metabolica_basal,
       gordura_visceral: r.gordura_visceral,
+      cintura_quadril: r.relacao_cintura_quadril,
       score_inbody: r.pontuacao_inbody,
-      imc: r.imc,
     }))
 
     return NextResponse.json({ success: true, records: mapped })

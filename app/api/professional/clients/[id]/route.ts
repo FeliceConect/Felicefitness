@@ -194,16 +194,20 @@ export async function GET(
 
     // Última bioimpedância — considerar apenas medições reais (InBody / avaliação),
     // ignorando registros de peso manuais sem dados de composição.
+    // Exige ao menos uma métrica real de composição corporal — momento/fonte
+    // sozinhos não contam, para não exibir registros vazios.
     const isRealBioimpedance = (r: Record<string, unknown>) =>
-      r.momento_avaliacao != null ||
-      r.fonte === 'inbody' ||
       r.impedancia_dados != null ||
       r.pontuacao_inbody != null ||
-      r.massa_muscular_esqueletica_kg != null ||
-      r.massa_gordura_kg != null ||
       r.percentual_gordura != null ||
+      r.massa_gordura_kg != null ||
+      r.massa_muscular_esqueletica_kg != null ||
+      r.massa_livre_gordura_kg != null ||
       r.agua_corporal_l != null ||
-      r.taxa_metabolica_basal != null
+      r.proteina_kg != null ||
+      r.minerais_kg != null ||
+      r.taxa_metabolica_basal != null ||
+      r.gordura_visceral != null
     const lastBioimpedance = (bioimpedanceResult.data || []).find(isRealBioimpedance) || null
 
     // Plano alimentar ativo — usado como fallback das metas quando o perfil não as tem

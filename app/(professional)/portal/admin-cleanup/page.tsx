@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Trash2, Loader2, AlertTriangle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Trash2, Loader2, AlertTriangle, CheckCircle, Activity } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const SUPERADMIN_EMAIL = 'felicemed@gmail.com'
@@ -14,6 +14,11 @@ export default function AdminCleanupPage() {
   const [cleaning, setCleaning] = useState(false)
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
 
+  // Limpeza de bioimpedâncias vazias
+  const [emptyBioCount, setEmptyBioCount] = useState<number | null>(null)
+  const [bioCleaning, setBioCleaning] = useState(false)
+  const [bioResult, setBioResult] = useState<{ success: boolean; message: string } | null>(null)
+
   useEffect(() => {
     async function checkAuth() {
       const supabase = createClient()
@@ -21,11 +26,39 @@ export default function AdminCleanupPage() {
 
       if (user?.email === SUPERADMIN_EMAIL) {
         setIsAuthorized(true)
+        // Prévia da quantidade de bioimpedâncias vazias
+        try {
+          const res = await fetch('/api/admin/cleanup-empty-bioimpedance')
+          const data = await res.json()
+          if (data.success) setEmptyBioCount(data.emptyCount)
+        } catch {
+          // silencioso — botão ainda funciona
+        }
       }
       setLoading(false)
     }
     checkAuth()
   }, [])
+
+  const handleCleanupEmptyBio = async () => {
+    if (!confirm('Apagar TODAS as bioimpedâncias vazias (sem nenhum dado)? Esta ação não pode ser desfeita.')) return
+    setBioCleaning(true)
+    setBioResult(null)
+    try {
+      const response = await fetch('/api/admin/cleanup-empty-bioimpedance', { method: 'POST' })
+      const data = await response.json()
+      if (data.success) {
+        setBioResult({ success: true, message: data.message })
+        setEmptyBioCount(0)
+      } else {
+        setBioResult({ success: false, message: data.error || 'Erro desconhecido' })
+      }
+    } catch {
+      setBioResult({ success: false, message: 'Erro ao executar limpeza' })
+    } finally {
+      setBioCleaning(false)
+    }
+  }
 
   const handleCleanup = async () => {
     setCleaning(true)
@@ -149,6 +182,66 @@ export default function AdminCleanupPage() {
             )}
           </button>
         </div>
+      </div>
+
+      {/* Card — Limpar bioimpedâncias vazias */}
+      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="flex items-start gap-3 mb-4">
+          <Activity className="h-6 w-6 text-dourado flex-shrink-0" />
+          <div>
+            <h2 className="text-lg font-semibold text-white">Limpar Bioimpedâncias Vazias</h2>
+            <p className="text-sm text-slate-400 mt-1">
+              Remove registros de bioimpedância que não possuem nenhum dado de composição
+              corporal (linhas vazias que só têm data/momento). Registros com qualquer medição,
+              circunferência, foto ou observação são preservados.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-4 bg-slate-700/40 border border-slate-600 rounded-lg mb-4">
+          <p className="text-sm text-slate-300">
+            {emptyBioCount === null
+              ? 'Verificando registros...'
+              : emptyBioCount === 0
+                ? 'Nenhuma bioimpedância vazia encontrada.'
+                : `${emptyBioCount} bioimpedância(s) vazia(s) encontrada(s).`}
+          </p>
+        </div>
+
+        {bioResult && (
+          <div className={`p-4 rounded-lg flex items-start gap-3 mb-4 ${
+            bioResult.success
+              ? 'bg-green-500/10 border border-green-500/20'
+              : 'bg-red-500/10 border border-red-500/20'
+          }`}>
+            {bioResult.success ? (
+              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+            ) : (
+              <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
+            )}
+            <p className={`text-sm ${bioResult.success ? 'text-green-400' : 'text-red-400'}`}>
+              {bioResult.message}
+            </p>
+          </div>
+        )}
+
+        <button
+          onClick={handleCleanupEmptyBio}
+          disabled={bioCleaning || emptyBioCount === 0}
+          className="w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {bioCleaning ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Limpando...
+            </>
+          ) : (
+            <>
+              <Trash2 className="h-5 w-5" />
+              Apagar bioimpedâncias vazias
+            </>
+          )}
+        </button>
       </div>
 
       {/* Info */}
