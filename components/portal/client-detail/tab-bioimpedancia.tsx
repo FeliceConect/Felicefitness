@@ -26,17 +26,21 @@ interface TabBioimpedanciaProps {
   patientId: string
 }
 
-const METRICS = [
-  { key: 'peso', label: 'Peso (kg)', color: 'text-foreground' },
-  { key: 'percentual_gordura', label: 'Gordura (%)', color: 'text-amber-500' },
-  { key: 'massa_gordura_kg', label: 'Massa Gorda (kg)', color: 'text-amber-600' },
-  { key: 'massa_muscular', label: 'Massa Muscular (kg)', color: 'text-blue-500' },
-  { key: 'massa_magra', label: 'Massa Magra (kg)', color: 'text-blue-600' },
-  { key: 'agua_corporal', label: 'Água (L)', color: 'text-cyan-500' },
-  { key: 'imc', label: 'IMC', color: 'text-purple-500' },
-  { key: 'metabolismo_basal', label: 'TMB (kcal)', color: 'text-green-500' },
-  { key: 'gordura_visceral', label: 'Gord. Visceral', color: 'text-red-500' },
-  { key: 'score_inbody', label: 'Score InBody', color: 'text-dourado' },
+// Métricas exibidas no painel de evolução (item por item)
+const CARD_METRICS = [
+  { key: 'peso', label: 'Peso', unit: 'kg' },
+  { key: 'percentual_gordura', label: 'Gordura', unit: '%' },
+  { key: 'massa_gordura_kg', label: 'Massa Gorda', unit: 'kg' },
+  { key: 'massa_muscular', label: 'Massa Muscular', unit: 'kg' },
+  { key: 'massa_magra', label: 'Massa Magra', unit: 'kg' },
+  { key: 'agua_corporal', label: 'Água', unit: 'L' },
+  { key: 'proteina', label: 'Proteína', unit: 'kg' },
+  { key: 'minerais', label: 'Minerais', unit: 'kg' },
+  { key: 'imc', label: 'IMC', unit: '' },
+  { key: 'metabolismo_basal', label: 'TMB', unit: 'kcal' },
+  { key: 'gordura_visceral', label: 'Gord. Visceral', unit: '' },
+  { key: 'cintura_quadril', label: 'Cintura/Quadril', unit: '' },
+  { key: 'score_inbody', label: 'Score InBody', unit: '' },
 ] as const
 
 // Métricas em que MENOR é melhor (queda = melhora → seta verde).
@@ -69,10 +73,76 @@ function DeltaArrow({ field, curr, prev }: { field: string; curr: number | null;
   )
 }
 
+// Mini-gráfico de tendência (cronológico). Cor verde quando o conjunto
+// indica melhora, vermelha quando piora.
+function Sparkline({ values, improved }: { values: number[]; improved: boolean | null }) {
+  if (values.length < 2) return null
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min || 1
+  const w = 100
+  const h = 28
+  const color = improved === null ? '#c29863' : improved ? '#7dad6a' : '#a04045'
+  const pts = values
+    .map((v, i) => {
+      const x = (i / (values.length - 1)) * w
+      const y = h - 3 - ((v - min) / range) * (h - 6)
+      return `${x},${y}`
+    })
+    .join(' ')
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-7 mt-2" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {values.map((v, i) => {
+        const x = (i / (values.length - 1)) * w
+        const y = h - 3 - ((v - min) / range) * (h - 6)
+        return <circle key={i} cx={x} cy={y} r="1.6" fill={color} />
+      })}
+    </svg>
+  )
+}
+
+// Card de evolução de uma métrica: valor atual + variação desde a 1ª avaliação + sparkline.
+function MetricEvolutionCard({
+  label,
+  unit,
+  metricKey,
+  series,
+}: {
+  label: string
+  unit: string
+  metricKey: string
+  series: number[]
+}) {
+  const latestVal = series.length > 0 ? series[series.length - 1] : null
+  const firstVal = series.length > 0 ? series[0] : null
+  const delta = series.length >= 2 && firstVal != null && latestVal != null ? round1(latestVal - firstVal) : null
+  const improved = delta == null || delta === 0 ? null : (LOWER_IS_BETTER.has(metricKey) ? delta < 0 : delta > 0)
+  const DeltaIcon = delta != null && delta > 0 ? ArrowUp : ArrowDown
+
+  return (
+    <div className="p-3 bg-background-elevated rounded-lg">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs text-foreground-muted truncate">{label}</span>
+        {delta != null && delta !== 0 && (
+          <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${improved ? 'text-green-600' : 'text-red-600'}`}>
+            <DeltaIcon className="w-3 h-3" />
+            {Math.abs(delta)}
+          </span>
+        )}
+      </div>
+      <p className="text-lg font-bold text-foreground mt-0.5">
+        {latestVal != null ? latestVal : '-'}
+        {latestVal != null && unit && <span className="text-xs font-normal text-foreground-muted ml-0.5">{unit}</span>}
+      </p>
+      <Sparkline values={series} improved={improved} />
+    </div>
+  )
+}
+
 export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
   const [records, setRecords] = useState<BioimpedanceRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedMetric, setSelectedMetric] = useState<string>('peso')
 
   useEffect(() => {
     fetch(`/api/professional/clients/${patientId}/bioimpedance`)
@@ -96,19 +166,16 @@ export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
   const latest = records[0]
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-BR')
 
-  // Simple sparkline chart data
-  const getMetricValue = (r: BioimpedanceRecord, key: string): number | null => {
-    return r[key as keyof BioimpedanceRecord] as number | null
-  }
+  // Registros em ordem cronológica (mais antigo → mais novo) para a evolução
+  const chrono = [...records].reverse()
+  // Série de valores não-nulos de uma métrica, em ordem cronológica
+  const seriesFor = (key: string): number[] =>
+    chrono
+      .map(r => r[key as keyof BioimpedanceRecord] as number | null)
+      .filter((v): v is number => v != null)
 
-  const chartData = [...records].reverse().map(r => ({
-    date: formatDate(r.data),
-    value: getMetricValue(r, selectedMetric),
-  })).filter(d => d.value != null)
-
-  const maxVal = Math.max(...chartData.map(d => d.value || 0), 1)
-  const minVal = Math.min(...chartData.map(d => d.value || 0), 0)
-  const range = maxVal - minVal || 1
+  const firstMomento = chrono.find(r => r.momento)?.momento
+  const lastMomento = latest?.momento
 
   return (
     <div className="space-y-6">
@@ -157,87 +224,32 @@ export function TabBioimpedancia({ patientId }: TabBioimpedanciaProps) {
         </div>
       )}
 
-      {/* Evolution Chart */}
+      {/* Evolução — item por item */}
       {records.length >= 2 && (
         <div className="bg-white border border-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-dourado" />
-              <h3 className="text-lg font-semibold text-foreground">Evolução</h3>
-            </div>
-            <select
-              value={selectedMetric}
-              onChange={(e) => setSelectedMetric(e.target.value)}
-              className="text-sm border border-border rounded-lg px-3 py-1.5 bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-dourado/50"
-            >
-              {METRICS.map(m => (
-                <option key={m.key} value={m.key}>{m.label}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp className="w-5 h-5 text-dourado" />
+            <h3 className="text-lg font-semibold text-foreground">Evolução</h3>
           </div>
-
-          {/* Simple SVG Chart */}
-          {chartData.length >= 2 ? (
-            <div className="relative">
-              <svg viewBox="0 0 400 200" className="w-full h-48">
-                {/* Grid lines */}
-                {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-                  <line
-                    key={p}
-                    x1="40" y1={20 + (160 * p)} x2="390" y2={20 + (160 * p)}
-                    stroke="#d4cbc2" strokeWidth="0.5" strokeDasharray="4"
-                  />
-                ))}
-
-                {/* Line */}
-                <polyline
-                  points={chartData.map((d, i) => {
-                    const x = 40 + (i * 350 / Math.max(chartData.length - 1, 1))
-                    const y = 180 - ((((d.value || 0) - minVal) / range) * 160)
-                    return `${x},${y}`
-                  }).join(' ')}
-                  fill="none"
-                  stroke="#c29863"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+          <p className="text-xs text-foreground-muted mb-4">
+            Variação da primeira{firstMomento ? ` (${firstMomento})` : ''} até a última
+            {lastMomento ? ` (${lastMomento})` : ''} avaliação · verde = melhora, vermelho = piora
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {CARD_METRICS.map((m) => {
+              const series = seriesFor(m.key)
+              if (series.length === 0) return null
+              return (
+                <MetricEvolutionCard
+                  key={m.key}
+                  label={m.label}
+                  unit={m.unit}
+                  metricKey={m.key}
+                  series={series}
                 />
-
-                {/* Points */}
-                {chartData.map((d, i) => {
-                  const x = 40 + (i * 350 / Math.max(chartData.length - 1, 1))
-                  const y = 180 - ((((d.value || 0) - minVal) / range) * 160)
-                  return (
-                    <circle key={i} cx={x} cy={y} r="4" fill="#c29863" stroke="white" strokeWidth="2" />
-                  )
-                })}
-
-                {/* Y-axis labels */}
-                {[0, 0.5, 1].map((p) => (
-                  <text
-                    key={p}
-                    x="35" y={24 + (160 * (1 - p))}
-                    textAnchor="end" fontSize="10" fill="#7a6e64"
-                  >
-                    {(minVal + range * p).toFixed(1)}
-                  </text>
-                ))}
-
-                {/* X-axis labels */}
-                {chartData.filter((_, i) => i === 0 || i === chartData.length - 1 || chartData.length <= 5).map((d, i) => {
-                  const idx = chartData.indexOf(d)
-                  const x = 40 + (idx * 350 / Math.max(chartData.length - 1, 1))
-                  return (
-                    <text key={i} x={x} y="198" textAnchor="middle" fontSize="9" fill="#ae9b89">
-                      {d.date}
-                    </text>
-                  )
-                })}
-              </svg>
-            </div>
-          ) : (
-            <p className="text-sm text-foreground-muted text-center py-4">Dados insuficientes para gráfico</p>
-          )}
+              )
+            })}
+          </div>
         </div>
       )}
 
