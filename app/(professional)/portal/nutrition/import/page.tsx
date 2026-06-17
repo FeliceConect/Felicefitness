@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
-  Upload,
-  FileText,
-  Camera,
+  Sparkles,
   Check,
   Loader2,
   ChevronDown,
@@ -68,6 +66,7 @@ export default function ImportMealPlanPage() {
   const { isNutritionist, loading: professionalLoading } = useProfessional()
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClient, setSelectedClient] = useState<string>('')
+  const [planText, setPlanText] = useState('')
   const [importing, setImporting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [parsedPlan, setParsedPlan] = useState<ParsedMealPlan | null>(null)
@@ -97,30 +96,29 @@ export default function ImportMealPlanPage() {
     }
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleAnalyze = async () => {
+    if (!planText.trim()) {
+      setError('Cole o texto do plano alimentar antes de analisar.')
+      return
+    }
 
     setImporting(true)
     setError(null)
     setParsedPlan(null)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
       const response = await fetch('/api/meal-plan/import', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: planText })
       })
 
       const result = await response.json()
 
-      if (!response.ok) {
+      if (!response.ok || !result.success) {
         const errorMsg = result.error || 'Erro ao importar'
         const details = result.details ? ` (${result.details})` : ''
-        const hint = result.hint ? `\n${result.hint}` : ''
-        throw new Error(`${errorMsg}${details}${hint}`)
+        throw new Error(`${errorMsg}${details}`)
       }
 
       setParsedPlan(result.data)
@@ -154,7 +152,12 @@ export default function ImportMealPlanPage() {
         throw new Error(result.error || 'Erro ao salvar')
       }
 
-      router.push('/portal/nutrition')
+      // Abre o plano recém-criado no editor para ajustes finais
+      if (result.plan_id) {
+        router.push(`/portal/nutrition/${result.plan_id}`)
+      } else {
+        router.push('/portal/nutrition')
+      }
     } catch (err) {
       console.error('Save error:', err)
       setError(err instanceof Error ? err.message : 'Erro ao salvar plano')
@@ -197,78 +200,53 @@ export default function ImportMealPlanPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Importar Plano Alimentar</h1>
-          <p className="text-foreground-secondary">Faça upload de PDF, imagem ou foto do plano</p>
+          <p className="text-foreground-secondary">Cole o texto do plano e a IA monta tudo</p>
         </div>
       </div>
 
-      {/* Upload Section */}
+      {/* Paste Section */}
       {!parsedPlan && (
         <div className="bg-white rounded-xl p-6 border border-border">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Upload do Plano</h2>
-          <p className="text-sm text-foreground-secondary mb-6">
-            A IA irá extrair automaticamente todas as informações do plano alimentar.
-            Formatos suportados: PDF, JPG, PNG.
+          <h2 className="text-lg font-semibold text-foreground mb-2">Colar plano alimentar</h2>
+          <p className="text-sm text-foreground-secondary mb-4">
+            Cole o plano exatamente como foi escrito (com horários, refeições, opções e quantidades).
+            A IA organiza em refeições, opções e estima as calorias/macros. Você revisa antes de salvar.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-xl cursor-pointer transition-colors ${
-              importing ? 'opacity-50 cursor-not-allowed' : 'hover:border-green-500 hover:bg-green-50'
-            }`}>
-              <FileText className="h-10 w-10 text-foreground-muted mb-3" />
-              <span className="text-sm font-medium text-foreground">PDF</span>
-              <span className="text-xs text-foreground-muted mt-1">Documento</span>
-              <input
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={importing}
-              />
-            </label>
+          <textarea
+            value={planText}
+            onChange={(e) => setPlanText(e.target.value)}
+            disabled={importing}
+            rows={14}
+            placeholder={`07:00 – Café da manhã\nOpção 1\n1 fatia de pão de fermentação natural\n30 g de queijo meia-cura\n...`}
+            className="w-full px-4 py-3 bg-background-input border border-border rounded-lg text-foreground placeholder-foreground-muted text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50 font-mono resize-y"
+          />
 
-            <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-xl cursor-pointer transition-colors ${
-              importing ? 'opacity-50 cursor-not-allowed' : 'hover:border-green-500 hover:bg-green-50'
-            }`}>
-              <Upload className="h-10 w-10 text-foreground-muted mb-3" />
-              <span className="text-sm font-medium text-foreground">Imagem</span>
-              <span className="text-xs text-foreground-muted mt-1">JPG, PNG</span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={importing}
-              />
-            </label>
-
-            <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-xl cursor-pointer transition-colors ${
-              importing ? 'opacity-50 cursor-not-allowed' : 'hover:border-green-500 hover:bg-green-50'
-            }`}>
-              <Camera className="h-10 w-10 text-foreground-muted mb-3" />
-              <span className="text-sm font-medium text-foreground">Câmera</span>
-              <span className="text-xs text-foreground-muted mt-1">Tirar foto</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={importing}
-              />
-            </label>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-foreground-muted">{planText.length} caracteres</span>
+            <button
+              onClick={handleAnalyze}
+              disabled={importing || planText.trim().length < 20}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analisando com IA...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Analisar com IA
+                </>
+              )}
+            </button>
           </div>
 
-          {importing && (
-            <div className="flex items-center justify-center gap-3 mt-6 py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-green-500" />
-              <span className="text-sm text-foreground-secondary">Analisando plano com IA...</span>
-            </div>
-          )}
-
           {error && (
-            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600 whitespace-pre-line">{error}</p>
             </div>
           )}
         </div>

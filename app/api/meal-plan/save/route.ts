@@ -189,10 +189,10 @@ export async function POST(request: NextRequest) {
 
     // Criar dias da semana (0-6, Dom-Sáb)
     // Para planos sem variação por dia, criar um "dia padrão" ou todos os 7 dias
+    const WEEKDAY_NAMES = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
     const dayPromises = []
     for (let day = 0; day <= 6; day++) {
-      const dayName = day === 4 ? 'Quinta-feira (Feirinha)' :
-                      day === 1 || day === 6 ? 'Dia de Beach Tennis' : 'Dia Normal'
+      const dayName = WEEKDAY_NAMES[day]
 
       dayPromises.push(
         supabaseAdmin
