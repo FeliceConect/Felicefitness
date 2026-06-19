@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { deactivateOtherActivePlans } from '@/lib/meal-plans/ensure-single-active'
 
 // Tipos
 interface MealOption {
@@ -185,6 +186,11 @@ export async function POST(request: NextRequest) {
         { error: 'Erro ao criar plano alimentar' },
         { status: 500 }
       )
+    }
+
+    // Mantém apenas um plano ativo por cliente (desativa os anteriores)
+    if (targetClientId) {
+      await deactivateOtherActivePlans(supabaseAdmin, targetClientId, mealPlan.id)
     }
 
     // Criar dias da semana (0-6, Dom-Sáb)

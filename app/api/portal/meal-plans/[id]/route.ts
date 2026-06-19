@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { deactivateOtherActivePlans } from '@/lib/meal-plans/ensure-single-active'
 
 // GET - Buscar plano alimentar completo com dias e refeições
 export async function GET(
@@ -217,6 +218,16 @@ export async function PUT(
         .from('fitness_meal_plans')
         .update(updateFields)
         .eq('id', id)
+    }
+
+    // Mantém apenas um plano ativo por cliente após o update
+    const { data: savedPlan } = await supabaseAdmin
+      .from('fitness_meal_plans')
+      .select('id, client_id, is_active')
+      .eq('id', id)
+      .single()
+    if (savedPlan?.client_id && savedPlan?.is_active) {
+      await deactivateOtherActivePlans(supabaseAdmin, savedPlan.client_id, savedPlan.id)
     }
 
     // Se dias foram fornecidos, atualizar estrutura

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { deactivateOtherActivePlans } from '@/lib/meal-plans/ensure-single-active'
 
 // GET - Listar planos alimentares do profissional
 export async function GET(request: NextRequest) {
@@ -224,6 +225,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Mantém apenas um plano ativo por cliente
+    if (plan?.client_id && plan?.is_active) {
+      await deactivateOtherActivePlans(supabase, plan.client_id, plan.id)
+    }
+
     // Criar dias e refeições se fornecidos
     if (days && Array.isArray(days)) {
       for (const day of days) {
@@ -380,6 +386,11 @@ export async function PATCH(request: NextRequest) {
         { success: false, error: 'Erro ao atualizar plano' },
         { status: 500 }
       )
+    }
+
+    // Mantém apenas um plano ativo por cliente
+    if (updatedPlan.client_id && updatedPlan.is_active) {
+      await deactivateOtherActivePlans(supabaseAdmin, updatedPlan.client_id, updatedPlan.id)
     }
 
     // Buscar dados do cliente se existir

@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { deactivateOtherActivePlans } from '@/lib/meal-plans/ensure-single-active'
 
 // GET - Buscar plano alimentar ativo do cliente
 export async function GET() {
@@ -24,15 +25,20 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Buscar plano alimentar ativo do cliente
+    // Buscar plano alimentar ativo do cliente.
+    // Usa o mais recente: se houver mais de um plano ativo (ex.: plano antigo
+    // não desativado ao atribuir um novo), o paciente vê o último — em vez de
+    // .single() quebrar com "múltiplas linhas" e não mostrar nada.
     const { data: plan, error: planError } = await admin
       .from('fitness_meal_plans')
       .select('*')
       .eq('client_id', user.id)
       .eq('is_active', true)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    if (planError && planError.code !== 'PGRST116') {
+    if (planError) {
       console.error('Erro ao buscar plano:', planError)
       return NextResponse.json(
         { success: false, error: 'Erro ao buscar plano alimentar' },
@@ -47,6 +53,10 @@ export async function GET() {
         message: 'Nenhum plano alimentar ativo encontrado'
       })
     }
+
+    // Auto-correção: garante só um plano ativo por cliente (desativa planos
+    // antigos que tenham ficado ativos). Best-effort, não bloqueia a resposta.
+    await deactivateOtherActivePlans(admin, plan.client_id, plan.id)
 
     // Buscar profissional
     let professional = null
