@@ -407,6 +407,9 @@ export default function ImportMealPlanPage() {
           </div>
 
           {/* Actions */}
+          <p className="text-xs text-foreground-secondary text-center">
+            Ao salvar, o plano abre no editor — lá você pode <strong>editar tudo</strong> (quantidades, opções, alimentos e metas) antes de o paciente ver.
+          </p>
           <div className="flex gap-3">
             <button
               onClick={() => setParsedPlan(null)}
@@ -428,7 +431,7 @@ export default function ImportMealPlanPage() {
               ) : (
                 <>
                   <Check className="h-5 w-5" />
-                  Salvar Plano
+                  Salvar e editar
                 </>
               )}
             </button>

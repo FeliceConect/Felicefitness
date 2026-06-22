@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, Fragment } from 'react'
+import { formatFoodAmount } from '@/lib/nutrition/meal-foods'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import {
@@ -143,6 +144,7 @@ export default function MealPlanDetailPage() {
   const [expandedDays, setExpandedDays] = useState<number[]>([])
   const [showAddMealModal, setShowAddMealModal] = useState<{ dayIndex: number } | null>(null)
   const [showAddFoodModal, setShowAddFoodModal] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
+  const [editingFood, setEditingFood] = useState<{ dayIndex: number; mealIndex: number; foodIndex: number } | null>(null)
   const [showAlternativesModal, setShowAlternativesModal] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
   const [showClientModal, setShowClientModal] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -380,22 +382,50 @@ export default function MealPlanDetailPage() {
     setHasChanges(true)
   }
 
+  // Recalcula os totais da refeição contando UMA escolha por grupo "escolher 1"
+  // (alimentos com o mesmo `group` são alternativas, não somam juntos).
+  function recalcMealTotals(meal: Meal) {
+    const seen = new Set<string>()
+    let kcal = 0, p = 0, c = 0, f = 0
+    for (const food of meal.foods) {
+      const g = food.group ? String(food.group).trim() : ''
+      if (g) {
+        if (seen.has(g)) continue
+        seen.add(g)
+      }
+      kcal += food.calories || 0
+      p += food.protein || 0
+      c += food.carbs || 0
+      f += food.fat || 0
+    }
+    meal.total_calories = kcal
+    meal.total_protein = p
+    meal.total_carbs = c
+    meal.total_fat = f
+  }
+
   function addFood(dayIndex: number, mealIndex: number, food: Food) {
     if (!plan) return
 
     const newDays = [...plan.days]
     newDays[dayIndex].meals[mealIndex].foods.push(food)
-
-    // Recalculate totals
-    const meal = newDays[dayIndex].meals[mealIndex]
-    meal.total_calories = meal.foods.reduce((sum, f) => sum + (f.calories || 0), 0)
-    meal.total_protein = meal.foods.reduce((sum, f) => sum + (f.protein || 0), 0)
-    meal.total_carbs = meal.foods.reduce((sum, f) => sum + (f.carbs || 0), 0)
-    meal.total_fat = meal.foods.reduce((sum, f) => sum + (f.fat || 0), 0)
+    recalcMealTotals(newDays[dayIndex].meals[mealIndex])
 
     setPlan({ ...plan, days: newDays })
     setHasChanges(true)
     setShowAddFoodModal(null)
+  }
+
+  function updateFood(dayIndex: number, mealIndex: number, foodIndex: number, food: Food) {
+    if (!plan) return
+
+    const newDays = [...plan.days]
+    newDays[dayIndex].meals[mealIndex].foods[foodIndex] = food
+    recalcMealTotals(newDays[dayIndex].meals[mealIndex])
+
+    setPlan({ ...plan, days: newDays })
+    setHasChanges(true)
+    setEditingFood(null)
   }
 
   function removeFood(dayIndex: number, mealIndex: number, foodIndex: number) {
@@ -403,13 +433,7 @@ export default function MealPlanDetailPage() {
 
     const newDays = [...plan.days]
     newDays[dayIndex].meals[mealIndex].foods.splice(foodIndex, 1)
-
-    // Recalculate totals
-    const meal = newDays[dayIndex].meals[mealIndex]
-    meal.total_calories = meal.foods.reduce((sum, f) => sum + (f.calories || 0), 0)
-    meal.total_protein = meal.foods.reduce((sum, f) => sum + (f.protein || 0), 0)
-    meal.total_carbs = meal.foods.reduce((sum, f) => sum + (f.carbs || 0), 0)
-    meal.total_fat = meal.foods.reduce((sum, f) => sum + (f.fat || 0), 0)
+    recalcMealTotals(newDays[dayIndex].meals[mealIndex])
 
     setPlan({ ...plan, days: newDays })
     setHasChanges(true)
@@ -765,13 +789,21 @@ export default function MealPlanDetailPage() {
                                   )}
                                   <div className="flex items-center justify-between text-sm bg-white rounded px-3 py-2 border border-border">
                                     <span className="text-foreground">
-                                      {food.group ? '• ' : ''}{food.name} - {food.portion_label || `${food.quantity}${food.unit}`}
+                                      {food.group ? '• ' : ''}{food.name} - {formatFoodAmount(food)}
                                     </span>
                                     <div className="flex items-center gap-3">
                                       <span className="text-foreground-muted">{food.calories || 0} kcal</span>
                                       <button
+                                        onClick={() => setEditingFood({ dayIndex, mealIndex, foodIndex })}
+                                        className="text-foreground-muted hover:text-dourado"
+                                        title="Editar alimento"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
                                         onClick={() => removeFood(dayIndex, mealIndex, foodIndex)}
                                         className="text-red-500 hover:text-red-600"
+                                        title="Remover"
                                       >
                                         <X className="w-4 h-4" />
                                       </button>
@@ -901,6 +933,15 @@ export default function MealPlanDetailPage() {
         <AddFoodModal
           onClose={() => setShowAddFoodModal(null)}
           onAdd={(food) => addFood(showAddFoodModal.dayIndex, showAddFoodModal.mealIndex, food)}
+        />
+      )}
+
+      {/* Edit Food Modal */}
+      {editingFood && plan && (
+        <EditFoodModal
+          food={plan.days[editingFood.dayIndex].meals[editingFood.mealIndex].foods[editingFood.foodIndex]}
+          onClose={() => setEditingFood(null)}
+          onSave={(food) => updateFood(editingFood.dayIndex, editingFood.mealIndex, editingFood.foodIndex, food)}
         />
       )}
 
@@ -1086,6 +1127,149 @@ function FoodPickerSheet({
             Não encontrei — preencher manualmente
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Edit Food Modal — edita um alimento já adicionado (nome, quantidade,
+// medida, calorias e macros). Preserva o grupo de escolha ("escolher 1").
+function EditFoodModal({
+  food,
+  onClose,
+  onSave,
+}: {
+  food: Food
+  onClose: () => void
+  onSave: (food: Food) => void
+}) {
+  const [form, setForm] = useState({
+    name: food.name || '',
+    quantity: food.quantity != null ? String(food.quantity) : '',
+    unit: food.unit || '',
+    portion_label: food.portion_label || '',
+    calories: food.calories != null ? String(food.calories) : '',
+    protein: food.protein != null ? String(food.protein) : '',
+    carbs: food.carbs != null ? String(food.carbs) : '',
+    fat: food.fat != null ? String(food.fat) : '',
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim()) return
+    const num = (v: string) => (v.trim() === '' ? undefined : parseFloat(v))
+    onSave({
+      ...food, // preserva group/choice/micros
+      name: form.name.trim(),
+      quantity: num(form.quantity) as number,
+      unit: form.unit.trim(),
+      portion_label: form.portion_label.trim() || undefined,
+      calories: num(form.calories) ?? 0,
+      protein: num(form.protein) ?? 0,
+      carbs: num(form.carbs) ?? 0,
+      fat: num(form.fat) ?? 0,
+    })
+  }
+
+  const inputClass = 'w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado'
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-foreground">Editar Alimento</h3>
+          <button onClick={onClose} className="p-1 hover:bg-background-elevated rounded">
+            <X className="w-5 h-5 text-foreground-muted" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {food.group && (
+            <p className="text-[11px] font-semibold text-dourado uppercase tracking-wide">
+              {food.group} · opção de escolha
+            </p>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Nome *</label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className={inputClass}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Quantidade</label>
+              <input
+                type="number"
+                step="any"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                placeholder="(vazio = à vontade)"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Medida</label>
+              <input
+                type="text"
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                placeholder="g, ml, colher de sopa..."
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-foreground-muted mb-1">
+              Rótulo de porção (opcional — substitui qtd/medida na exibição)
+            </label>
+            <input
+              type="text"
+              value={form.portion_label}
+              onChange={(e) => setForm({ ...form, portion_label: e.target.value })}
+              placeholder='Ex.: "2 unidades (100 g)"'
+              className={inputClass}
+            />
+          </div>
+
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs text-foreground-muted mb-1">Kcal</label>
+              <input type="number" step="any" value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} className={`${inputClass} text-sm`} />
+            </div>
+            <div>
+              <label className="block text-xs text-foreground-muted mb-1">Prot.</label>
+              <input type="number" step="any" value={form.protein} onChange={(e) => setForm({ ...form, protein: e.target.value })} className={`${inputClass} text-sm`} />
+            </div>
+            <div>
+              <label className="block text-xs text-foreground-muted mb-1">Carb.</label>
+              <input type="number" step="any" value={form.carbs} onChange={(e) => setForm({ ...form, carbs: e.target.value })} className={`${inputClass} text-sm`} />
+            </div>
+            <div>
+              <label className="block text-xs text-foreground-muted mb-1">Gord.</label>
+              <input type="number" step="any" value={form.fat} onChange={(e) => setForm({ ...form, fat: e.target.value })} className={`${inputClass} text-sm`} />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-colors">
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg, #c29863 0%, #663739 100%)', color: '#fff' }}
+            >
+              <Check className="w-4 h-4" />
+              Salvar
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
