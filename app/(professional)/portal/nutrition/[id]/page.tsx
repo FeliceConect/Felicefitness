@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import {
@@ -38,6 +38,10 @@ interface Food {
   // Descrição amigável da porção ex: "2 unidades (100g)", "3× 1 fatia (60g)".
   // Quando presente, é exibida no plano no lugar de apenas gramas.
   portion_label?: string
+  // Conjunto de escolha ("escolher 1"): alimentos com o mesmo group são
+  // alternativas entre si (ex.: Proteína: frango / peixe / carne).
+  group?: string | null
+  choice?: boolean
   calories?: number
   protein?: number
   carbs?: number
@@ -745,25 +749,37 @@ export default function MealPlanDetailPage() {
                         {/* Foods */}
                         {meal.foods.length > 0 && (
                           <div className="space-y-2 mb-3">
-                            {meal.foods.map((food, foodIndex) => (
-                              <div
-                                key={foodIndex}
-                                className="flex items-center justify-between text-sm bg-white rounded px-3 py-2 border border-border"
-                              >
-                                <span className="text-foreground">
-                                  {food.name} - {food.portion_label || `${food.quantity}${food.unit}`}
-                                </span>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-foreground-muted">{food.calories || 0} kcal</span>
-                                  <button
-                                    onClick={() => removeFood(dayIndex, mealIndex, foodIndex)}
-                                    className="text-red-500 hover:text-red-600"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                            {meal.foods.map((food, foodIndex) => {
+                              // Cabeçalho do grupo de escolha ("escolher 1") quando começa um novo group
+                              const prevGroup = foodIndex > 0 ? meal.foods[foodIndex - 1].group : undefined
+                              const showGroupHeader = !!food.group && food.group !== prevGroup
+                              const groupCount = food.group
+                                ? meal.foods.filter(f => f.group === food.group).length
+                                : 0
+                              return (
+                                <Fragment key={foodIndex}>
+                                  {showGroupHeader && (
+                                    <p className="text-[11px] font-semibold text-dourado uppercase tracking-wide pt-1">
+                                      {food.group}{groupCount > 1 ? ' · escolha 1' : ''}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center justify-between text-sm bg-white rounded px-3 py-2 border border-border">
+                                    <span className="text-foreground">
+                                      {food.group ? '• ' : ''}{food.name} - {food.portion_label || `${food.quantity}${food.unit}`}
+                                    </span>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-foreground-muted">{food.calories || 0} kcal</span>
+                                      <button
+                                        onClick={() => removeFood(dayIndex, mealIndex, foodIndex)}
+                                        className="text-red-500 hover:text-red-600"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </Fragment>
+                              )
+                            })}
                           </div>
                         )}
 

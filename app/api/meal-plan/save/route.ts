@@ -4,18 +4,22 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { deactivateOtherActivePlans } from '@/lib/meal-plans/ensure-single-active'
 
 // Tipos
+interface MealFood {
+  name: string
+  quantity?: number | null
+  unit?: string | null
+  calories?: number
+  protein?: number
+  carbs?: number
+  fat?: number
+  group?: string | null
+  choice?: boolean
+}
+
 interface MealOption {
   option: string
   name: string
-  foods: Array<{
-    name: string
-    quantity?: number
-    unit?: string
-    calories?: number
-    protein?: number
-    carbs?: number
-    fat?: number
-  }>
+  foods: MealFood[]
 }
 
 interface MealSlot {
@@ -29,6 +33,10 @@ interface MealSlot {
   is_training_day_only: boolean
   restrictions?: string[]
   notes?: string
+  total_calories?: number
+  total_protein?: number
+  total_carbs?: number
+  total_fat?: number
   options: MealOption[]
 }
 
@@ -242,18 +250,29 @@ export async function POST(request: NextRequest) {
           foods: opt.foods
         }))
 
-        // Calcular totais aproximados da opção primária
-        let totalCalories = 0
-        let totalProtein = 0
-        let totalCarbs = 0
-        let totalFat = 0
+        // Totais da refeição. Preferir os totais já calculados pela IA (que
+        // consideram UMA escolha por grupo "escolher 1"). Só somar todos os
+        // foods como fallback — e, mesmo assim, contando 1 item por grupo de
+        // escolha para não inflar (ex.: 5 proteínas alternativas).
+        let totalCalories = meal.total_calories || 0
+        let totalProtein = meal.total_protein || 0
+        let totalCarbs = meal.total_carbs || 0
+        let totalFat = meal.total_fat || 0
 
-        primaryOption?.foods.forEach(food => {
-          totalCalories += food.calories || 0
-          totalProtein += food.protein || 0
-          totalCarbs += food.carbs || 0
-          totalFat += food.fat || 0
-        })
+        if (totalCalories === 0 && totalProtein === 0 && totalCarbs === 0 && totalFat === 0) {
+          const seenGroups = new Set<string>()
+          primaryOption?.foods.forEach(food => {
+            const g = food.group ? String(food.group).trim() : ''
+            if (g) {
+              if (seenGroups.has(g)) return // grupo de escolha: conta só a 1ª opção
+              seenGroups.add(g)
+            }
+            totalCalories += food.calories || 0
+            totalProtein += food.protein || 0
+            totalCarbs += food.carbs || 0
+            totalFat += food.fat || 0
+          })
+        }
 
         // Se não tiver valores, usar targets ou calcular a partir de macros
         if (totalProtein === 0 && meal.target_protein) {

@@ -16,6 +16,7 @@ import {
   Edit2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { groupPlanFoods, formatFoodAmount } from '@/lib/nutrition/meal-foods'
 
 interface Food {
   name: string
@@ -26,6 +27,47 @@ interface Food {
   protein?: number
   carbs?: number
   fat?: number
+  group?: string | null
+  choice?: boolean
+}
+
+// Lista de alimentos agrupando os conjuntos de escolha ("escolher 1")
+function FoodGroupList({ foods, compact = false }: { foods: Food[]; compact?: boolean }) {
+  const blocks = groupPlanFoods(foods)
+  return (
+    <div className="space-y-1.5">
+      {blocks.map((block, bi) => {
+        if (!block.group) {
+          const f = block.items[0]
+          return (
+            <div key={bi} className="flex items-center justify-between text-sm gap-2">
+              <span className="text-foreground-secondary">{f.name}</span>
+              <span className="text-foreground-secondary whitespace-nowrap">
+                {formatFoodAmount(f)}{!compact && f.calories ? ` • ${f.calories} kcal` : ''}
+              </span>
+            </div>
+          )
+        }
+        return (
+          <div key={bi} className="rounded-md bg-dourado/5 border border-dourado/15 p-2">
+            <p className="text-[11px] font-semibold text-dourado uppercase tracking-wide mb-1">
+              {block.group}{block.isChoice ? ' · escolha 1' : ''}
+            </p>
+            <div className="space-y-0.5">
+              {block.items.map((f, fi) => (
+                <div key={fi} className="flex items-center justify-between text-sm gap-2 pl-1">
+                  <span className="text-foreground-secondary flex items-center gap-1">
+                    <span className="text-dourado">•</span>{f.name}
+                  </span>
+                  <span className="text-foreground-secondary whitespace-nowrap">{formatFoodAmount(f)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 // Dados da refeição realmente consumida
@@ -273,14 +315,7 @@ export function MealPlanCard({
                             </span>
                           )}
                         </div>
-                        {displayFoods?.map((food, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-sm">
-                            <span className="text-foreground-secondary">{food.name}</span>
-                            <span className="text-foreground-secondary">
-                              {food.portion_label || `${food.quantity}${food.unit}`} • {food.calories || 0} kcal
-                            </span>
-                          </div>
-                        ))}
+                        <FoodGroupList foods={displayFoods || []} />
                       </div>
 
                       {/* Macros */}
@@ -356,14 +391,7 @@ export function MealPlanCard({
                                     <span className="w-5 h-5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center justify-center">A</span>
                                     <span className="text-sm font-medium text-green-400">{meal.meal_name || 'Principal'}</span>
                                   </div>
-                                  <div className="space-y-1">
-                                    {meal.foods?.map((food, foodIdx) => (
-                                      <div key={foodIdx} className="flex items-center justify-between text-xs">
-                                        <span className="text-foreground-secondary">{food.name}</span>
-                                        <span className="text-foreground-secondary">{food.portion_label || `${food.quantity}${food.unit}`}</span>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <FoodGroupList foods={meal.foods || []} compact />
                                 </div>
 
                                 {/* Other Options Details */}
@@ -379,14 +407,7 @@ export function MealPlanCard({
                                         <span className="w-5 h-5 rounded-full bg-vinho text-white text-xs font-bold flex items-center justify-center">{optionLetter}</span>
                                         <span className="text-sm font-medium text-dourado">{optionName}</span>
                                       </div>
-                                      <div className="space-y-1">
-                                        {foods.map((food, foodIdx) => (
-                                          <div key={foodIdx} className="flex items-center justify-between text-xs">
-                                            <span className="text-foreground-secondary">{food.name}</span>
-                                            <span className="text-foreground-secondary">{food.portion_label || `${food.quantity}${food.unit}`}</span>
-                                          </div>
-                                        ))}
-                                      </div>
+                                      <FoodGroupList foods={foods} compact />
                                     </div>
                                   )
                                 })}

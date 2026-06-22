@@ -13,6 +13,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
+import { groupPlanFoods, formatFoodAmount } from '@/lib/nutrition/meal-foods'
 
 interface Client {
   id: string
@@ -26,8 +27,10 @@ interface MealOption {
   name: string
   foods: Array<{
     name: string
-    quantity?: number
-    unit?: string
+    quantity?: number | null
+    unit?: string | null
+    group?: string | null
+    choice?: boolean
   }>
 }
 
@@ -329,17 +332,32 @@ export default function ImportMealPlanPage() {
                     {meal.options.map((option, optIndex) => (
                       <div key={optIndex} className="p-3 bg-background-elevated rounded-lg">
                         <p className="text-sm font-medium text-foreground mb-2">
-                          Opção {option.option} - {option.name}
+                          {meal.options.length > 1 ? `Opção ${option.option} - ` : ''}{option.name}
                         </p>
-                        <ul className="space-y-1">
-                          {option.foods.map((food, foodIndex) => (
-                            <li key={foodIndex} className="text-xs text-foreground-secondary flex items-start gap-1">
-                              <span className="text-green-600">•</span>
-                              {food.quantity && `${food.quantity}${food.unit ? food.unit : ''} `}
-                              {food.name}
-                            </li>
+                        <div className="space-y-2">
+                          {groupPlanFoods(option.foods).map((block, bi) => (
+                            block.group ? (
+                              <div key={bi} className="rounded-md bg-dourado/5 border border-dourado/15 p-2">
+                                <p className="text-[11px] font-semibold text-dourado uppercase tracking-wide mb-1">
+                                  {block.group}{block.isChoice ? ' · escolha 1' : ''}
+                                </p>
+                                <ul className="space-y-0.5">
+                                  {block.items.map((food, fi) => (
+                                    <li key={fi} className="text-xs text-foreground-secondary flex items-start gap-1 pl-1">
+                                      <span className="text-dourado">•</span>
+                                      {food.name} <span className="text-foreground-muted">({formatFoodAmount(food)})</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : (
+                              <div key={bi} className="text-xs text-foreground-secondary flex items-start gap-1">
+                                <span className="text-green-600">•</span>
+                                {block.items[0].name} <span className="text-foreground-muted">({formatFoodAmount(block.items[0])})</span>
+                              </div>
+                            )
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     ))}
                   </div>

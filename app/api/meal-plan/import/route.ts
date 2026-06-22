@@ -14,7 +14,7 @@ function getAdminClient() {
   )
 }
 
-const SYSTEM_PROMPT = `Você é um nutricionista assistente que converte um plano alimentar escrito em texto livre num JSON estruturado para um aplicativo.
+const SYSTEM_PROMPT = `Você é um nutricionista assistente que converte um plano alimentar escrito em texto livre num JSON estruturado para um aplicativo. Seja FIEL e COMPLETO: nunca descarte alimentos nem opções de escolha.
 
 Responda EXCLUSIVAMENTE com JSON válido (sem markdown, sem backticks, sem texto extra), neste formato:
 {
@@ -24,18 +24,25 @@ Responda EXCLUSIVAMENTE com JSON válido (sem markdown, sem backticks, sem texto
   "special_rules": [ { "time": "11:00", "rule": "..." } ],
   "meals": [
     {
-      "type": "breakfast",
-      "name": "Café da manhã",
-      "time": "07:00",
+      "type": "lunch",
+      "name": "Almoço",
+      "time": "12:00",
       "is_optional": false,
       "is_training_day_only": false,
       "notes": "",
+      "total_calories": 0, "total_protein": 0, "total_carbs": 0, "total_fat": 0,
       "options": [
         {
           "option": "A",
-          "name": "Opção 1",
+          "name": "Padrão",
           "foods": [
-            { "name": "pão de fermentação natural", "quantity": 1, "unit": "fatia", "calories": 80, "protein": 3, "carbs": 15, "fat": 1 }
+            { "name": "frango grelhado", "quantity": 120, "unit": "g", "group": "Proteína", "calories": 198, "protein": 37, "carbs": 0, "fat": 4 },
+            { "name": "peixe grelhado", "quantity": 120, "unit": "g", "group": "Proteína", "calories": 158, "protein": 30, "carbs": 0, "fat": 4 },
+            { "name": "arroz", "quantity": 3, "unit": "colher de sopa", "group": "Carboidrato", "calories": 90, "protein": 2, "carbs": 19, "fat": 0 },
+            { "name": "batata-doce cozida", "quantity": 100, "unit": "g", "group": "Carboidrato", "calories": 86, "protein": 2, "carbs": 20, "fat": 0 },
+            { "name": "legumes cozidos (abobrinha, chuchu, brócolis...)", "quantity": 140, "unit": "g", "calories": 40, "protein": 3, "carbs": 7, "fat": 0 },
+            { "name": "salada crua", "quantity": null, "unit": "à vontade", "calories": 20, "protein": 1, "carbs": 3, "fat": 0 },
+            { "name": "azeite de oliva extra virgem", "quantity": 1, "unit": "colher de chá", "calories": 40, "protein": 0, "carbs": 0, "fat": 4 }
           ]
         }
       ]
@@ -44,31 +51,46 @@ Responda EXCLUSIVAMENTE com JSON válido (sem markdown, sem backticks, sem texto
 }
 
 REGRAS DE CONVERSÃO:
-1. Cada bloco "HH:MM – Nome" vira uma refeição. Mapeie o "type" assim:
-   - "Café da manhã" -> breakfast
-   - "Lanche da manhã" -> morning_snack
-   - "Almoço" -> lunch
-   - "Lanche da tarde" -> afternoon_snack
-   - "Jantar" -> dinner
-   - "Ceia" -> supper
-   - "Pré-treino" -> pre_workout
-   - "Ao acordar" -> wake_up
-   Se não reconhecer, escolha o mais próximo pelo horário.
-2. "Opção 1", "Opção 2"... viram entradas em "options" (option "A", "B", "C"... na ordem). Dê um "name" curto e útil (ex.: "Opção 1" ou o alimento principal).
-3. Se a refeição NÃO tiver opções explícitas (apenas uma lista de alimentos, possivelmente agrupados por "Proteína/Carboidrato/Legumes/Salada/Gordura"), crie UMA única opção (option "A", name "Padrão") contendo TODOS os alimentos. Ignore os rótulos de grupo — eles não são alimentos.
-4. Quantidades: PRESERVE as medidas caseiras exatamente como escritas. "quantity" é o número e "unit" é a medida em minúsculo:
-   - "30 g de queijo" -> { "name": "queijo", "quantity": 30, "unit": "g" }
-   - "3 colheres de sopa de arroz" -> { "name": "arroz", "quantity": 3, "unit": "colher de sopa" }
-   - "1 concha pequena de feijão" -> { "name": "feijão", "quantity": 1, "unit": "concha pequena" }
-   - "1 fatia de pão" -> { "name": "pão", "quantity": 1, "unit": "fatia" }
-5. "À vontade" -> { "quantity": null, "unit": "à vontade" }. Quando não houver quantidade, use quantity null e unit null.
-6. "Mesmo padrão do almoço" (ou referências a outra refeição): COPIE os alimentos da refeição referenciada para esta.
-7. ESTIME calorias e macros (protein/carbs/fat em gramas) de CADA alimento para a quantidade indicada, usando porções brasileiras padrão (ex.: 1 colher de sopa de arroz cozido ≈ 25 g; 1 concha de feijão ≈ 90 g). Arredonde para inteiros. Para itens "à vontade" (saladas/folhas), use valores baixos (ex.: 15-30 kcal). Nunca deixe os macros em branco — sempre estime.
-8. "daily_targets" = soma estimada da PRIMEIRA opção (option "A") de cada refeição.
-9. "special_rules": observações que não são alimentos (ex.: "Água ou bebida vegetal") podem virar uma regra com o horário da refeição, OU um food simples se for claramente um item. Use bom senso.
-10. "name": gere um nome curto para o plano (ex.: "Plano Alimentar"). "description" pode ficar vazio.
-11. is_optional/is_training_day_only = false, exceto se o texto disser o contrário.
-Nunca invente refeições que não estão no texto. Use ponto decimal.`
+1. Cada bloco "HH:MM – Nome" (ou "HH:MMh – Nome") vira uma refeição. Mapeie "type":
+   - Café da manhã -> breakfast | Lanche da manhã -> morning_snack | Almoço -> lunch
+   - Lanche da tarde -> afternoon_snack | Jantar -> dinner | Ceia -> supper
+   - Pré-treino/Antes do treino/Treino -> pre_workout | Ao acordar -> wake_up
+   "Se houver fome" e similares -> snack opcional (is_optional=true). Use o horário para escolher se não reconhecer.
+
+2. OPÇÕES DE REFEIÇÃO ("Opção 1", "Opção 2", "Opção 3 – Crepioca"...): cada uma vira uma entrada em "options" (option "A","B","C"... na ordem). "name" = o nome da opção/receita (ex.: "Crepioca", "Bolinho de banana") ou "Opção N".
+
+3. GRUPOS DE ESCOLHA — MUITO IMPORTANTE (não perca opções!):
+   Quando um componente da refeição traz VÁRIAS alternativas a escolher (escolher 1), gere UM alimento para CADA alternativa, todas com o MESMO "group" (o nome do componente). Reconheça estes casos:
+   - "Proteína (escolher 1): A / B / C" (em linhas ou separadas por vírgula)
+   - "Proteína (120 g): carne, frango, peixe, hambúrguer ou 3 ovos" (todas viram itens do group "Proteína")
+   - "Carboidrato (escolher 1): arroz + feijão; 100 g de mandioca; 100 g de batata-doce; ..."
+   - "1 fruta (escolher 1): kiwi, goiaba, morango..." -> group "Fruta"
+   - "Sobremesa (escolher 1): ..." -> group "Sobremesa"
+   - "A OU B" inline (ex.: "1 pão francês OU 2 fatias de pão de forma") -> os dois viram itens do mesmo group (ex.: "Pão").
+   Groups comuns: "Proteína", "Carboidrato", "Fruta", "Sobremesa", "Pão", "Legumes". MANTENHA TODAS as alternativas — esse é o erro mais comum: NÃO reduza a uma só.
+
+4. ALIMENTOS FIXOS (sem escolha) ficam SEM "group": ex.: "Legumes cozidos: 140 g", "Salada à vontade", "1 colher de chá de azeite", itens soltos de uma Opção. Não invente group para eles.
+
+5. REFEIÇÃO SEM "Opção" mas com componentes (típico do Almoço/Jantar): crie UMA única opção (option "A", name "Padrão") com todos os componentes — os de escolha viram groups (regra 3), os fixos sem group (regra 4).
+
+6. Quantidades: PRESERVE as medidas caseiras. "quantity"=número, "unit"=medida em minúsculo:
+   "30 g de queijo" -> {quantity:30, unit:"g"}; "3 colheres de sopa de arroz" -> {quantity:3, unit:"colher de sopa"};
+   "1 concha pequena de feijão" -> {quantity:1, unit:"concha pequena"}; "1 fatia de pão" -> {quantity:1, unit:"fatia"}.
+   "À vontade" -> {quantity:null, unit:"à vontade"}. Sem quantidade clara -> quantity null.
+
+7. REFERÊNCIAS a outra refeição ("Mesmo padrão do almoço", "Seguir as mesmas opções do almoço", "Repetir o almoço"): COPIE integralmente as opções/foods (incluindo os groups de escolha) da refeição referenciada.
+
+8. RECEITAS / "Modo de preparo" / "Marmitas" (combinações sugeridas numeradas): coloque o passo a passo e as sugestões no "notes" da refeição. Os ingredientes da receita entram como foods normais.
+
+9. ESTIME calorias e macros (protein/carbs/fat em g) de CADA alimento para a quantidade indicada (porções brasileiras: 1 colher de sopa de arroz cozido ≈ 25 g; 1 concha de feijão ≈ 90 g; saladas "à vontade" ≈ 15-30 kcal). Arredonde para inteiros. Sempre estime — nunca deixe em branco.
+
+10. TOTAIS por refeição (total_calories/total_protein/total_carbs/total_fat): some os alimentos FIXOS + UMA opção de cada group de escolha (use a primeira de cada group). Não some todas as alternativas de um group.
+
+11. "daily_targets": some os totais (regra 10) da PRIMEIRA opção (option "A") de cada refeição. Se o texto trouxer uma estimativa/intervalo (ex.: "1450–1520 kcal"), use o ponto médio.
+
+12. "special_rules": regras gerais que não são alimento (ex.: "SEM alho e SEM cebola", "beber água"). "name" do plano: curto (ex.: "Plano Alimentar"); pode usar o nome da pessoa/título se houver.
+
+Nunca invente refeições. Use ponto decimal.`
 
 export async function POST(request: NextRequest) {
   try {
