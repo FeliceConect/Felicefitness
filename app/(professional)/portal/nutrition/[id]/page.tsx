@@ -862,17 +862,33 @@ export default function MealPlanDetailPage() {
                                 return (
                                   <div
                                     key={altIndex}
-                                    className="flex items-center justify-between bg-dourado/10 rounded px-3 py-2 text-sm"
+                                    className="flex items-start justify-between gap-2 bg-dourado/10 rounded px-3 py-2 text-sm"
                                   >
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                       <span className="text-dourado font-medium">{optionLabel}</span>
-                                      <span className="text-foreground-secondary ml-2">
-                                        {altFoods.map(f => f.name).join(', ')}
-                                      </span>
+                                      <div className="mt-1 space-y-0.5">
+                                        {altFoods.map((f, i) => {
+                                          const prevGroup = i > 0 ? altFoods[i - 1].group : undefined
+                                          const showHeader = !!f.group && f.group !== prevGroup
+                                          const groupCount = f.group ? altFoods.filter(x => x.group === f.group).length : 0
+                                          return (
+                                            <Fragment key={i}>
+                                              {showHeader && (
+                                                <p className="text-[10px] font-semibold text-dourado/80 uppercase tracking-wide">
+                                                  {f.group}{groupCount > 1 ? ' · escolha 1' : ''}
+                                                </p>
+                                              )}
+                                              <p className="text-xs text-foreground-secondary">
+                                                {f.group ? '• ' : ''}{f.name} <span className="text-foreground-muted">({formatFoodAmount(f)})</span>
+                                              </p>
+                                            </Fragment>
+                                          )
+                                        })}
+                                      </div>
                                     </div>
                                     <button
                                       onClick={() => removeAlternative(dayIndex, mealIndex, altIndex)}
-                                      className="text-red-500 hover:text-red-600 ml-2"
+                                      className="text-red-500 hover:text-red-600 flex-shrink-0"
                                     >
                                       <X className="w-4 h-4" />
                                     </button>
