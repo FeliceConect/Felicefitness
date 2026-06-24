@@ -47,9 +47,9 @@ export default function AlimentacaoPage() {
       // Support both formats: named alternatives and food arrays
       alternatives?: { option: string; name: string; foods: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[] }[] | { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[][]
     },
-    alternativeIndex?: number
+    chosenFoods?: { name: string; quantity: number; unit: string; calories?: number; protein?: number; carbs?: number; fat?: number }[]
   ) => {
-    const success = await completeMeal(meal, alternativeIndex)
+    const success = await completeMeal(meal, chosenFoods)
     if (success) {
       // Refresh daily meals to update totals
       window.location.reload()

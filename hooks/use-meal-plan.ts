@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { format, startOfWeek, addDays, isToday } from 'date-fns'
+import { format } from 'date-fns'
 import { getTodayDateSP } from '@/lib/utils/date'
 
 interface Food {
@@ -190,27 +190,17 @@ export function useMealPlan() {
     }
   }, [supabase])
 
-  // Completar refeição
+  // Completar refeição — registra exatamente o que o paciente comeu.
+  // `chosenFoods` já vem resolvido pelo card (fixos + 1 opção por grupo
+  // "escolher 1", ou os alimentos da opção A/B/C escolhida).
   const completeMeal = useCallback(async (
     meal: PlannedMeal,
-    alternativeIndex?: number
+    chosenFoods?: Food[]
   ): Promise<boolean> => {
     try {
       const today = getTodayDateSP()
 
-      // Get foods from the selected alternative
-      let foods: Food[] = meal.foods
-      if (alternativeIndex !== undefined && meal.alternatives) {
-        const alt = meal.alternatives[alternativeIndex]
-        // Check if it's a named alternative or a food array
-        if ('foods' in alt && 'option' in alt) {
-          // Named alternative (new format)
-          foods = (alt as MealAlternative).foods
-        } else if (Array.isArray(alt)) {
-          // Food array (legacy format)
-          foods = alt as Food[]
-        }
-      }
+      const foods: Food[] = (chosenFoods && chosenFoods.length > 0) ? chosenFoods : meal.foods
 
       const response = await fetch('/api/client/meal-plan/complete', {
         method: 'POST',
@@ -219,7 +209,7 @@ export function useMealPlan() {
           planMealId: meal.id,
           date: today,
           completedFoods: foods,
-          usedAlternative: alternativeIndex !== undefined
+          usedAlternative: false
         })
       })
 
