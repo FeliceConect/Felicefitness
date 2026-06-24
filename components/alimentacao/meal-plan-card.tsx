@@ -31,35 +31,45 @@ interface Food {
   choice?: boolean
 }
 
-// Lista de alimentos agrupando os conjuntos de escolha ("escolher 1")
+// Lista de alimentos do plano, deixando claro o que é FIXO (sempre comer, com ✓)
+// e o que é ESCOLHA ("escolher 1", em card com bolinhas tipo seleção).
 function FoodGroupList({ foods, compact = false }: { foods: Food[]; compact?: boolean }) {
   const blocks = groupPlanFoods(foods)
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       {blocks.map((block, bi) => {
+        // Alimento fixo — sempre incluir
         if (!block.group) {
           const f = block.items[0]
           return (
-            <div key={bi} className="flex items-center justify-between text-sm gap-2">
-              <span className="text-foreground-secondary">{f.name}</span>
-              <span className="text-foreground-secondary whitespace-nowrap">
+            <div key={bi} className="flex items-center justify-between gap-2 text-sm px-0.5">
+              <span className="flex items-center gap-2 text-foreground min-w-0">
+                <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                <span className="truncate">{f.name}</span>
+              </span>
+              <span className="text-foreground-secondary whitespace-nowrap text-xs">
                 {formatFoodAmount(f)}{!compact && f.calories ? ` • ${f.calories} kcal` : ''}
               </span>
             </div>
           )
         }
+        // Grupo de escolha — escolher 1
         return (
-          <div key={bi} className="rounded-md bg-dourado/5 border border-dourado/15 p-2">
-            <p className="text-[11px] font-semibold text-dourado uppercase tracking-wide mb-1">
-              {block.group}{block.isChoice ? ' · escolha 1' : ''}
-            </p>
-            <div className="space-y-0.5">
+          <div key={bi} className="rounded-lg border border-dourado/30 bg-dourado/5 overflow-hidden">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-dourado/15">
+              <ArrowRightLeft className="w-3 h-3 text-dourado flex-shrink-0" />
+              <span className="text-[11px] font-bold text-dourado uppercase tracking-wide">
+                Escolha 1 · {block.group}
+              </span>
+            </div>
+            <div className="divide-y divide-dourado/10">
               {block.items.map((f, fi) => (
-                <div key={fi} className="flex items-center justify-between text-sm gap-2 pl-1">
-                  <span className="text-foreground-secondary flex items-center gap-1">
-                    <span className="text-dourado">•</span>{f.name}
+                <div key={fi} className="flex items-center justify-between gap-2 text-sm px-3 py-1.5">
+                  <span className="flex items-center gap-2 text-foreground min-w-0">
+                    <span className="w-3 h-3 rounded-full border-2 border-dourado/40 flex-shrink-0" />
+                    <span className="truncate">{f.name}</span>
                   </span>
-                  <span className="text-foreground-secondary whitespace-nowrap">{formatFoodAmount(f)}</span>
+                  <span className="text-foreground-secondary whitespace-nowrap text-xs">{formatFoodAmount(f)}</span>
                 </div>
               ))}
             </div>
@@ -315,6 +325,16 @@ export function MealPlanCard({
                             </span>
                           )}
                         </div>
+                        {!isCustomMeal && (displayFoods || []).some(f => f.group) && (
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-foreground-muted">
+                            <span className="flex items-center gap-1">
+                              <Check className="w-3 h-3 text-green-500" /> sempre incluir
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="w-2.5 h-2.5 rounded-full border-2 border-dourado/40 inline-block" /> escolha 1 do grupo
+                            </span>
+                          </div>
+                        )}
                         <FoodGroupList foods={displayFoods || []} />
                       </div>
 
