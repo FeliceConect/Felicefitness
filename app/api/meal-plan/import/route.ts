@@ -157,7 +157,9 @@ export async function POST(request: NextRequest) {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       temperature: 0.2,
-      max_tokens: 4000,
+      // Planos grandes (muitas opções "escolher 1" + macros por alimento)
+      // geram JSON longo; teto alto evita truncar e quebrar o JSON.
+      max_tokens: 16000,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -176,14 +178,20 @@ export async function POST(request: NextRequest) {
     }).catch(() => {})
 
     const raw = response.choices[0]?.message?.content || ''
+    const truncated = response.choices[0]?.finish_reason === 'length'
     let parsed: Record<string, unknown>
     try {
       const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
       parsed = JSON.parse(cleaned)
     } catch {
-      console.error('Erro parse meal-plan import:', raw)
+      console.error('Erro parse meal-plan import (truncated=' + truncated + '):', raw.slice(-400))
       return NextResponse.json(
-        { success: false, error: 'A IA não retornou um plano válido. Revise o texto e tente novamente.' },
+        {
+          success: false,
+          error: truncated
+            ? 'O plano é muito grande e a IA cortou no meio. Importe uma parte por vez (ex.: separe café/almoço de lanche/jantar) e tente novamente.'
+            : 'A IA não retornou um plano válido. Revise o texto e tente novamente.',
+        },
         { status: 422 }
       )
     }
