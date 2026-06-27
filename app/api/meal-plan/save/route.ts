@@ -25,7 +25,7 @@ interface MealOption {
 interface MealSlot {
   type: string
   name: string
-  time: string
+  time?: string | null
   target_protein?: number
   target_carbs?: number
   target_fat?: number
@@ -201,6 +201,9 @@ export async function POST(request: NextRequest) {
       await deactivateOtherActivePlans(supabaseAdmin, targetClientId, mealPlan.id)
     }
 
+    // A partir daqui, se algo falhar, removemos o plano recém-criado para não
+    // deixar um plano "em branco" (sem dias/refeições).
+    try {
     // Criar dias da semana (0-6, Dom-Sáb)
     // Para planos sem variação por dia, criar um "dia padrão" ou todos os 7 dias
     const WEEKDAY_NAMES = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
@@ -227,6 +230,7 @@ export async function POST(request: NextRequest) {
 
     if (days.length === 0) {
       console.error('No days created')
+      await supabaseAdmin.from('fitness_meal_plans').delete().eq('id', mealPlan.id)
       return NextResponse.json(
         { error: 'Erro ao criar dias do plano' },
         { status: 500 }
@@ -239,12 +243,15 @@ export async function POST(request: NextRequest) {
 
       const mealPromises = plan.meals.map((meal, index) => {
         // Extrair horário
-        const timeMatch = meal.time.match(/(\d{1,2}:\d{2})/)
+        // meal.time pode ser null (ex.: "Pré-treino" sem horário no texto) — guardar
+        const timeMatch = typeof meal.time === 'string' ? meal.time.match(/(\d{1,2}:\d{2})/) : null
         const scheduledTime = timeMatch ? timeMatch[1] + ':00' : null
 
-        // Primary option (A) vai em foods, resto em alternatives
-        const primaryOption = meal.options[0]
-        const alternatives = meal.options.slice(1).map(opt => ({
+        // Primary option (A) vai em foods, resto em alternatives.
+        // meal.options pode estar ausente/vazio — guardar para não quebrar o save.
+        const mealOptions = Array.isArray(meal.options) ? meal.options : []
+        const primaryOption = mealOptions[0]
+        const alternatives = mealOptions.slice(1).map(opt => ({
           option: opt.option,
           name: opt.name,
           foods: opt.foods
@@ -310,6 +317,11 @@ export async function POST(request: NextRequest) {
       })
 
       await Promise.all(mealPromises)
+    }
+    } catch (stepError) {
+      // Remove o plano órfão para não ficar um plano em branco na lista
+      await supabaseAdmin.from('fitness_meal_plans').delete().eq('id', mealPlan.id)
+      throw stepError
     }
 
     return NextResponse.json({
