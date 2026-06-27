@@ -47,6 +47,7 @@ interface MealPlan {
   client_id?: string
   client?: Client
   created_at: string
+  updated_at?: string
 }
 
 const GOAL_LABELS: Record<string, string> = {
@@ -404,6 +405,19 @@ export default function NutritionPage() {
                     )}
                   </div>
                 )}
+
+                {/* Datas: criação e (se houver) última edição */}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-3 text-[11px] text-foreground-muted">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Criado {new Date(plan.created_at).toLocaleDateString('pt-BR')}
+                  </span>
+                  {plan.updated_at && new Date(plan.updated_at).getTime() - new Date(plan.created_at).getTime() > 60000 && (
+                    <span className="text-dourado">
+                      · Editado {new Date(plan.updated_at).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="px-4 py-3 bg-background-elevated border-t border-border">
