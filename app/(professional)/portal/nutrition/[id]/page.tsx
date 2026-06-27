@@ -145,6 +145,7 @@ export default function MealPlanDetailPage() {
   const [showAddMealModal, setShowAddMealModal] = useState<{ dayIndex: number } | null>(null)
   const [showAddFoodModal, setShowAddFoodModal] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
   const [editingFood, setEditingFood] = useState<{ dayIndex: number; mealIndex: number; foodIndex: number } | null>(null)
+  const [editingAltFood, setEditingAltFood] = useState<{ dayIndex: number; mealIndex: number; altIndex: number; foodIndex: number; isNew: boolean } | null>(null)
   const [showAlternativesModal, setShowAlternativesModal] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
   const [showClientModal, setShowClientModal] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -480,6 +481,45 @@ export default function MealPlanDetailPage() {
       meal.alternatives.splice(altIndex, 1)
     }
 
+    setPlan({ ...plan, days: newDays })
+    setHasChanges(true)
+  }
+
+  // Acessa o array de alimentos de uma variação (suporta os 2 formatos)
+  function altFoodsRef(meal: Meal, altIndex: number): Food[] | null {
+    const alt = meal.alternatives?.[altIndex]
+    if (!alt) return null
+    return ('option' in alt && 'foods' in alt) ? (alt as MealAlternative).foods : (alt as Food[])
+  }
+
+  function updateAlternativeFood(dayIndex: number, mealIndex: number, altIndex: number, foodIndex: number, food: Food) {
+    if (!plan) return
+    const newDays = [...plan.days]
+    const foods = altFoodsRef(newDays[dayIndex].meals[mealIndex], altIndex)
+    if (!foods) return
+    foods[foodIndex] = food
+    setPlan({ ...plan, days: newDays })
+    setHasChanges(true)
+    setEditingAltFood(null)
+  }
+
+  function addAlternativeFood(dayIndex: number, mealIndex: number, altIndex: number, food: Food) {
+    if (!plan) return
+    const newDays = [...plan.days]
+    const foods = altFoodsRef(newDays[dayIndex].meals[mealIndex], altIndex)
+    if (!foods) return
+    foods.push(food)
+    setPlan({ ...plan, days: newDays })
+    setHasChanges(true)
+    setEditingAltFood(null)
+  }
+
+  function removeAlternativeFood(dayIndex: number, mealIndex: number, altIndex: number, foodIndex: number) {
+    if (!plan) return
+    const newDays = [...plan.days]
+    const foods = altFoodsRef(newDays[dayIndex].meals[mealIndex], altIndex)
+    if (!foods) return
+    foods.splice(foodIndex, 1)
     setPlan({ ...plan, days: newDays })
     setHasChanges(true)
   }
@@ -860,37 +900,59 @@ export default function MealPlanDetailPage() {
                                   : `Opção ${altIndex + 2}`
 
                                 return (
-                                  <div
-                                    key={altIndex}
-                                    className="flex items-start justify-between gap-2 bg-dourado/10 rounded px-3 py-2 text-sm"
-                                  >
-                                    <div className="flex-1 min-w-0">
-                                      <span className="text-dourado font-medium">{optionLabel}</span>
-                                      <div className="mt-1 space-y-0.5">
-                                        {altFoods.map((f, i) => {
-                                          const prevGroup = i > 0 ? altFoods[i - 1].group : undefined
-                                          const showHeader = !!f.group && f.group !== prevGroup
-                                          const groupCount = f.group ? altFoods.filter(x => x.group === f.group).length : 0
-                                          return (
-                                            <Fragment key={i}>
-                                              {showHeader && (
-                                                <p className="text-[10px] font-semibold text-dourado/80 uppercase tracking-wide">
-                                                  {f.group}{groupCount > 1 ? ' · escolha 1' : ''}
-                                                </p>
-                                              )}
-                                              <p className="text-xs text-foreground-secondary">
-                                                {f.group ? '• ' : ''}{f.name} <span className="text-foreground-muted">({formatFoodAmount(f)})</span>
+                                  <div key={altIndex} className="bg-dourado/10 rounded p-2 text-sm">
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                      <span className="text-dourado font-medium truncate">{optionLabel}</span>
+                                      <button
+                                        onClick={() => removeAlternative(dayIndex, mealIndex, altIndex)}
+                                        className="text-red-500 hover:text-red-600 flex-shrink-0"
+                                        title="Remover variação"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                    <div className="space-y-1">
+                                      {altFoods.map((f, i) => {
+                                        const prevGroup = i > 0 ? altFoods[i - 1].group : undefined
+                                        const showHeader = !!f.group && f.group !== prevGroup
+                                        const groupCount = f.group ? altFoods.filter(x => x.group === f.group).length : 0
+                                        return (
+                                          <Fragment key={i}>
+                                            {showHeader && (
+                                              <p className="text-[10px] font-semibold text-dourado/80 uppercase tracking-wide">
+                                                {f.group}{groupCount > 1 ? ' · escolha 1' : ''}
                                               </p>
-                                            </Fragment>
-                                          )
-                                        })}
-                                      </div>
+                                            )}
+                                            <div className="flex items-center justify-between gap-2 bg-white rounded px-2 py-1 border border-border">
+                                              <span className="text-xs text-foreground-secondary truncate">
+                                                {f.group ? '• ' : ''}{f.name} <span className="text-foreground-muted">({formatFoodAmount(f)})</span>
+                                              </span>
+                                              <div className="flex items-center gap-2 flex-shrink-0">
+                                                <button
+                                                  onClick={() => setEditingAltFood({ dayIndex, mealIndex, altIndex, foodIndex: i, isNew: false })}
+                                                  className="text-foreground-muted hover:text-dourado"
+                                                  title="Editar"
+                                                >
+                                                  <Pencil className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                  onClick={() => removeAlternativeFood(dayIndex, mealIndex, altIndex, i)}
+                                                  className="text-red-500 hover:text-red-600"
+                                                  title="Remover"
+                                                >
+                                                  <X className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </Fragment>
+                                        )
+                                      })}
                                     </div>
                                     <button
-                                      onClick={() => removeAlternative(dayIndex, mealIndex, altIndex)}
-                                      className="text-red-500 hover:text-red-600 flex-shrink-0"
+                                      onClick={() => setEditingAltFood({ dayIndex, mealIndex, altIndex, foodIndex: altFoods.length, isNew: true })}
+                                      className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 mt-1.5"
                                     >
-                                      <X className="w-4 h-4" />
+                                      <Plus className="w-3.5 h-3.5" /> Adicionar alimento
                                     </button>
                                   </div>
                                 )
@@ -960,6 +1022,25 @@ export default function MealPlanDetailPage() {
           onSave={(food) => updateFood(editingFood.dayIndex, editingFood.mealIndex, editingFood.foodIndex, food)}
         />
       )}
+
+      {/* Edit Food Modal — alimento de uma variação */}
+      {editingAltFood && plan && (() => {
+        const meal = plan.days[editingAltFood.dayIndex].meals[editingAltFood.mealIndex]
+        const foods = altFoodsRef(meal, editingAltFood.altIndex) || []
+        const food = editingAltFood.isNew
+          ? ({ name: '', quantity: 0, unit: '' } as Food)
+          : foods[editingAltFood.foodIndex]
+        if (!food) return null
+        return (
+          <EditFoodModal
+            food={food}
+            onClose={() => setEditingAltFood(null)}
+            onSave={(f) => editingAltFood.isNew
+              ? addAlternativeFood(editingAltFood.dayIndex, editingAltFood.mealIndex, editingAltFood.altIndex, f)
+              : updateAlternativeFood(editingAltFood.dayIndex, editingAltFood.mealIndex, editingAltFood.altIndex, editingAltFood.foodIndex, f)}
+          />
+        )
+      })()}
 
       {/* Alternatives Modal */}
       {showAlternativesModal && plan && (
