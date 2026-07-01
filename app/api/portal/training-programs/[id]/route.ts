@@ -210,15 +210,21 @@ export async function PUT(
         .eq('id', id)
     }
 
-    // Se semanas foram fornecidas, atualizar estrutura
+    // Se semanas foram fornecidas, atualizar estrutura.
+    // IMPORTANTE: inserimos a estrutura NOVA primeiro e só apagamos a ANTIGA
+    // no final, quando tudo deu certo. Antes era o contrário (apagava tudo e
+    // recriava); se um INSERT falhasse — ex.: coluna nova ainda não migrada —
+    // o programa ficava ZERADO (dias sem exercícios). Agora, qualquer falha
+    // aborta o save com erro e preserva os dados antigos intactos.
     if (weeks && Array.isArray(weeks)) {
-      // Deletar semanas existentes (cascata remove dias e exercícios)
-      await supabase
+      // Guarda os ids das semanas ANTIGAS antes de inserir as novas
+      const { data: oldWeeks } = await supabase
         .from('fitness_training_weeks')
-        .delete()
+        .select('id')
         .eq('program_id', id)
+      const oldWeekIds: string[] = (oldWeeks || []).map((w: { id: string }) => w.id)
 
-      // Criar novas semanas, dias e exercícios
+      // Criar novas semanas, dias e exercícios (aborta em qualquer erro)
       for (const week of weeks) {
         const { data: programWeek, error: weekError } = await supabase
           .from('fitness_training_weeks')
@@ -233,9 +239,8 @@ export async function PUT(
           .select()
           .single()
 
-        if (weekError) {
-          console.error('Erro ao criar semana:', weekError)
-          continue
+        if (weekError || !programWeek) {
+          throw new Error(`Falha ao criar semana: ${weekError?.message || 'sem retorno'}`)
         }
 
         // Criar dias da semana
@@ -258,15 +263,14 @@ export async function PUT(
             .select()
             .single()
 
-          if (dayError) {
-            console.error('Erro ao criar dia:', dayError)
-            continue
+          if (dayError || !trainingDay) {
+            throw new Error(`Falha ao criar dia: ${dayError?.message || 'sem retorno'}`)
           }
 
-          // Criar exercícios do dia
+          // Criar exercícios do dia (checa erro — não engole mais falhas)
           const exercises = day.exercises || []
           for (const exercise of exercises) {
-            await supabase
+            const { error: exError } = await supabase
               .from('fitness_training_exercises')
               .insert({
                 training_day_id: trainingDay.id,
@@ -294,8 +298,21 @@ export async function PUT(
                 target_distance_km: exercise.targetDistanceKm ?? exercise.target_distance_km ?? null,
                 intensity: exercise.intensity ?? null,
               })
+
+            if (exError) {
+              // Aborta o save inteiro — a estrutura antiga ainda está intacta
+              throw new Error(`Falha ao criar exercício "${exercise.exerciseName ?? exercise.exercise_name}": ${exError.message}`)
+            }
           }
         }
+      }
+
+      // Tudo criado com sucesso → agora sim remove as semanas ANTIGAS
+      if (oldWeekIds.length > 0) {
+        await supabase
+          .from('fitness_training_weeks')
+          .delete()
+          .in('id', oldWeekIds)
       }
     }
 
@@ -307,7 +324,11 @@ export async function PUT(
   } catch (error) {
     console.error('Erro ao processar requisição:', error)
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
+      {
+        success: false,
+        error: 'Erro ao salvar o programa. Nada foi apagado — tente novamente.',
+        details: error instanceof Error ? error.message : 'unknown'
+      },
       { status: 500 }
     )
   }
