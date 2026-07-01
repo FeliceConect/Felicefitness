@@ -738,10 +738,19 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
   }, [])
 
   const addCardio = useCallback((cardio: CompletedCardio) => {
-    setState(prev => ({
-      ...prev,
-      completedCardio: [...prev.completedCardio, cardio]
-    }))
+    setState(prev => {
+      // Cardio prescrito pelo personal: upsert por prescricaoId (re-registrar
+      // substitui em vez de duplicar). Cardio avulso não tem prescricaoId → push.
+      if (cardio.prescricaoId) {
+        const idx = prev.completedCardio.findIndex(c => c.prescricaoId === cardio.prescricaoId)
+        if (idx >= 0) {
+          const next = [...prev.completedCardio]
+          next[idx] = cardio
+          return { ...prev, completedCardio: next }
+        }
+      }
+      return { ...prev, completedCardio: [...prev.completedCardio, cardio] }
+    })
   }, [])
 
   const finishWorkout = useCallback((): WorkoutSummary | null => {

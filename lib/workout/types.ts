@@ -7,6 +7,23 @@ export type ExerciseType = 'strength' | 'cardio' | 'mobility'
 export type CardioExerciseType = 'esteira' | 'bicicleta' | 'eliptico' | 'step' | 'remo' | 'transport' | 'escada' | 'pular_corda' | 'outro'
 export type CardioIntensity = 'leve' | 'moderado' | 'intenso' | 'muito_intenso'
 
+/**
+ * Cardio PRESCRITO pelo personal dentro do programa de treino.
+ * Aparece como um card de cardio no treino do paciente (não como
+ * série × rep). Ao registrar, vira um CompletedCardio e pontua como
+ * cardio (extra) + conta para a sequência.
+ */
+export interface PrescribedCardio {
+  id: string
+  cardio_type: CardioExerciseType
+  nome: string
+  target_duration_min?: number
+  target_distance_km?: number
+  intensity?: CardioIntensity
+  instructions?: string
+  ordem?: number
+}
+
 export interface CardioExercise {
   id: string
   tipo: CardioExerciseType
@@ -37,6 +54,8 @@ export interface WorkoutTemplate {
   rodadas?: number // para circuito
   descanso_rodada?: number // segundos
   exercicios: TemplateExercise[]
+  /** Cardio prescrito pelo personal (fora do fluxo de séries/reps). */
+  cardioPlanejado?: PrescribedCardio[]
 }
 
 /** Tipo da série: por repetições ou por tempo (isometria). */
@@ -81,6 +100,8 @@ export interface Workout {
   energia_pos?: number // 1-5
   created_at: string
   exercicios: WorkoutExercise[]
+  /** Cardio prescrito pelo personal para este treino. */
+  cardioPlanejado?: PrescribedCardio[]
 }
 
 export interface WorkoutExercise {
@@ -141,6 +162,8 @@ export interface CompletedCardio {
   calorias: number
   met?: number // MET value used for calculation
   notas?: string
+  /** Vincula este registro a um cardio prescrito pelo personal (upsert por id). */
+  prescricaoId?: string
 }
 
 export interface PersonalRecord {

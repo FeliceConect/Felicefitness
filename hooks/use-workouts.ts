@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { format, startOfWeek, addDays, isToday, isBefore } from 'date-fns'
 import { computeWeeklyTrainingSlots } from '@/lib/workout/weekly-rotation'
 import { getTodayISO } from '@/lib/utils/date'
-import type { Workout, WorkoutTemplate, DayWorkout, WorkoutExercise } from '@/lib/workout/types'
+import type { Workout, WorkoutTemplate, DayWorkout, WorkoutExercise, PrescribedCardio, CardioExerciseType, CardioIntensity } from '@/lib/workout/types'
 import { normalizeCircuitGroups } from '@/lib/workout/normalize-circuits'
+import { isCardioExercise } from '@/lib/workout/cardio'
 
 // Tipos para programas de treino do profissional
 interface TrainingProgram {
@@ -61,8 +62,13 @@ interface TrainingExercise {
   notes: string | null
   video_url: string | null
   instructions: string | null
-  set_type?: 'reps' | 'time' | null
+  set_type?: 'reps' | 'time' | 'cardio' | null
   circuit_group?: number | null
+  // Campos de cardio prescrito (set_type='cardio')
+  cardio_type?: string | null
+  target_duration_min?: number | null
+  target_distance_km?: number | null
+  intensity?: string | null
 }
 
 interface UseWorkoutsReturn {
@@ -160,7 +166,6 @@ interface DBWorkoutSet {
 export function useWorkouts(): UseWorkoutsReturn {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([])
   const [workouts, setWorkouts] = useState<DBWorkout[]>([])
-  const [trainingProgram, setTrainingProgram] = useState<TrainingProgram | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -188,7 +193,6 @@ export function useWorkouts(): UseWorkoutsReturn {
           const programResult = await programResponse.json()
           if (programResult.success && programResult.program) {
             programData = programResult.program as TrainingProgram
-            setTrainingProgram(programData)
           }
         }
       } catch (programError) {
@@ -248,33 +252,56 @@ export function useWorkouts(): UseWorkoutsReturn {
             anchorDate: programData.starts_at || programData.created_at,
           })
 
-          convertedTemplates = slots.map(({ day, dayOfWeek }) => ({
-            id: day.id,
-            nome: day.name || `Treino ${String.fromCharCode(65 + splitDays.indexOf(day))}`,
-            tipo: 'tradicional' as const,
-            fase: 'base' as const,
-            dia_semana: dayOfWeek,
-            duracao_estimada: day.estimated_duration || programData.session_duration || 60,
-            exercicios: (day.exercises || [])
+          convertedTemplates = slots.map(({ day, dayOfWeek }) => {
+            const sortedExercises = (day.exercises || [])
+              .slice()
               .sort((a: TrainingExercise, b: TrainingExercise) => a.order_index - b.order_index)
+
+            // Cardio prescrito é separado do fluxo de séries/reps: vira um
+            // card de cardio no app (e pontua como cardio), não um exercício
+            // de força com séries × reps.
+            const cardioPlanejado: PrescribedCardio[] = sortedExercises
+              .filter((ex: TrainingExercise) => isCardioExercise(ex))
               .map((ex: TrainingExercise) => ({
                 id: ex.id,
-                exercise_id: ex.id,
+                cardio_type: (ex.cardio_type as CardioExerciseType) || 'esteira',
                 nome: ex.exercise_name,
-                ordem: ex.order_index,
-                series: ex.sets,
-                repeticoes: ex.reps || (ex.set_type === 'time' ? '30' : '12'),
-                descanso: ex.rest_seconds || 60,
-                carga_sugerida: ex.weight_suggestion ? parseFloat(ex.weight_suggestion) : undefined,
-                is_superset: false,
-                video_url: ex.video_url || undefined,
+                target_duration_min: ex.target_duration_min ?? undefined,
+                target_distance_km: ex.target_distance_km ?? undefined,
+                intensity: (ex.intensity as CardioIntensity) || undefined,
                 instructions: ex.instructions || undefined,
-                notas: ex.notes || undefined,
-                set_type: (ex.set_type as 'reps' | 'time' | undefined) || 'reps',
-                tempo_segundos: ex.set_type === 'time' ? parseInt(ex.reps || '30') || 30 : undefined,
-                circuit_group: ex.circuit_group ?? null,
+                ordem: ex.order_index,
               }))
-          }))
+
+            return {
+              id: day.id,
+              nome: day.name || `Treino ${String.fromCharCode(65 + splitDays.indexOf(day))}`,
+              tipo: 'tradicional' as const,
+              fase: 'base' as const,
+              dia_semana: dayOfWeek,
+              duracao_estimada: day.estimated_duration || programData.session_duration || 60,
+              cardioPlanejado,
+              exercicios: sortedExercises
+                .filter((ex: TrainingExercise) => !isCardioExercise(ex))
+                .map((ex: TrainingExercise) => ({
+                  id: ex.id,
+                  exercise_id: ex.id,
+                  nome: ex.exercise_name,
+                  ordem: ex.order_index,
+                  series: ex.sets,
+                  repeticoes: ex.reps || (ex.set_type === 'time' ? '30' : '12'),
+                  descanso: ex.rest_seconds || 60,
+                  carga_sugerida: ex.weight_suggestion ? parseFloat(ex.weight_suggestion) : undefined,
+                  is_superset: false,
+                  video_url: ex.video_url || undefined,
+                  instructions: ex.instructions || undefined,
+                  notas: ex.notes || undefined,
+                  set_type: (ex.set_type as 'reps' | 'time' | undefined) || 'reps',
+                  tempo_segundos: ex.set_type === 'time' ? parseInt(ex.reps || '30') || 30 : undefined,
+                  circuit_group: ex.circuit_group ?? null,
+                })),
+            }
+          })
         }
       } else {
         // Usar templates do próprio usuário
@@ -399,7 +426,8 @@ export function useWorkouts(): UseWorkoutsReturn {
             set_type: te.set_type || 'reps',
             status: 'pendente' as const
           }))
-        }))
+        })),
+        cardioPlanejado: template.cardioPlanejado
       }
     }
 
@@ -414,7 +442,8 @@ export function useWorkouts(): UseWorkoutsReturn {
       duracao_estimada: 30,
       duracao_real: w.duracao_minutos || undefined,
       created_at: w.created_at,
-      exercicios
+      exercicios,
+      cardioPlanejado: template?.cardioPlanejado
     }
   }, [])
 
@@ -484,7 +513,8 @@ export function useWorkouts(): UseWorkoutsReturn {
               carga_planejada: te.carga_sugerida,
               status: 'pendente' as const
             }))
-          }))
+          })),
+          cardioPlanejado: tpl.cardioPlanejado
         })
       }
 
@@ -691,7 +721,8 @@ export function useWorkouts(): UseWorkoutsReturn {
                 carga_planejada: te.carga_sugerida,
                 status: 'pendente' as const
               }))
-            }))
+            })),
+            cardioPlanejado: template.cardioPlanejado
           }
         }
       }

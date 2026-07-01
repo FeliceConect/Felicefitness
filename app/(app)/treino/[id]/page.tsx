@@ -12,6 +12,7 @@ import { useExerciseHistory } from '@/hooks/use-exercise-history'
 import { formatDuration } from '@/lib/utils/format'
 import { getTodayDateSP } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
+import { cardioEquipmentIcon, cardioIntensityLabel } from '@/lib/workout/cardio'
 
 const typeLabels: Record<string, { label: string; color: string; bg: string }> = {
   tradicional: { label: 'Tradicional', color: 'text-dourado', bg: 'bg-dourado/20' },
@@ -171,6 +172,7 @@ export default function WorkoutDetailPage() {
       </div>
 
       {/* Exercises list — exercícios em circuito ficam num bloco único */}
+      {workout.exercicios.length > 0 && (
       <div className="px-4 mt-8">
         <h2 className="text-lg font-semibold text-foreground mb-4">Exercícios</h2>
         <div className="space-y-3">
@@ -243,6 +245,42 @@ export default function WorkoutDetailPage() {
           })()}
         </div>
       </div>
+      )}
+
+      {/* Cardio prescrito pelo personal */}
+      {workout.cardioPlanejado && workout.cardioPlanejado.length > 0 && (
+        <div className="px-4 mt-8">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <span>🏃</span> Cardio do treino
+          </h2>
+          <div className="space-y-3">
+            {workout.cardioPlanejado.map((c) => {
+              const meta = [
+                c.target_duration_min ? `${c.target_duration_min} min` : null,
+                c.target_distance_km ? `${c.target_distance_km} km` : null,
+                c.intensity ? cardioIntensityLabel(c.intensity) : null,
+              ].filter(Boolean).join(' · ')
+              return (
+                <div
+                  key={c.id}
+                  className="bg-white border border-emerald-500/25 rounded-xl p-4 flex items-center gap-3"
+                >
+                  <span className="text-2xl flex-shrink-0">{cardioEquipmentIcon(c.cardio_type)}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
+                    <p className="text-xs text-foreground-secondary">{meta || 'Cardio livre'}</p>
+                    {c.instructions && (
+                      <p className="text-[11px] text-foreground-muted mt-1 whitespace-pre-wrap leading-relaxed">
+                        {c.instructions}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Action button - positioned above bottom nav */}
       <div className="fixed bottom-20 left-0 right-0 p-4 z-40 bg-gradient-to-t from-background via-background/90 to-transparent pt-8">

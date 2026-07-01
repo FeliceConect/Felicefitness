@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { useProfessional } from '@/hooks/use-professional'
 import { toast } from 'sonner'
+import { CARDIO_EQUIPMENT, CARDIO_INTENSITY, cardioEquipmentLabel, cardioEquipmentIcon, cardioIntensityLabel, isCardioExercise } from '@/lib/workout/cardio'
 
 interface Exercise {
   id?: string
@@ -42,10 +43,19 @@ interface Exercise {
   video_url?: string
   is_warmup: boolean
   order_index: number
-  /** 'reps' (default) ou 'time' (isometria, ex: prancha 30s). */
-  set_type?: 'reps' | 'time'
+  /** 'reps' (default) | 'time' (isometria) | 'cardio' (esteira, bike...). */
+  set_type?: 'reps' | 'time' | 'cardio'
   /** Grupo de circuito: exercícios com mesmo número formam um circuito. */
   circuit_group?: number | null
+  // ─── Cardio (quando set_type === 'cardio') ───
+  /** Equipamento/tipo: esteira, bicicleta, eliptico... (CardioExerciseType). */
+  cardio_type?: string
+  /** Duração-alvo em minutos. */
+  target_duration_min?: number
+  /** Distância-alvo em km (opcional). */
+  target_distance_km?: number
+  /** Intensidade-alvo: leve | moderado | intenso | muito_intenso. */
+  intensity?: string
 }
 
 interface TrainingDay {
@@ -249,6 +259,11 @@ export default function TrainingProgramDetailPage() {
                 orderIndex: exIdx,
                 set_type: ex.set_type ?? 'reps',
                 circuit_group: ex.circuit_group ?? null,
+                // Cardio prescrito
+                cardioType: ex.cardio_type ?? null,
+                targetDurationMin: ex.target_duration_min ?? null,
+                targetDistanceKm: ex.target_distance_km ?? null,
+                intensity: ex.intensity ?? null,
               }))
             }))
           }))
@@ -893,15 +908,38 @@ export default function TrainingProgramDetailPage() {
                                               <Video className="w-3.5 h-3.5 text-dourado" />
                                             </span>
                                           )}
-                                          {exercise.set_type === 'time' && (
+                                          {isCardioExercise(exercise) ? (
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+                                              <Flame className="w-3 h-3 mr-0.5" /> Cardio
+                                            </span>
+                                          ) : exercise.set_type === 'time' && (
                                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-dourado/15 text-dourado border border-dourado/30">
                                               ⏱ Tempo
                                             </span>
                                           )}
                                         </p>
                                         <p className="text-xs text-foreground-secondary truncate">
-                                          {exercise.sets} x {exercise.reps}{exercise.set_type === 'time' ? 's' : ''} | {exercise.rest_seconds}s descanso
-                                          {exercise.is_warmup && ' • aquecimento'}
+                                          {isCardioExercise(exercise) ? (
+                                            <>
+                                              {cardioEquipmentIcon(exercise.cardio_type)} {cardioEquipmentLabel(exercise.cardio_type)}
+                                              {[
+                                                exercise.target_duration_min ? `${exercise.target_duration_min} min` : null,
+                                                exercise.target_distance_km ? `${exercise.target_distance_km} km` : null,
+                                                exercise.intensity ? cardioIntensityLabel(exercise.intensity) : null,
+                                              ].filter(Boolean).length > 0 && (
+                                                <> · {[
+                                                  exercise.target_duration_min ? `${exercise.target_duration_min} min` : null,
+                                                  exercise.target_distance_km ? `${exercise.target_distance_km} km` : null,
+                                                  exercise.intensity ? cardioIntensityLabel(exercise.intensity) : null,
+                                                ].filter(Boolean).join(' · ')}</>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <>
+                                              {exercise.sets} x {exercise.reps}{exercise.set_type === 'time' ? 's' : ''} | {exercise.rest_seconds}s descanso
+                                              {exercise.is_warmup && ' • aquecimento'}
+                                            </>
+                                          )}
                                         </p>
                                       </div>
                                     </div>
@@ -1152,13 +1190,47 @@ function ExerciseFormModal({
     instructions: initialExercise?.instructions ?? '',
     video_url: initialExercise?.video_url ?? '',
     is_warmup: initialExercise?.is_warmup ?? false,
-    set_type: initialExercise?.set_type ?? 'reps' as 'reps' | 'time',
+    // Cardio legado (muscle_group='cardio' sem set_type) já abre como Cardio.
+    set_type: (initialExercise && isCardioExercise(initialExercise)
+      ? 'cardio'
+      : initialExercise?.set_type ?? 'reps') as 'reps' | 'time' | 'cardio',
     circuit_group: initialExercise?.circuit_group?.toString() ?? '',
+    // Cardio
+    cardio_type: initialExercise?.cardio_type ?? 'esteira',
+    target_duration_min: initialExercise?.target_duration_min?.toString() ?? '20',
+    target_distance_km: initialExercise?.target_distance_km?.toString() ?? '',
+    intensity: initialExercise?.intensity ?? 'moderado',
   }))
+
+  const isCardio = formData.set_type === 'cardio'
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!formData.exercise_name) return
+
+    if (isCardio) {
+      // Cardio: sem séries/reps/carga. Marca categoria e grupo como 'cardio'
+      // para o app do paciente reconhecer e pontuar como cardio.
+      onSave({
+        exercise_name: formData.exercise_name,
+        exercise_category: 'cardio',
+        muscle_group: 'cardio',
+        sets: 1,
+        reps: '',
+        rest_seconds: parseInt(formData.rest_seconds) || 60,
+        instructions: formData.instructions,
+        video_url: formData.video_url.trim() || undefined,
+        is_warmup: false,
+        order_index: initialExercise?.order_index ?? 0,
+        set_type: 'cardio',
+        circuit_group: null,
+        cardio_type: formData.cardio_type,
+        target_duration_min: formData.target_duration_min ? parseInt(formData.target_duration_min) : undefined,
+        target_distance_km: formData.target_distance_km ? parseFloat(formData.target_distance_km) : undefined,
+        intensity: formData.intensity,
+      })
+      return
+    }
 
     onSave({
       exercise_name: formData.exercise_name,
@@ -1205,32 +1277,34 @@ function ExerciseFormModal({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Grupo Muscular
-            </label>
-            <select
-              value={formData.muscle_group}
-              onChange={(e) => setFormData({ ...formData, muscle_group: e.target.value })}
-              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
-            >
-              <option value="">Selecione...</option>
-              {MUSCLE_GROUPS.map(mg => (
-                <option key={mg.value} value={mg.value}>{mg.label}</option>
-              ))}
-            </select>
-          </div>
+          {!isCardio && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Grupo Muscular
+              </label>
+              <select
+                value={formData.muscle_group}
+                onChange={(e) => setFormData({ ...formData, muscle_group: e.target.value })}
+                className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
+              >
+                <option value="">Selecione...</option>
+                {MUSCLE_GROUPS.map(mg => (
+                  <option key={mg.value} value={mg.value}>{mg.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Tipo da série: repetição vs tempo (isometria) */}
+          {/* Tipo: repetições | tempo (isometria) | cardio */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Tipo da série
+              Tipo do exercício
             </label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, set_type: 'reps' })}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-2 py-2 rounded-lg text-sm font-medium transition-colors ${
                   formData.set_type === 'reps'
                     ? 'bg-dourado text-white'
                     : 'bg-background-elevated text-foreground-muted hover:bg-border'
@@ -1241,17 +1315,102 @@ function ExerciseFormModal({
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, set_type: 'time' })}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-2 py-2 rounded-lg text-sm font-medium transition-colors ${
                   formData.set_type === 'time'
                     ? 'bg-dourado text-white'
                     : 'bg-background-elevated text-foreground-muted hover:bg-border'
                 }`}
               >
-                Tempo (isometria)
+                Tempo
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, set_type: 'cardio' })}
+                className={`px-2 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                  formData.set_type === 'cardio'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-background-elevated text-foreground-muted hover:bg-border'
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5" /> Cardio
               </button>
             </div>
+            {isCardio && (
+              <p className="text-xs text-foreground-muted mt-1">
+                O paciente registra este cardio no app e ganha pontos de cardio (extra) + sequência.
+              </p>
+            )}
           </div>
 
+          {/* ─── Campos de CARDIO ─── */}
+          {isCardio && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Equipamento</label>
+                <select
+                  value={formData.cardio_type}
+                  onChange={(e) => setFormData({ ...formData, cardio_type: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground focus:outline-none focus:border-dourado"
+                >
+                  {CARDIO_EQUIPMENT.map(eq => (
+                    <option key={eq.value} value={eq.value}>{eq.icon} {eq.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-foreground-secondary mb-1">Duração-alvo (min)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.target_duration_min}
+                    onChange={(e) => setFormData({ ...formData, target_duration_min: e.target.value })}
+                    placeholder="20"
+                    className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-foreground-secondary mb-1">Distância-alvo (km) <span className="text-foreground-muted">opcional</span></label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={formData.target_distance_km}
+                    onChange={(e) => setFormData({ ...formData, target_distance_km: e.target.value })}
+                    placeholder="—"
+                    className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-foreground-secondary mb-1">Intensidade-alvo</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {CARDIO_INTENSITY.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, intensity: opt.value })}
+                      className={`px-1 py-2 rounded-lg text-center transition-colors ${
+                        formData.intensity === opt.value
+                          ? 'bg-emerald-500/15 border border-emerald-500/50'
+                          : 'bg-background-elevated border border-border hover:border-emerald-500/30'
+                      }`}
+                    >
+                      <span className="text-lg block leading-none">{opt.emoji}</span>
+                      <span className="text-[10px] text-foreground-secondary">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-foreground-muted mt-1">
+                  Define quantos pontos o cardio vale: leve 3 · moderado 5 · intenso 8 · máximo 10.
+                </p>
+              </div>
+            </>
+          )}
+
+          {!isCardio && (
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-foreground-secondary mb-1">Séries</label>
@@ -1286,7 +1445,9 @@ function ExerciseFormModal({
               />
             </div>
           </div>
+          )}
 
+          {!isCardio && (
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-foreground-secondary mb-1">Carga Sugerida</label>
@@ -1311,6 +1472,7 @@ function ExerciseFormModal({
               />
             </div>
           </div>
+          )}
 
           <div>
             <label className="block text-xs text-foreground-secondary mb-1">Instruções</label>
@@ -1340,7 +1502,8 @@ function ExerciseFormModal({
             </p>
           </div>
 
-          {/* Circuito: agrupar com outros exercícios */}
+          {/* Circuito: agrupar com outros exercícios (não se aplica a cardio) */}
+          {!isCardio && (
           <div>
             <label className="block text-xs text-foreground-secondary mb-1">
               Circuito (opcional)
@@ -1358,7 +1521,9 @@ function ExerciseFormModal({
               Ex: marque 1 nos 3 exercícios do bi/tri-set.
             </p>
           </div>
+          )}
 
+          {!isCardio && (
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -1368,6 +1533,7 @@ function ExerciseFormModal({
             />
             <span className="text-sm text-foreground">Exercício de aquecimento</span>
           </label>
+          )}
 
           <div className="flex gap-3 pt-4">
             <button

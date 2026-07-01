@@ -25,7 +25,8 @@ const PRCelebration = dynamic(() => import('@/components/treino/pr-celebration')
 const ExerciseVideoModal = dynamic(() => import('@/components/treino/exercise-video-modal').then(m => ({ default: m.ExerciseVideoModal })), { ssr: false })
 const IsometricTimerModal = dynamic(() => import('@/components/treino/isometric-timer-modal').then(m => ({ default: m.IsometricTimerModal })), { ssr: false })
 const CircuitRoundInputModal = dynamic(() => import('@/components/treino/circuit-round-input-modal').then(m => ({ default: m.CircuitRoundInputModal })), { ssr: false })
-import type { CompletedCardio } from '@/lib/workout/types'
+import type { CompletedCardio, PrescribedCardio } from '@/lib/workout/types'
+import { cardioEquipmentIcon, cardioIntensityLabel } from '@/lib/workout/cardio'
 
 function formatTime(seconds: number): string {
   const hrs = Math.floor(seconds / 3600)
@@ -46,6 +47,8 @@ export default function WorkoutExecutionPage() {
   const [showIsometricTimer, setShowIsometricTimer] = useState(false)
   const [showCircuitRound, setShowCircuitRound] = useState(false)
   const [showCardioInput, setShowCardioInput] = useState(false)
+  // Cardio prescrito pelo personal em registro (null = cardio avulso).
+  const [activeCardioPresc, setActiveCardioPresc] = useState<PrescribedCardio | null>(null)
   const [showPRCelebration, setShowPRCelebration] = useState(false)
   const [latestPR, setLatestPR] = useState<{ name: string; weight: number; reps: number } | null>(null)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
@@ -349,11 +352,39 @@ export default function WorkoutExecutionPage() {
     }
   }
 
+  // Abre o modal de cardio para um cardio PRESCRITO pelo personal (pré-preenchido).
+  const openCardioForPrescription = (p: PrescribedCardio) => {
+    setActiveCardioPresc(p)
+    setShowCardioInput(true)
+  }
+
+  // Abre o modal de cardio AVULSO (paciente adiciona um cardio livre).
+  const openManualCardio = () => {
+    setActiveCardioPresc(null)
+    setShowCardioInput(true)
+  }
+
   // Handle cardio addition
   const handleAddCardio = (cardioData: CompletedCardio) => {
     setShowCardioInput(false)
-    addCardio(cardioData)
+    if (activeCardioPresc) {
+      // Vincula ao cardio prescrito (upsert por prescricaoId) e mantém o nome
+      // que o personal definiu para o card.
+      addCardio({ ...cardioData, prescricaoId: activeCardioPresc.id, nome: activeCardioPresc.nome })
+    } else {
+      addCardio(cardioData)
+    }
+    setActiveCardioPresc(null)
   }
+
+  // Cardio prescrito já registrado neste treino?
+  const isCardioDone = (p: PrescribedCardio) =>
+    state.completedCardio.some(c => c.prescricaoId === p.id)
+
+  const cardioPlanejado: PrescribedCardio[] = workout?.cardioPlanejado ?? []
+  // Quando a força termina mas ainda falta cardio prescrito, escondemos a
+  // vista de série (que ficaria toda verde/sem ação) e destacamos o cardio.
+  const showExerciseView = !!currentExercise && state.status !== 'completed'
 
   // Loading state
   if (loading) {
@@ -379,8 +410,13 @@ export default function WorkoutExecutionPage() {
     )
   }
 
+  // Tela de conclusão automática — mas só quando o cardio prescrito também já
+  // foi registrado. Senão o paciente que termina a força antes do cardio
+  // perderia a chance de registrar (a força termina e cairia direto no resumo).
+  const allPrescribedCardioDone = cardioPlanejado.length === 0 || cardioPlanejado.every(isCardioDone)
+
   // Check if workout is completed
-  if (state.status === 'completed') {
+  if (state.status === 'completed' && allPrescribedCardioDone) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <motion.div
@@ -447,8 +483,70 @@ export default function WorkoutExecutionPage() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col px-6 pt-4 pb-2">
+        {/* Cardio prescrito pelo personal — card próprio (não série × rep) */}
+        {cardioPlanejado.length > 0 && (
+          <div className="mb-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-emerald-600 mb-2 flex items-center gap-1">
+              <Zap className="w-3 h-3" /> Cardio do treino
+            </p>
+            <div className="space-y-2">
+              {cardioPlanejado.map((p) => {
+                const done = isCardioDone(p)
+                const metaLinha = [
+                  p.target_duration_min ? `${p.target_duration_min} min` : null,
+                  p.target_distance_km ? `${p.target_distance_km} km` : null,
+                  p.intensity ? cardioIntensityLabel(p.intensity) : null,
+                ].filter(Boolean).join(' · ')
+                return (
+                  <div
+                    key={p.id}
+                    className={cn(
+                      'bg-white border rounded-2xl p-3 flex items-center gap-3',
+                      done ? 'border-emerald-500/40' : 'border-border'
+                    )}
+                  >
+                    <span className="text-2xl flex-shrink-0">{cardioEquipmentIcon(p.cardio_type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{p.nome}</p>
+                      <p className="text-xs text-foreground-secondary">{metaLinha || 'Cardio livre'}</p>
+                      {p.instructions && (
+                        <p className="text-[11px] text-foreground-muted mt-0.5 whitespace-pre-wrap leading-relaxed">
+                          {p.instructions}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={done ? 'outline' : 'gradient'}
+                      className={cn(
+                        'text-xs flex-shrink-0',
+                        done
+                          ? 'border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10'
+                          : 'bg-gradient-to-r from-emerald-500 to-cyan-500'
+                      )}
+                      onClick={() => openCardioForPrescription(p)}
+                    >
+                      {done ? '✓ Feito' : 'Registrar'}
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Força concluída, mas ainda há cardio prescrito a registrar */}
+        {state.status === 'completed' && !allPrescribedCardioDone && (
+          <div className="mb-4 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center">
+            <p className="text-sm font-bold text-emerald-700">💪 Força concluída!</p>
+            <p className="text-xs text-foreground-secondary mt-1">
+              Registre o cardio acima para pontuar, ou finalize o treino.
+            </p>
+          </div>
+        )}
+
         {/* Current exercise — usa view de circuito se aplicável */}
-        {currentExercise && isCurrentInCircuit ? (
+        {showExerciseView && isCurrentInCircuit ? (
           /* ─── VISTA DE CIRCUITO: todos os membros juntos ─── */
           <motion.div
             key={`circuit-${currentExercise.circuit_group}`}
@@ -622,7 +720,7 @@ export default function WorkoutExecutionPage() {
               })}
             </div>
           </motion.div>
-        ) : currentExercise && (
+        ) : showExerciseView && currentExercise && (
           /* ─── VISTA NORMAL (1 exercício) ─── */
           <motion.div
             key={currentExercise.id}
@@ -782,76 +880,91 @@ export default function WorkoutExecutionPage() {
       </div>
 
       {/* Action buttons - Fixed at bottom above nav (considera safe-area do iPhone) */}
-      {currentExercise && (
+      {(currentExercise || cardioPlanejado.length > 0) && (
         <div
           className="fixed left-0 right-0 px-4 pb-3 pt-4 z-40 bg-gradient-to-t from-background via-background to-transparent"
           style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <div className="max-w-lg mx-auto space-y-2">
-            <Button
-              variant="gradient"
-              size="lg"
-              className={cn(
-                'w-full',
-                isCurrentInCircuit && 'bg-gradient-to-r from-vinho to-vinho/80'
-              )}
-              onClick={() => {
-                if (isCurrentInCircuit) {
-                  // Circuito já finalizado: reabrir é edição da última rodada,
-                  // nunca registro de rodada nova (criaria séries fantasma)
-                  if (circuitAllDone) {
-                    handleEditCircuitRound(circuitTotalRounds)
-                  } else {
-                    setShowCircuitRound(true)
-                  }
-                } else if (currentSet?.set_type === 'time') {
-                  setShowIsometricTimer(true)
-                } else {
-                  setShowSetInput(true)
-                }
-              }}
-            >
-              {isCurrentInCircuit
-                ? circuitAllDone
-                  ? `Editar Rodada ${circuitTotalRounds}`
-                  : `Concluir Rodada ${Math.min(circuitCurrentRound, circuitTotalRounds)}`
-                : currentSet?.set_type === 'time'
-                  ? 'Iniciar Isometria'
-                  : 'Concluir Série'}
-            </Button>
+            {showExerciseView ? (
+              <>
+                <Button
+                  variant="gradient"
+                  size="lg"
+                  className={cn(
+                    'w-full',
+                    isCurrentInCircuit && 'bg-gradient-to-r from-vinho to-vinho/80'
+                  )}
+                  onClick={() => {
+                    if (isCurrentInCircuit) {
+                      // Circuito já finalizado: reabrir é edição da última rodada,
+                      // nunca registro de rodada nova (criaria séries fantasma)
+                      if (circuitAllDone) {
+                        handleEditCircuitRound(circuitTotalRounds)
+                      } else {
+                        setShowCircuitRound(true)
+                      }
+                    } else if (currentSet?.set_type === 'time') {
+                      setShowIsometricTimer(true)
+                    } else {
+                      setShowSetInput(true)
+                    }
+                  }}
+                >
+                  {isCurrentInCircuit
+                    ? circuitAllDone
+                      ? `Editar Rodada ${circuitTotalRounds}`
+                      : `Concluir Rodada ${Math.min(circuitCurrentRound, circuitTotalRounds)}`
+                    : currentSet?.set_type === 'time'
+                      ? 'Iniciar Isometria'
+                      : 'Concluir Série'}
+                </Button>
 
-            <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={skipSet}
+                  >
+                    Pular Série
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={skipExercise}
+                  >
+                    Pular Exercício
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700"
+                    onClick={openManualCardio}
+                  >
+                    <Zap className="w-3 h-3 mr-1" />
+                    Cardio
+                    {state.completedCardio.length > 0 && (
+                      <span className="ml-1 bg-emerald-500 text-white text-[10px] px-1.5 rounded-full">
+                        {state.completedCardio.length}
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              /* Treino só de cardio (sem exercícios de força): adicionar cardio avulso */
               <Button
                 variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={skipSet}
+                size="lg"
+                className="w-full border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700"
+                onClick={openManualCardio}
               >
-                Pular Série
+                <Zap className="w-4 h-4 mr-1" />
+                Adicionar cardio
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={skipExercise}
-              >
-                Pular Exercício
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700"
-                onClick={() => setShowCardioInput(true)}
-              >
-                <Zap className="w-3 h-3 mr-1" />
-                Cardio
-                {state.completedCardio.length > 0 && (
-                  <span className="ml-1 bg-emerald-500 text-white text-[10px] px-1.5 rounded-full">
-                    {state.completedCardio.length}
-                  </span>
-                )}
-              </Button>
-            </div>
+            )}
 
             <Button
               variant="ghost"
@@ -917,11 +1030,18 @@ export default function WorkoutExecutionPage() {
         />
       )}
 
-      {/* Cardio input modal */}
+      {/* Cardio input modal — pré-preenchido quando é um cardio prescrito */}
       <CardioInputModal
         isOpen={showCardioInput}
+        userWeight={userWeightKg}
+        initial={activeCardioPresc ? {
+          tipo: activeCardioPresc.cardio_type,
+          duracao: activeCardioPresc.target_duration_min,
+          distancia: activeCardioPresc.target_distance_km,
+          intensidade: activeCardioPresc.intensity,
+        } : undefined}
         onComplete={handleAddCardio}
-        onCancel={() => setShowCardioInput(false)}
+        onCancel={() => { setShowCardioInput(false); setActiveCardioPresc(null) }}
       />
 
       {/* Rest timer modal */}

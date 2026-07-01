@@ -10,6 +10,13 @@ import type { CardioExerciseType, CardioIntensity, CompletedCardio } from '@/lib
 interface CardioInputModalProps {
   isOpen: boolean
   userWeight?: number // kg - para cálculo preciso de calorias
+  /** Pré-preenchimento (ex.: cardio prescrito pelo personal). */
+  initial?: {
+    tipo?: CardioExerciseType
+    duracao?: number
+    distancia?: number
+    intensidade?: CardioIntensity
+  }
   onComplete: (data: CompletedCardio) => void
   onCancel: () => void
 }
@@ -132,6 +139,7 @@ const calculatePace = (distanceKm: number, durationMinutes: number): string => {
 export function CardioInputModal({
   isOpen,
   userWeight = 75, // Default 75kg se não informado
+  initial,
   onComplete,
   onCancel
 }: CardioInputModalProps) {
@@ -145,19 +153,22 @@ export function CardioInputModal({
   const [fcMedia, setFcMedia] = useState(0)
   const [fcMax, setFcMax] = useState(0)
 
-  // Reset when modal opens
+  // Reset when modal opens — aplica o pré-preenchimento (cardio prescrito)
+  // apenas na abertura, para não sobrescrever edições do usuário enquanto aberto.
   useEffect(() => {
     if (isOpen) {
-      setTipo('esteira')
-      setDuracao(20)
-      setDistancia(0)
+      setTipo(initial?.tipo ?? 'esteira')
+      setDuracao(initial?.duracao && initial.duracao > 0 ? initial.duracao : 20)
+      setDistancia(initial?.distancia && initial.distancia > 0 ? initial.distancia : 0)
       setVelocidade(0)
       setInclinacao(0)
       setResistencia(5)
-      setIntensidade('moderado')
+      setIntensidade(initial?.intensidade ?? 'moderado')
       setFcMedia(0)
       setFcMax(0)
     }
+    // Depende só de isOpen: o prefill é lido no momento da abertura.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   const selectedType = CARDIO_TYPES.find(t => t.value === tipo)!

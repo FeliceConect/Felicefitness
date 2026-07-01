@@ -288,6 +288,11 @@ export async function PUT(
                 notes: exercise.notes,
                 set_type: exercise.set_type ?? exercise.setType ?? 'reps',
                 circuit_group: exercise.circuit_group ?? exercise.circuitGroup ?? null,
+                // Cardio prescrito
+                cardio_type: exercise.cardioType ?? exercise.cardio_type ?? null,
+                target_duration_min: exercise.targetDurationMin ?? exercise.target_duration_min ?? null,
+                target_distance_km: exercise.targetDistanceKm ?? exercise.target_distance_km ?? null,
+                intensity: exercise.intensity ?? null,
               })
           }
         }
