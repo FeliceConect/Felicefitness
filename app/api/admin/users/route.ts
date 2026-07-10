@@ -570,6 +570,13 @@ export async function DELETE(request: NextRequest) {
           deactivated_at: new Date().toISOString()
         })
 
+        // Revoga o acesso dos profissionais (caso existam atribuições)
+        await supabaseAdmin
+          .from('fitness_client_assignments')
+          .update({ is_active: false })
+          .eq('client_id', userId)
+          .eq('is_active', true)
+
         // Banir no auth para impedir login
         await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: '876600h' })
 
@@ -749,6 +756,14 @@ export async function DELETE(request: NextRequest) {
         )
       }
 
+      // Restaura o acesso dos profissionais que estavam atribuídos ao paciente
+      // (as atribuições foram desativadas junto com o paciente na inativação).
+      await supabaseAdmin
+        .from('fitness_client_assignments')
+        .update({ is_active: true })
+        .eq('client_id', userId)
+        .eq('is_active', false)
+
       return NextResponse.json({
         success: true,
         message: `Usuário ${targetUser.nome || targetUser.email} reativado com sucesso`
@@ -771,6 +786,14 @@ export async function DELETE(request: NextRequest) {
           { status: 500 }
         )
       }
+
+      // Revoga o acesso dos profissionais: desativa as atribuições deste paciente.
+      // Sem isso, quem tinha o paciente atribuído continuava vendo/acessando ele.
+      await supabaseAdmin
+        .from('fitness_client_assignments')
+        .update({ is_active: false })
+        .eq('client_id', userId)
+        .eq('is_active', true)
 
       // Banir no auth para impedir login
       await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: '876600h' })

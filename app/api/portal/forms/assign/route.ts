@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       .select('client_id')
       .eq('professional_id', professional.id)
       .in('client_id', clientIds)
+      .eq('is_active', true)
 
     const validClientIds = (assignedClients || []).map(c => c.client_id)
 

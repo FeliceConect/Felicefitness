@@ -82,12 +82,12 @@ export async function GET(request: NextRequest) {
     const professionalIds = Array.from(new Set(assignments?.map(a => a.professional_id) || []))
     const assignedByIds = Array.from(new Set(assignments?.filter(a => a.assigned_by).map(a => a.assigned_by) || []))
 
-    // Buscar perfis de clientes
-    const clientsMap: Record<string, { id: string; nome: string; email: string }> = {}
+    // Buscar perfis de clientes (inclui is_active para ocultar pacientes inativos)
+    const clientsMap: Record<string, { id: string; nome: string; email: string; is_active: boolean }> = {}
     if (clientIds.length > 0) {
       const { data: clients } = await supabaseAdmin
         .from('fitness_profiles')
-        .select('id, nome, email')
+        .select('id, nome, email, is_active')
         .in('id', clientIds)
 
       clients?.forEach(c => {
@@ -136,19 +136,23 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Montar resposta com dados relacionados
-    const assignmentsWithData = assignments?.map(a => {
-      const prof = professionalsMap[a.professional_id]
-      return {
-        ...a,
-        client: clientsMap[a.client_id] || { id: a.client_id, nome: 'Cliente', email: '' },
-        professional: prof ? {
-          ...prof,
-          fitness_profiles: professionalProfilesMap[prof.user_id] || { nome: 'Profissional', email: '' }
-        } : null,
-        assigned_by_user: a.assigned_by ? assignedByMap[a.assigned_by] : null
-      }
-    })
+    // Montar resposta com dados relacionados.
+    // Oculta atribuições de pacientes INATIVOS — ao inativar um usuário, ele
+    // não deve mais aparecer na tela de atribuições (o acesso foi revogado).
+    const assignmentsWithData = assignments
+      ?.filter(a => clientsMap[a.client_id]?.is_active !== false)
+      .map(a => {
+        const prof = professionalsMap[a.professional_id]
+        return {
+          ...a,
+          client: clientsMap[a.client_id] || { id: a.client_id, nome: 'Cliente', email: '' },
+          professional: prof ? {
+            ...prof,
+            fitness_profiles: professionalProfilesMap[prof.user_id] || { nome: 'Profissional', email: '' }
+          } : null,
+          assigned_by_user: a.assigned_by ? assignedByMap[a.assigned_by] : null
+        }
+      })
 
     return NextResponse.json({
       success: true,

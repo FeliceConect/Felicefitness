@@ -46,13 +46,15 @@ export async function GET(
       )
     }
 
-    // Verificar se o cliente está atribuído a este profissional
+    // Verificar se o cliente está atribuído a este profissional (ATIVO).
+    // Atribuições inativas (ex.: paciente foi desativado) não dão mais acesso.
     const { data: assignment } = await supabaseAdmin
       .from('fitness_client_assignments')
       .select('*')
       .eq('professional_id', professional.id)
       .eq('client_id', clientId)
-      .single()
+      .eq('is_active', true)
+      .maybeSingle()
 
     if (!assignment) {
       return NextResponse.json(
