@@ -34,6 +34,36 @@ const mealTypes: MealType[] = [
   'ceia'
 ]
 
+// Planos alimentares usam tipos em INGLÊS (breakfast/lunch/...). Quando a
+// tela é aberta a partir do card do plano, o ?tipo= vem nesse vocabulário —
+// sem normalizar, mealTypeLabels[tipo] é undefined e a página quebra.
+const EN_TO_PT: Record<string, MealType> = {
+  breakfast: 'cafe_manha',
+  morning_snack: 'lanche_manha',
+  lunch: 'almoco',
+  afternoon_snack: 'lanche_tarde',
+  snack: 'lanche_tarde',
+  pre_workout: 'pre_treino',
+  dinner: 'jantar',
+  supper: 'ceia',
+}
+
+const PT_TO_EN: Record<MealType, string> = {
+  cafe_manha: 'breakfast',
+  lanche_manha: 'morning_snack',
+  almoco: 'lunch',
+  lanche_tarde: 'afternoon_snack',
+  pre_treino: 'pre_workout',
+  jantar: 'dinner',
+  ceia: 'supper',
+}
+
+function normalizeMealType(raw: string | null): MealType {
+  if (!raw) return 'almoco'
+  if (mealTypes.includes(raw as MealType)) return raw as MealType
+  return EN_TO_PT[raw] || 'almoco'
+}
+
 function NewMealContent() {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -41,8 +71,9 @@ function NewMealContent() {
   const { addToRecent, toggleFavorite } = useFoods()
   const { addMeal } = useDailyMeals()
 
-  // Get meal type and planMealId from URL params
-  const initialType = (searchParams.get('tipo') as MealType) || 'almoco'
+  // Get meal type and planMealId from URL params (tipo pode vir em inglês
+  // quando aberto a partir do plano da nutri — normaliza)
+  const initialType = normalizeMealType(searchParams.get('tipo'))
   const planMealId = searchParams.get('planMealId')
   // prefill=1: "editar este prato" — carrega os alimentos do plano para o
   // paciente trocar só o que mudou, em vez de remontar a refeição do zero
@@ -97,12 +128,15 @@ function NewMealContent() {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
+        // Refeições registradas via plano ficam com tipo em inglês —
+        // busca a última nos dois vocabulários
+        const typeAliases = [selectedType, PT_TO_EN[selectedType]].filter(Boolean)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await (supabase as any)
           .from('fitness_meals')
           .select('id, data, calorias_total, status, itens:fitness_meal_items(*)')
           .eq('user_id', user.id)
-          .eq('tipo_refeicao', selectedType)
+          .in('tipo_refeicao', typeAliases)
           .neq('status', 'pulado')
           .order('data', { ascending: false })
           .order('created_at', { ascending: false })
