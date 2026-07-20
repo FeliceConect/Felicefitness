@@ -6,15 +6,40 @@
 
 O Supabase é self-hosted (supabase.feliceconect.com.br) — as migrations rodam manualmente (SQL Editor ou psql), **nesta ordem exata**, ANTES de fazer o deploy do código na Vercel. O código tem fallbacks defensivos (funciona sem as migrations, voltando ao comportamento antigo), mas as features novas só ligam com elas aplicadas.
 
+Os arquivos de DADOS da fase 2 estão divididos em partes (o SQL Editor do
+Studio tem limite de tamanho de query — "Query is too large"). Rode as partes
+em ordem numérica; cada parte é idempotente e a primeira linha cria um índice
+de apoio (no-op nas seguintes). A ordem entre part1..N importa apenas por
+organização — nenhum UPDATE depende de outro.
+
 ```
-1. supabase/migrations/20260720_fase1_alimentacao_fixes.sql   (favoritos, FK de meal_items, micros)
-2. supabase/migrations/20260720_fase2_search_infra.sql        (pg_trgm, unaccent, RPC de busca, aliases, misses)
-3. supabase/migrations/20260720_fase2_nome_popular_data.sql   (~6.2k UPDATEs — ~1-2 min)
-4. supabase/migrations/20260720_fase2_categorias_data.sql     (~1.9k UPDATEs)
-5. supabase/migrations/20260720_fase2_porcoes_data.sql        (~4k UPDATEs)
-6. supabase/migrations/20260720_fase3_registro.sql            (modelos, moderação, XP sem refeição pulada)
-7. supabase/migrations/20260720_fase4_aderencia.sql           (plan_meal_id, adherence_status, is_training_day_only)
+1. supabase/migrations/20260720_fase1_alimentacao_fixes.sql        (favoritos, FK de meal_items, micros, CHECK categorias)
+2. supabase/migrations/20260720_fase2_search_infra.sql             (pg_trgm, unaccent, RPC de busca, aliases, misses)
+3. supabase/migrations/20260720_fase2_nome_popular_data_part1..8   (6.239 UPDATEs no total)
+4. supabase/migrations/20260720_fase2_categorias_data_part1..3     (1.882 UPDATEs)
+5. supabase/migrations/20260720_fase2_porcoes_data_part1..6        (4.004 UPDATEs)
+6. supabase/migrations/20260720_fase3_registro.sql                 (modelos, moderação, XP sem refeição pulada)
+7. supabase/migrations/20260720_fase4_aderencia.sql                (plan_meal_id, adherence_status, is_training_day_only)
 ```
+
+**Alternativa mais rápida (sem colar 17 arquivos no Studio):** conectando
+direto no banco com psql, tudo roda em uma linha a partir da raiz do repo:
+
+```bash
+for f in supabase/migrations/20260720_fase1_alimentacao_fixes.sql \
+         supabase/migrations/20260720_fase2_search_infra.sql \
+         supabase/migrations/20260720_fase2_nome_popular_data_part*.sql \
+         supabase/migrations/20260720_fase2_categorias_data_part*.sql \
+         supabase/migrations/20260720_fase2_porcoes_data_part*.sql \
+         supabase/migrations/20260720_fase3_registro.sql \
+         supabase/migrations/20260720_fase4_aderencia.sql; do
+  echo ">>> $f"
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f" || break
+done
+```
+
+(`DATABASE_URL` = string de conexão Postgres do self-hosted, ex.
+`postgres://postgres:SENHA@supabase.feliceconect.com.br:5432/postgres`.)
 
 ### Antes de rodar (backup)
 

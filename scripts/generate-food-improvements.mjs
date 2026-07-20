@@ -231,69 +231,93 @@ function proposePortions(nomeBusca) {
 // Geração dos arquivos
 // ---------------------------------------------------------------------------
 
+// O SQL Editor do Supabase Studio tem limite de tamanho de query — dividir
+// em partes de até N statements (padrão dos seed-global-foods-part1..7).
+const STATEMENTS_PER_FILE = 800
+
+// Índice de apoio: os UPDATEs filtram por (source, source_id); sem índice
+// cada um faria seq scan. IF NOT EXISTS → no-op nas partes seguintes.
+const LOOKUP_INDEX_SQL =
+  'CREATE INDEX IF NOT EXISTS idx_global_foods_source_lookup ON fitness_global_foods(source, source_id);'
+
+function writeChunked(baseName, headerLines, statements) {
+  const totalParts = Math.max(1, Math.ceil(statements.length / STATEMENTS_PER_FILE))
+  for (let part = 0; part < totalParts; part++) {
+    const chunk = statements.slice(part * STATEMENTS_PER_FILE, (part + 1) * STATEMENTS_PER_FILE)
+    const fileName = `${baseName}_part${part + 1}.sql`
+    const content = [
+      ...headerLines,
+      `-- Parte ${part + 1}/${totalParts} (${chunk.length} statements)`,
+      '',
+      LOOKUP_INDEX_SQL,
+      '',
+      ...chunk,
+    ].join('\n') + '\n'
+    writeFileSync(join(OUT_DIR, fileName), content)
+  }
+  return totalParts
+}
+
 // 1. nome_popular
 let nomePopularCount = 0
-const nomePopularLines = [
-  '-- FASE 2 — nome_popular: nome amigável exibido na busca.',
-  '-- Gerado por scripts/generate-food-improvements.mjs (determinístico, sem IA).',
-  '-- Idempotente: UPDATE por (source, source_id).',
-  '',
-]
+const nomePopularStatements = []
 for (const f of foods) {
   const popular = buildNomePopular(f.nome)
   if (!popular) continue
   const popularBusca = removeAccents(popular).toLowerCase()
-  nomePopularLines.push(
+  nomePopularStatements.push(
     `UPDATE fitness_global_foods SET nome_popular = '${sqlEscape(popular)}', nome_popular_busca = '${sqlEscape(popularBusca)}' WHERE source = '${f.source}' AND source_id = '${sqlEscape(f.sourceId)}';`
   )
   nomePopularCount++
 }
-writeFileSync(join(OUT_DIR, '20260720_fase2_nome_popular_data.sql'), nomePopularLines.join('\n') + '\n')
-console.log(`nome_popular: ${nomePopularCount} updates`)
+const nomeParts = writeChunked('20260720_fase2_nome_popular_data', [
+  '-- FASE 2 — nome_popular: nome amigável exibido na busca.',
+  '-- Gerado por scripts/generate-food-improvements.mjs (determinístico, sem IA).',
+  '-- Idempotente: UPDATE por (source, source_id).',
+], nomePopularStatements)
+console.log(`nome_popular: ${nomePopularCount} updates em ${nomeParts} partes`)
 
 // 2. categorias
 let catCount = 0
 const catStats = {}
-const catLines = [
-  '-- FASE 2 — correção de categorias TBCA mal classificadas no seed',
-  '-- (ex: pão de queijo era "vegetal", anchova era "condimento").',
-  '-- Gerado por scripts/generate-food-improvements.mjs. Regras por palavra-chave',
-  '-- no primeiro segmento do nome. Idempotente: UPDATE por (source, source_id).',
-  '',
-]
+const catStatements = []
 for (const f of foods) {
   if (f.source !== 'tbca') continue
   const proposed = proposeCategory(f.nomeBusca)
   if (!proposed || proposed === f.categoria) continue
-  catLines.push(
+  catStatements.push(
     `UPDATE fitness_global_foods SET categoria = '${proposed}' WHERE source = 'tbca' AND source_id = '${sqlEscape(f.sourceId)}'; -- ${f.nome.slice(0, 60).replace(/\n/g, ' ')} (era ${f.categoria})`
   )
   catStats[`${f.categoria} -> ${proposed}`] = (catStats[`${f.categoria} -> ${proposed}`] || 0) + 1
   catCount++
 }
-writeFileSync(join(OUT_DIR, '20260720_fase2_categorias_data.sql'), catLines.join('\n') + '\n')
-console.log(`categorias: ${catCount} correções`)
+const catParts = writeChunked('20260720_fase2_categorias_data', [
+  '-- FASE 2 — correção de categorias TBCA mal classificadas no seed',
+  '-- (ex: pão de queijo era "vegetal", anchova era "condimento").',
+  '-- Gerado por scripts/generate-food-improvements.mjs. Regras por palavra-chave',
+  '-- no primeiro segmento do nome. Idempotente: UPDATE por (source, source_id).',
+], catStatements)
+console.log(`categorias: ${catCount} correções em ${catParts} partes`)
 
 // 3. porções
 let portionCount = 0
-const portionLines = [
-  '-- FASE 2 — porções caseiras para alimentos que só tinham 100g.',
-  '-- Gerado por scripts/generate-food-improvements.mjs (regras por palavra-chave,',
-  '-- baseadas no Dicionário de Medidas Caseiras / Guia Alimentar).',
-  '-- Idempotente: só preenche onde porcoes_comuns IS NULL.',
-  '',
-]
+const portionStatements = []
 for (const f of foods) {
   const portions = proposePortions(f.nomeBusca)
   if (!portions) continue
   const json = JSON.stringify(portions)
-  portionLines.push(
+  portionStatements.push(
     `UPDATE fitness_global_foods SET porcoes_comuns = '${sqlEscape(json)}'::jsonb WHERE source = '${f.source}' AND source_id = '${sqlEscape(f.sourceId)}' AND porcoes_comuns IS NULL;`
   )
   portionCount++
 }
-writeFileSync(join(OUT_DIR, '20260720_fase2_porcoes_data.sql'), portionLines.join('\n') + '\n')
-console.log(`porções: ${portionCount} updates`)
+const portionParts = writeChunked('20260720_fase2_porcoes_data', [
+  '-- FASE 2 — porções caseiras para alimentos que só tinham 100g.',
+  '-- Gerado por scripts/generate-food-improvements.mjs (regras por palavra-chave,',
+  '-- baseadas no Dicionário de Medidas Caseiras / Guia Alimentar).',
+  '-- Idempotente: só preenche onde porcoes_comuns IS NULL.',
+], portionStatements)
+console.log(`porções: ${portionCount} updates em ${portionParts} partes`)
 
 console.log('\nResumo de correções de categoria:')
 for (const [k, v] of Object.entries(catStats).sort((a, b) => b[1] - a[1]).slice(0, 20)) {
