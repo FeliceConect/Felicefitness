@@ -804,15 +804,16 @@ function FoodEditRow({ initial, onSave, onCancel }: FoodEditRowProps) {
     field: 'cal' | 'prot' | 'carb' | 'gord'
   ) => (value: string) => {
     setter(value)
+    // Sempre atualiza o baseline com o valor digitado; se a quantidade
+    // estiver vazia/0 no momento, mantém o q anterior do baseline (senão a
+    // próxima edição de gramas descartaria o macro recém-digitado).
     const q = num(quantidade)
-    if (q > 0) {
-      baseRef.current = {
-        q,
-        cal: field === 'cal' ? num(value) : num(calorias),
-        prot: field === 'prot' ? num(value) : num(proteinas),
-        carb: field === 'carb' ? num(value) : num(carboidratos),
-        gord: field === 'gord' ? num(value) : num(gorduras),
-      }
+    baseRef.current = {
+      q: q > 0 ? q : baseRef.current.q,
+      cal: field === 'cal' ? num(value) : num(calorias),
+      prot: field === 'prot' ? num(value) : num(proteinas),
+      carb: field === 'carb' ? num(value) : num(carboidratos),
+      gord: field === 'gord' ? num(value) : num(gorduras),
     }
   }
 
