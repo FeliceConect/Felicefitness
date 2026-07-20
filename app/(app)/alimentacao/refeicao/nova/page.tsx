@@ -1,23 +1,27 @@
 "use client"
 
-import { useState, useMemo, Suspense } from 'react'
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Trash2, Camera, Clock, Save, Sparkles } from 'lucide-react'
+import { ArrowLeft, Trash2, Camera, Clock, Save, Sparkles, History, BookmarkPlus, Bookmark, X } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { FoodSearch } from '@/components/alimentacao/food-search'
 import { PortionSelector } from '@/components/alimentacao/portion-selector'
 import { AddCustomFoodModal } from '@/components/alimentacao/add-custom-food-modal'
-import type { Food, MealItem, MealType } from '@/lib/nutrition/types'
+import type { Food, FoodCategory, MealItem, MealType } from '@/lib/nutrition/types'
 import { mealTypeLabels, mealTypeIcons } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
 import { useFoods } from '@/hooks/use-foods'
 import { useDailyMeals } from '@/hooks/use-daily-meals'
+import { useMealPlan } from '@/hooks/use-meal-plan'
+import { useMealTemplates, type MealTemplateItem } from '@/hooks/use-meal-templates'
 import { DASHBOARD_QUERY_KEY } from '@/hooks/use-dashboard-data'
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 const mealTypes: MealType[] = [
@@ -40,6 +44,9 @@ function NewMealContent() {
   // Get meal type and planMealId from URL params
   const initialType = (searchParams.get('tipo') as MealType) || 'almoco'
   const planMealId = searchParams.get('planMealId')
+  // prefill=1: "editar este prato" — carrega os alimentos do plano para o
+  // paciente trocar só o que mudou, em vez de remontar a refeição do zero
+  const prefillFromPlan = searchParams.get('prefill') === '1'
 
   const [selectedType, setSelectedType] = useState<MealType>(initialType)
   const [items, setItems] = useState<MealItem[]>([])
@@ -49,6 +56,118 @@ function NewMealContent() {
   const [saving, setSaving] = useState(false)
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false)
   const [customFoodName, setCustomFoodName] = useState('')
+  const [lastMeal, setLastMeal] = useState<{ data: string; calorias: number; itens: MealItem[] } | null>(null)
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const prefillDoneRef = useRef(false)
+
+  const { templates, saveTemplate, deleteTemplate, markUsed } = useMealTemplates()
+  const { todayMeals: planTodayMeals } = useMealPlan()
+
+  // Converte um item "cru" (banco/plano/modelo) para MealItem
+  const buildItem = (raw: {
+    nome: string; food_id?: string | null; quantidade: number; unidade?: string
+    calorias: number; proteinas: number; carboidratos: number; gorduras: number
+  }, idx: number): MealItem => ({
+    id: `item-${Date.now()}-${idx}`,
+    food_id: raw.food_id || `local-${idx}`,
+    food: {
+      id: raw.food_id || `local-${idx}`,
+      nome: raw.nome,
+      categoria: 'outros' as FoodCategory,
+      porcao_padrao: raw.quantidade || 100,
+      unidade: (raw.unidade || 'g') as 'g' | 'ml' | 'unidade',
+      calorias: raw.calorias,
+      proteinas: raw.proteinas,
+      carboidratos: raw.carboidratos,
+      gorduras: raw.gorduras,
+    },
+    quantidade: raw.quantidade || 100,
+    calorias: raw.calorias,
+    proteinas: raw.proteinas,
+    carboidratos: raw.carboidratos,
+    gorduras: raw.gorduras,
+  })
+
+  // Última refeição deste tipo (para "repetir com 1 toque")
+  useEffect(() => {
+    let cancelled = false
+    async function loadLastMeal() {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any)
+          .from('fitness_meals')
+          .select('id, data, calorias_total, status, itens:fitness_meal_items(*)')
+          .eq('user_id', user.id)
+          .eq('tipo_refeicao', selectedType)
+          .neq('status', 'pulado')
+          .order('data', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(1)
+        const meal = data?.[0]
+        if (cancelled || !meal || !meal.itens || meal.itens.length === 0) {
+          if (!cancelled) setLastMeal(null)
+          return
+        }
+        setLastMeal({
+          data: meal.data,
+          calorias: meal.calorias_total || 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          itens: meal.itens.map((item: any, idx: number) => buildItem({
+            nome: item.nome_alimento,
+            food_id: item.food_id,
+            quantidade: item.quantidade,
+            unidade: item.unidade,
+            calorias: item.calorias || 0,
+            proteinas: item.proteinas || 0,
+            carboidratos: item.carboidratos || 0,
+            gorduras: item.gorduras || 0,
+          }, idx)),
+        })
+      } catch {
+        // silencioso
+      }
+    }
+    loadLastMeal()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType])
+
+  // Prefill dos alimentos do plano ("editar este prato")
+  useEffect(() => {
+    if (!prefillFromPlan || !planMealId || prefillDoneRef.current) return
+    const planMeal = planTodayMeals.find(m => m.id === planMealId)
+    if (!planMeal) return
+    prefillDoneRef.current = true
+    const foods = planMeal.foods || []
+    setItems(foods.map((f, idx) => buildItem({
+      nome: f.name,
+      quantidade: f.quantity || 100,
+      unidade: f.unit,
+      calorias: f.calories || 0,
+      proteinas: f.protein || 0,
+      carboidratos: f.carbs || 0,
+      gorduras: f.fat || 0,
+    }, idx)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillFromPlan, planMealId, planTodayMeals])
+
+  const applyLastMeal = () => {
+    if (!lastMeal) return
+    setItems(lastMeal.itens.map((item, idx) => ({ ...item, id: `item-${Date.now()}-${idx}` })))
+    toast.success('Refeição repetida — ajuste o que quiser antes de salvar')
+  }
+
+  const applyTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId)
+    if (!template) return
+    setItems((template.items || []).map((raw: MealTemplateItem, idx: number) => buildItem(raw, idx)))
+    markUsed(templateId)
+    toast.success(`Modelo "${template.name}" aplicado`)
+  }
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -143,6 +262,8 @@ function NewMealContent() {
             planMealId,
             date: format(new Date(), 'yyyy-MM-dd'),
             completedFoods,
+            // Montou/ajustou manualmente = substituiu o prato prescrito
+            adherence: 'substituiu',
             notes: notas || `Refeição personalizada às ${horario}`
           })
         })
@@ -171,9 +292,17 @@ function NewMealContent() {
           notas: notas || undefined
         })
       }
+
+      // Salvar como modelo reutilizável ("Minhas refeições")
+      if (saveAsTemplate && items.length > 0) {
+        const name = templateName.trim() || mealTypeLabels[selectedType]
+        await saveTemplate(name, selectedType, items)
+      }
+
       router.push('/alimentacao')
     } catch (error) {
       console.error('Error saving meal:', error)
+      toast.error('Erro ao salvar refeição. Tente novamente.')
     } finally {
       setSaving(false)
     }
@@ -229,6 +358,56 @@ function NewMealContent() {
           />
         </div>
       </div>
+
+      {/* Atalhos: repetir última refeição / modelos salvos */}
+      {items.length === 0 && (lastMeal || templates.length > 0) && (
+        <div className="px-4 mb-6 space-y-2">
+          <h3 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wide">
+            Atalhos
+          </h3>
+          {lastMeal && (
+            <button
+              onClick={applyLastMeal}
+              className="w-full flex items-center gap-3 p-3 bg-dourado/10 border border-dourado/30 rounded-xl hover:bg-dourado/20 transition-colors text-left"
+            >
+              <History className="w-5 h-5 text-dourado flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-foreground font-medium">Repetir última {mealTypeLabels[selectedType].toLowerCase()}</p>
+                <p className="text-xs text-foreground-secondary">
+                  {format(new Date(lastMeal.data + 'T12:00:00'), 'dd/MM')} • {lastMeal.itens.length} {lastMeal.itens.length === 1 ? 'item' : 'itens'} • {Math.round(lastMeal.calorias)} kcal
+                </p>
+              </div>
+            </button>
+          )}
+          {templates.map(template => (
+            <div
+              key={template.id}
+              className="w-full flex items-center gap-3 p-3 bg-white border border-border rounded-xl hover:border-dourado/40 transition-colors"
+            >
+              <button
+                onClick={() => applyTemplate(template.id)}
+                className="flex-1 flex items-center gap-3 text-left min-w-0"
+              >
+                <Bookmark className="w-5 h-5 text-dourado flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-foreground font-medium truncate">{template.name}</p>
+                  <p className="text-xs text-foreground-secondary">
+                    {(template.items || []).length} {(template.items || []).length === 1 ? 'item' : 'itens'}
+                    {template.tipo_refeicao ? ` • ${mealTypeLabels[template.tipo_refeicao] || ''}` : ''}
+                  </p>
+                </div>
+              </button>
+              <button
+                onClick={() => deleteTemplate(template.id)}
+                className="p-2 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
+                aria-label={`Excluir modelo ${template.name}`}
+              >
+                <X className="w-4 h-4 text-foreground-muted" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Added items */}
       {items.length > 0 && (
@@ -336,6 +515,42 @@ function NewMealContent() {
         <span className="text-foreground-muted text-sm">ou adicione manualmente</span>
         <div className="flex-1 h-px bg-border" />
       </div>
+
+      {/* Salvar como modelo */}
+      {items.length > 0 && (
+        <div className="px-4 mb-6">
+          <button
+            onClick={() => setSaveAsTemplate(v => !v)}
+            className={cn(
+              'w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left',
+              saveAsTemplate
+                ? 'bg-dourado/10 border-dourado/40'
+                : 'bg-white border-border hover:border-dourado/30'
+            )}
+          >
+            <BookmarkPlus className={cn('w-5 h-5 flex-shrink-0', saveAsTemplate ? 'text-dourado' : 'text-foreground-muted')} />
+            <div className="flex-1">
+              <p className="text-foreground font-medium text-sm">Salvar como modelo</p>
+              <p className="text-xs text-foreground-secondary">Reutilize esta refeição com 1 toque nas próximas vezes</p>
+            </div>
+            <div className={cn(
+              'w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0',
+              saveAsTemplate ? 'bg-dourado border-dourado' : 'border-border'
+            )}>
+              {saveAsTemplate && <span className="text-white text-xs">✓</span>}
+            </div>
+          </button>
+          {saveAsTemplate && (
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder={`Nome do modelo (ex: ${mealTypeLabels[selectedType]} de sempre)`}
+              className="mt-2 w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
+            />
+          )}
+        </div>
+      )}
 
       {/* Notes */}
       <div className="px-4 mb-6">

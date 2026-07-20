@@ -106,7 +106,7 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
           data: m.data,
           horario_planejado: m.horario || undefined,
           horario_real: m.horario || undefined,
-          status: 'concluido' as const,
+          status: (m.status === 'pulado' ? 'pulado' : 'concluido') as 'pulado' | 'concluido',
           itens: convertedItems,
           calorias_total: m.calorias_total || 0,
           proteinas_total: m.proteinas_total || 0,
@@ -132,9 +132,9 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
     loadMeals()
   }, [loadMeals])
 
-  // Calcular totais
+  // Calcular totais (refeições puladas não contam)
   const totals = useMemo((): NutritionTotals => {
-    return meals.reduce(
+    return meals.filter(m => m.status !== 'pulado').reduce(
       (acc, meal) => ({
         calorias: acc.calorias + (meal.calorias_total || 0),
         proteinas: acc.proteinas + (meal.proteinas_total || 0),

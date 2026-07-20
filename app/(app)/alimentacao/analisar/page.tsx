@@ -69,6 +69,8 @@ function AnalysisContent() {
   const initialType = (searchParams.get('tipo') as MealType) || 'almoco'
 
   const [selectedType, setSelectedType] = useState<MealType>(initialType)
+  const [mode, setMode] = useState<'foto' | 'texto'>('foto')
+  const [description, setDescription] = useState('')
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
@@ -140,9 +142,7 @@ function AnalysisContent() {
     e.target.value = ''
   }
 
-  const analyzeImage = async () => {
-    if (!imageBase64) return
-
+  const runAnalysis = async (payload: Record<string, string>) => {
     setAnalyzing(true)
     setError(null)
     setResult(null)
@@ -154,7 +154,7 @@ function AnalysisContent() {
       const res = await fetch('/api/meals/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: imageBase64 }),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
@@ -182,6 +182,19 @@ function AnalysisContent() {
     } finally {
       setAnalyzing(false)
     }
+  }
+
+  const analyzeImage = () => {
+    if (!imageBase64) return
+    void runAnalysis({ image_base64: imageBase64 })
+  }
+
+  const analyzeText = () => {
+    if (description.trim().length < 3) {
+      toast.error('Descreva o que você comeu')
+      return
+    }
+    void runAnalysis({ description: description.trim() })
   }
 
   const recomputeTotals = (alimentos: AnalyzedFood[]) => ({
@@ -339,8 +352,60 @@ function AnalysisContent() {
           </div>
         </div>
 
+        {/* Modo: foto ou descrição em texto */}
+        {!result && (
+          <div className="grid grid-cols-2 gap-1 bg-white border border-border rounded-xl p-1">
+            <button
+              onClick={() => { setMode('foto'); setError(null) }}
+              className={cn(
+                'py-2 rounded-lg text-sm font-medium transition-colors',
+                mode === 'foto' ? 'bg-dourado text-white' : 'text-foreground-secondary'
+              )}
+            >
+              📷 Foto
+            </button>
+            <button
+              onClick={() => { setMode('texto'); setError(null) }}
+              className={cn(
+                'py-2 rounded-lg text-sm font-medium transition-colors',
+                mode === 'texto' ? 'bg-dourado text-white' : 'text-foreground-secondary'
+              )}
+            >
+              ✍️ Descrever
+            </button>
+          </div>
+        )}
+
+        {/* Modo texto: descreva a refeição */}
+        {mode === 'texto' && !result && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl border border-border p-4 space-y-3"
+          >
+            <p className="text-sm text-foreground-secondary">
+              Escreva o que você comeu, com as quantidades aproximadas — a IA identifica os alimentos e calcula os macros.
+            </p>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ex.: 2 pães franceses na chapa com manteiga e um copo de café com leite"
+              rows={4}
+              className="w-full bg-background border border-border rounded-xl p-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado resize-none"
+            />
+            <button
+              onClick={analyzeText}
+              disabled={analyzing || description.trim().length < 3}
+              className="w-full inline-flex items-center justify-center gap-2 py-3 bg-dourado text-white rounded-xl font-medium hover:bg-dourado/90 transition-colors disabled:opacity-50"
+            >
+              {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {analyzing ? 'Analisando...' : 'Analisar descrição'}
+            </button>
+          </motion.div>
+        )}
+
         {/* Image capture / preview area */}
-        {!imagePreview ? (
+        {mode === 'foto' && (!imagePreview ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -431,28 +496,31 @@ function AnalysisContent() {
               </div>
             )}
 
-            {/* Error state */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3"
-              >
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-red-700 font-medium text-sm">{error}</p>
-                  <button
-                    onClick={analyzeImage}
-                    className="mt-2 text-sm text-red-600 underline"
-                  >
-                    Tentar novamente
-                  </button>
-                </div>
-              </motion.div>
-            )}
+          </motion.div>
+        ))}
 
-            {/* Analysis Result */}
-            {result && (
+        {/* Error state */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-700 font-medium text-sm">{error}</p>
+              <button
+                onClick={mode === 'texto' ? analyzeText : analyzeImage}
+                className="mt-2 text-sm text-red-600 underline"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Analysis Result */}
+        {result && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -602,7 +670,7 @@ function AnalysisContent() {
                     className="flex-1 inline-flex items-center justify-center gap-2 py-3 bg-white border border-border text-foreground rounded-xl font-medium"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    Nova Foto
+                    {mode === 'texto' ? 'Nova Análise' : 'Nova Foto'}
                   </button>
                   <button
                     onClick={saveMeal}
@@ -619,8 +687,6 @@ function AnalysisContent() {
                 </div>
               </motion.div>
             )}
-          </motion.div>
-        )}
       </div>
 
       {/* Hidden file inputs */}

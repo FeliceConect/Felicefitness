@@ -21,7 +21,7 @@ export default function AlimentacaoPage() {
   const router = useRouter()
   const { meals, plannedMeals, totals, nextMeal, loading, refresh } = useDailyMeals()
   const { todayTotal: aguaConsumida } = useWaterLog()
-  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completedMealsData, isTrainingDay, completeMeal, loading: planLoading, refetch: refetchPlan } = useMealPlan()
+  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, skippedMealIds, completedMealsData, isTrainingDay, completeMeal, skipMeal, loading: planLoading, refetch: refetchPlan } = useMealPlan()
   const { profile } = useProfile()
   // Metas reais (plano da nutri → perfil → cálculo dinâmico → fallback)
   const { goals } = useNutritionGoals()
@@ -52,6 +52,13 @@ export default function AlimentacaoPage() {
     const success = await completeMeal(meal, chosenFoods)
     if (success) {
       // Atualiza refeições do dia e estado do plano sem recarregar a página
+      await Promise.all([refresh(), Promise.resolve(refetchPlan())])
+    }
+  }
+
+  const handleSkipPlanMeal = async (meal: Parameters<typeof skipMeal>[0]) => {
+    const success = await skipMeal(meal)
+    if (success) {
       await Promise.all([refresh(), Promise.resolve(refetchPlan())])
     }
   }
@@ -139,9 +146,11 @@ export default function AlimentacaoPage() {
             plan={mealPlan}
             todayMeals={planMeals}
             completedMealIds={completedMealIds}
+            skippedMealIds={skippedMealIds}
             completedMealsData={completedMealsData}
             isTrainingDay={isTrainingDay}
             onCompleteMeal={handleCompletePlanMeal}
+            onSkipMeal={handleSkipPlanMeal}
             onAddDifferentMeal={() => router.push('/alimentacao/refeicao/nova')}
           />
         </div>

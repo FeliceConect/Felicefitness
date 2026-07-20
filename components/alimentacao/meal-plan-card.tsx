@@ -174,9 +174,11 @@ interface MealPlanCardProps {
   plan: MealPlan
   todayMeals: PlannedMeal[]
   completedMealIds: string[]
+  skippedMealIds?: string[] // refeições marcadas como puladas (por meal_type)
   completedMealsData?: Record<string, CompletedMealData> // Dados das refeições realmente consumidas
   isTrainingDay?: boolean
   onCompleteMeal: (meal: PlannedMeal, chosenFoods?: Food[]) => void
+  onSkipMeal?: (meal: PlannedMeal) => void
   onAddDifferentMeal: () => void
 }
 
@@ -202,9 +204,11 @@ export function MealPlanCard({
   plan,
   todayMeals,
   completedMealIds,
+  skippedMealIds = [],
   completedMealsData = {},
   isTrainingDay = false,
   onCompleteMeal,
+  onSkipMeal,
   onAddDifferentMeal
 }: MealPlanCardProps) {
   const [expandedMeal, setExpandedMeal] = useState<string | null>(null)
@@ -322,6 +326,7 @@ export function MealPlanCard({
         {todayMeals.map((meal) => {
           // Verificar se está completo por meal_type (mais robusto)
           const isCompleted = completedMealIds.includes(meal.meal_type) || completedMealIds.includes(meal.id)
+          const isSkipped = !isCompleted && skippedMealIds.includes(meal.meal_type)
           const isExpanded = expandedMeal === meal.id
           const hasAlternatives = meal.alternatives && meal.alternatives.length > 0
 
@@ -363,6 +368,11 @@ export function MealPlanCard({
                       {isCompleted && (
                         <span className="px-1.5 py-0.5 text-xs bg-green-500/20 text-green-400 rounded">
                           Feita
+                        </span>
+                      )}
+                      {isSkipped && (
+                        <span className="px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-600 rounded">
+                          Pulada
                         </span>
                       )}
                     </div>
@@ -443,7 +453,7 @@ export function MealPlanCard({
                       {hasAlternatives && (
                         <div className="space-y-3">
                           {/* Quick Option Selector */}
-                          {!isCompleted && (
+                          {!isCompleted && !isSkipped && (
                             <div>
                               <p className="text-xs text-foreground-secondary mb-2">Escolha uma opção:</p>
                               <div className="flex gap-2 flex-wrap">
@@ -526,49 +536,89 @@ export function MealPlanCard({
                       )}
 
                       {/* Action Buttons - show only when no alternatives */}
-                      {!isCompleted && !hasAlternatives && (
-                        <div className="flex gap-2 pt-2">
-                          <button
-                            onClick={() => onCompleteMeal(meal, buildChosenFoods(meal))}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                          >
-                            <Check className="w-4 h-4" />
-                            Comi
-                          </button>
-                          <button
-                            onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
-                            className="px-3 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/80 transition-colors"
-                            title="Analisar foto com IA"
-                          >
-                            <Camera className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
-                            className="px-3 py-2 bg-background-elevated text-foreground-secondary rounded-lg hover:bg-background-elevated transition-colors"
-                            title="Adicionar manualmente"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
+                      {!isCompleted && !isSkipped && !hasAlternatives && (
+                        <div className="space-y-2 pt-2">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => onCompleteMeal(meal, buildChosenFoods(meal))}
+                              className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                              <Check className="w-4 h-4" />
+                              Comi
+                            </button>
+                            <button
+                              onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
+                              className="px-3 py-2 bg-dourado text-white rounded-lg hover:bg-dourado/80 transition-colors"
+                              title="Analisar foto com IA"
+                            >
+                              <Camera className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
+                              className="px-3 py-2 bg-background-elevated text-foreground-secondary rounded-lg hover:bg-background-elevated transition-colors"
+                              title="Adicionar manualmente"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}&prefill=1`)}
+                              className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground-muted transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              Troquei algum item
+                            </button>
+                            {onSkipMeal && (
+                              <button
+                                onClick={() => onSkipMeal(meal)}
+                                className="px-4 py-2 text-sm text-foreground-muted hover:text-amber-600 border border-dashed border-border rounded-lg hover:border-amber-400 transition-colors"
+                                title="Não fiz esta refeição"
+                              >
+                                Pulei
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
 
                       {/* Edit button when there are alternatives */}
-                      {!isCompleted && hasAlternatives && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-dourado hover:text-foreground border border-dashed border-dourado/50 rounded-lg hover:border-dourado transition-colors"
-                          >
-                            <Camera className="w-4 h-4" />
-                            Analisar foto
-                          </button>
-                          <button
-                            onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground-muted transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Adicionar manual
-                          </button>
+                      {!isCompleted && !isSkipped && hasAlternatives && (
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => router.push(`/alimentacao/analisar?planMealId=${meal.id}&tipo=${meal.meal_type}`)}
+                              className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-dourado hover:text-foreground border border-dashed border-dourado/50 rounded-lg hover:border-dourado transition-colors"
+                            >
+                              <Camera className="w-4 h-4" />
+                              Analisar foto
+                            </button>
+                            <button
+                              onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
+                              className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground-muted transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Adicionar manual
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}&prefill=1`)}
+                              className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground-muted transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              Troquei algum item
+                            </button>
+                            {onSkipMeal && (
+                              <button
+                                onClick={() => onSkipMeal(meal)}
+                                className="px-4 py-2 text-sm text-foreground-muted hover:text-amber-600 border border-dashed border-border rounded-lg hover:border-amber-400 transition-colors"
+                                title="Não fiz esta refeição"
+                              >
+                                Pulei
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
 

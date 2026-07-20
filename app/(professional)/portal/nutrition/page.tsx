@@ -183,6 +183,12 @@ export default function NutritionPage() {
         </div>
         <div className="flex gap-2">
           <Link
+            href="/portal/nutrition/foods"
+            className="flex items-center gap-2 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-all border border-border"
+          >
+            🍎 Alimentos
+          </Link>
+          <Link
             href="/portal/nutrition/import"
             className="flex items-center gap-2 px-4 py-2 bg-background-elevated text-foreground rounded-lg hover:bg-border transition-all border border-border"
           >

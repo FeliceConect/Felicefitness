@@ -79,6 +79,7 @@ export function useMealPlan() {
   const [plan, setPlan] = useState<MealPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [completedMealIds, setCompletedMealIds] = useState<string[]>([])
+  const [skippedMealIds, setSkippedMealIds] = useState<string[]>([])
   const [completedMealsData, setCompletedMealsData] = useState<Record<string, CompletedMealData>>({})
   const [isTrainingDay, setIsTrainingDay] = useState(false)
   const supabase = createClient()
@@ -107,6 +108,7 @@ export function useMealPlan() {
       if (data.success) {
         // Usar meal_type como identificador de refeições completadas
         setCompletedMealIds(data.completedMealTypes || [])
+        setSkippedMealIds(data.skippedMealTypes || [])
         // Armazenar dados completos das refeições (alimentos reais consumidos)
         if (data.completedMealsData) {
           setCompletedMealsData(data.completedMealsData)
@@ -225,6 +227,30 @@ export function useMealPlan() {
     }
   }, [])
 
+  // Marcar refeição do plano como pulada (registro explícito, sem macros)
+  const skipMeal = useCallback(async (meal: PlannedMeal): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/client/meal-plan/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planMealId: meal.id,
+          date: getTodayDateSP(),
+          skipped: true
+        })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSkippedMealIds(prev => [...prev, meal.meal_type])
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Erro ao pular refeição:', error)
+      return false
+    }
+  }, [])
+
   // Obter refeições do dia atual (filtrando por dia de treino se necessário)
   const getTodayMeals = useCallback((): PlannedMeal[] => {
     if (!plan?.days) return []
@@ -249,10 +275,12 @@ export function useMealPlan() {
     plan,
     loading,
     completedMealIds,
+    skippedMealIds,
     completedMealsData, // Dados das refeições realmente consumidas
     todayMeals: getTodayMeals(),
     isTrainingDay,
     completeMeal,
+    skipMeal,
     refetch: () => {
       fetchPlan()
       fetchCompletedMeals()

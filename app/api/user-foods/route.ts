@@ -129,11 +129,22 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Inserir no banco de dados
-    const { data: insertedData, error: insertError } = await supabaseAdmin
+    // Inserir no banco de dados — entra na fila de moderação (promote_status
+    // 'pending') para a nutri poder promover ao banco global. Se a coluna
+    // ainda não existir (migration pendente), insere sem ela.
+    let { data: insertedData, error: insertError } = await supabaseAdmin
       .from('fitness_user_foods')
-      .insert(insertData)
+      .insert({ ...insertData, promote_status: 'pending' })
       .select()
+
+    if (insertError && (insertError.code === '42703' || insertError.code === 'PGRST204')) {
+      const retry = await supabaseAdmin
+        .from('fitness_user_foods')
+        .insert(insertData)
+        .select()
+      insertedData = retry.data
+      insertError = retry.error
+    }
 
     console.log('Resultado insert - data:', insertedData)
     console.log('Resultado insert - error:', insertError)

@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Star, Clock, X, Plus, Loader2 } from 'lucide-react'
+import { Search, Star, Clock, X, Plus, Loader2, ScanBarcode } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Food, FoodCategory } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { useFoods } from '@/hooks/use-foods'
+import { BarcodeScannerSheet } from '@/components/alimentacao/barcode-scanner-sheet'
 
 interface FoodSearchProps {
   onSelect: (food: Food) => void
@@ -19,7 +21,18 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | null>(null)
   const [showAllSources, setShowAllSources] = useState(false)
-  const { favorites, recent, search, searchResults, searchLoading, getByCategory } = useFoods()
+  const [showScanner, setShowScanner] = useState(false)
+  const { favorites, recent, search, searchResults, searchLoading, getByCategory, searchByBarcode } = useFoods()
+
+  const handleBarcodeDetected = async (code: string) => {
+    const food = await searchByBarcode(code)
+    setShowScanner(false)
+    if (food) {
+      onSelect(food)
+    } else {
+      toast.error('Produto não encontrado. Tente buscar pelo nome ou cadastre manualmente.')
+    }
+  }
 
   const sourcesKey = sources?.join(',') || ''
   const effectiveSources = showAllSources ? undefined : sources
@@ -60,30 +73,40 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
 
   return (
     <div className="space-y-4">
-      {/* Search input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-foreground-muted" />
-        <input
-          type="text"
-          value={selectedCategory ? foodCategoryLabels[selectedCategory].label : query}
-          onChange={(e) => {
-            setSelectedCategory(null)
-            setQuery(e.target.value)
-          }}
-          placeholder="Buscar alimento... (6.000+ alimentos)"
-          className="w-full bg-white border border-border rounded-xl pl-10 pr-10 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
-        />
-        {(query || selectedCategory) && (
-          <button
-            onClick={clearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-background-elevated rounded-full"
-          >
-            <X className="w-4 h-4 text-foreground-muted" />
-          </button>
-        )}
-        {searchLoading && (
-          <Loader2 className="absolute right-10 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dourado animate-spin" />
-        )}
+      {/* Search input + barcode */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-foreground-muted" />
+          <input
+            type="text"
+            value={selectedCategory ? foodCategoryLabels[selectedCategory].label : query}
+            onChange={(e) => {
+              setSelectedCategory(null)
+              setQuery(e.target.value)
+            }}
+            placeholder="Buscar alimento... (6.000+ alimentos)"
+            className="w-full bg-white border border-border rounded-xl pl-10 pr-10 py-3 text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-dourado"
+          />
+          {(query || selectedCategory) && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-background-elevated rounded-full"
+            >
+              <X className="w-4 h-4 text-foreground-muted" />
+            </button>
+          )}
+          {searchLoading && (
+            <Loader2 className="absolute right-10 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dourado animate-spin" />
+          )}
+        </div>
+        <button
+          onClick={() => setShowScanner(true)}
+          className="px-3 bg-white border border-border rounded-xl hover:border-dourado/40 transition-colors"
+          title="Ler código de barras"
+          aria-label="Ler código de barras"
+        >
+          <ScanBarcode className="w-5 h-5 text-dourado" />
+        </button>
       </div>
 
       {/* Toggle: mostrar receitas/preparações também (só aparece quando há filtro de sources) */}
@@ -170,6 +193,16 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
           </div>
         </div>
       )}
+
+      {/* Barcode scanner */}
+      <AnimatePresence>
+        {showScanner && (
+          <BarcodeScannerSheet
+            onDetected={handleBarcodeDetected}
+            onClose={() => setShowScanner(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Categories */}
       {!isSearching && (

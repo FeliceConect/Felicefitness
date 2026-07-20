@@ -6,7 +6,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardPointsServer } from '@/lib/services/points-server'
 import { getTodayDateSP } from '@/lib/utils/date'
 
-// POST - Registrar refeição do plano como completada
+// POST - Registrar refeição do plano como completada (ou pulada)
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
       date,            // Data em que foi feita
       completedFoods,  // Alimentos realmente consumidos (pode ser diferente do plano)
       notes,           // Observações
-      usedAlternative  // Se usou alternativa
+      usedAlternative, // Se usou alternativa
+      skipped,         // true = paciente pulou esta refeição (registro explícito)
+      adherence        // 'seguiu' | 'substituiu' — como o consumo se relaciona ao plano
     } = body
 
     if (!planMealId || !date) {
@@ -70,8 +72,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Status de aderência ao plano (colunas da fase 4; insert tem fallback)
+    const adherenceStatus = skipped
+      ? 'pulou'
+      : (adherence === 'substituiu' ? 'substituiu' : 'seguiu')
+
     // Usar os alimentos do plano ou os alimentos completados
-    const foodsToRegister = completedFoods || planMeal.foods || []
+    const foodsToRegister = skipped ? [] : (completedFoods || planMeal.foods || [])
 
     // Calcular totais
     const totalCalories = foodsToRegister.reduce((sum: number, f: { calories?: number }) => sum + (f.calories || 0), 0)
@@ -79,22 +86,39 @@ export async function POST(request: NextRequest) {
     const totalCarbs = foodsToRegister.reduce((sum: number, f: { carbs?: number }) => sum + (f.carbs || 0), 0)
     const totalFat = foodsToRegister.reduce((sum: number, f: { fat?: number }) => sum + (f.fat || 0), 0)
 
-    // Criar refeição no fitness_meals
-    const { data: meal, error: createError } = await admin
-      .from('fitness_meals')
-      .insert({
-        user_id: user.id,
-        tipo_refeicao: planMeal.meal_type,
-        data: date,
-        horario: planMeal.scheduled_time?.substring(0, 5) || new Date().toTimeString().substring(0, 5),
-        calorias_total: totalCalories,
-        proteinas_total: totalProtein,
-        carboidratos_total: totalCarbs,
-        gorduras_total: totalFat,
-        notas: notes || `Refeição do plano: ${planMeal.meal_name || planMeal.meal_type}${usedAlternative ? ' (alternativa)' : ''}`
-      })
-      .select()
-      .single()
+    const baseMealRow = {
+      user_id: user.id,
+      tipo_refeicao: planMeal.meal_type,
+      data: date,
+      horario: planMeal.scheduled_time?.substring(0, 5) || new Date().toTimeString().substring(0, 5),
+      status: skipped ? 'pulado' : 'concluido',
+      calorias_total: totalCalories,
+      proteinas_total: totalProtein,
+      carboidratos_total: totalCarbs,
+      gorduras_total: totalFat,
+      notas: skipped
+        ? `[Refeição pulada] ${planMeal.meal_name || planMeal.meal_type}`
+        : (notes || `Refeição do plano: ${planMeal.meal_name || planMeal.meal_type}${usedAlternative ? ' (alternativa)' : ''}`)
+    }
+
+    // Insert com as colunas de aderência (fase 4); se a migration ainda não
+    // rodou (coluna inexistente, 42703), refaz sem elas para não quebrar.
+    let meal = null
+    let createError = null
+    {
+      const res = await admin
+        .from('fitness_meals')
+        .insert({ ...baseMealRow, plan_meal_id: planMealId, adherence_status: adherenceStatus })
+        .select()
+        .single()
+      meal = res.data
+      createError = res.error
+      if (createError && (createError.code === '42703' || createError.code === 'PGRST204')) {
+        const retry = await admin.from('fitness_meals').insert(baseMealRow).select().single()
+        meal = retry.data
+        createError = retry.error
+      }
+    }
 
     if (createError) {
       console.error('Erro ao criar refeição:', createError)
@@ -104,38 +128,55 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Criar itens da refeição
-    for (const food of foodsToRegister) {
-      await admin
+    // Criar itens da refeição em lote (ou todos, ou nenhum)
+    if (foodsToRegister.length > 0) {
+      const itemsToInsert = foodsToRegister.map((food: {
+        name?: string; quantity?: number; unit?: string
+        calories?: number; protein?: number; carbs?: number; fat?: number
+      }) => ({
+        meal_id: meal.id,
+        nome_alimento: food.name || 'Alimento',
+        quantidade: food.quantity ?? 100,
+        unidade: food.unit || 'g',
+        calorias: food.calories || 0,
+        proteinas: food.protein || 0,
+        carboidratos: food.carbs || 0,
+        gorduras: food.fat || 0
+      }))
+
+      const { error: itemsError } = await admin
         .from('fitness_meal_items')
-        .insert({
-          meal_id: meal.id,
-          nome_alimento: food.name,
-          quantidade: food.quantity,
-          unidade: food.unit || 'g',
-          calorias: food.calories || 0,
-          proteinas: food.protein || 0,
-          carboidratos: food.carbs || 0,
-          gorduras: food.fat || 0
-        })
+        .insert(itemsToInsert)
+
+      if (itemsError) {
+        console.error('Erro ao salvar itens da refeição do plano:', itemsError)
+        await admin.from('fitness_meals').delete().eq('id', meal.id)
+        return NextResponse.json(
+          { success: false, error: 'Erro ao registrar itens da refeição' },
+          { status: 500 }
+        )
+      }
     }
 
     // Award 10 pts quando 3+ refeições registradas no dia (dedup diário no
-    // awardPointsServer — só credita uma vez por dia mesmo se chamar várias).
-    const { count: mealsToday } = await admin
-      .from('fitness_meals')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('data', date)
+    // awardPointsServer). Refeições puladas não contam.
+    if (!skipped) {
+      const { count: mealsToday } = await admin
+        .from('fitness_meals')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('data', date)
+        .neq('status', 'pulado')
 
-    if ((mealsToday ?? 0) >= 3) {
-      await awardPointsServer(user.id, 'all_meals_logged')
+      if ((mealsToday ?? 0) >= 3) {
+        await awardPointsServer(user.id, 'all_meals_logged')
+      }
     }
 
     return NextResponse.json({
       success: true,
       meal,
-      message: 'Refeição registrada com sucesso'
+      message: skipped ? 'Refeição marcada como pulada' : 'Refeição registrada com sucesso'
     })
 
   } catch (error) {
@@ -174,6 +215,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         tipo_refeicao,
+        status,
         notas,
         horario,
         calorias_total,
@@ -202,6 +244,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const allMeals = completedMeals || []
+    const doneMeals = allMeals.filter(m => m.status !== 'pulado')
+    const skippedMeals = allMeals.filter(m => m.status === 'pulado')
+
     // Formatar dados das refeições completadas com os alimentos reais
     const completedMealsData: Record<string, {
       id: string
@@ -223,7 +269,7 @@ export async function GET(request: NextRequest) {
       notes?: string
     }> = {}
 
-    for (const meal of completedMeals || []) {
+    for (const meal of doneMeals) {
       completedMealsData[meal.tipo_refeicao] = {
         id: meal.id,
         meal_type: meal.tipo_refeicao,
@@ -256,7 +302,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       completedMealIds: Object.keys(completedMealsData),
-      completedMealTypes: (completedMeals || []).map(m => m.tipo_refeicao),
+      completedMealTypes: doneMeals.map(m => m.tipo_refeicao),
+      skippedMealTypes: skippedMeals.map(m => m.tipo_refeicao),
       completedMealsData // Dados completos das refeições com alimentos reais
     })
 
