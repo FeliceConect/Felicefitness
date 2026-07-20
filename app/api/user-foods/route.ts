@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
       carboidratos,
       gorduras,
       fibras,
-      porcoes_comuns
+      porcoes_comuns,
+      source
     } = body
 
     // Validação básica
@@ -108,7 +109,9 @@ export async function POST(request: NextRequest) {
       gorduras: Math.round((gorduras || 0) * 10) / 10,
       fibras: fibras ? Math.round(fibras * 10) / 10 : null,
       porcoes_comuns: porcoes_comuns || null,
-      source: 'ai_analysis',
+      // Respeita a origem informada pelo client (antes era sempre 'ai_analysis',
+      // marcando alimentos manuais como criados por IA).
+      source: ['manual', 'ai_analysis', 'import'].includes(source) ? source : 'manual',
       is_active: true
     }
 

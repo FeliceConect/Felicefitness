@@ -23,7 +23,11 @@ interface UseFoodsReturn {
   loading: boolean
 }
 
-const RECENT_FOODS_KEY = 'felicefit_recent_foods'
+// v2: persiste o SNAPSHOT completo do alimento (não só o id) — antes,
+// recentes de alimentos globais sumiam ao recarregar a página porque só
+// o id era salvo e o objeto ficava apenas em memória.
+const RECENT_FOODS_KEY = 'felicefit_recent_foods_v2'
+const LEGACY_RECENT_FOODS_KEY = 'felicefit_recent_foods'
 const MAX_RECENT_FOODS = 10
 const DEBOUNCE_MS = 300
 
@@ -70,8 +74,8 @@ export function useFoods(): UseFoodsReturn {
   const [userFoodsFromDb, setUserFoodsFromDb] = useState<Food[]>([])
   const [searchResults, setSearchResults] = useState<Food[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
-  const [recentIds, setRecentIds] = useState<string[]>([])
   const [recentFoods, setRecentFoods] = useState<Food[]>([])
+  const [globalFavorites, setGlobalFavorites] = useState<Food[]>([])
   const [loading, setLoading] = useState(true)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -91,34 +95,55 @@ export function useFoods(): UseFoodsReturn {
     }
   }, [])
 
+  // Buscar favoritos globais (tabela fitness_food_favorites)
+  const fetchGlobalFavorites = useCallback(async () => {
+    try {
+      const response = await fetch('/api/foods/favorites')
+      const data = await response.json()
+      if (data.success && data.foods) {
+        setGlobalFavorites(data.foods.map(convertDbFoodToFood))
+      }
+    } catch (error) {
+      console.error('Erro ao buscar favoritos:', error)
+    }
+  }, [])
+
   // Carregar recentes do localStorage e buscar alimentos do usuário
   useEffect(() => {
     const saved = localStorage.getItem(RECENT_FOODS_KEY)
     if (saved) {
       try {
-        setRecentIds(JSON.parse(saved))
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          setRecentFoods(parsed.filter((f: Food) => f && f.id && f.nome))
+        }
       } catch {
         localStorage.removeItem(RECENT_FOODS_KEY)
       }
     }
+    // Limpa o formato antigo (só ids), que não é mais usado
+    localStorage.removeItem(LEGACY_RECENT_FOODS_KEY)
 
+    fetchGlobalFavorites()
     fetchUserFoods().finally(() => setLoading(false))
-  }, [fetchUserFoods])
+  }, [fetchUserFoods, fetchGlobalFavorites])
 
-  // Salvar recentes no localStorage
+  // Salvar recentes (snapshots completos) no localStorage
   useEffect(() => {
-    if (recentIds.length > 0) {
-      localStorage.setItem(RECENT_FOODS_KEY, JSON.stringify(recentIds))
+    if (recentFoods.length > 0) {
+      localStorage.setItem(RECENT_FOODS_KEY, JSON.stringify(recentFoods))
     }
-  }, [recentIds])
+  }, [recentFoods])
 
   // Todos os alimentos locais (apenas user foods, sem mock)
   const foods = useMemo(() => userFoodsFromDb, [userFoodsFromDb])
 
-  // Favoritos
+  // Favoritos: user foods (flag legada) + globais (fitness_food_favorites)
   const favorites = useMemo(() => {
-    return foods.filter(f => f.is_favorite)
-  }, [foods])
+    const userFavs = foods.filter(f => f.is_favorite)
+    const seen = new Set(userFavs.map(f => f.id))
+    return [...userFavs, ...globalFavorites.filter(f => !seen.has(f.id))]
+  }, [foods, globalFavorites])
 
   // Busca server-side com debounce
   const searchApi = useCallback(async (query: string, category?: string, sources?: string[]) => {
@@ -229,7 +254,8 @@ export function useFoods(): UseFoodsReturn {
             carboidratos: food.carboidratos,
             gorduras: food.gorduras,
             fibras: food.fibras,
-            porcoes_comuns: food.porcoes_comuns
+            porcoes_comuns: food.porcoes_comuns,
+            source: food.source
           })
         })
 
@@ -304,73 +330,71 @@ export function useFoods(): UseFoodsReturn {
     }
   }, [userFoodsFromDb])
 
-  // Toggle favorito
+  // Toggle favorito — funciona para alimentos do usuário (flag legada em
+  // fitness_user_foods) E para alimentos globais (fitness_food_favorites).
   const toggleFavorite = useCallback(async (id: string) => {
-    const currentFood = [...userFoodsFromDb, ...searchResults].find(f => f.id === id)
+    const currentFood = [...userFoodsFromDb, ...searchResults, ...globalFavorites, ...recentFoods]
+      .find(f => f.id === id)
     if (!currentFood) return
 
     const newFavoriteValue = !currentFood.is_favorite
-    const isUserFood = userFoodsFromDb.some(f => f.id === id)
+    const isUserFood = currentFood.is_user_created || userFoodsFromDb.some(f => f.id === id)
 
-    if (isUserFood) {
-      setUserFoodsFromDb(prev =>
-        prev.map(food =>
-          food.id === id ? { ...food, is_favorite: newFavoriteValue } : food
+    // Atualização otimista em todas as listas locais
+    const applyFlag = (value: boolean) => {
+      const patch = (food: Food) => (food.id === id ? { ...food, is_favorite: value } : food)
+      setUserFoodsFromDb(prev => prev.map(patch))
+      setSearchResults(prev => prev.map(patch))
+      setRecentFoods(prev => prev.map(patch))
+      if (value) {
+        setGlobalFavorites(prev =>
+          prev.some(f => f.id === id) ? prev.map(patch) : [{ ...currentFood, is_favorite: true }, ...prev]
         )
-      )
+      } else {
+        setGlobalFavorites(prev => prev.filter(f => f.id !== id))
+      }
+    }
 
-      try {
+    applyFlag(newFavoriteValue)
+
+    try {
+      if (isUserFood) {
+        // Mantém o caminho legado para user foods (is_favorite na própria linha)
         const response = await fetch('/api/user-foods', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, is_favorite: newFavoriteValue })
         })
-
         const result = await response.json()
-
-        if (!result.success) {
-          setUserFoodsFromDb(prev =>
-            prev.map(food =>
-              food.id === id ? { ...food, is_favorite: !newFavoriteValue } : food
-            )
-          )
-        }
-      } catch {
-        setUserFoodsFromDb(prev =>
-          prev.map(food =>
-            food.id === id ? { ...food, is_favorite: !newFavoriteValue } : food
-          )
-        )
+        if (!result.success) applyFlag(!newFavoriteValue)
+      } else {
+        const response = await fetch('/api/foods/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ food_id: id, food_source: 'global' })
+        })
+        const result = await response.json()
+        if (!result.success) applyFlag(!newFavoriteValue)
       }
+    } catch {
+      applyFlag(!newFavoriteValue)
     }
-  }, [userFoodsFromDb, searchResults])
+  }, [userFoodsFromDb, searchResults, globalFavorites, recentFoods])
 
-  // Adicionar aos recentes
+  // Adicionar aos recentes (snapshot completo, persistido no localStorage)
   const addToRecent = useCallback((id: string) => {
-    // Salvar o food completo nos recentes para referência offline
-    const food = [...userFoodsFromDb, ...searchResults].find(f => f.id === id)
-    if (food) {
-      setRecentFoods(prev => {
-        const filtered = prev.filter(f => f.id !== id)
-        return [food, ...filtered].slice(0, MAX_RECENT_FOODS)
-      })
-    }
-
-    setRecentIds(prev => {
-      const filtered = prev.filter(fid => fid !== id)
-      return [id, ...filtered].slice(0, MAX_RECENT_FOODS)
+    const food = [...userFoodsFromDb, ...searchResults, ...globalFavorites].find(f => f.id === id)
+    if (!food) return
+    setRecentFoods(prev => {
+      const filtered = prev.filter(f => f.id !== id)
+      return [food, ...filtered].slice(0, MAX_RECENT_FOODS)
     })
-  }, [userFoodsFromDb, searchResults])
+  }, [userFoodsFromDb, searchResults, globalFavorites])
 
-  // Recentes (usar foods salvos localmente)
+  // Recentes — snapshots persistidos; prefere a versão fresca do banco quando disponível
   const recent = useMemo(() => {
-    return recentIds
-      .map(id =>
-        userFoodsFromDb.find(f => f.id === id)
-        || recentFoods.find(f => f.id === id)
-      )
-      .filter(Boolean) as Food[]
-  }, [userFoodsFromDb, recentFoods, recentIds])
+    return recentFoods.map(f => userFoodsFromDb.find(u => u.id === f.id) || f)
+  }, [userFoodsFromDb, recentFoods])
 
   // Alimentos criados pelo usuário
   const userFoods = useMemo(() => {

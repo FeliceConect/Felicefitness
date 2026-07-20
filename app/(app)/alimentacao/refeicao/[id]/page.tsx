@@ -253,11 +253,11 @@ export default function MealDetailPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuário não autenticado')
 
-      // 1. Inserir APENAS os novos itens (preserva os existentes)
-      for (const item of newItems) {
+      // 1. Inserir APENAS os novos itens (preserva os existentes) — em lote:
+      // ou salva todos, ou nenhum (antes, erros individuais eram engolidos)
+      const itemsToInsert = newItems.map(item => {
         const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
-
-        const itemToInsert = {
+        return {
           meal_id: meal.id,
           food_id: isValidUUID ? item.food_id : null,
           nome_alimento: item.food.nome,
@@ -268,13 +268,14 @@ export default function MealDetailPage() {
           carboidratos: Math.round(item.carboidratos),
           gorduras: Math.round(item.gorduras)
         }
-        const { error: insertError } = await supabase
-          .from('fitness_meal_items')
-          .insert(itemToInsert as never)
+      })
+      const { error: insertError } = await supabase
+        .from('fitness_meal_items')
+        .insert(itemsToInsert as never)
 
-        if (insertError) {
-          console.error('Erro ao inserir item:', insertError)
-        }
+      if (insertError) {
+        console.error('Erro ao inserir itens:', insertError)
+        throw insertError
       }
 
       // 2. Atualizar totais na refeição
@@ -324,15 +325,13 @@ export default function MealDetailPage() {
         console.error('Erro ao deletar itens:', deleteError)
       }
 
-      // 2. Inserir novos itens um por um
+      // 2. Inserir novos itens em lote (ou todos, ou nenhum)
       if (editedItems.length > 0) {
-        for (const item of editedItems) {
-          // Verificar se food_id é um UUID válido
+        const itemsToInsert = editedItems.map(item => {
           const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
-
-          const itemToInsert = {
+          return {
             meal_id: meal.id,
-            food_id: isValidUUID ? item.food_id : null, // Só envia se for UUID válido
+            food_id: isValidUUID ? item.food_id : null,
             nome_alimento: item.food.nome,
             quantidade: Math.round(item.quantidade),
             unidade: item.food.unidade || 'g',
@@ -341,13 +340,14 @@ export default function MealDetailPage() {
             carboidratos: Math.round(item.carboidratos),
             gorduras: Math.round(item.gorduras)
           }
-          const { error: insertError } = await supabase
-            .from('fitness_meal_items')
-            .insert(itemToInsert as never)
+        })
+        const { error: insertError } = await supabase
+          .from('fitness_meal_items')
+          .insert(itemsToInsert as never)
 
-          if (insertError) {
-            console.error('Erro ao inserir item:', insertError)
-          }
+        if (insertError) {
+          console.error('Erro ao inserir itens:', insertError)
+          throw insertError
         }
       }
 

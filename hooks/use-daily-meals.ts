@@ -14,8 +14,9 @@ import type {
   NutritionProgress,
   MealType
 } from '@/lib/nutrition/types'
-import { leonardoGoals, leonardoMealPlan } from '@/lib/nutrition/types'
+import { leonardoMealPlan } from '@/lib/nutrition/types'
 import { calculateNutritionProgress } from '@/lib/nutrition/calculations'
+import { useNutritionGoals } from '@/hooks/use-nutrition-goals'
 import { awardMealsPoints } from '@/lib/services/points'
 
 interface UseDailyMealsReturn {
@@ -144,8 +145,8 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
     )
   }, [meals])
 
-  // Metas do usuário (por enquanto hardcoded para Leonardo)
-  const goals = leonardoGoals
+  // Metas reais do paciente (plano da nutri → perfil → cálculo → fallback)
+  const { goals } = useNutritionGoals()
 
   // Calcular progresso
   const progress = useMemo(() => {
@@ -225,15 +226,16 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         throw error
       }
 
-      // SALVAR OS ITENS DA REFEIÇÃO
+      // SALVAR OS ITENS DA REFEIÇÃO — insert em lote: ou salva tudo, ou
+      // desfaz a refeição. Antes era um loop que engolia erros e podia
+      // gravar a refeição com itens faltando silenciosamente.
       if (meal.itens && meal.itens.length > 0) {
-        for (const item of meal.itens) {
-          // Verificar se food_id é um UUID válido (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+        const itemsToInsert = meal.itens.map(item => {
+          // food_id é referência lógica (global/user food) — só envia UUID válido
           const isValidUUID = item.food_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.food_id)
-
-          const itemToInsert = {
+          return {
             meal_id: data.id,
-            food_id: isValidUUID ? item.food_id : null, // Só envia se for UUID válido
+            food_id: isValidUUID ? item.food_id : null,
             nome_alimento: item.food?.nome || 'Alimento',
             quantidade: Math.round(item.quantidade || 100),
             unidade: item.food?.unidade || 'g',
@@ -242,16 +244,19 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
             carboidratos: Math.round(item.carboidratos || 0),
             gorduras: Math.round(item.gorduras || 0)
           }
+        })
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: itemsError } = await (supabase as any)
+          .from('fitness_meal_items')
+          .insert(itemsToInsert)
+
+        if (itemsError) {
+          console.error('Erro ao salvar itens da refeição:', itemsError)
+          // Rollback manual: remove a refeição órfã para não gravar registro incompleto
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: itemError } = await (supabase as any)
-            .from('fitness_meal_items')
-            .insert(itemToInsert)
-
-          if (itemError) {
-            console.error('Erro ao salvar item:', item.food?.nome, itemError)
-            // Continuar mesmo com erro para salvar outros itens
-          }
+          await (supabase as any).from('fitness_meals').delete().eq('id', data.id)
+          throw itemsError
         }
       }
 

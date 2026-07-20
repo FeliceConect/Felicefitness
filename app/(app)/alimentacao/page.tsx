@@ -19,9 +19,9 @@ import type { MealType } from '@/lib/nutrition/types'
 
 export default function AlimentacaoPage() {
   const router = useRouter()
-  const { meals, plannedMeals, totals, nextMeal, loading } = useDailyMeals()
+  const { meals, plannedMeals, totals, nextMeal, loading, refresh } = useDailyMeals()
   const { todayTotal: aguaConsumida } = useWaterLog()
-  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completedMealsData, isTrainingDay, completeMeal, loading: planLoading } = useMealPlan()
+  const { plan: mealPlan, todayMeals: planMeals, completedMealIds, completedMealsData, isTrainingDay, completeMeal, loading: planLoading, refetch: refetchPlan } = useMealPlan()
   const { profile } = useProfile()
   // Metas reais (plano da nutri → perfil → cálculo dinâmico → fallback)
   const { goals } = useNutritionGoals()
@@ -51,8 +51,8 @@ export default function AlimentacaoPage() {
   ) => {
     const success = await completeMeal(meal, chosenFoods)
     if (success) {
-      // Refresh daily meals to update totals
-      window.location.reload()
+      // Atualiza refeições do dia e estado do plano sem recarregar a página
+      await Promise.all([refresh(), Promise.resolve(refetchPlan())])
     }
   }
 

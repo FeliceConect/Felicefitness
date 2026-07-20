@@ -7,7 +7,7 @@ import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Minus, ChevronRight, Tar
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
-import { leonardoGoals } from '@/lib/nutrition/types'
+import { useNutritionGoals } from '@/hooks/use-nutrition-goals'
 import { cn } from '@/lib/utils'
 
 type TimeRange = '7dias' | '30dias' | '90dias'
@@ -28,6 +28,8 @@ export default function NutritionHistoryPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [history, setHistory] = useState<DayHistory[]>([])
   const [loading, setLoading] = useState(true)
+  // Metas reais do paciente logado (antes: hardcoded do Leonardo)
+  const { goals: nutritionGoals } = useNutritionGoals()
 
   const supabase = createClient()
 
@@ -157,7 +159,7 @@ export default function NutritionHistoryPage() {
   const compliance = useMemo(() => {
     if (history.length === 0) return 0
 
-    const goals = leonardoGoals
+    const goals = nutritionGoals
     let daysOnTarget = 0
 
     history.forEach(day => {
@@ -171,7 +173,7 @@ export default function NutritionHistoryPage() {
     })
 
     return Math.round((daysOnTarget / history.length) * 100)
-  }, [history])
+  }, [history, nutritionGoals])
 
   // Gerar dados para a semana atual
   const weekDays = useMemo(() => {
@@ -280,10 +282,10 @@ export default function NutritionHistoryPage() {
               <p className="text-sm text-foreground-secondary">Calorias</p>
               {getTrendIcon(trends.calorias)}
             </div>
-            <p className={cn('text-2xl font-bold', getProgressColor(averages.calorias, leonardoGoals.calorias))}>
+            <p className={cn('text-2xl font-bold', getProgressColor(averages.calorias, nutritionGoals.calorias))}>
               {averages.calorias}
             </p>
-            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.calorias} kcal</p>
+            <p className="text-xs text-foreground-muted">Meta: {nutritionGoals.calorias} kcal</p>
           </div>
 
           {/* Proteína */}
@@ -292,10 +294,10 @@ export default function NutritionHistoryPage() {
               <p className="text-sm text-foreground-secondary">Proteína</p>
               {getTrendIcon(trends.proteinas)}
             </div>
-            <p className={cn('text-2xl font-bold', getProgressColor(averages.proteinas, leonardoGoals.proteinas))}>
+            <p className={cn('text-2xl font-bold', getProgressColor(averages.proteinas, nutritionGoals.proteinas))}>
               {averages.proteinas}g
             </p>
-            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.proteinas}g</p>
+            <p className="text-xs text-foreground-muted">Meta: {nutritionGoals.proteinas}g</p>
           </div>
 
           {/* Carboidratos */}
@@ -304,10 +306,10 @@ export default function NutritionHistoryPage() {
               <p className="text-sm text-foreground-secondary">Carboidratos</p>
               {getTrendIcon(trends.carboidratos)}
             </div>
-            <p className={cn('text-2xl font-bold', getProgressColor(averages.carboidratos, leonardoGoals.carboidratos))}>
+            <p className={cn('text-2xl font-bold', getProgressColor(averages.carboidratos, nutritionGoals.carboidratos))}>
               {averages.carboidratos}g
             </p>
-            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.carboidratos}g</p>
+            <p className="text-xs text-foreground-muted">Meta: {nutritionGoals.carboidratos}g</p>
           </div>
 
           {/* Gorduras */}
@@ -316,10 +318,10 @@ export default function NutritionHistoryPage() {
               <p className="text-sm text-foreground-secondary">Gorduras</p>
               {getTrendIcon(trends.gorduras)}
             </div>
-            <p className={cn('text-2xl font-bold', getProgressColor(averages.gorduras, leonardoGoals.gorduras))}>
+            <p className={cn('text-2xl font-bold', getProgressColor(averages.gorduras, nutritionGoals.gorduras))}>
               {averages.gorduras}g
             </p>
-            <p className="text-xs text-foreground-muted">Meta: {leonardoGoals.gorduras}g</p>
+            <p className="text-xs text-foreground-muted">Meta: {nutritionGoals.gorduras}g</p>
           </div>
         </motion.div>
       </div>
@@ -342,7 +344,7 @@ export default function NutritionHistoryPage() {
               const isFuture = day > new Date()
 
               const calPercent = dayData
-                ? Math.round((dayData.totals.calorias / leonardoGoals.calorias) * 100)
+                ? Math.round((dayData.totals.calorias / nutritionGoals.calorias) * 100)
                 : 0
 
               return (
@@ -412,8 +414,8 @@ export default function NutritionHistoryPage() {
 
         <div className="space-y-2">
           {history.map((day, index) => {
-            const calPercent = Math.round((day.totals.calorias / leonardoGoals.calorias) * 100)
-            const protPercent = Math.round((day.totals.proteinas / leonardoGoals.proteinas) * 100)
+            const calPercent = Math.round((day.totals.calorias / nutritionGoals.calorias) * 100)
+            const protPercent = Math.round((day.totals.proteinas / nutritionGoals.proteinas) * 100)
             const isOnTarget = calPercent >= 90 && calPercent <= 110 && protPercent >= 90
 
             return (
@@ -482,14 +484,14 @@ export default function NutritionHistoryPage() {
                         <p className="text-lg font-bold text-dourado">{day.totals.carboidratos}g</p>
                         <p className="text-xs text-foreground-muted">carb</p>
                         <p className="text-xs text-emerald-400 mt-1">
-                          {Math.round((day.totals.carboidratos / leonardoGoals.carboidratos) * 100)}%
+                          {Math.round((day.totals.carboidratos / nutritionGoals.carboidratos) * 100)}%
                         </p>
                       </div>
                       <div>
                         <p className="text-lg font-bold text-amber-400">{day.totals.gorduras}g</p>
                         <p className="text-xs text-foreground-muted">gord</p>
                         <p className="text-xs text-emerald-400 mt-1">
-                          {Math.round((day.totals.gorduras / leonardoGoals.gorduras) * 100)}%
+                          {Math.round((day.totals.gorduras / nutritionGoals.gorduras) * 100)}%
                         </p>
                       </div>
                     </div>

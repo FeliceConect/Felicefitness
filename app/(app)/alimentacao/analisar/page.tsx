@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, Suspense } from 'react'
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -83,6 +83,20 @@ function AnalysisContent() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  // Quota do mês visível ANTES da primeira análise
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/meals/analyze')
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled && data.success) {
+          setUsageInfo({ used: data.used, limit: data.limit })
+        }
+      })
+      .catch(() => { /* silencioso — o contador aparece após a análise */ })
+    return () => { cancelled = true }
+  }, [])
 
   const handleImageSelect = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -404,10 +418,15 @@ function AnalysisContent() {
                 </button>
                 <button
                   onClick={analyzeImage}
-                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 bg-dourado text-white rounded-xl font-medium hover:bg-dourado/90 transition-colors"
+                  disabled={!imageBase64}
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 bg-dourado text-white rounded-xl font-medium hover:bg-dourado/90 transition-colors disabled:opacity-50"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  Analisar
+                  {!imageBase64 ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  {!imageBase64 ? 'Preparando...' : 'Analisar'}
                 </button>
               </div>
             )}
@@ -643,6 +662,47 @@ function FoodEditRow({ initial, onSave, onCancel }: FoodEditRowProps) {
     return isNaN(n) ? 0 : n
   }
 
+  // Baseline para reescala proporcional: ao mudar a quantidade (g), os macros
+  // acompanham (150g → 80g reduz kcal/prot/carb/gord na mesma proporção).
+  // Editar um macro manualmente redefine o baseline com os valores atuais.
+  const baseRef = useRef({
+    q: initial.quantidade_g || 0,
+    cal: initial.calorias || 0,
+    prot: initial.proteinas || 0,
+    carb: initial.carboidratos || 0,
+    gord: initial.gorduras || 0,
+  })
+
+  const handleQuantityChange = (value: string) => {
+    setQuantidade(value)
+    const newQ = num(value)
+    const base = baseRef.current
+    if (newQ > 0 && base.q > 0) {
+      const ratio = newQ / base.q
+      setCalorias(String(Math.round(base.cal * ratio)))
+      setProteinas(String(Math.round(base.prot * ratio * 10) / 10))
+      setCarboidratos(String(Math.round(base.carb * ratio * 10) / 10))
+      setGorduras(String(Math.round(base.gord * ratio * 10) / 10))
+    }
+  }
+
+  const handleMacroChange = (
+    setter: (v: string) => void,
+    field: 'cal' | 'prot' | 'carb' | 'gord'
+  ) => (value: string) => {
+    setter(value)
+    const q = num(quantidade)
+    if (q > 0) {
+      baseRef.current = {
+        q,
+        cal: field === 'cal' ? num(value) : num(calorias),
+        prot: field === 'prot' ? num(value) : num(proteinas),
+        carb: field === 'carb' ? num(value) : num(carboidratos),
+        gord: field === 'gord' ? num(value) : num(gorduras),
+      }
+    }
+  }
+
   const handleSave = () => {
     if (!nome.trim()) {
       toast.error('Informe o nome do alimento')
@@ -678,23 +738,23 @@ function FoodEditRow({ initial, onSave, onCancel }: FoodEditRowProps) {
       <div className="grid grid-cols-3 gap-2">
         <div>
           <label className={labelCls}>Quant. (g)</label>
-          <input type="text" inputMode="decimal" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} className={inputCls} />
+          <input type="text" inputMode="decimal" value={quantidade} onChange={(e) => handleQuantityChange(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Kcal</label>
-          <input type="text" inputMode="decimal" value={calorias} onChange={(e) => setCalorias(e.target.value)} className={inputCls} />
+          <input type="text" inputMode="decimal" value={calorias} onChange={(e) => handleMacroChange(setCalorias, 'cal')(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Prot. (g)</label>
-          <input type="text" inputMode="decimal" value={proteinas} onChange={(e) => setProteinas(e.target.value)} className={inputCls} />
+          <input type="text" inputMode="decimal" value={proteinas} onChange={(e) => handleMacroChange(setProteinas, 'prot')(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Carb. (g)</label>
-          <input type="text" inputMode="decimal" value={carboidratos} onChange={(e) => setCarboidratos(e.target.value)} className={inputCls} />
+          <input type="text" inputMode="decimal" value={carboidratos} onChange={(e) => handleMacroChange(setCarboidratos, 'carb')(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Gord. (g)</label>
-          <input type="text" inputMode="decimal" value={gorduras} onChange={(e) => setGorduras(e.target.value)} className={inputCls} />
+          <input type="text" inputMode="decimal" value={gorduras} onChange={(e) => handleMacroChange(setGorduras, 'gord')(e.target.value)} className={inputCls} />
         </div>
       </div>
       <div className="flex gap-2 pt-1">

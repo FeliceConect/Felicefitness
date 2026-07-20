@@ -16,7 +16,8 @@ interface AddCustomFoodModalProps {
 
 const CATEGORIES: FoodCategory[] = [
   'proteina', 'carboidrato', 'vegetal', 'fruta',
-  'laticinio', 'gordura', 'bebida', 'outros'
+  'laticinio', 'gordura', 'suplemento', 'bebida',
+  'prato_pronto', 'outros'
 ]
 
 export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }: AddCustomFoodModalProps) {
@@ -32,6 +33,7 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmZeroMacros, setConfirmZeroMacros] = useState(false)
 
   // Reset form when modal opens with new name
   useEffect(() => {
@@ -39,11 +41,21 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
       setNome(initialName)
       setSaveSuccess(false)
       setError(null)
+      setConfirmZeroMacros(false)
     }
   }, [isOpen, initialName])
 
   const handleSave = async () => {
     if (!nome.trim()) return
+
+    // Aviso ao salvar alimento com 0 kcal e 0 macros — provavelmente o
+    // usuário esqueceu de preencher; exige um segundo clique para confirmar.
+    const totalMacros = (parseInt(calorias) || 0) + (parseFloat(proteinas) || 0)
+      + (parseFloat(carboidratos) || 0) + (parseFloat(gorduras) || 0)
+    if (totalMacros === 0 && !confirmZeroMacros) {
+      setConfirmZeroMacros(true)
+      return
+    }
 
     setIsSaving(true)
     setError(null)
@@ -273,6 +285,16 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
               </div>
             )}
 
+            {/* Aviso de macros zerados */}
+            {confirmZeroMacros && !saveSuccess && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                <span className="text-amber-600 text-sm">
+                  Este alimento está sem calorias e macros. Ele não vai contar nos seus totais do dia.
+                  Toque em &ldquo;Salvar assim mesmo&rdquo; para confirmar.
+                </span>
+              </div>
+            )}
+
             {/* Error message */}
             {error && (
               <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
@@ -303,7 +325,7 @@ export function AddCustomFoodModal({ isOpen, onClose, onSave, initialName = '' }
               ) : (
                 <>
                   <Plus className="w-5 h-5" />
-                  Adicionar
+                  {confirmZeroMacros ? 'Salvar assim mesmo' : 'Adicionar'}
                 </>
               )}
             </button>

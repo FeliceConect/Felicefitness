@@ -232,6 +232,19 @@ export async function GET(request: NextRequest) {
       console.error('Erro ao buscar alimentos do usuário:', userError)
     }
 
+    // Favoritos do usuário (globais + user foods) para marcar is_favorite
+    // nos resultados. Best-effort: se a tabela ainda não existir, segue sem.
+    let favIds = new Set<string>()
+    try {
+      const { data: favRows } = await (supabase as SupabaseAny)
+        .from('fitness_food_favorites')
+        .select('food_id')
+        .eq('user_id', user.id)
+      favIds = new Set((favRows || []).map((r: SupabaseAny) => r.food_id))
+    } catch {
+      // tabela ausente — ignora
+    }
+
     // Helper: converte campo numérico opcional do banco para number ou null.
     const num = (v: unknown): number | null => (v != null && v !== '' ? Number(v) : null)
 
@@ -255,7 +268,7 @@ export async function GET(request: NextRequest) {
       selenio: num(f.selenio),
       magnesio: num(f.magnesio),
       porcoes_comuns: f.porcoes_comuns,
-      is_favorite: false,
+      is_favorite: favIds.has(f.id),
       is_user_created: false,
       source: f.source,
       source_id: f.source_id,
@@ -280,7 +293,7 @@ export async function GET(request: NextRequest) {
       selenio: num(f.selenio),
       magnesio: num(f.magnesio),
       porcoes_comuns: f.porcoes_comuns,
-      is_favorite: f.is_favorite || false,
+      is_favorite: f.is_favorite || favIds.has(f.id),
       is_user_created: true,
       source: f.source || 'manual',
     }))
