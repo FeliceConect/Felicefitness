@@ -36,7 +36,17 @@ interface AnalyzedFood {
   carboidratos: number
   gorduras: number
   categoria: string
+  /** Vínculo com o banco de alimentos, quando a API conseguiu casar */
+  food_id?: string
+  db_nome?: string
 }
+
+const ANALYZE_STEPS = [
+  'Enviando...',
+  'Identificando alimentos...',
+  'Calculando macros...',
+  'Quase lá...',
+]
 
 interface AnalysisResult {
   alimentos: AnalyzedFood[]
@@ -82,6 +92,8 @@ function AnalysisContent() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [addingNew, setAddingNew] = useState(false)
   const [edited, setEdited] = useState(false)
+  const [analyzeStep, setAnalyzeStep] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -149,12 +161,21 @@ function AnalysisContent() {
     setEditingIndex(null)
     setAddingNew(false)
     setEdited(false)
+    setAnalyzeStep(0)
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    // Etapas do loading (só feedback visual — a análise é uma request única)
+    const stepTimer = setInterval(() => {
+      setAnalyzeStep(s => Math.min(s + 1, ANALYZE_STEPS.length - 1))
+    }, 3500)
 
     try {
       const res = await fetch('/api/meals/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       })
 
       const data = await res.json()
@@ -177,11 +198,20 @@ function AnalysisContent() {
         observacoes: data.observacoes,
         qualidade: data.qualidade,
       })
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // usuário cancelou — sem mensagem de erro
+        return
+      }
       setError('Erro de conexão. Verifique sua internet e tente novamente.')
     } finally {
+      clearInterval(stepTimer)
       setAnalyzing(false)
     }
+  }
+
+  const cancelAnalysis = () => {
+    abortRef.current?.abort()
   }
 
   const analyzeImage = () => {
@@ -245,9 +275,10 @@ function AnalysisContent() {
         status: 'concluido' as const,
         itens: result.alimentos.map((a, idx) => ({
           id: `ai-${idx}`,
-          food_id: `ai-${idx}`,
+          // Usa o vínculo com o banco quando a API conseguiu casar o alimento
+          food_id: a.food_id || `ai-${idx}`,
           food: {
-            id: `ai-${idx}`,
+            id: a.food_id || `ai-${idx}`,
             nome: a.nome,
             categoria: (a.categoria || 'outros') as FoodCategory,
             porcao_padrao: a.quantidade_g,
@@ -399,8 +430,16 @@ function AnalysisContent() {
               className="w-full inline-flex items-center justify-center gap-2 py-3 bg-dourado text-white rounded-xl font-medium hover:bg-dourado/90 transition-colors disabled:opacity-50"
             >
               {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {analyzing ? 'Analisando...' : 'Analisar descrição'}
+              {analyzing ? ANALYZE_STEPS[analyzeStep] : 'Analisar descrição'}
             </button>
+            {analyzing && (
+              <button
+                onClick={cancelAnalysis}
+                className="w-full text-sm text-foreground-secondary underline"
+              >
+                Cancelar
+              </button>
+            )}
           </motion.div>
         )}
 
@@ -463,9 +502,17 @@ function AnalysisContent() {
               />
               {analyzing && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <div className="bg-white rounded-2xl px-6 py-4 flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 text-dourado animate-spin" />
-                    <span className="text-foreground font-medium">Analisando prato...</span>
+                  <div className="bg-white rounded-2xl px-6 py-4 flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 text-dourado animate-spin" />
+                      <span className="text-foreground font-medium">{ANALYZE_STEPS[analyzeStep]}</span>
+                    </div>
+                    <button
+                      onClick={cancelAnalysis}
+                      className="text-sm text-foreground-secondary underline"
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 </div>
               )}

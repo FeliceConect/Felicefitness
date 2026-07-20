@@ -26,6 +26,45 @@ interface AnalyzedFood {
   carboidratos: number
   gorduras: number
   categoria: string
+  /** Vinculação com o banco de alimentos (pós-análise, best-effort) */
+  food_id?: string
+  db_nome?: string
+}
+
+function normalizeName(str: string): string {
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
+
+/**
+ * Tenta casar cada alimento identificado pela IA com o banco global
+ * (vincula food_id para favoritos/popularidade/consistência). Os macros
+ * continuam sendo os estimados pela IA. Best-effort: se o RPC de busca
+ * não existir ou o match for fraco, o item fica sem vínculo.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function matchFoodsToDb(supabase: any, alimentos: AnalyzedFood[]): Promise<AnalyzedFood[]> {
+  return Promise.all(alimentos.map(async (a) => {
+    try {
+      const query = normalizeName(a.nome)
+      if (query.length < 3) return a
+      const { data, error } = await supabase.rpc('fitness_search_foods', {
+        p_terms: [query],
+        p_category: null,
+        p_sources: null,
+        p_limit: 1,
+        p_offset: 0,
+      })
+      const top = !error && data?.[0]
+      if (!top) return a
+      // Sanidade: o 1º token relevante do nome da IA precisa aparecer no match
+      const firstToken = query.split(/\s+/).find(t => t.length >= 4) || query.split(/\s+/)[0]
+      const haystack = `${top.nome_busca || ''} ${top.nome_popular_busca || ''}`
+      if (!firstToken || !haystack.includes(firstToken)) return a
+      return { ...a, food_id: top.id, db_nome: top.nome_popular || top.nome }
+    } catch {
+      return a
+    }
+  }))
 }
 
 const CATEGORIAS_VALIDAS = [
@@ -251,6 +290,9 @@ export async function POST(request: NextRequest) {
       }, { status: 422 })
     }
 
+    // Vincula os alimentos identificados ao banco (best-effort)
+    const alimentosVinculados = await matchFoodsToDb(supabase, parsed.alimentos)
+
     const totais = parsed.alimentos.reduce(
       (acc, a) => ({
         calorias: acc.calorias + (a.calorias || 0),
@@ -263,7 +305,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      alimentos: parsed.alimentos,
+      alimentos: alimentosVinculados,
       totais,
       observacoes: parsed.observacoes || null,
       qualidade: parsed.qualidade || null,
