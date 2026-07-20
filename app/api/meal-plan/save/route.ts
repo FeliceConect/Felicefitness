@@ -237,6 +237,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // A coluna is_training_day_only pode ainda não existir (migration fase 4
+    // pendente) — sonda uma vez e só persiste o flag se a coluna estiver lá.
+    const { error: trainingFlagProbeError } = await supabaseAdmin
+      .from('fitness_meal_plan_meals')
+      .select('is_training_day_only')
+      .limit(1)
+    const supportsTrainingFlag = !trainingFlagProbeError
+
     // Criar refeições para cada dia
     for (const day of days) {
       if (!day) continue
@@ -312,7 +320,8 @@ export async function POST(request: NextRequest) {
             instructions: meal.notes,
             alternatives: alternatives,
             is_optional: meal.is_optional,
-            order_index: index
+            order_index: index,
+            ...(supportsTrainingFlag ? { is_training_day_only: !!meal.is_training_day_only } : {})
           })
       })
 

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Utensils, Plus, Calendar, ExternalLink, Link2, X, FileText, Target } from 'lucide-react'
 import { toast } from 'sonner'
+import { AdherenceCard } from '@/components/portal/client-detail/adherence-card'
 
 interface MealPlan {
   id: string
@@ -146,6 +147,9 @@ export function TabPlanoAlimentar({ patientId }: TabPlanoAlimentarProps) {
           Criar Plano
         </Link>
       </div>
+
+      {/* Aderência real dos últimos 7 dias */}
+      <AdherenceCard patientId={patientId} />
 
       {activePlan ? (
         <div className="bg-white border border-border rounded-xl overflow-hidden">

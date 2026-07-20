@@ -1245,6 +1245,7 @@ function EditFoodModal({
     quantity: food.quantity != null ? String(food.quantity) : '',
     unit: food.unit || '',
     portion_label: food.portion_label || '',
+    group: food.group || '',
     calories: food.calories != null ? String(food.calories) : '',
     protein: food.protein != null ? String(food.protein) : '',
     carbs: food.carbs != null ? String(food.carbs) : '',
@@ -1256,11 +1257,12 @@ function EditFoodModal({
     if (!form.name.trim()) return
     const num = (v: string) => (v.trim() === '' ? undefined : parseFloat(v))
     onSave({
-      ...food, // preserva group/choice/micros
+      ...food, // preserva choice/micros
       name: form.name.trim(),
       quantity: num(form.quantity) as number,
       unit: form.unit.trim(),
       portion_label: form.portion_label.trim() || undefined,
+      group: form.group.trim() || undefined,
       calories: num(form.calories) ?? 0,
       protein: num(form.protein) ?? 0,
       carbs: num(form.carbs) ?? 0,
@@ -1334,6 +1336,19 @@ function EditFoodModal({
             />
           </div>
 
+          <div>
+            <label className="block text-xs text-foreground-muted mb-1">
+              Grupo &ldquo;escolher 1&rdquo; (opcional — alimentos com o mesmo grupo viram opções: o paciente marca qual comeu)
+            </label>
+            <input
+              type="text"
+              value={form.group}
+              onChange={(e) => setForm({ ...form, group: e.target.value })}
+              placeholder='Ex.: "Proteína" (use o mesmo texto nos outros itens do grupo)'
+              className={inputClass}
+            />
+          </div>
+
           <div className="grid grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-foreground-muted mb-1">Kcal</label>
@@ -1386,6 +1401,7 @@ function ManualFoodForm({
     name: '',
     quantity: '',
     unit: 'g',
+    group: '',
     calories: '',
     protein: '',
     carbs: '',
@@ -1400,6 +1416,7 @@ function ManualFoodForm({
       name: formData.name,
       quantity: parseFloat(formData.quantity),
       unit: formData.unit,
+      group: formData.group.trim() || undefined,
       calories: formData.calories ? parseFloat(formData.calories) : 0,
       protein: formData.protein ? parseFloat(formData.protein) : 0,
       carbs: formData.carbs ? parseFloat(formData.carbs) : 0,
@@ -1467,6 +1484,19 @@ function ManualFoodForm({
                 <option value="xic">xícara (xíc)</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-foreground-muted mb-1">
+              Grupo &ldquo;escolher 1&rdquo; (opcional — itens com o mesmo grupo viram opções para o paciente)
+            </label>
+            <input
+              type="text"
+              value={formData.group}
+              onChange={(e) => setFormData({ ...formData, group: e.target.value })}
+              placeholder='Ex.: "Proteína"'
+              className="w-full px-3 py-2 bg-white border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:border-dourado"
+            />
           </div>
 
           <div className="grid grid-cols-4 gap-3">

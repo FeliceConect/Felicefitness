@@ -36,6 +36,7 @@ interface PlannedMeal {
   // Support both formats: named alternatives (new) and food arrays (legacy)
   alternatives?: MealAlternative[] | Food[][]
   is_completed?: boolean
+  is_training_day_only?: boolean
 }
 
 // Dados da refeição realmente consumida
@@ -251,7 +252,8 @@ export function useMealPlan() {
     }
   }, [])
 
-  // Obter refeições do dia atual (filtrando por dia de treino se necessário)
+  // Obter refeições do dia atual, filtrando as marcadas como "só em dia de
+  // treino" quando hoje é dia de descanso.
   const getTodayMeals = useCallback((): PlannedMeal[] => {
     if (!plan?.days) return []
 
@@ -260,10 +262,8 @@ export function useMealPlan() {
 
     const meals = todayDay?.meals || []
 
-    // Filter meals based on training day status
-    // Note: Meals with is_training_day_only are stored in the DB, we need to check meal metadata
-    return meals
-  }, [plan])
+    return meals.filter(m => !m.is_training_day_only || isTrainingDay)
+  }, [plan, isTrainingDay])
 
   useEffect(() => {
     fetchPlan()
