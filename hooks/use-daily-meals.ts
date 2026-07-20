@@ -161,9 +161,10 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
     const now = new Date()
     const currentTimeStr = format(now, 'HH:mm')
 
-    // Encontrar refeições que ainda não foram concluídas
+    // Refeições já tratadas: concluídas OU puladas (pulada não deve voltar
+    // a ser sugerida como "próxima refeição")
     const completedTypes = new Set(
-      meals.filter(m => m.status === 'concluido').map(m => m.tipo)
+      meals.filter(m => m.status === 'concluido' || m.status === 'pulado').map(m => m.tipo)
     )
 
     // Encontrar a próxima refeição planejada não concluída

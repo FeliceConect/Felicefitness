@@ -13,7 +13,8 @@ import {
   Utensils,
   User,
   Camera,
-  Edit2
+  Edit2,
+  Loader2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { groupPlanFoods, formatFoodAmount } from '@/lib/nutrition/meal-foods'
@@ -177,8 +178,8 @@ interface MealPlanCardProps {
   skippedMealIds?: string[] // refeições marcadas como puladas (por meal_type)
   completedMealsData?: Record<string, CompletedMealData> // Dados das refeições realmente consumidas
   isTrainingDay?: boolean
-  onCompleteMeal: (meal: PlannedMeal, chosenFoods?: Food[]) => void
-  onSkipMeal?: (meal: PlannedMeal) => void
+  onCompleteMeal: (meal: PlannedMeal, chosenFoods?: Food[]) => void | Promise<void>
+  onSkipMeal?: (meal: PlannedMeal) => void | Promise<void>
   onAddDifferentMeal: () => void
 }
 
@@ -213,6 +214,9 @@ export function MealPlanCard({
 }: MealPlanCardProps) {
   const [expandedMeal, setExpandedMeal] = useState<string | null>(null)
   const [showAlternatives, setShowAlternatives] = useState<string | null>(null)
+  // Guarda de duplo toque: enquanto "Comi"/"Pulei" está em voo, os botões
+  // ficam desabilitados (a rota sempre INSERE — 2 toques = refeição dupla)
+  const [processingMealId, setProcessingMealId] = useState<string | null>(null)
   // Seleção do paciente por grupo "escolher 1": mealId -> { grupo -> nome do alimento }
   const [selections, setSelections] = useState<Record<string, Record<string, string>>>({})
   const router = useRouter()
@@ -261,6 +265,25 @@ export function MealPlanCard({
   // Para opções de refeição (A/B/C): pega 1 por grupo (default 1ª) + fixos
   function resolveFoods(foods: Food[]): Food[] {
     return groupPlanFoods(foods).map(b => b.items[0] as Food).filter(Boolean)
+  }
+
+  async function runMealAction(meal: PlannedMeal, action: () => void | Promise<void>) {
+    if (processingMealId) return
+    setProcessingMealId(meal.id)
+    try {
+      await action()
+    } finally {
+      setProcessingMealId(null)
+    }
+  }
+
+  function handleSkip(meal: PlannedMeal) {
+    if (!onSkipMeal) return
+    const label = meal.meal_name || MEAL_TYPE_LABELS[meal.meal_type] || 'esta refeição'
+    if (!window.confirm(`Marcar "${label}" como pulada? Ela não contará nos seus macros nem pontos de hoje.`)) {
+      return
+    }
+    void runMealAction(meal, () => onSkipMeal(meal))
   }
 
   // Verificar por meal_type OU por id
@@ -459,8 +482,9 @@ export function MealPlanCard({
                               <div className="flex gap-2 flex-wrap">
                                 {/* Option A (primary) */}
                                 <button
-                                  onClick={() => onCompleteMeal(meal, buildChosenFoods(meal))}
-                                  className="flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                                  onClick={() => runMealAction(meal, () => onCompleteMeal(meal, buildChosenFoods(meal)))}
+                                  disabled={processingMealId !== null}
+                                  className="flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors disabled:opacity-50"
                                 >
                                   <span className="w-6 h-6 rounded-full bg-green-500 text-white text-sm font-bold flex items-center justify-center">A</span>
                                   <span className="text-sm font-medium truncate max-w-[120px]">{meal.meal_name || 'Principal'}</span>
@@ -474,8 +498,9 @@ export function MealPlanCard({
                                   return (
                                     <button
                                       key={altIdx}
-                                      onClick={() => onCompleteMeal(meal, resolveFoods(altFoods))}
-                                      className="flex items-center gap-2 px-3 py-2 bg-dourado/20 border border-dourado/30 text-dourado rounded-lg hover:bg-dourado/30 transition-colors"
+                                      onClick={() => runMealAction(meal, () => onCompleteMeal(meal, resolveFoods(altFoods)))}
+                                      disabled={processingMealId !== null}
+                                      className="flex items-center gap-2 px-3 py-2 bg-dourado/20 border border-dourado/30 text-dourado rounded-lg hover:bg-dourado/30 transition-colors disabled:opacity-50"
                                     >
                                       <span className="w-6 h-6 rounded-full bg-vinho text-white text-sm font-bold flex items-center justify-center">{optionLetter}</span>
                                       <span className="text-sm font-medium truncate max-w-[120px]">{optionName}</span>
@@ -540,10 +565,13 @@ export function MealPlanCard({
                         <div className="space-y-2 pt-2">
                           <div className="flex gap-2">
                             <button
-                              onClick={() => onCompleteMeal(meal, buildChosenFoods(meal))}
-                              className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                              onClick={() => runMealAction(meal, () => onCompleteMeal(meal, buildChosenFoods(meal)))}
+                              disabled={processingMealId !== null}
+                              className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-60"
                             >
-                              <Check className="w-4 h-4" />
+                              {processingMealId === meal.id
+                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                : <Check className="w-4 h-4" />}
                               Comi
                             </button>
                             <button
@@ -571,8 +599,9 @@ export function MealPlanCard({
                             </button>
                             {onSkipMeal && (
                               <button
-                                onClick={() => onSkipMeal(meal)}
-                                className="px-4 py-2 text-sm text-foreground-muted hover:text-amber-600 border border-dashed border-border rounded-lg hover:border-amber-400 transition-colors"
+                                onClick={() => handleSkip(meal)}
+                                disabled={processingMealId !== null}
+                                className="px-4 py-2 text-sm text-foreground-muted hover:text-amber-600 border border-dashed border-border rounded-lg hover:border-amber-400 transition-colors disabled:opacity-50"
                                 title="Não fiz esta refeição"
                               >
                                 Pulei
@@ -611,8 +640,9 @@ export function MealPlanCard({
                             </button>
                             {onSkipMeal && (
                               <button
-                                onClick={() => onSkipMeal(meal)}
-                                className="px-4 py-2 text-sm text-foreground-muted hover:text-amber-600 border border-dashed border-border rounded-lg hover:border-amber-400 transition-colors"
+                                onClick={() => handleSkip(meal)}
+                                disabled={processingMealId !== null}
+                                className="px-4 py-2 text-sm text-foreground-muted hover:text-amber-600 border border-dashed border-border rounded-lg hover:border-amber-400 transition-colors disabled:opacity-50"
                                 title="Não fiz esta refeição"
                               >
                                 Pulei
@@ -620,6 +650,17 @@ export function MealPlanCard({
                             )}
                           </div>
                         </div>
+                      )}
+
+                      {/* Refeição pulada: saída para registrar mesmo assim */}
+                      {isSkipped && (
+                        <button
+                          onClick={() => router.push(`/alimentacao/refeicao/nova?tipo=${meal.meal_type}&planMealId=${meal.id}`)}
+                          className="w-full flex items-center justify-center gap-2 py-2 text-sm text-foreground-secondary hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground-muted transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Acabei comendo — registrar
+                        </button>
                       )}
 
                       {/* Action buttons for completed meals */}

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // Categorias válidas no banco de dados
-type ValidCategory = 'proteina' | 'carboidrato' | 'vegetal' | 'fruta' | 'laticinio' | 'gordura' | 'suplemento' | 'bebida' | 'outros'
+type ValidCategory = 'proteina' | 'carboidrato' | 'vegetal' | 'fruta' | 'laticinio' | 'gordura' | 'suplemento' | 'bebida' | 'suco' | 'prato_pronto' | 'sobremesa' | 'condimento' | 'outros'
 
 // Normalizar categoria da IA para o valor válido do banco
 function normalizeCategory(cat: string): ValidCategory {
@@ -42,6 +42,20 @@ function normalizeCategory(cat: string): ValidCategory {
     'bebidas': 'bebida',
     'drink': 'bebida',
     'drinks': 'bebida',
+    'suco': 'suco',
+    'sucos': 'suco',
+    'prato_pronto': 'prato_pronto',
+    'prato pronto': 'prato_pronto',
+    'pratos prontos': 'prato_pronto',
+    'sobremesa': 'sobremesa',
+    'sobremesas': 'sobremesa',
+    'doce': 'sobremesa',
+    'doces': 'sobremesa',
+    'condimento': 'condimento',
+    'condimentos': 'condimento',
+    'molho': 'condimento',
+    'molhos': 'condimento',
+    'tempero': 'condimento',
     'outros': 'outros',
     'outro': 'outros',
     'other': 'outros'
@@ -177,10 +191,9 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Construir mensagem de erro mais detalhada
-      const errorMsg = error.message || error.details || error.hint || `Erro código: ${error.code || 'desconhecido'}`
+      // Detalhes ficam no log do servidor; o client recebe mensagem genérica
       return NextResponse.json(
-        { success: false, error: `Erro ao salvar: ${errorMsg}` },
+        { success: false, error: 'Erro ao salvar o alimento. Tente novamente.' },
         { status: 500 }
       )
     }

@@ -38,6 +38,12 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
   const detectingRef = useRef(false)
   const stoppedRef = useRef(false)
 
+  // onDetected via ref: o pai costuma passar uma função recriada a cada
+  // render; sem isso o effect da câmera reiniciaria o stream a cada
+  // re-render do pai (flicker + MediaStream órfão).
+  const onDetectedRef = useRef(onDetected)
+  useEffect(() => { onDetectedRef.current = onDetected }, [onDetected])
+
   const stopCamera = useCallback(() => {
     stoppedRef.current = true
     if (streamRef.current) {
@@ -51,9 +57,9 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
     detectingRef.current = true
     setSearching(true)
     stopCamera()
-    await onDetected(code)
+    await onDetectedRef.current(code)
     setSearching(false)
-  }, [onDetected, stopCamera])
+  }, [stopCamera])
 
   // Inicia câmera + loop de detecção
   useEffect(() => {

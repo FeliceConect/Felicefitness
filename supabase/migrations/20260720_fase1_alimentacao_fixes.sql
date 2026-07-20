@@ -48,3 +48,13 @@ ALTER TABLE fitness_user_foods ADD COLUMN IF NOT EXISTS colesterol DECIMAL(8,2);
 ALTER TABLE fitness_user_foods ADD COLUMN IF NOT EXISTS zinco DECIMAL(8,2);
 ALTER TABLE fitness_user_foods ADD COLUMN IF NOT EXISTS selenio DECIMAL(8,2);
 ALTER TABLE fitness_user_foods ADD COLUMN IF NOT EXISTS magnesio DECIMAL(8,2);
+
+-- 4. Alinha o CHECK de categoria de fitness_user_foods ao vocabulário
+--    completo do app (o antigo não aceitava prato_pronto/sobremesa/
+--    condimento/suco, quebrando o cadastro de alimento nessas categorias).
+ALTER TABLE fitness_user_foods DROP CONSTRAINT IF EXISTS fitness_user_foods_categoria_check;
+ALTER TABLE fitness_user_foods ADD CONSTRAINT fitness_user_foods_categoria_check
+  CHECK (categoria IN (
+    'proteina', 'carboidrato', 'vegetal', 'fruta', 'laticinio', 'gordura',
+    'suplemento', 'bebida', 'suco', 'prato_pronto', 'sobremesa', 'condimento', 'outros'
+  ));

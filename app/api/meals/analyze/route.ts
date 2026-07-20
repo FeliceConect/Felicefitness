@@ -314,7 +314,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Erro na análise de refeição:', error)
-    const message = error instanceof Error ? error.message : 'Erro interno'
-    return NextResponse.json({ success: false, error: message }, { status: 500 })
+    return NextResponse.json(
+      { success: false, error: 'Erro ao analisar a refeição. Tente novamente em instantes.' },
+      { status: 500 }
+    )
   }
 }

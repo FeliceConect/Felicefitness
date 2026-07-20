@@ -97,6 +97,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Alimento não encontrado' }, { status: 404 })
     }
 
+    // Idempotência: só modera o que ainda está pendente (evita alimento
+    // global duplicado em duplo-clique / dois moderadores simultâneos)
+    if (food.promote_status !== 'pending') {
+      return NextResponse.json(
+        { success: false, error: 'Este alimento já foi moderado' },
+        { status: 409 }
+      )
+    }
+
     if (action === 'reject') {
       const { error } = await admin
         .from('fitness_user_foods')

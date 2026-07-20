@@ -8,6 +8,11 @@
 --   4. 20260720_fase2_porcoes_data.sql
 -- =============================================================
 
+-- No Supabase, extensões podem viver no schema "extensions" — garante que
+-- gin_trgm_ops/unaccent/word_similarity resolvam nesta sessão de migration.
+-- (schemas inexistentes no search_path são ignorados sem erro)
+SET search_path = public, extensions;
+
 -- Extensões: fuzzy matching (pg_trgm) e normalização de acentos (unaccent)
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS unaccent;
@@ -109,6 +114,7 @@ CREATE OR REPLACE FUNCTION fitness_search_foods(
 RETURNS SETOF fitness_global_foods
 LANGUAGE sql
 STABLE
+SET search_path = public, extensions
 AS $$
   WITH terms AS (
     SELECT
@@ -185,7 +191,7 @@ CREATE OR REPLACE FUNCTION fitness_increment_food_usage(p_food_ids UUID[])
 RETURNS VOID
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
   UPDATE fitness_global_foods
   SET times_used = coalesce(times_used, 0) + 1

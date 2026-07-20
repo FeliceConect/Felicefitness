@@ -166,7 +166,7 @@ async function searchLegacy(
       if (!byId.has(row.id)) byId.set(row.id, row)
     }
   }
-  let allGlobalFoods = Array.from(byId.values())
+  const allGlobalFoods = Array.from(byId.values())
 
   allGlobalFoods.sort((a: SupabaseAny, b: SupabaseAny) => {
     const scoreA = relevanceScore(a.nome, query)
@@ -248,27 +248,31 @@ export async function GET(request: NextRequest) {
       allGlobalFoods = globalFoods || []
     }
 
-    // Busca também nos alimentos do usuário
-    let userQuery = supabase
-      .from('fitness_user_foods')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .order('nome')
-      .limit(limit)
+    // Busca também nos alimentos do usuário — apenas na primeira página
+    // (eles sempre vêm primeiro na resposta; repetir em offset>0 duplicaria)
+    let userFoods: SupabaseAny[] = []
+    if (offset === 0) {
+      let userQuery = supabase
+        .from('fitness_user_foods')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('nome')
+        .limit(limit)
 
-    if (query.length >= 2) {
-      userQuery = userQuery.ilike('nome', `%${query}%`)
-    }
+      if (query.length >= 2) {
+        userQuery = userQuery.ilike('nome', `%${query}%`)
+      }
 
-    if (category) {
-      userQuery = userQuery.eq('categoria', category)
-    }
+      if (category) {
+        userQuery = userQuery.eq('categoria', category)
+      }
 
-    const { data: userFoods, error: userError } = await userQuery
-
-    if (userError) {
-      console.error('Erro ao buscar alimentos do usuário:', userError)
+      const { data, error: userError } = await userQuery
+      if (userError) {
+        console.error('Erro ao buscar alimentos do usuário:', userError)
+      }
+      userFoods = data || []
     }
 
     // Favoritos do usuário (globais + user foods) para marcar is_favorite
@@ -341,8 +345,9 @@ export async function GET(request: NextRequest) {
     const total = formattedUser.length + formattedGlobal.length
 
     // Busca com texto e zero resultados → registra para o backlog
+    // (fire-and-forget: não segura a resposta)
     if (query.length >= 2 && total === 0 && offset === 0) {
-      await logSearchMiss(user.id, query)
+      void logSearchMiss(user.id, query)
     }
 
     return NextResponse.json({

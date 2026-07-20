@@ -44,6 +44,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'clientId obrigatório' }, { status: 400 })
     }
 
+    // Vínculo profissional-paciente obrigatório (super_admin vê todos)
+    if (professional.type !== 'super_admin') {
+      const { data: assignment } = await admin
+        .from('fitness_client_assignments')
+        .select('client_id')
+        .eq('professional_id', professional.id)
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (!assignment) {
+        return NextResponse.json({ success: false, error: 'Paciente não vinculado' }, { status: 403 })
+      }
+    }
+
     // Plano ativo do paciente
     const { data: plan } = await admin
       .from('fitness_meal_plans')

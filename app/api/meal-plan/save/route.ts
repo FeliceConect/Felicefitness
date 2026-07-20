@@ -343,8 +343,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Save meal plan error:', error)
     return NextResponse.json({
-      error: 'Erro interno ao salvar plano alimentar',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Erro interno ao salvar plano alimentar'
     }, { status: 500 })
   }
 }
