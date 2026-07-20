@@ -16,25 +16,32 @@ interface BarcodeDetectorLike {
 }
 type BarcodeDetectorConstructor = new (options?: { formats: string[] }) => BarcodeDetectorLike
 
-function getBarcodeDetector(): BarcodeDetectorConstructor | null {
+function getNativeDetector(): BarcodeDetectorConstructor | null {
   if (typeof window === 'undefined') return null
   const w = window as unknown as { BarcodeDetector?: BarcodeDetectorConstructor }
   return w.BarcodeDetector || null
 }
 
+interface ZxingControls { stop: () => void }
+
 /**
- * Leitor de código de barras (EAN) para buscar alimentos industrializados.
- * Usa a API BarcodeDetector quando disponível (Android/Chrome); caso
- * contrário cai no modo de digitação manual do código.
+ * Leitor de código de barras (EAN) para alimentos industrializados.
+ *
+ * Cadeia de engines de câmera:
+ *   1. BarcodeDetector nativo (Chrome/Android — mais rápido)
+ *   2. ZXing via JS (@zxing/browser, carregado sob demanda) — funciona em
+ *      iPhone/iPad/Safari/Firefox/desktop, onde o nativo não existe
+ *   3. Digitação manual do código (último recurso)
  */
 export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheetProps) {
-  const [supportsCamera, setSupportsCamera] = useState<boolean | null>(null)
+  const [cameraActive, setCameraActive] = useState(false)
   const [manualMode, setManualMode] = useState(false)
   const [manualCode, setManualCode] = useState('')
   const [searching, setSearching] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const zxingControlsRef = useRef<ZxingControls | null>(null)
   const detectingRef = useRef(false)
   const stoppedRef = useRef(false)
 
@@ -46,6 +53,10 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
 
   const stopCamera = useCallback(() => {
     stoppedRef.current = true
+    if (zxingControlsRef.current) {
+      try { zxingControlsRef.current.stop() } catch { /* já parado */ }
+      zxingControlsRef.current = null
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
@@ -61,27 +72,17 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
     setSearching(false)
   }, [stopCamera])
 
-  // Inicia câmera + loop de detecção
+  // Inicia a câmera com o melhor engine disponível
   useEffect(() => {
-    const Detector = getBarcodeDetector()
-    if (!Detector || !navigator.mediaDevices?.getUserMedia) {
-      setSupportsCamera(false)
-      setManualMode(true)
-      return
-    }
-    setSupportsCamera(true)
     stoppedRef.current = false
 
-    let detector: BarcodeDetectorLike
-    try {
-      detector = new Detector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] })
-    } catch {
-      setSupportsCamera(false)
-      setManualMode(true)
-      return
-    }
-
-    async function start() {
+    async function startNative(Detector: BarcodeDetectorConstructor): Promise<boolean> {
+      let detector: BarcodeDetectorLike
+      try {
+        detector = new Detector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] })
+      } catch {
+        return false
+      }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' },
@@ -89,13 +90,14 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
         })
         if (stoppedRef.current) {
           stream.getTracks().forEach(t => t.stop())
-          return
+          return true
         }
         streamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           await videoRef.current.play()
         }
+        setCameraActive(true)
 
         const tick = async () => {
           if (stoppedRef.current || !videoRef.current) return
@@ -105,14 +107,75 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
               await handleDetected(codes[0].rawValue)
               return
             }
-          } catch {
-            // frame inválido — segue tentando
-          }
+          } catch { /* frame inválido — segue tentando */ }
           setTimeout(tick, 350)
         }
         tick()
+        return true
       } catch {
-        setCameraError('Não foi possível acessar a câmera. Digite o código manualmente.')
+        // getUserMedia negado/indisponível — sem câmera em nenhum engine
+        throw new Error('camera-denied')
+      }
+    }
+
+    async function startZxing(): Promise<boolean> {
+      try {
+        const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([
+          import('@zxing/browser'),
+          import('@zxing/library'),
+        ])
+        if (stoppedRef.current || !videoRef.current) return true
+
+        const hints = new Map()
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.EAN_8,
+          BarcodeFormat.UPC_A,
+          BarcodeFormat.UPC_E,
+          BarcodeFormat.CODE_128,
+        ])
+        const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 250 })
+
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: 'environment' }, audio: false },
+          videoRef.current,
+          (result) => {
+            if (result && !stoppedRef.current) {
+              void handleDetected(result.getText())
+            }
+          }
+        )
+        if (stoppedRef.current) {
+          controls.stop()
+          return true
+        }
+        zxingControlsRef.current = controls
+        setCameraActive(true)
+        return true
+      } catch (err) {
+        if (err instanceof Error && /Permission|NotAllowed|NotFound/i.test(String(err))) {
+          throw new Error('camera-denied')
+        }
+        return false
+      }
+    }
+
+    async function start() {
+      try {
+        const hasCameraApi = typeof navigator.mediaDevices?.getUserMedia === 'function'
+        const Native = getNativeDetector()
+        if (Native && hasCameraApi) {
+          const ok = await startNative(Native)
+          if (ok) return
+        }
+        if (hasCameraApi) {
+          const ok = await startZxing()
+          if (ok) return
+        }
+        // Nenhum engine disponível
+        setManualMode(true)
+      } catch {
+        setCameraError('Não foi possível acessar a câmera. Verifique a permissão ou digite o código manualmente.')
         setManualMode(true)
       }
     }
@@ -126,6 +189,8 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
     if (code.length < 8) return
     void handleDetected(code)
   }
+
+  const showCamera = !manualMode && !searching
 
   return (
     <motion.div
@@ -163,7 +228,7 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
           </div>
         ) : (
           <>
-            {supportsCamera && !manualMode && (
+            {showCamera && (
               <div className="space-y-3">
                 <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/3]">
                   <video
@@ -172,6 +237,11 @@ export function BarcodeScannerSheet({ onDetected, onClose }: BarcodeScannerSheet
                     playsInline
                     muted
                   />
+                  {!cameraActive && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-white/70 animate-spin" />
+                    </div>
+                  )}
                   <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-20 border-2 border-dourado rounded-lg pointer-events-none" />
                 </div>
                 <p className="text-xs text-foreground-secondary text-center">
