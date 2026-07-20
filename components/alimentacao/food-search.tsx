@@ -30,7 +30,7 @@ export function FoodSearch({ onSelect, excludeIds = [], onAddCustomFood, showAdd
     if (food) {
       onSelect(food)
     } else {
-      toast.error('Produto não encontrado. Tente buscar pelo nome ou cadastre manualmente.')
+      toast.error('Produto ainda não cadastrado. Registramos o código escaneado — busque pelo nome ou cadastre manualmente.', { duration: 5000 })
     }
   }
 

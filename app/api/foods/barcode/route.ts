@@ -64,6 +64,26 @@ function removeAccents(str: string): string {
 }
 
 /**
+ * Registra c\u00f3digos escaneados sem resultado (prefixo "ean:") no mesmo log
+ * de buscas sem resultado \u2014 vira backlog para cadastrar o produto com o
+ * c\u00f3digo de barras certo. Best-effort.
+ */
+async function logBarcodeMiss(userId: string, code: string): Promise<void> {
+  try {
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    await admin
+      .from('fitness_food_search_misses')
+      .insert({ user_id: userId, query: `ean:${code}`.slice(0, 200) })
+  } catch {
+    // tabela ausente ou erro \u2014 nunca quebra a busca
+  }
+}
+
+/**
  * GET /api/foods/barcode?code=7891234567890
  * Busca alimento por código de barras:
  * 1. Primeiro verifica cache local (fitness_global_foods)
@@ -85,20 +105,57 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Código de barras obrigatório' }, { status: 400 })
     }
 
-    // 1. Verificar cache local
-    const { data: cached } = await (supabase as SupabaseAny)
-      .from('fitness_global_foods')
-      .select('*')
-      .eq('codigo_barras', code)
-      .eq('is_active', true)
-      .single()
+    // Leitores EAN-13 reportam UPC-12 com zero à esquerda ('0602883...')
+    // e vice-versa — testa as variantes equivalentes.
+    const candidates = Array.from(new Set([
+      code,
+      code.replace(/^0+/, ''),
+      `0${code}`,
+    ].filter(c => c.length >= 8)))
+
+    // 1a. Tabela de códigos N:1 (um alimento pode ter vários EAN/UPC —
+    //     sabores, pote vs sachê). Best-effort se a migration não rodou.
+    let cached: SupabaseAny = null
+    try {
+      const { data: barcodeRow } = await (supabase as SupabaseAny)
+        .from('fitness_food_barcodes')
+        .select('food_id')
+        .in('codigo_barras', candidates)
+        .limit(1)
+        .maybeSingle()
+
+      if (barcodeRow?.food_id) {
+        const { data: mapped } = await (supabase as SupabaseAny)
+          .from('fitness_global_foods')
+          .select('*')
+          .eq('id', barcodeRow.food_id)
+          .eq('is_active', true)
+          .maybeSingle()
+        cached = mapped
+      }
+    } catch {
+      // tabela ausente — segue para o fallback
+    }
+
+    // 1b. Fallback legado: coluna codigo_barras direto na tabela de alimentos
+    if (!cached) {
+      const { data } = await (supabase as SupabaseAny)
+        .from('fitness_global_foods')
+        .select('*')
+        .in('codigo_barras', candidates)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+      cached = data
+    }
 
     if (cached) {
       return NextResponse.json({
         success: true,
         food: {
           id: cached.id,
-          nome: cached.nome,
+          nome: cached.nome_popular || cached.nome,
+          nome_tecnico: cached.nome,
           categoria: cached.categoria,
           marca: null,
           porcao_padrao: cached.porcao_padrao,
@@ -128,6 +185,7 @@ export async function GET(request: NextRequest) {
     )
 
     if (!offResponse.ok) {
+      void logBarcodeMiss(user.id, code)
       return NextResponse.json(
         { error: 'Produto não encontrado', code },
         { status: 404 }
@@ -137,6 +195,7 @@ export async function GET(request: NextRequest) {
     const offData = await offResponse.json()
 
     if (offData.status !== 1 || !offData.product) {
+      void logBarcodeMiss(user.id, code)
       return NextResponse.json(
         { error: 'Produto não encontrado no Open Food Facts', code },
         { status: 404 }

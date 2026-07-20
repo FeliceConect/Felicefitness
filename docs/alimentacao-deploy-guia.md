@@ -21,6 +21,7 @@ organização — nenhum UPDATE depende de outro.
 6. supabase/migrations/20260720_fase3_registro.sql                 (modelos, moderação, XP sem refeição pulada)
 7. supabase/migrations/20260720_fase4_aderencia.sql                (plan_meal_id, adherence_status, is_training_day_only)
 8. supabase/migrations/20260720_fase5_tipo_refeicao_pt.sql         (unifica tipo_refeicao em PT no diário)
+9. supabase/migrations/20260720_topway_catalogo.sql                (catálogo Topway + tabela de códigos de barras N:1)
 ```
 
 **Alternativa mais rápida (sem colar 17 arquivos no Studio):** conectando
