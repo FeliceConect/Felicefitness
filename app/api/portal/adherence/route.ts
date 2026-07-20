@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
+import { mealTypeToEN } from '@/lib/nutrition/meal-type'
 
 /**
  * GET /api/portal/adherence?clientId=...&days=7
@@ -128,10 +129,11 @@ export async function GET(request: NextRequest) {
       const usedMealIds = new Set<string>()
 
       const mealStatuses = planned.map(pm => {
-        // 1º: match por plan_meal_id; 2º: por tipo_refeicao (registros antigos)
+        // 1º: match por plan_meal_id; 2º: por tipo (diário em PT vs plano
+        // em EN — compara normalizado, cobre registros antigos)
         const match =
           dateMeals.find(m => m.plan_meal_id === pm.id && !usedMealIds.has(m.id)) ||
-          dateMeals.find(m => m.tipo_refeicao === pm.meal_type && !usedMealIds.has(m.id))
+          dateMeals.find(m => mealTypeToEN(m.tipo_refeicao) === pm.meal_type && !usedMealIds.has(m.id))
 
         if (!match) {
           counters.nao_registrado++

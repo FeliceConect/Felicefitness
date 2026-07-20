@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardPointsServer } from '@/lib/services/points-server'
 import { getTodayDateSP } from '@/lib/utils/date'
+import { mealTypeToPT, mealTypeToEN } from '@/lib/nutrition/meal-type'
 
 // POST - Registrar refeição do plano como completada (ou pulada)
 export async function POST(request: NextRequest) {
@@ -88,7 +89,8 @@ export async function POST(request: NextRequest) {
 
     const baseMealRow = {
       user_id: user.id,
-      tipo_refeicao: planMeal.meal_type,
+      // Diário do paciente é PT canônico; o plano usa EN internamente
+      tipo_refeicao: mealTypeToPT(planMeal.meal_type),
       data: date,
       horario: planMeal.scheduled_time?.substring(0, 5) || new Date().toTimeString().substring(0, 5),
       status: skipped ? 'pulado' : 'concluido',
@@ -270,9 +272,12 @@ export async function GET(request: NextRequest) {
     }> = {}
 
     for (const meal of doneMeals) {
-      completedMealsData[meal.tipo_refeicao] = {
+      // Resposta no vocabulário do PLANO (EN) — é o que o card compara.
+      // Cobre tanto linhas novas (PT) quanto antigas (EN) pré-migration.
+      const planType = mealTypeToEN(meal.tipo_refeicao)
+      completedMealsData[planType] = {
         id: meal.id,
-        meal_type: meal.tipo_refeicao,
+        meal_type: planType,
         time: meal.horario || '',
         total_calories: meal.calorias_total || 0,
         total_protein: meal.proteinas_total || 0,
@@ -302,8 +307,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       completedMealIds: Object.keys(completedMealsData),
-      completedMealTypes: doneMeals.map(m => m.tipo_refeicao),
-      skippedMealTypes: skippedMeals.map(m => m.tipo_refeicao),
+      completedMealTypes: doneMeals.map(m => mealTypeToEN(m.tipo_refeicao)),
+      skippedMealTypes: skippedMeals.map(m => mealTypeToEN(m.tipo_refeicao)),
       completedMealsData // Dados completos das refeições com alimentos reais
     })
 

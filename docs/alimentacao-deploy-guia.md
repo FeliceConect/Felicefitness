@@ -20,6 +20,7 @@ organização — nenhum UPDATE depende de outro.
 5. supabase/migrations/20260720_fase2_porcoes_data_part1..6        (4.004 UPDATEs)
 6. supabase/migrations/20260720_fase3_registro.sql                 (modelos, moderação, XP sem refeição pulada)
 7. supabase/migrations/20260720_fase4_aderencia.sql                (plan_meal_id, adherence_status, is_training_day_only)
+8. supabase/migrations/20260720_fase5_tipo_refeicao_pt.sql         (unifica tipo_refeicao em PT no diário)
 ```
 
 **Alternativa mais rápida (sem colar 17 arquivos no Studio):** conectando

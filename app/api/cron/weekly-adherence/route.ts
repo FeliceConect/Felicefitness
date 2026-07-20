@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardPointsServer } from '@/lib/services/points-server'
 import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
+import { mealTypeToEN } from '@/lib/nutrition/meal-type'
 
 function getAdminClient() {
   return createAdminClient(
@@ -136,11 +137,13 @@ export async function GET(request: NextRequest) {
               for (const m of dateMeals) {
                 if (m.status === 'pulado') continue
                 if (m.adherence_status === 'pulou') continue
+                const mealTypeEN = mealTypeToEN(m.tipo_refeicao)
                 if (m.plan_meal_id && planned.planIds.has(m.plan_meal_id)) {
                   satisfiedPlanIds.add(m.plan_meal_id)
-                } else if (planned.types.has(m.tipo_refeicao)) {
+                } else if (planned.types.has(mealTypeEN)) {
                   // fallback para registros antigos sem plan_meal_id
-                  satisfiedTypes.add(m.tipo_refeicao)
+                  // (diário em PT vs plano em EN — compara normalizado)
+                  satisfiedTypes.add(mealTypeEN)
                 }
               }
               completedCount = Math.min(plannedCount, satisfiedPlanIds.size + satisfiedTypes.size)

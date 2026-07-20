@@ -16,6 +16,7 @@ import type { Food, FoodCategory, MealItem, MealType } from '@/lib/nutrition/typ
 import { mealTypeLabels, mealTypeIcons } from '@/lib/nutrition/types'
 import { foodCategoryLabels } from '@/lib/nutrition/types'
 import { calculateFoodMacros } from '@/lib/nutrition/calculations'
+import { normalizeMealTypePT, PT_TO_EN } from '@/lib/nutrition/meal-type'
 import { useFoods } from '@/hooks/use-foods'
 import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { useMealPlan } from '@/hooks/use-meal-plan'
@@ -34,36 +35,6 @@ const mealTypes: MealType[] = [
   'ceia'
 ]
 
-// Planos alimentares usam tipos em INGLÊS (breakfast/lunch/...). Quando a
-// tela é aberta a partir do card do plano, o ?tipo= vem nesse vocabulário —
-// sem normalizar, mealTypeLabels[tipo] é undefined e a página quebra.
-const EN_TO_PT: Record<string, MealType> = {
-  breakfast: 'cafe_manha',
-  morning_snack: 'lanche_manha',
-  lunch: 'almoco',
-  afternoon_snack: 'lanche_tarde',
-  snack: 'lanche_tarde',
-  pre_workout: 'pre_treino',
-  dinner: 'jantar',
-  supper: 'ceia',
-}
-
-const PT_TO_EN: Record<MealType, string> = {
-  cafe_manha: 'breakfast',
-  lanche_manha: 'morning_snack',
-  almoco: 'lunch',
-  lanche_tarde: 'afternoon_snack',
-  pre_treino: 'pre_workout',
-  jantar: 'dinner',
-  ceia: 'supper',
-}
-
-function normalizeMealType(raw: string | null): MealType {
-  if (!raw) return 'almoco'
-  if (mealTypes.includes(raw as MealType)) return raw as MealType
-  return EN_TO_PT[raw] || 'almoco'
-}
-
 function NewMealContent() {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -73,7 +44,7 @@ function NewMealContent() {
 
   // Get meal type and planMealId from URL params (tipo pode vir em inglês
   // quando aberto a partir do plano da nutri — normaliza)
-  const initialType = normalizeMealType(searchParams.get('tipo'))
+  const initialType = normalizeMealTypePT(searchParams.get('tipo'))
   const planMealId = searchParams.get('planMealId')
   // prefill=1: "editar este prato" — carrega os alimentos do plano para o
   // paciente trocar só o que mudou, em vez de remontar a refeição do zero

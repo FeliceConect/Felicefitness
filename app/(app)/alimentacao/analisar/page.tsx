@@ -26,6 +26,7 @@ import { useDailyMeals } from '@/hooks/use-daily-meals'
 import { cn } from '@/lib/utils'
 import type { MealType, FoodCategory } from '@/lib/nutrition/types'
 import { mealTypeLabels, mealTypeIcons } from '@/lib/nutrition/types'
+import { normalizeMealTypePT } from '@/lib/nutrition/meal-type'
 import { compressImageClient } from '@/lib/images/compress-client'
 
 interface AnalyzedFood {
@@ -76,7 +77,8 @@ function AnalysisContent() {
   const searchParams = useSearchParams()
   const { addMeal } = useDailyMeals()
 
-  const initialType = (searchParams.get('tipo') as MealType) || 'almoco'
+  // tipo pode vir em inglês quando aberto a partir do card do plano
+  const initialType = normalizeMealTypePT(searchParams.get('tipo'))
 
   const [selectedType, setSelectedType] = useState<MealType>(initialType)
   const [mode, setMode] = useState<'foto' | 'texto'>('foto')
