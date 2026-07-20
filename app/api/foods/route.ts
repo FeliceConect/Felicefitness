@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseAny = any
 
 /**
  * Apelidos populares → nomes técnicos da base TACO/TBCA.
- * Quando o usuário busca "arroz branco", expandimos para buscar
- * também "arroz, tipo 1" que é o nome científico.
+ * Fallback local usado quando a tabela fitness_food_aliases ainda não
+ * existe (migration pendente). A fonte da verdade é a tabela.
  */
-const ALIASES: Record<string, string[]> = {
+const DEFAULT_ALIASES: Record<string, string[]> = {
   'arroz branco': ['arroz, tipo 1', 'arroz, polido'],
   'arroz integral': ['arroz, integral'],
   'frango': ['frango', 'peito de frango', 'coxa de frango', 'sobrecoxa'],
@@ -17,72 +18,167 @@ const ALIASES: Record<string, string[]> = {
   'ovo': ['ovo, de galinha'],
   'ovo cozido': ['ovo, de galinha, inteiro, cozido'],
   'ovo frito': ['ovo, de galinha, inteiro, frito'],
-  'feijao': ['feijao', 'feijão'],
-  'feijao preto': ['feijao, preto', 'feijão, preto'],
-  'feijao carioca': ['feijao, carioca', 'feijão, carioca'],
+  'feijao': ['feijao'],
+  'feijao preto': ['feijao, preto'],
+  'feijao carioca': ['feijao, carioca'],
   'batata doce': ['batata, doce', 'batata-doce'],
   'batata frita': ['batata, frita', 'batata, inglesa, frita'],
   'batata cozida': ['batata, inglesa, cozida'],
-  'carne moida': ['carne, moida', 'carne, moída', 'carne bovina, moida'],
+  'carne moida': ['carne, moida', 'carne bovina, moida'],
   'carne bovina': ['carne, bovina', 'boi'],
-  'pao frances': ['pao, frances', 'pão, francês', 'pao frances'],
-  'pao de forma': ['pao, forma', 'pão, forma'],
-  'leite': ['leite, de vaca', 'leite, integral', 'leite de vaca'],
+  'pao frances': ['pao, frances', 'pao, trigo, frances'],
+  'pao de forma': ['pao, forma'],
+  'leite': ['leite, de vaca', 'leite, integral'],
   'leite integral': ['leite, de vaca, integral', 'leite, integral'],
   'leite desnatado': ['leite, de vaca, desnatado', 'leite, desnatado'],
-  'queijo': ['queijo'],
-  'queijo mussarela': ['queijo, mussarela', 'queijo, muçarela', 'mussarela'],
+  'queijo mussarela': ['queijo, mussarela', 'queijo, mucarela', 'mussarela'],
   'banana': ['banana', 'banana, prata', 'banana, nanica'],
-  'maca': ['maca', 'maça', 'maçã'],
-  'cafe': ['cafe', 'café, infusao', 'café, infusão'],
-  'acucar': ['acucar', 'açúcar'],
-  'manteiga': ['manteiga'],
+  'maca': ['maca'],
+  'cafe': ['cafe', 'cafe, infusao'],
+  'acucar': ['acucar'],
   'azeite': ['azeite', 'azeite, de oliva'],
-  'macarrao': ['macarrao', 'macarrão'],
-  'carne de porco': ['carne, suina', 'carne, suína', 'porco'],
-  'salmao': ['salmao', 'salmão'],
-  'atum': ['atum'],
-  'abacate': ['abacate'],
-  'aveia': ['aveia'],
-  'granola': ['granola'],
-  'iogurte': ['iogurte'],
-  'tomate': ['tomate'],
-  'alface': ['alface'],
-  'brocolis': ['brocolis', 'brócolis'],
-  'cenoura': ['cenoura'],
+  'macarrao': ['macarrao'],
+  'carne de porco': ['carne, suina', 'porco'],
+  'salmao': ['salmao'],
+  'brocolis': ['brocolis'],
   'whey': ['whey', 'proteina', 'suplemento'],
 }
 
+// Cache em memória dos aliases do banco (TTL 5 min por instância)
+let aliasCache: { data: Record<string, string[]>; loadedAt: number } | null = null
+const ALIAS_CACHE_TTL_MS = 5 * 60 * 1000
+
+async function getAliases(supabase: SupabaseAny): Promise<Record<string, string[]>> {
+  if (aliasCache && Date.now() - aliasCache.loadedAt < ALIAS_CACHE_TTL_MS) {
+    return aliasCache.data
+  }
+  try {
+    const { data, error } = await supabase
+      .from('fitness_food_aliases')
+      .select('alias, target_terms')
+    if (!error && data && data.length > 0) {
+      const map: Record<string, string[]> = {}
+      for (const row of data) map[row.alias] = row.target_terms || []
+      aliasCache = { data: map, loadedAt: Date.now() }
+      return map
+    }
+  } catch {
+    // tabela ausente — usa fallback
+  }
+  return DEFAULT_ALIASES
+}
+
 function removeAccents(str: string): string {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
 /**
- * Pontua relevância de um alimento dado a query do usuário.
+ * Pontua relevância (fallback legado — usado só se o RPC não existir).
  * Quanto MENOR o score, MAIS relevante.
  */
 function relevanceScore(nome: string, query: string): number {
   const nomeNorm = removeAccents(nome)
   const queryNorm = removeAccents(query)
-
-  // Match exato no início do nome = máxima relevância
   if (nomeNorm.startsWith(queryNorm)) return 0
-
-  // Nome começa com a primeira palavra da query
   const firstWord = queryNorm.split(/[,\s]+/)[0]
-  if (nomeNorm.startsWith(firstWord)) {
-    // Nomes mais curtos = mais simples = mais relevante
-    return 1 + nome.length / 1000
+  if (nomeNorm.startsWith(firstWord)) return 1 + nome.length / 1000
+  if (nomeNorm.includes(queryNorm)) return 2 + nome.length / 1000
+  if (nomeNorm.includes(firstWord)) return 3 + nome.length / 1000
+  return 4 + nome.length / 1000
+}
+
+/** Registra busca sem resultado (base do backlog de aliases/alimentos). */
+async function logSearchMiss(userId: string, query: string): Promise<void> {
+  try {
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    await admin
+      .from('fitness_food_search_misses')
+      .insert({ user_id: userId, query: query.slice(0, 200) })
+  } catch {
+    // best-effort — nunca quebra a busca
+  }
+}
+
+/** Busca via RPC (pg_trgm + ranking no SQL). Retorna null se o RPC não existir. */
+async function searchViaRpc(
+  supabase: SupabaseAny,
+  terms: string[],
+  category: string | null,
+  sources: string[] | null,
+  limit: number,
+  offset: number
+): Promise<SupabaseAny[] | null> {
+  const { data, error } = await supabase.rpc('fitness_search_foods', {
+    p_terms: terms,
+    p_category: category,
+    p_sources: sources,
+    p_limit: limit,
+    p_offset: offset,
+  })
+  if (error) {
+    // 42883/PGRST202: função ainda não existe (migration pendente) → fallback
+    console.error('RPC fitness_search_foods indisponível, usando fallback:', error.message)
+    return null
+  }
+  return data || []
+}
+
+/** Caminho legado: ILIKE tokenizado + ranking em JS. */
+async function searchLegacy(
+  supabase: SupabaseAny,
+  query: string,
+  searchTerms: string[],
+  category: string | null,
+  sources: string[] | null,
+  limit: number,
+  offset: number
+): Promise<SupabaseAny[]> {
+  const runTermQuery = async (term: string) => {
+    const tokens = term.split(/[\s,]+/).filter(t => t.length >= 2)
+    const effective = tokens.length > 0 ? tokens : [term]
+
+    let q = supabase
+      .from('fitness_global_foods')
+      .select('*')
+      .eq('is_active', true)
+
+    for (const token of effective) {
+      q = q.ilike('nome_busca', `%${token}%`)
+    }
+
+    if (category) q = q.eq('categoria', category)
+    if (sources && sources.length > 0) q = q.in('source', sources)
+
+    return q.limit(500)
   }
 
-  // Contém a query completa
-  if (nomeNorm.includes(queryNorm)) return 2 + nome.length / 1000
+  const results = await Promise.all(searchTerms.map(runTermQuery))
+  const firstError = results.find((r: SupabaseAny) => r.error)?.error
+  if (firstError) throw new Error(firstError.message)
 
-  // Contém a primeira palavra
-  if (nomeNorm.includes(firstWord)) return 3 + nome.length / 1000
+  const byId = new Map<string, SupabaseAny>()
+  for (const r of results) {
+    for (const row of (r.data || [])) {
+      if (!byId.has(row.id)) byId.set(row.id, row)
+    }
+  }
+  let allGlobalFoods = Array.from(byId.values())
 
-  // TACO tem prioridade sobre TBCA (dados mais concisos)
-  return 4 + nome.length / 1000
+  allGlobalFoods.sort((a: SupabaseAny, b: SupabaseAny) => {
+    const scoreA = relevanceScore(a.nome, query)
+    const scoreB = relevanceScore(b.nome, query)
+    if (Math.abs(scoreA - scoreB) < 0.01) {
+      if (a.source === 'taco' && b.source !== 'taco') return -1
+      if (b.source === 'taco' && a.source !== 'taco') return 1
+    }
+    return scoreA - scoreB
+  })
+
+  return allGlobalFoods.slice(offset, offset + limit)
 }
 
 /**
@@ -91,6 +187,7 @@ function relevanceScore(nome: string, query: string): number {
  * Query params:
  *   q        - Texto de busca (min 2 chars)
  *   category - Filtrar por categoria
+ *   source   - Filtrar por fontes (csv)
  *   limit    - Máximo de resultados (default 20, max 100)
  *   offset   - Paginação
  */
@@ -117,74 +214,16 @@ export async function GET(request: NextRequest) {
 
     if (query.length >= 2) {
       const normalizedQuery = removeAccents(query)
-
-      // Verificar se há apelidos para expandir a busca
-      const aliasTerms = ALIASES[normalizedQuery] || []
-
-      // Busca principal pelo termo do usuário
+      const aliases = await getAliases(supabase)
+      const aliasTerms = aliases[normalizedQuery] || []
       const searchTerms = [normalizedQuery, ...aliasTerms]
 
-      // Executa uma query por termo em paralelo e deduplica por id.
-      // Motivo: os próprios alimentos têm vírgula no nome_busca (ex: "ovo, de galinha"),
-      // o que quebraria o .or() do PostgREST (vírgula é separador de filtros).
-      //
-      // Cada termo é quebrado em tokens (por espaço/vírgula) e cada token vira um
-      // ilike encadeado (AND). Isso permite casar "pão francês" (digitado pelo
-      // usuário) com "pao, trigo, frances" (como está no banco) — os dois tokens
-      // "pao" e "frances" aparecem, independente da ordem/pontuação.
-      const runTermQuery = async (term: string) => {
-        const tokens = term.split(/[\s,]+/).filter(t => t.length >= 2)
-        const effective = tokens.length > 0 ? tokens : [term]
-
-        let q = (supabase as SupabaseAny)
-          .from('fitness_global_foods')
-          .select('*')
-          .eq('is_active', true)
-
-        for (const token of effective) {
-          q = q.ilike('nome_busca', `%${token}%`)
-        }
-
-        if (category) q = q.eq('categoria', category)
-        if (sources && sources.length > 0) q = q.in('source', sources)
-
-        // 500 por termo garante que alimentos TACO isolados não sejam cortados
-        // quando o termo é popular em preparações TBCA (ex: "ovo", "frango").
-        return q.limit(500)
+      const rpcResult = await searchViaRpc(supabase, searchTerms, category, sources, limit, offset)
+      if (rpcResult !== null) {
+        allGlobalFoods = rpcResult
+      } else {
+        allGlobalFoods = await searchLegacy(supabase, query, searchTerms, category, sources, limit, offset)
       }
-
-      const results = await Promise.all(searchTerms.map(runTermQuery))
-      const firstError = results.find(r => r.error)?.error
-      if (firstError) {
-        console.error('Erro ao buscar alimentos globais:', firstError)
-        return NextResponse.json({ error: firstError.message }, { status: 500 })
-      }
-
-      const byId = new Map<string, SupabaseAny>()
-      for (const r of results) {
-        for (const row of (r.data || [])) {
-          if (!byId.has(row.id)) byId.set(row.id, row)
-        }
-      }
-      allGlobalFoods = Array.from(byId.values())
-
-      // Rankear por relevância
-      allGlobalFoods.sort((a: SupabaseAny, b: SupabaseAny) => {
-        const scoreA = relevanceScore(a.nome, query)
-        const scoreB = relevanceScore(b.nome, query)
-
-        // TACO tem prioridade sobre TBCA em caso de empate
-        if (Math.abs(scoreA - scoreB) < 0.01) {
-          if (a.source === 'taco' && b.source !== 'taco') return -1
-          if (b.source === 'taco' && a.source !== 'taco') return 1
-        }
-
-        return scoreA - scoreB
-      })
-
-      // Aplicar paginação após ranking
-      allGlobalFoods = allGlobalFoods.slice(offset, offset + limit)
-
     } else if (category) {
       // Busca só por categoria (sem texto)
       let catQuery = (supabase as SupabaseAny)
@@ -248,10 +287,11 @@ export async function GET(request: NextRequest) {
     // Helper: converte campo numérico opcional do banco para number ou null.
     const num = (v: unknown): number | null => (v != null && v !== '' ? Number(v) : null)
 
-    // Formatar resultados
+    // Formatar resultados — exibe o nome popular quando existir
     const formattedGlobal = allGlobalFoods.map((f: SupabaseAny) => ({
       id: f.id,
-      nome: f.nome,
+      nome: f.nome_popular || f.nome,
+      nome_tecnico: f.nome,
       categoria: f.categoria,
       marca: null,
       porcao_padrao: f.porcao_padrao,
@@ -298,10 +338,17 @@ export async function GET(request: NextRequest) {
       source: f.source || 'manual',
     }))
 
+    const total = formattedUser.length + formattedGlobal.length
+
+    // Busca com texto e zero resultados → registra para o backlog
+    if (query.length >= 2 && total === 0 && offset === 0) {
+      await logSearchMiss(user.id, query)
+    }
+
     return NextResponse.json({
       success: true,
       foods: [...formattedUser, ...formattedGlobal],
-      total: formattedUser.length + formattedGlobal.length,
+      total,
     })
   } catch (error) {
     console.error('Erro na API foods:', error)

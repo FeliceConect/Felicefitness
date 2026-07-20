@@ -36,6 +36,8 @@ export interface CommonPortion {
 export interface Food {
   id: string
   nome: string
+  /** Nome técnico TACO/TBCA original (quando nome é o popular) */
+  nome_tecnico?: string
   categoria: FoodCategory
   marca?: string
   porcao_padrao: number // gramas ou ml

@@ -229,6 +229,9 @@ function FoodItem({ food, onClick }: FoodItemProps) {
         <p className="text-sm text-foreground-secondary">
           {food.porcao_padrao}{food.unidade} • {Math.round(food.calorias)} kcal • {food.proteinas}g prot
         </p>
+        {food.nome_tecnico && food.nome_tecnico !== food.nome && (
+          <p className="text-[10px] text-foreground-muted truncate">{food.nome_tecnico}</p>
+        )}
       </div>
     </motion.button>
   )

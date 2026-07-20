@@ -35,6 +35,7 @@ const DEBOUNCE_MS = 300
 function convertDbFoodToFood(dbFood: {
   id: string
   nome: string
+  nome_tecnico?: string | null
   categoria: string
   marca?: string | null
   porcao_padrao: number
@@ -53,6 +54,7 @@ function convertDbFoodToFood(dbFood: {
   return {
     id: dbFood.id,
     nome: dbFood.nome,
+    nome_tecnico: dbFood.nome_tecnico || undefined,
     categoria: dbFood.categoria as FoodCategory,
     marca: dbFood.marca || undefined,
     porcao_padrao: dbFood.porcao_padrao,

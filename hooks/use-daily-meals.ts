@@ -285,6 +285,20 @@ export function useDailyMeals(date?: Date): UseDailyMealsReturn {
         return next
       })
 
+      // Incrementa popularidade dos alimentos globais usados (ranking da busca).
+      // Fire-and-forget: o RPC pode ainda não existir (migration pendente).
+      const globalFoodIds = (meal.itens || [])
+        .filter(item => item.food && !item.food.is_user_created)
+        .map(item => item.food_id)
+        .filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+      if (globalFoodIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(supabase as any).rpc('fitness_increment_food_usage', { p_food_ids: globalFoodIds })
+          .then(({ error: rpcError }: { error: unknown }) => {
+            if (rpcError) console.warn('increment_food_usage indisponível:', rpcError)
+          })
+      }
+
       // Award 10 pts when 3+ meals are logged today (server dedups daily)
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       if (meal.data === todayStr && nextCount >= 3) {
