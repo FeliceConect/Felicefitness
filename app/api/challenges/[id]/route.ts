@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getTodayDateSP } from '@/lib/utils/date'
+import { computeChallengeScores } from '@/lib/services/challenge-score'
 
 function getAdminClient() {
   return createAdminClient(
@@ -39,16 +40,19 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Desafio não encontrado' }, { status: 404 })
     }
 
-    // Get leaderboard (top 50)
+    // Participantes do desafio. O score é calculado AO VIVO a partir dos pontos
+    // ganhos no período (ver computeChallengeScores) — nunca do contador
+    // denormalizado, que subcontava água/sono/feed/refeições.
     const { data: participants } = await db
       .from('fitness_challenge_participants')
-      .select('user_id, score, current_position, joined_at')
+      .select('user_id, joined_at')
       .eq('challenge_id', challengeId)
-      .order('score', { ascending: false })
-      .limit(50)
+      .limit(200)
+
+    const userIds = (participants || []).map(p => p.user_id)
+    const scores = await computeChallengeScores(db, challenge, userIds)
 
     // Enrich with names + tier
-    const userIds = (participants || []).map(p => p.user_id)
     const profileMap = {}
     if (userIds.length > 0) {
       const { data: profiles } = await db
@@ -64,14 +68,17 @@ export async function GET(
       }
     }
 
-    const leaderboard = (participants || []).map((p, idx) => ({
-      position: idx + 1,
-      user_id: p.user_id,
-      name: profileMap[p.user_id]?.name || 'Anônimo',
-      tier: profileMap[p.user_id]?.tier || 'bronze',
-      score: p.score,
-      is_self: p.user_id === user.id,
-    }))
+    const leaderboard = (participants || [])
+      .map(p => ({
+        user_id: p.user_id,
+        name: profileMap[p.user_id]?.name || 'Anônimo',
+        tier: profileMap[p.user_id]?.tier || 'bronze',
+        score: scores[p.user_id] || 0,
+        is_self: p.user_id === user.id,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 50)
+      .map((e, idx) => ({ position: idx + 1, ...e }))
 
     // User's participation
     const userEntry = leaderboard.find(e => e.is_self)

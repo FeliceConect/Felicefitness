@@ -4,11 +4,13 @@
  * Server-side Point Attribution
  *
  * Reusable helper for awarding points from server contexts (API routes, crons,
- * webhooks) without going through HTTP. Mirrors the dedup + ranking + challenge
- * + tier logic of /api/points/award. The HTTP route delegates to this module.
+ * webhooks) without going through HTTP. Mirrors the dedup + ranking + tier
+ * logic of /api/points/award. The HTTP route delegates to this module.
+ * (O placar de desafios é calculado ao vivo em lib/services/challenge-score.ts,
+ * não incrementado aqui — ver nota abaixo.)
  */
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getTodayDateSP, getStartOfTodaySP } from '@/lib/utils/date'
+import { getStartOfTodaySP } from '@/lib/utils/date'
 
 export type PointAction =
   | 'workout_completed'
@@ -235,42 +237,10 @@ export async function awardPointsServer(
     console.error('fitness_award_points_to_user falhou:', rpcError)
   }
 
-  // Update active challenge scores (best-effort)
-  const today = getTodayDateSP()
-  const { data: userChallenges } = await supabaseAdmin
-    .from('fitness_challenge_participants')
-    .select('challenge_id')
-    .eq('user_id', userId)
-
-  if (userChallenges && userChallenges.length > 0) {
-    const challengeIds = userChallenges.map((c: { challenge_id: string }) => c.challenge_id)
-    const { data: activeChallenges } = await supabaseAdmin
-      .from('fitness_challenges')
-      .select('id, scoring_category')
-      .in('id', challengeIds)
-      .eq('is_active', true)
-      .lte('start_date', today)
-      .gte('end_date', today)
-
-    for (const ch of (activeChallenges || [])) {
-      if (ch.scoring_category && ch.scoring_category !== config.category) continue
-
-      const { data: participant } = await supabaseAdmin
-        .from('fitness_challenge_participants')
-        .select('score')
-        .eq('challenge_id', ch.id)
-        .eq('user_id', userId)
-        .single()
-
-      if (participant) {
-        await supabaseAdmin
-          .from('fitness_challenge_participants')
-          .update({ score: (participant.score || 0) + config.points })
-          .eq('challenge_id', ch.id)
-          .eq('user_id', userId)
-      }
-    }
-  }
+  // Placar de desafios NÃO é mais atualizado aqui. Ele é calculado ao vivo a
+  // partir de fitness_point_transactions (ver lib/services/challenge-score.ts),
+  // porque o contador denormalizado ignorava água/sono/feed/refeições (que
+  // pontuam por triggers/inserts fora deste helper) e subcontava o desafio.
 
   // Tier update (never demotes)
   try {

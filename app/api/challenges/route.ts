@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getTodayDateSP } from '@/lib/utils/date'
+import { computeChallengeScores } from '@/lib/services/challenge-score'
 
 function getAdminClient() {
   return createAdminClient(
@@ -38,11 +39,11 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ success: true, challenges: [] })
     }
 
-    // Get user participation across all challenges
+    // Get user participation across all challenges (só p/ saber onde participa)
     const challengeIds = challenges.map(c => c.id)
     const { data: participations } = await db
       .from('fitness_challenge_participants')
-      .select('challenge_id, score, current_position')
+      .select('challenge_id')
       .eq('user_id', user.id)
       .in('challenge_id', challengeIds)
 
@@ -57,19 +58,28 @@ export async function GET(_request: NextRequest) {
       return !!participationMap[c.id]
     })
 
-    // Get participant counts
+    // Enriquecer: score e posição do usuário são calculados AO VIVO a partir dos
+    // pontos ganhos no período (mesma fonte do placar), nunca do contador.
     const enriched = await Promise.all(visible.map(async (c) => {
-      const { count } = await db
+      const { data: allParts } = await db
         .from('fitness_challenge_participants')
-        .select('id', { count: 'exact', head: true })
+        .select('user_id')
         .eq('challenge_id', c.id)
+        .limit(500)
+      const partIds = (allParts || []).map(p => p.user_id)
+
+      const scores = await computeChallengeScores(db, c, partIds)
+      const ranked = partIds
+        .map(uid => ({ uid, score: scores[uid] || 0 }))
+        .sort((a, b) => b.score - a.score)
+      const meIdx = ranked.findIndex(r => r.uid === user.id)
 
       return {
         ...c,
-        participant_count: count || 0,
+        participant_count: partIds.length,
         is_joined: !!participationMap[c.id],
-        user_score: participationMap[c.id]?.score || 0,
-        user_position: participationMap[c.id]?.current_position || null,
+        user_score: meIdx >= 0 ? ranked[meIdx].score : 0,
+        user_position: meIdx >= 0 ? meIdx + 1 : null,
         has_started: c.start_date <= today,
       }
     }))
