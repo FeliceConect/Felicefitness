@@ -22,6 +22,7 @@ import {
   Download,
 } from 'lucide-react'
 import { compressImageClient } from '@/lib/images/compress-client'
+import { MessageText } from '@/components/chat/message-text'
 import { toast } from 'sonner'
 
 // ---------------------------------------------------------------------------
@@ -833,9 +834,10 @@ export default function ChatPage() {
                               </div>
                             )}
                             {showContent && (
-                              <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
-                                {msg.content}
-                              </p>
+                              <MessageText
+                                content={msg.content}
+                                className="whitespace-pre-wrap break-words text-[15px] leading-relaxed"
+                              />
                             )}
                             <div className={`flex items-center justify-end gap-1 mt-1 ${
                               isMine ? 'text-white/60' : 'text-foreground-muted'

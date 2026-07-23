@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { ConversationsList } from '@/components/chat/conversations-list'
 import { ChatWindow } from '@/components/chat/chat-window'
+import { BroadcastModal } from '@/components/chat/broadcast-modal'
 import { useProfessional } from '@/hooks/use-professional'
 import { createBrowserClient } from '@supabase/ssr'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Megaphone } from 'lucide-react'
 
 interface Conversation {
   id: string
@@ -32,6 +33,7 @@ export default function MessagesPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [isMobile, setIsMobile] = useState(false)
+  const [showBroadcast, setShowBroadcast] = useState(false)
 
   useEffect(() => {
     // Check se é mobile
@@ -68,13 +70,23 @@ export default function MessagesPage() {
             onBack={handleBack}
           />
         ) : (
-          <div className="bg-white rounded-xl border border-border h-full overflow-hidden">
-            <ConversationsList
-              onSelectConversation={setSelectedConversation}
-              selectedId={undefined}
-            />
+          <div className="flex flex-col h-full gap-3">
+            <button
+              onClick={() => setShowBroadcast(true)}
+              className="inline-flex items-center justify-center gap-2 py-2.5 bg-dourado text-white rounded-xl font-medium hover:bg-dourado/90 transition-colors"
+            >
+              <Megaphone className="w-4 h-4" />
+              Mensagem para todos
+            </button>
+            <div className="bg-white rounded-xl border border-border flex-1 overflow-hidden">
+              <ConversationsList
+                onSelectConversation={setSelectedConversation}
+                selectedId={undefined}
+              />
+            </div>
           </div>
         )}
+        <BroadcastModal isOpen={showBroadcast} onClose={() => setShowBroadcast(false)} />
       </div>
     )
   }
@@ -83,9 +95,18 @@ export default function MessagesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
-        <p className="text-foreground-secondary">Comunique-se com seus clientes</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+          <p className="text-foreground-secondary">Comunique-se com seus clientes</p>
+        </div>
+        <button
+          onClick={() => setShowBroadcast(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-dourado text-white rounded-lg font-medium hover:bg-dourado/90 transition-colors"
+        >
+          <Megaphone className="w-5 h-5" />
+          Mensagem para todos
+        </button>
       </div>
 
       {/* Chat Layout */}
@@ -120,6 +141,8 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+
+      <BroadcastModal isOpen={showBroadcast} onClose={() => setShowBroadcast(false)} />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Send, ArrowLeft, User, Loader2, Paperclip, X, FileText, Download } from 'lucide-react'
 import { compressImageClient } from '@/lib/images/compress-client'
+import { MessageText } from '@/components/chat/message-text'
 import { toast } from 'sonner'
 
 interface MessageMetadata {
@@ -466,7 +467,10 @@ export function ChatWindow({
                             </div>
                           )}
                           {showContent && (
-                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                            <MessageText
+                              content={message.content}
+                              className="whitespace-pre-wrap break-words"
+                            />
                           )}
                           <p className={`text-xs mt-1 ${isMine ? 'text-seda' : 'text-foreground-muted'}`}>
                             {formatTime(message.created_at)}
