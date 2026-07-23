@@ -64,6 +64,26 @@ export async function computeChallengeScores(
     ? CHALLENGE_CATEGORY_TO_TX[challenge.scoring_category] || [challenge.scoring_category]
     : null
 
+  // Caminho rápido: uma única agregação SQL (SUM(points) GROUP BY user_id),
+  // em vez de N queries. Ver migration 20260723_challenge_scores_rpc.sql.
+  const { data: rows, error } = await db.rpc('fitness_challenge_scores', {
+    p_user_ids: userIds,
+    p_start: startISO,
+    p_end: endISO,
+    p_categories: txCategories,
+  })
+
+  if (!error && Array.isArray(rows)) {
+    for (const uid of userIds) scores[uid] = 0
+    for (const r of rows as Array<{ user_id: string; score: number | string }>) {
+      scores[r.user_id] = Number(r.score) || 0
+    }
+    return scores
+  }
+
+  // Fallback: soma por usuário. supabase-js NÃO lança em erro de query — por
+  // isso tratamos `error` acima. Cobre o intervalo em que a RPC ainda não foi
+  // aplicada no banco self-hosted (deploy antes da migration).
   await Promise.all(
     userIds.map(async (uid) => {
       let q = db
