@@ -59,6 +59,22 @@ interface MealPlanDay {
   meals: PlannedMeal[]
 }
 
+// Uma refeição "vazia" — sem alimentos fixos, sem grupos de escolha e sem
+// opções A/B/C — não deve aparecer no plano do paciente. É o caso de um slot
+// que a nutri deixou sem itens (ex.: "pré-treino"), que aparecia como 0 kcal /
+// 0 alimentos e ainda inflava a contagem de refeições do dia (ex.: "1/5").
+function mealHasFoods(meal: PlannedMeal): boolean {
+  if (Array.isArray(meal.foods) && meal.foods.length > 0) return true
+  const alts = meal.alternatives
+  if (Array.isArray(alts)) {
+    return alts.some((alt) => {
+      const foods = Array.isArray(alt) ? alt : alt?.foods
+      return Array.isArray(foods) && foods.length > 0
+    })
+  }
+  return false
+}
+
 interface MealPlan {
   id: string
   name: string
@@ -262,7 +278,9 @@ export function useMealPlan() {
 
     const meals = todayDay?.meals || []
 
-    return meals.filter(m => !m.is_training_day_only || isTrainingDay)
+    return meals
+      .filter(m => !m.is_training_day_only || isTrainingDay)
+      .filter(mealHasFoods)
   }, [plan, isTrainingDay])
 
   useEffect(() => {
