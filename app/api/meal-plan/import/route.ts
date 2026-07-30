@@ -154,12 +154,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Modelos 5.x não aceitam temperature customizada (só o default) —
+    // a determinização vem do reasoning_effort 'none' + prompt.
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      temperature: 0.2,
+      model: 'gpt-5.6-luna',
+      reasoning_effort: 'none',
       // Planos grandes (muitas opções "escolher 1" + macros por alimento)
       // geram JSON longo; teto alto evita truncar e quebrar o JSON.
-      max_tokens: 16000,
+      max_completion_tokens: 16000,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -171,7 +173,7 @@ export async function POST(request: NextRequest) {
     await logApiUsage({
       userId: user.id,
       feature: 'meal_plan_import',
-      model: 'gpt-4o',
+      model: 'gpt-5.6-luna',
       tokensInput: response.usage?.prompt_tokens || 0,
       tokensOutput: response.usage?.completion_tokens || 0,
       endpoint: '/api/meal-plan/import',

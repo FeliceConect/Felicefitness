@@ -152,10 +152,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Análise com GPT-4o (Vision para imagem, texto puro para PDF)
+    // Análise com gpt-5.6-luna (vision para imagem, texto puro para PDF).
+    // reasoning_effort 'none': extração direta, igual ao comportamento do
+    // gpt-4o que ele substitui. Se surgirem erros de leitura, subir para
+    // 'low' ou trocar para gpt-5.6-terra.
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 1500,
+      model: 'gpt-5.6-luna',
+      reasoning_effort: 'none',
+      max_completion_tokens: 1500,
       messages: [
         {
           role: 'system',
@@ -237,7 +241,7 @@ Regras:
     await logApiUsage({
       userId: user.id,
       feature: 'inbody_ocr',
-      model: 'gpt-4o',
+      model: 'gpt-5.6-luna',
       tokensInput: response.usage?.prompt_tokens || 0,
       tokensOutput: response.usage?.completion_tokens || 0,
       endpoint: '/api/inbody/analyze',
