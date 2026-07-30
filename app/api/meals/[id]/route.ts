@@ -14,7 +14,6 @@ function getAdminClient() {
 }
 
 const ALL_MEALS_REASON = 'Todas refeicoes registradas'
-const ALL_MEALS_POINTS = 10
 
 // DELETE - Apaga uma refeição. Só permite se for do dia atual (BR).
 // Se o número de refeições restantes do dia cair abaixo de 3, reverte
@@ -57,13 +56,6 @@ export async function DELETE(
       )
     }
 
-    // Conta refeições do dia ANTES da deleção pra decidir reversão de pts
-    const { count: countBefore } = await supabaseAdmin
-      .from('fitness_meals')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('data', today)
-
     // Apaga a refeição. fitness_meal_items cascateia via FK.
     const { error: deleteError } = await supabaseAdmin
       .from('fitness_meals')
@@ -76,38 +68,25 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Erro ao apagar refeição' }, { status: 500 })
     }
 
-    // Reversão de pts: se ANTES tinha >=3 e DEPOIS ficou <3,
-    // a regra "Todas refeicoes registradas" deixa de valer
+    // Conta refeições NÃO puladas restantes no dia (mesma condição do award).
+    const { count: afterCount } = await supabaseAdmin
+      .from('fitness_meals')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('data', today)
+      .neq('status', 'pulado')
+
+    // Se caiu abaixo de 3, a regra "Todas refeicoes registradas" deixa de valer.
+    // A RPC reverte de forma atômica e simétrica (só age se a transação existir).
     let pointsReverted = 0
-    const before = countBefore ?? 0
-    const after = before - 1
-    if (before >= 3 && after < 3) {
-      // Apaga a transação automática do dia
-      const { data: tx } = await supabaseAdmin
-        .from('fitness_point_transactions')
-        .select('id, points')
-        .eq('user_id', user.id)
-        .eq('reason', ALL_MEALS_REASON)
-        .eq('source', 'automatic')
-        .gte('created_at', `${today}T00:00:00-03:00`)
-        .lte('created_at', `${today}T23:59:59-03:00`)
-        .limit(1)
-
-      if (tx && tx.length > 0) {
-        await supabaseAdmin
-          .from('fitness_point_transactions')
-          .delete()
-          .eq('id', tx[0].id)
-
-        pointsReverted = tx[0].points || ALL_MEALS_POINTS
-
-        // Reverte do leaderboard
-        await supabaseAdmin.rpc('fitness_award_points_to_user', {
-          p_user_id: user.id,
-          p_delta: -pointsReverted,
-          p_allowed_ranking_categories: null,
-        })
-      }
+    const after = afterCount ?? 0
+    if (after < 3) {
+      const { data: reverted } = await supabaseAdmin.rpc('fitness_revert_daily_award', {
+        p_user_id: user.id,
+        p_reason: ALL_MEALS_REASON,
+        p_reference_date: today,
+      })
+      pointsReverted = reverted || 0
     }
 
     return NextResponse.json({

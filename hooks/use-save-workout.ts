@@ -239,22 +239,45 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
       if (data.cardioExercises && data.cardioExercises.length > 0) {
         for (const cardio of data.cardioExercises) {
           // Create workout exercise for cardio
-          const { data: cardioExercise, error: cardioExerciseError } = await (supabase as AnyTable)
-            .from('fitness_workout_exercises')
-            .insert({
-              workout_id: workoutRecordId,
-              exercise_id: null,
-              exercicio_nome: cardio.nome,
-              ordem: exerciseOrder,
-              status: 'concluido',
-              notas: cardio.notas || `Cardio: ${cardio.duracao_minutos}min${cardio.distancia_km ? ` | ${cardio.distancia_km}km` : ''}${cardio.velocidade_media ? ` | ${cardio.velocidade_media}km/h` : ''}`
-            })
-            .select()
-            .single()
+          const cardioRow = {
+            workout_id: workoutRecordId,
+            exercise_id: null,
+            exercicio_nome: cardio.nome,
+            ordem: exerciseOrder,
+            status: 'concluido',
+            notas: cardio.notas || `Cardio: ${cardio.duracao_minutos}min${cardio.distancia_km ? ` | ${cardio.distancia_km}km` : ''}${cardio.velocidade_media ? ` | ${cardio.velocidade_media}km/h` : ''}`
+          }
+
+          // Grava a intensidade na própria linha do cardio, para o servidor
+          // derivar os pontos do banco (não do cliente). Se a coluna ainda não
+          // existe (migration 20260730_4 não rodou), refaz sem ela.
+          let cardioExercise: { id?: string } | null = null
+          let cardioExerciseError: { code?: string } | null = null
+          {
+            const res = await (supabase as AnyTable)
+              .from('fitness_workout_exercises')
+              .insert({ ...cardioRow, cardio_intensity: cardio.intensidade || null })
+              .select()
+              .single()
+            cardioExercise = res.data
+            cardioExerciseError = res.error
+            if (cardioExerciseError && (cardioExerciseError.code === '42703' || cardioExerciseError.code === 'PGRST204')) {
+              const retry = await (supabase as AnyTable)
+                .from('fitness_workout_exercises')
+                .insert(cardioRow)
+                .select()
+                .single()
+              cardioExercise = retry.data
+              cardioExerciseError = retry.error
+            }
+          }
 
           if (cardioExerciseError) {
             console.error('Error creating cardio exercise:', cardioExerciseError)
             throw cardioExerciseError
+          }
+          if (!cardioExercise?.id) {
+            throw new Error('Falha ao criar exercício de cardio (sem id)')
           }
 
           // Create a "set" for cardio with duration as time

@@ -65,46 +65,18 @@ export async function awardPoints(
   action: PointAction,
   referenceId?: string
 ): Promise<AwardPointsResult> {
-  try {
-    const response = await fetch('/api/points/award', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action,
-        reference_id: referenceId || undefined,
-      }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error(`Points award failed for action "${action}":`, data.error)
-      return {
-        success: false,
-        error: data.error || 'Erro ao atribuir pontos',
-      }
-    }
-
-    if (data.duplicate) {
-      return {
-        success: true,
-        duplicate: true,
-        message: data.message,
-      }
-    }
-
-    return {
-      success: true,
-      points: data.points,
-      message: data.message,
-    }
-  } catch (error) {
-    console.error(`Points award error for action "${action}":`, error)
-    return {
-      success: false,
-      error: 'Erro de rede ao atribuir pontos',
-    }
-  }
+  // DESATIVADO (no-op). O endpoint genérico POST /api/points/award foi
+  // desligado por permitir que o cliente creditasse qualquer ação sem
+  // verificação (farm de pontos). Cada crédito agora vem do caminho que
+  // executa e verifica o fato:
+  //   • água / refeição / sono → triggers no banco
+  //   • treino / PR / cardio / streak → /api/points/award-workout-complete
+  //   • atividade avulsa → /api/activities (com cap diário)
+  //   • formulário → /api/forms/responses (server-side)
+  // Mantido como no-op para não quebrar chamadas legadas nos hooks.
+  void action
+  void referenceId
+  return { success: true, duplicate: true, message: 'crédito automático pela ação' }
 }
 
 /**

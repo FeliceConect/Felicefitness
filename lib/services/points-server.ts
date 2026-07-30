@@ -10,7 +10,7 @@
  * não incrementado aqui — ver nota abaixo.)
  */
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getStartOfTodaySP } from '@/lib/utils/date'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 export type PointAction =
   | 'workout_completed'
@@ -133,6 +133,15 @@ async function prHasPriorHistory(
     .single()
   if (!we?.exercicio_nome) return false
 
+  // Posse: o set precisa pertencer a um treino DESTE usuário. Sem isso, um
+  // atacante poderia mandar o id de um set de outro paciente e pontuar.
+  const { data: w } = await supabaseAdmin
+    .from('fitness_workouts')
+    .select('user_id')
+    .eq('id', we.workout_id)
+    .single()
+  if (!w || w.user_id !== userId) return false
+
   const { count } = await supabaseAdmin
     .from('fitness_personal_records')
     .select('id', { count: 'exact', head: true })
@@ -192,36 +201,71 @@ export async function awardPointsServer(
     // dia em America/Sao_Paulo. NÃO use new Date() + setHours no servidor
     // (UTC) porque após 21h BRT a janela "hoje" já é o dia seguinte UTC,
     // fazendo o dedup falhar e dar pontos novamente.
-    const startOfDaySP = getStartOfTodaySP()
-    const { data: todayExisting } = await supabaseAdmin
+    // Dedup por dia de referência (America/Sao_Paulo). O índice único parcial
+    // ux_points_daily (user_id, reason, source, reference_date) é a garantia
+    // real no banco; esta leitura só evita tentativas de insert desnecessárias.
+    // Fallback por created_at caso a coluna reference_date ainda não exista
+    // (migration 20260730_1 não rodou).
+    let todayExisting: Array<{ id: string }> | null = null
+    const dedupRead = await supabaseAdmin
       .from('fitness_point_transactions')
       .select('id')
       .eq('user_id', userId)
       .eq('reason', config.reason)
       .eq('source', 'automatic')
-      .gte('created_at', startOfDaySP)
+      .eq('reference_date', getTodayDateSP())
       .limit(1)
+    if (dedupRead.error && (dedupRead.error.code === '42703' || dedupRead.error.code === 'PGRST204')) {
+      const fb = await supabaseAdmin
+        .from('fitness_point_transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('reason', config.reason)
+        .eq('source', 'automatic')
+        .gte('created_at', getStartOfTodaySP())
+        .limit(1)
+      todayExisting = fb.data
+    } else {
+      todayExisting = dedupRead.data
+    }
 
     if (todayExisting && todayExisting.length > 0) {
       return { success: true, duplicate: true, message: 'Pontos ja atribuidos hoje para esta acao' }
     }
   }
 
-  // Insert transaction
-  const { data: transaction, error: insertError } = await supabaseAdmin
+  // Insert transaction. reference_date = hoje (SP) — dia a que o crédito se
+  // refere; é a coluna de dedup dos índices únicos. Se a coluna ainda não
+  // existe (migration não rodou), refaz sem ela — o crédito não pode quebrar.
+  const baseRow = {
+    user_id: userId,
+    points: config.points,
+    reason: config.reason,
+    category: config.category,
+    source: 'automatic',
+    reference_id: referenceId || null,
+  }
+  let insertRes = await supabaseAdmin
     .from('fitness_point_transactions')
-    .insert({
-      user_id: userId,
-      points: config.points,
-      reason: config.reason,
-      category: config.category,
-      source: 'automatic',
-      reference_id: referenceId || null,
-    })
+    .insert({ ...baseRow, reference_date: getTodayDateSP() })
     .select()
     .single()
+  if (insertRes.error && (insertRes.error.code === '42703' || insertRes.error.code === 'PGRST204')) {
+    insertRes = await supabaseAdmin
+      .from('fitness_point_transactions')
+      .insert(baseRow)
+      .select()
+      .single()
+  }
+  const transaction = insertRes.data
+  const insertError = insertRes.error
 
   if (insertError) {
+    // 23505 = violação de índice único: uma requisição concorrente ganhou a
+    // corrida e já creditou. Tratamos como duplicata (idempotente), não erro.
+    if ((insertError as { code?: string }).code === '23505') {
+      return { success: true, duplicate: true, message: 'Pontos ja atribuidos para esta acao' }
+    }
     console.error('Erro ao atribuir pontos:', insertError)
     return { success: false, error: 'Erro ao atribuir pontos' }
   }

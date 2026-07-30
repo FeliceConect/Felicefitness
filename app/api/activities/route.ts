@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import type { ActivityInsert } from '@/lib/activity/types'
 import { awardPointsServer, ACTIVITY_INTENSITY_ACTION } from '@/lib/services/points-server'
 import { getTodayDateSP } from '@/lib/utils/date'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any
+
+// Máximo de atividades avulsas PONTUÁVEIS por dia (decisão de produto).
+// Cobre quem legitimamente faz 2 esportes no mesmo dia; corta o farm por
+// cadastro em massa. Atividades além disso são salvas, mas não pontuam.
+const ACTIVITY_DAILY_CAP = 2
+
+// Razões das atividades avulsas (POINT_VALUES) — usadas no cap e na reversão.
+const ACTIVITY_REASONS = [
+  'Atividade leve',
+  'Atividade moderada',
+  'Atividade intensa',
+  'Atividade muito intensa',
+]
+
+function getAdminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 // GET - Buscar atividades do usuário
 export async function GET(request: NextRequest) {
@@ -124,14 +146,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Award por intensidade — cada atividade pontua. Dedup por activity.id
+    // Award por intensidade — respeitando o CAP DIÁRIO. Dedup por activity.id
     // evita duplicar caso o POST seja reenviado para a mesma atividade.
     let pointsAwarded = 0
+    let dailyCapReached = false
     const intensityAction = ACTIVITY_INTENSITY_ACTION[body.intensity as keyof typeof ACTIVITY_INTENSITY_ACTION]
     if (intensityAction) {
-      const result = await awardPointsServer(user.id, intensityAction, activity.id)
-      if (result.success && !result.duplicate) {
-        pointsAwarded = result.points || 0
+      // Conta quantas atividades avulsas já pontuaram HOJE (SP). A contagem é
+      // por reference_date=hoje (dia do crédito), então backdatar a atividade
+      // não escapa do teto. A atividade em si é salva de qualquer forma.
+      const { count: awardedToday } = await (supabase as AnySupabase)
+        .from('fitness_point_transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('category', 'workout')
+        .eq('reference_date', getTodayDateSP())
+        .in('reason', ACTIVITY_REASONS)
+
+      if ((awardedToday ?? 0) < ACTIVITY_DAILY_CAP) {
+        const result = await awardPointsServer(user.id, intensityAction, activity.id)
+        if (result.success && !result.duplicate) {
+          pointsAwarded = result.points || 0
+        }
+      } else {
+        dailyCapReached = true
       }
     }
 
@@ -139,6 +177,7 @@ export async function POST(request: NextRequest) {
       success: true,
       activity,
       points_awarded: pointsAwarded,
+      daily_cap_reached: dailyCapReached,
       message: 'Atividade registrada com sucesso'
     })
 
@@ -266,35 +305,16 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Procura transação de pontos vinculada (reference_id = activity.id)
-    const { data: txList } = await (supabase as AnySupabase)
-      .from('fitness_point_transactions')
-      .select('id, points')
-      .eq('user_id', user.id)
-      .eq('category', 'workout')
-      .eq('reference_id', activityId)
-      .like('reason', 'Atividade%')
-
-    let pointsReverted = 0
-    if (txList && txList.length > 0) {
-      pointsReverted = (txList as Array<{ points: number }>).reduce((s, t) => s + (t.points || 0), 0)
-      // Apaga as transações
-      await (supabase as AnySupabase)
-        .from('fitness_point_transactions')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('reference_id', activityId)
-        .like('reason', 'Atividade%')
-
-      // Reverte do leaderboard
-      if (pointsReverted > 0) {
-        await (supabase as AnySupabase).rpc('fitness_award_points_to_user', {
-          p_user_id: user.id,
-          p_delta: -pointsReverted,
-          p_allowed_ranking_categories: null,
-        })
-      }
-    }
+    // Reversão ATÔMICA e simétrica (apaga transação + estorna leaderboard com
+    // as categorias corretas) via RPC no banco. O client do usuário não tem
+    // policy de DELETE em fitness_point_transactions — por isso admin.
+    const admin = getAdminClient()
+    const { data: reverted } = await admin.rpc('fitness_revert_points_by_reference', {
+      p_user_id: user.id,
+      p_reference_ids: [activityId],
+      p_reasons: ACTIVITY_REASONS,
+    })
+    const pointsReverted = reverted || 0
 
     const { error } = await (supabase as AnySupabase)
       .from('fitness_activities')
@@ -312,6 +332,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      points_reverted: pointsReverted,
       message: 'Atividade removida com sucesso'
     })
 

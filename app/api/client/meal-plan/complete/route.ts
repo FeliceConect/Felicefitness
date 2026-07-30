@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { awardPointsServer } from '@/lib/services/points-server'
-import { getTodayDateSP } from '@/lib/utils/date'
+import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 import { mealTypeToPT, mealTypeToEN } from '@/lib/nutrition/meal-type'
 
 // POST - Registrar refeição do plano como completada (ou pulada)
@@ -39,6 +39,16 @@ export async function POST(request: NextRequest) {
     if (!planMealId || !date) {
       return NextResponse.json(
         { success: false, error: 'Dados obrigatórios faltando' },
+        { status: 400 }
+      )
+    }
+
+    // Só aceita registro de hoje ou ontem (SP). Bloqueia backdatar/adiantar a
+    // data para farmar crédito de refeição em datas fora da janela plausível.
+    const todaySP = getTodayDateSP()
+    if (date > todaySP || date < getDateOffsetSP(-1)) {
+      return NextResponse.json(
+        { success: false, error: 'Data inválida: registre apenas o dia atual ou o anterior.' },
         { status: 400 }
       )
     }

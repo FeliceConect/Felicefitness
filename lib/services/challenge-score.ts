@@ -81,6 +81,16 @@ export async function computeChallengeScores(
     return scores
   }
 
+  // Sem este aviso, a ausência da RPC (migration 20260723 não rodada no
+  // self-hosted) ficava invisível — o placar "funcionava" pelo fallback lento
+  // e ninguém sabia que a migration faltava.
+  if (error) {
+    console.warn(
+      '[challenge-score] RPC fitness_challenge_scores falhou — usando fallback por usuário. Rode a migration 20260723_challenge_scores_rpc.sql. Detalhe:',
+      (error as { message?: string })?.message || error
+    )
+  }
+
   // Fallback: soma por usuário. supabase-js NÃO lança em erro de query — por
   // isso tratamos `error` acima. Cobre o intervalo em que a RPC ainda não foi
   // aplicada no banco self-hosted (deploy antes da migration).

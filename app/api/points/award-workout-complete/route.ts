@@ -16,26 +16,22 @@ function getAdminClient() {
   )
 }
 
-type Intensity = 'leve' | 'moderado' | 'intenso' | 'muito_intenso'
-
-interface CardioAwardInput {
-  workoutExerciseId: string
-  intensity: Intensity
-}
-
 interface RequestBody {
   workoutId: string
-  prSetIds?: string[]
-  cardioAwards?: CardioAwardInput[]
-  // Streak lido pelo client antes do saveWorkout — necessário para detectar
-  // transição <7 → ≥7 (e <30 → ≥30) já que o trigger SQL atualiza
-  // streak_atual no momento do INSERT do treino.
-  oldStreak?: number
 }
 
-// POST - Consolida em uma única round-trip o award de pontos pós-treino:
-// workout (15) + cada PR (3) + cada cardio (3-10 por intensidade) +
-// transição de streak 7 (15) e 30 (50). Tudo em paralelo no server.
+// POST - Consolida em uma round-trip o award de pontos pós-treino.
+//
+// TUDO é derivado DO BANCO a partir do workoutId (nunca do corpo da
+// requisição), depois de verificar a posse do treino:
+//   • workout_completed (15)  — pelo próprio workoutId
+//   • PR (3 cada)             — sets com is_pr=true (o trigger autoritativo do
+//                               banco decide is_pr); awardPointsServer ainda
+//                               reconfere histórico real + posse do set
+//   • cardio (3-10 cada)      — exercícios com cardio_intensity gravada
+//
+// Streak (7=15, 30=50) NÃO é creditado aqui: é decidido pelo trigger
+// fn_auto_award_streak quando streak_atual REAL do perfil cruza o limiar.
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -48,12 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as RequestBody
-    const {
-      workoutId,
-      prSetIds = [],
-      cardioAwards = [],
-      oldStreak = 0,
-    } = body
+    const workoutId = body?.workoutId
 
     if (!workoutId || typeof workoutId !== 'string') {
       return NextResponse.json(
@@ -62,10 +53,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabaseAdmin = getAdminClient()
+    const admin = getAdminClient()
 
-    // Verifica posse do treino — caller mandou um id válido pertencente a ele.
-    const { data: workout } = await supabaseAdmin
+    // Posse do treino — o crédito só acontece sobre um treino do próprio usuário.
+    const { data: workout } = await admin
       .from('fitness_workouts')
       .select('user_id')
       .eq('id', workoutId)
@@ -78,55 +69,63 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Roda todos os awards principais em paralelo. awardPointsServer
-    // já trata dedup (por reference_id) e atualiza ranking/challenge/tier.
+    // Exercícios do treino. Lê cardio_intensity; se a coluna ainda não existe
+    // no banco (migration 20260730_4 não rodou), refaz sem ela — cardio não
+    // pontua até a migration rodar, mas o resto do treino funciona.
+    let weRows: Array<{ id: string; cardio_intensity: string | null }> = []
+    {
+      const res = await admin
+        .from('fitness_workout_exercises')
+        .select('id, cardio_intensity')
+        .eq('workout_id', workoutId)
+      if (res.error && (res.error.code === '42703' || res.error.code === 'PGRST204')) {
+        const retry = await admin
+          .from('fitness_workout_exercises')
+          .select('id')
+          .eq('workout_id', workoutId)
+        weRows = (retry.data || []).map((w: { id: string }) => ({ id: w.id, cardio_intensity: null }))
+      } else {
+        weRows = res.data || []
+      }
+    }
+    const weIds = weRows.map((w) => w.id)
+
+    // Sets de PR — is_pr é autoridade do trigger check_and_create_pr (banco).
+    let prSetIds: string[] = []
+    if (weIds.length > 0) {
+      const { data: prSets } = await admin
+        .from('fitness_exercise_sets')
+        .select('id')
+        .in('workout_exercise_id', weIds)
+        .eq('is_pr', true)
+      prSetIds = (prSets || []).map((s: { id: string }) => s.id)
+    }
+
+    // Roda todos os awards em paralelo. awardPointsServer trata dedup (por
+    // reference_id / índice único) e atualiza ranking/tier. pr_achieved ainda
+    // passa por prHasPriorHistory (histórico real + posse do set).
     const awardPromises: Promise<unknown>[] = [
       awardPointsServer(user.id, 'workout_completed', workoutId),
     ]
 
     for (const setId of prSetIds) {
-      if (typeof setId === 'string' && setId) {
-        awardPromises.push(awardPointsServer(user.id, 'pr_achieved', setId))
-      }
+      awardPromises.push(awardPointsServer(user.id, 'pr_achieved', setId))
     }
 
-    for (const c of cardioAwards) {
-      const action = c?.intensity ? CARDIO_INTENSITY_ACTION[c.intensity] : null
-      if (action && c.workoutExerciseId) {
-        awardPromises.push(
-          awardPointsServer(user.id, action, c.workoutExerciseId)
-        )
+    for (const we of weRows) {
+      const action = we.cardio_intensity
+        ? CARDIO_INTENSITY_ACTION[we.cardio_intensity as keyof typeof CARDIO_INTENSITY_ACTION]
+        : null
+      if (action) {
+        awardPromises.push(awardPointsServer(user.id, action, we.id))
       }
     }
 
     await Promise.all(awardPromises)
 
-    // Streak — lê estado pós-trigger e compara com oldStreak para detectar
-    // transição. Sem oldStreak (default 0), só transitionará na primeira vez.
-    const { data: profileAfter } = await supabaseAdmin
-      .from('fitness_profiles')
-      .select('streak_atual')
-      .eq('id', user.id)
-      .single()
-
-    const newStreak =
-      (profileAfter as { streak_atual?: number } | null)?.streak_atual ?? 0
-
-    const streakAwards: Promise<unknown>[] = []
-    if (oldStreak < 7 && newStreak >= 7) {
-      streakAwards.push(awardPointsServer(user.id, 'streak_7'))
-    }
-    if (oldStreak < 30 && newStreak >= 30) {
-      streakAwards.push(awardPointsServer(user.id, 'streak_30'))
-    }
-    if (streakAwards.length > 0) {
-      await Promise.all(streakAwards)
-    }
-
     return NextResponse.json({
       success: true,
-      newStreak,
-      streakBonus: streakAwards.length > 0,
+      prAwards: prSetIds.length,
     })
   } catch (error) {
     console.error('Erro em award-workout-complete:', error)

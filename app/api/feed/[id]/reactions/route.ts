@@ -56,6 +56,15 @@ export async function POST(
         .from('fitness_community_reactions')
         .delete()
         .eq('id', existing[0].id)
+
+      // Reverte o ponto da reação daquele post (se foi creditado). Sem isso, o
+      // usuário ficava com o ponto de uma reação que não existe mais. A RPC só
+      // age se houver transação — segura para reações não pontuadas (além do cap).
+      await supabaseAdmin.rpc('fitness_revert_points_by_reference', {
+        p_user_id: user.id,
+        p_reference_ids: [postId],
+        p_reasons: [REACTION_REASON],
+      })
     } else {
       // Add reaction (toggle on)
       await supabaseAdmin

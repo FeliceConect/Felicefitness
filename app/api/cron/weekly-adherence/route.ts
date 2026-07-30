@@ -41,6 +41,12 @@ function datesBetween(weekStart: string, weekEnd: string): string[] {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Falha rápido se o segredo não estiver configurado — senão o header
+    // "Bearer undefined" autenticaria qualquer requisição.
+    if (!process.env.CRON_SECRET) {
+      console.error('CRON_SECRET ausente — cron de aderência desativado')
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+    }
     const authHeader = request.headers.get('authorization')
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -48,9 +54,14 @@ export async function GET(request: NextRequest) {
 
     const db = getAdminClient()
 
-    // Janela: semana Seg-Dom que acabou (em America/Sao_Paulo)
-    const weekEnd = getTodayDateSP()
-    const weekStart = getDateOffsetSP(-6)
+    // Janela CANÔNICA da semana Seg–Dom que acabou (America/Sao_Paulo), ancorada
+    // no último domingo — independente de QUANDO o cron roda. Assim um retry num
+    // dia diferente cai na MESMA janela (mesmo reference_id) e não credita a
+    // semana duas vezes.
+    const todaySP = getTodayDateSP()
+    const dow = new Date(`${todaySP}T12:00:00Z`).getUTCDay() // 0=Dom .. 6=Sáb
+    const weekEnd = getDateOffsetSP(-dow)       // último domingo (fim da semana)
+    const weekStart = getDateOffsetSP(-dow - 6) // segunda dessa semana
     const referenceId = `wkadh-${weekStart}`
     const weekDates = datesBetween(weekStart, weekEnd)
 

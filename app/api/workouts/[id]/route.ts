@@ -74,82 +74,21 @@ export async function DELETE(
     }
 
     // ────────────────────────────────────────────────
-    // Reversão de pontos — soma TUDO que foi creditado
+    // Reversão ATÔMICA e simétrica de TUDO que foi creditado por este treino:
+    // workout_completed (ref=workout.id), PRs (ref=set.id) e cardios
+    // (ref=workout_exercise.id). Cada id é único ao seu award, então uma única
+    // chamada com todos os reference_ids reverte o certo — apagando as
+    // transações e estornando o leaderboard com as categorias corretas.
     // ────────────────────────────────────────────────
-    let totalPointsReverted = 0
-
-    // 1) workout_completed (reference_id = workout.id)
-    const { data: workoutTx } = await supabaseAdmin
-      .from('fitness_point_transactions')
-      .select('points')
-      .eq('user_id', user.id)
-      .eq('reference_id', id)
-      .eq('reason', 'Treino completo')
-
-    for (const t of (workoutTx || [])) {
-      totalPointsReverted += t.points || 0
-    }
-    if (workoutTx && workoutTx.length > 0) {
-      await supabaseAdmin
-        .from('fitness_point_transactions')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('reference_id', id)
-        .eq('reason', 'Treino completo')
-    }
-
-    // 2) PRs (reference_id = set.id)
-    if (setIds.length > 0) {
-      const { data: prTx } = await supabaseAdmin
-        .from('fitness_point_transactions')
-        .select('points')
-        .eq('user_id', user.id)
-        .eq('reason', 'Personal Record')
-        .in('reference_id', setIds)
-
-      for (const t of (prTx || [])) {
-        totalPointsReverted += t.points || 0
-      }
-      if (prTx && prTx.length > 0) {
-        await supabaseAdmin
-          .from('fitness_point_transactions')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('reason', 'Personal Record')
-          .in('reference_id', setIds)
-      }
-    }
-
-    // 3) Cardios no treino (reference_id = workout_exercise.id; reason começa com 'Cardio')
-    if (weIds.length > 0) {
-      const { data: cardioTx } = await supabaseAdmin
-        .from('fitness_point_transactions')
-        .select('points')
-        .eq('user_id', user.id)
-        .like('reason', 'Cardio%')
-        .in('reference_id', weIds)
-
-      for (const t of (cardioTx || [])) {
-        totalPointsReverted += t.points || 0
-      }
-      if (cardioTx && cardioTx.length > 0) {
-        await supabaseAdmin
-          .from('fitness_point_transactions')
-          .delete()
-          .eq('user_id', user.id)
-          .like('reason', 'Cardio%')
-          .in('reference_id', weIds)
-      }
-    }
-
-    // Reverte do leaderboard
-    if (totalPointsReverted > 0) {
-      await supabaseAdmin.rpc('fitness_award_points_to_user', {
+    const reverseIds = [id, ...setIds, ...weIds]
+    const { data: totalPointsReverted } = await supabaseAdmin.rpc(
+      'fitness_revert_points_by_reference',
+      {
         p_user_id: user.id,
-        p_delta: -totalPointsReverted,
-        p_allowed_ranking_categories: null,
-      })
-    }
+        p_reference_ids: reverseIds,
+        p_reasons: null,
+      }
+    )
 
     // Apaga PRs (fitness_personal_records) deste treino
     await supabaseAdmin
@@ -172,7 +111,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      points_reverted: totalPointsReverted,
+      points_reverted: totalPointsReverted || 0,
     })
   } catch (error) {
     console.error('Erro na API de workouts/[id]:', error)

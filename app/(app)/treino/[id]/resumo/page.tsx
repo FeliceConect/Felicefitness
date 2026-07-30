@@ -12,7 +12,6 @@ import { useSaveWorkout } from '@/hooks/use-save-workout'
 import { useGamification } from '@/hooks/use-gamification'
 import { cn } from '@/lib/utils'
 import { getTodayDateSP } from '@/lib/utils/date'
-import { createClient } from '@/lib/supabase/client'
 import type { CompletedCardio, CardioExerciseType } from '@/lib/workout/types'
 
 interface CompletedSetData {
@@ -194,20 +193,6 @@ export default function WorkoutSummaryPage() {
       plannedExercises: summary.plannedExercises || [],
     }
 
-    // Read streak BEFORE saving so we can detect transitions to 7/30.
-    // Roda em paralelo com a auth.getUser para reduzir o waterfall.
-    const supabase = createClient()
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
-    const oldStreakPromise = currentUser
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? (supabase as any)
-          .from('fitness_profiles')
-          .select('streak_atual')
-          .eq('id', currentUser.id)
-          .single()
-          .then((r: { data: { streak_atual?: number } | null }) => r.data?.streak_atual || 0)
-      : Promise.resolve(0)
-
     // Foreground: salva o treino (precisa terminar antes de mostrar sucesso).
     const result = await saveWorkout(saveData)
 
@@ -218,7 +203,7 @@ export default function WorkoutSummaryPage() {
       return
     }
 
-    const { workoutId: savedId, prSetIds, cardioAwards } = result
+    const { workoutId: savedId } = result
 
     // Sucesso visual IMEDIATO assim que o core save terminou.
     localStorage.removeItem(SUMMARY_STORAGE_KEY)
@@ -229,22 +214,13 @@ export default function WorkoutSummaryPage() {
     // que uma reentrada futura também funciona.
     void (async () => {
       try {
-        const oldStreak = await oldStreakPromise
-
-        // Uma única round-trip consolidada: o endpoint roda todos os awards
-        // (workout, PRs, cardios, streak) em paralelo no servidor.
+        // Uma única round-trip: o servidor deriva TODOS os awards (treino, PRs,
+        // cardios) do banco a partir do workoutId. O bônus de streak é creditado
+        // por trigger quando o streak real do perfil cruza 7/30.
         await fetch('/api/points/award-workout-complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            workoutId: savedId,
-            prSetIds,
-            cardioAwards: cardioAwards.map((c) => ({
-              workoutExerciseId: c.workoutExerciseId,
-              intensity: c.intensity,
-            })),
-            oldStreak,
-          }),
+          body: JSON.stringify({ workoutId: savedId }),
         }).catch((err) => {
           console.error('Erro no award-workout-complete:', err)
         })

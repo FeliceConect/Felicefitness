@@ -144,20 +144,30 @@ app/
 - ❌ Recovery score avançado / mapa de dor
 
 ## Pontuação do Ranking (referência rápida)
-- Consulta: 20pts (profissional confirma)
-- Aderência alimentar semana: 10pts (automático, >80%)
+> Valores REAIS implementados (fonte de verdade: `POINT_VALUES` em
+> `lib/services/points-server.ts`). Atualizado em 2026-07-30 na auditoria de
+> integridade da pontuação.
+- Consulta: **0pts** (presença é compulsória do programa; não pontua — decisão 2026-05-01)
+- Aderência alimentar semana: 10pts (automático, ≥80%, cron segunda-feira)
 - Bioimpedância: 20-50pts (manual, Leonardo/Marinella)
 - Treino completo: 15pts
-- Refeições do dia: 10pts
-- Meta água: 5pts
-- Sono: 3pts
-- Check-in bem-estar: 3pts
-- PR: 10pts
-- Post no feed: 2pts
-- Reação/comentário: 1pt
+- Todas refeições do dia (≥3): 10pts (trigger no banco, 1×/dia)
+- Meta água: 5pts (trigger no banco, 1×/dia)
+- Sono: **escalonado** — 6pts (dormiu 18h–21h59), 3pts (22h–23h59), 0pts (madrugada/dia)
+- PR: **3pts** (só recorde que vence histórico real; primeira vez é baseline)
+- Cardio no treino: 3/5/8/10pts por intensidade (leve/moderado/intenso/muito_intenso)
+- Atividade avulsa: 3/5/8/10pts por intensidade — **cap de 2 atividades pontuáveis/dia**
+- Post no feed: **4pts** (máx 2 posts pontuáveis/dia)
+- Reação/comentário: 1pt (1× por post, máx 2/dia cada; toggle-off da reação estorna o ponto)
 - Formulário preenchido: 5pts
-- Streak 7 dias: 15pts bônus
-- Streak 30 dias: 50pts bônus
+- Streak 7 dias: 15pts bônus (trigger no banco, na transição real do streak)
+- Streak 30 dias: 50pts bônus (trigger no banco, na transição real do streak)
+
+> ⚠️ Integridade: todo crédito é deduplicado no banco por índice único
+> (`user_id, reason, source, reference_date` para diários; `user_id, reason,
+> reference_id` para eventos). Não existe endpoint genérico de crédito
+> disparável pelo cliente — cada ação é creditada pelo caminho que a executa e
+> verifica. Ver migrations `20260730_*`.
 
 ## Fases de Implementação
 Ver `docs/felice-wellness-plan-v2.md` para detalhes completos.
