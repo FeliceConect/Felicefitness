@@ -1,0 +1,1775 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index aa67018..02ec843 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -144,20 +144,30 @@ app/
+ - ❌ Recovery score avançado / mapa de dor
+ 
+ ## Pontuação do Ranking (referência rápida)
+-- Consulta: 20pts (profissional confirma)
+-- Aderência alimentar semana: 10pts (automático, >80%)
++> Valores REAIS implementados (fonte de verdade: `POINT_VALUES` em
++> `lib/services/points-server.ts`). Atualizado em 2026-07-30 na auditoria de
++> integridade da pontuação.
++- Consulta: **0pts** (presença é compulsória do programa; não pontua — decisão 2026-05-01)
++- Aderência alimentar semana: 10pts (automático, ≥80%, cron segunda-feira)
+ - Bioimpedância: 20-50pts (manual, Leonardo/Marinella)
+ - Treino completo: 15pts
+-- Refeições do dia: 10pts
+-- Meta água: 5pts
+-- Sono: 3pts
+-- Check-in bem-estar: 3pts
+-- PR: 10pts
+-- Post no feed: 2pts
+-- Reação/comentário: 1pt
++- Todas refeições do dia (≥3): 10pts (trigger no banco, 1×/dia)
++- Meta água: 5pts (trigger no banco, 1×/dia)
++- Sono: **escalonado** — 6pts (dormiu 18h–21h59), 3pts (22h–23h59), 0pts (madrugada/dia)
++- PR: **3pts** (só recorde que vence histórico real; primeira vez é baseline)
++- Cardio no treino: 3/5/8/10pts por intensidade (leve/moderado/intenso/muito_intenso)
++- Atividade avulsa: 3/5/8/10pts por intensidade — **cap de 2 atividades pontuáveis/dia**
++- Post no feed: **4pts** (máx 2 posts pontuáveis/dia)
++- Reação/comentário: 1pt (1× por post, máx 2/dia cada; toggle-off da reação estorna o ponto)
+ - Formulário preenchido: 5pts
+-- Streak 7 dias: 15pts bônus
+-- Streak 30 dias: 50pts bônus
++- Streak 7 dias: 15pts bônus (trigger no banco, na transição real do streak)
++- Streak 30 dias: 50pts bônus (trigger no banco, na transição real do streak)
++
++> ⚠️ Integridade: todo crédito é deduplicado no banco por índice único
++> (`user_id, reason, source, reference_date` para diários; `user_id, reason,
++> reference_id` para eventos). Não existe endpoint genérico de crédito
++> disparável pelo cliente — cada ação é creditada pelo caminho que a executa e
++> verifica. Ver migrations `20260730_*`.
+ 
+ ## Fases de Implementação
+ Ver `docs/felice-wellness-plan-v2.md` para detalhes completos.
+diff --git a/app/(app)/treino/[id]/resumo/page.tsx b/app/(app)/treino/[id]/resumo/page.tsx
+index eacd70b..0d57ad4 100644
+--- a/app/(app)/treino/[id]/resumo/page.tsx
++++ b/app/(app)/treino/[id]/resumo/page.tsx
+@@ -12,7 +12,6 @@ import { useSaveWorkout } from '@/hooks/use-save-workout'
+ import { useGamification } from '@/hooks/use-gamification'
+ import { cn } from '@/lib/utils'
+ import { getTodayDateSP } from '@/lib/utils/date'
+-import { createClient } from '@/lib/supabase/client'
+ import type { CompletedCardio, CardioExerciseType } from '@/lib/workout/types'
+ 
+ interface CompletedSetData {
+@@ -194,20 +193,6 @@ export default function WorkoutSummaryPage() {
+       plannedExercises: summary.plannedExercises || [],
+     }
+ 
+-    // Read streak BEFORE saving so we can detect transitions to 7/30.
+-    // Roda em paralelo com a auth.getUser para reduzir o waterfall.
+-    const supabase = createClient()
+-    const { data: { user: currentUser } } = await supabase.auth.getUser()
+-    const oldStreakPromise = currentUser
+-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-      ? (supabase as any)
+-          .from('fitness_profiles')
+-          .select('streak_atual')
+-          .eq('id', currentUser.id)
+-          .single()
+-          .then((r: { data: { streak_atual?: number } | null }) => r.data?.streak_atual || 0)
+-      : Promise.resolve(0)
+-
+     // Foreground: salva o treino (precisa terminar antes de mostrar sucesso).
+     const result = await saveWorkout(saveData)
+ 
+@@ -218,7 +203,7 @@ export default function WorkoutSummaryPage() {
+       return
+     }
+ 
+-    const { workoutId: savedId, prSetIds, cardioAwards } = result
++    const { workoutId: savedId } = result
+ 
+     // Sucesso visual IMEDIATO assim que o core save terminou.
+     localStorage.removeItem(SUMMARY_STORAGE_KEY)
+@@ -229,22 +214,13 @@ export default function WorkoutSummaryPage() {
+     // que uma reentrada futura também funciona.
+     void (async () => {
+       try {
+-        const oldStreak = await oldStreakPromise
+-
+-        // Uma única round-trip consolidada: o endpoint roda todos os awards
+-        // (workout, PRs, cardios, streak) em paralelo no servidor.
++        // Uma única round-trip: o servidor deriva TODOS os awards (treino, PRs,
++        // cardios) do banco a partir do workoutId. O bônus de streak é creditado
++        // por trigger quando o streak real do perfil cruza 7/30.
+         await fetch('/api/points/award-workout-complete', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+-          body: JSON.stringify({
+-            workoutId: savedId,
+-            prSetIds,
+-            cardioAwards: cardioAwards.map((c) => ({
+-              workoutExerciseId: c.workoutExerciseId,
+-              intensity: c.intensity,
+-            })),
+-            oldStreak,
+-          }),
++          body: JSON.stringify({ workoutId: savedId }),
+         }).catch((err) => {
+           console.error('Erro no award-workout-complete:', err)
+         })
+diff --git a/app/api/activities/route.ts b/app/api/activities/route.ts
+index 86b9412..9d6d846 100644
+--- a/app/api/activities/route.ts
++++ b/app/api/activities/route.ts
+@@ -1,5 +1,6 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { createClient } from '@/lib/supabase/server'
++import { createClient as createAdminClient } from '@supabase/supabase-js'
+ import type { ActivityInsert } from '@/lib/activity/types'
+ import { awardPointsServer, ACTIVITY_INTENSITY_ACTION } from '@/lib/services/points-server'
+ import { getTodayDateSP } from '@/lib/utils/date'
+@@ -7,6 +8,27 @@ import { getTodayDateSP } from '@/lib/utils/date'
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ type AnySupabase = any
+ 
++// Máximo de atividades avulsas PONTUÁVEIS por dia (decisão de produto).
++// Cobre quem legitimamente faz 2 esportes no mesmo dia; corta o farm por
++// cadastro em massa. Atividades além disso são salvas, mas não pontuam.
++const ACTIVITY_DAILY_CAP = 2
++
++// Razões das atividades avulsas (POINT_VALUES) — usadas no cap e na reversão.
++const ACTIVITY_REASONS = [
++  'Atividade leve',
++  'Atividade moderada',
++  'Atividade intensa',
++  'Atividade muito intensa',
++]
++
++function getAdminClient() {
++  return createAdminClient(
++    process.env.NEXT_PUBLIC_SUPABASE_URL!,
++    process.env.SUPABASE_SERVICE_ROLE_KEY!,
++    { auth: { autoRefreshToken: false, persistSession: false } }
++  )
++}
++
+ // GET - Buscar atividades do usuário
+ export async function GET(request: NextRequest) {
+   try {
+@@ -124,14 +146,30 @@ export async function POST(request: NextRequest) {
+       )
+     }
+ 
+-    // Award por intensidade — cada atividade pontua. Dedup por activity.id
++    // Award por intensidade — respeitando o CAP DIÁRIO. Dedup por activity.id
+     // evita duplicar caso o POST seja reenviado para a mesma atividade.
+     let pointsAwarded = 0
++    let dailyCapReached = false
+     const intensityAction = ACTIVITY_INTENSITY_ACTION[body.intensity as keyof typeof ACTIVITY_INTENSITY_ACTION]
+     if (intensityAction) {
+-      const result = await awardPointsServer(user.id, intensityAction, activity.id)
+-      if (result.success && !result.duplicate) {
+-        pointsAwarded = result.points || 0
++      // Conta quantas atividades avulsas já pontuaram HOJE (SP). A contagem é
++      // por reference_date=hoje (dia do crédito), então backdatar a atividade
++      // não escapa do teto. A atividade em si é salva de qualquer forma.
++      const { count: awardedToday } = await (supabase as AnySupabase)
++        .from('fitness_point_transactions')
++        .select('id', { count: 'exact', head: true })
++        .eq('user_id', user.id)
++        .eq('category', 'workout')
++        .eq('reference_date', getTodayDateSP())
++        .in('reason', ACTIVITY_REASONS)
++
++      if ((awardedToday ?? 0) < ACTIVITY_DAILY_CAP) {
++        const result = await awardPointsServer(user.id, intensityAction, activity.id)
++        if (result.success && !result.duplicate) {
++          pointsAwarded = result.points || 0
++        }
++      } else {
++        dailyCapReached = true
+       }
+     }
+ 
+@@ -139,6 +177,7 @@ export async function POST(request: NextRequest) {
+       success: true,
+       activity,
+       points_awarded: pointsAwarded,
++      daily_cap_reached: dailyCapReached,
+       message: 'Atividade registrada com sucesso'
+     })
+ 
+@@ -266,35 +305,16 @@ export async function DELETE(request: NextRequest) {
+       )
+     }
+ 
+-    // Procura transação de pontos vinculada (reference_id = activity.id)
+-    const { data: txList } = await (supabase as AnySupabase)
+-      .from('fitness_point_transactions')
+-      .select('id, points')
+-      .eq('user_id', user.id)
+-      .eq('category', 'workout')
+-      .eq('reference_id', activityId)
+-      .like('reason', 'Atividade%')
+-
+-    let pointsReverted = 0
+-    if (txList && txList.length > 0) {
+-      pointsReverted = (txList as Array<{ points: number }>).reduce((s, t) => s + (t.points || 0), 0)
+-      // Apaga as transações
+-      await (supabase as AnySupabase)
+-        .from('fitness_point_transactions')
+-        .delete()
+-        .eq('user_id', user.id)
+-        .eq('reference_id', activityId)
+-        .like('reason', 'Atividade%')
+-
+-      // Reverte do leaderboard
+-      if (pointsReverted > 0) {
+-        await (supabase as AnySupabase).rpc('fitness_award_points_to_user', {
+-          p_user_id: user.id,
+-          p_delta: -pointsReverted,
+-          p_allowed_ranking_categories: null,
+-        })
+-      }
+-    }
++    // Reversão ATÔMICA e simétrica (apaga transação + estorna leaderboard com
++    // as categorias corretas) via RPC no banco. O client do usuário não tem
++    // policy de DELETE em fitness_point_transactions — por isso admin.
++    const admin = getAdminClient()
++    const { data: reverted } = await admin.rpc('fitness_revert_points_by_reference', {
++      p_user_id: user.id,
++      p_reference_ids: [activityId],
++      p_reasons: ACTIVITY_REASONS,
++    })
++    const pointsReverted = reverted || 0
+ 
+     const { error } = await (supabase as AnySupabase)
+       .from('fitness_activities')
+@@ -312,6 +332,7 @@ export async function DELETE(request: NextRequest) {
+ 
+     return NextResponse.json({
+       success: true,
++      points_reverted: pointsReverted,
+       message: 'Atividade removida com sucesso'
+     })
+ 
+diff --git a/app/api/client/meal-plan/complete/route.ts b/app/api/client/meal-plan/complete/route.ts
+index 365e3c3..c25bf7a 100644
+--- a/app/api/client/meal-plan/complete/route.ts
++++ b/app/api/client/meal-plan/complete/route.ts
+@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
+ import { createClient } from '@/lib/supabase/server'
+ import { createClient as createAdminClient } from '@supabase/supabase-js'
+ import { awardPointsServer } from '@/lib/services/points-server'
+-import { getTodayDateSP } from '@/lib/utils/date'
++import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
+ import { mealTypeToPT, mealTypeToEN } from '@/lib/nutrition/meal-type'
+ 
+ // POST - Registrar refeição do plano como completada (ou pulada)
+@@ -43,6 +43,16 @@ export async function POST(request: NextRequest) {
+       )
+     }
+ 
++    // Só aceita registro de hoje ou ontem (SP). Bloqueia backdatar/adiantar a
++    // data para farmar crédito de refeição em datas fora da janela plausível.
++    const todaySP = getTodayDateSP()
++    if (date > todaySP || date < getDateOffsetSP(-1)) {
++      return NextResponse.json(
++        { success: false, error: 'Data inválida: registre apenas o dia atual ou o anterior.' },
++        { status: 400 }
++      )
++    }
++
+     // Buscar a refeição do plano para obter os dados
+     const { data: planMeal, error: mealError } = await admin
+       .from('fitness_meal_plan_meals')
+diff --git a/app/api/cron/weekly-adherence/route.ts b/app/api/cron/weekly-adherence/route.ts
+index b3c95e6..ccd59b6 100644
+--- a/app/api/cron/weekly-adherence/route.ts
++++ b/app/api/cron/weekly-adherence/route.ts
+@@ -41,6 +41,12 @@ function datesBetween(weekStart: string, weekEnd: string): string[] {
+  */
+ export async function GET(request: NextRequest) {
+   try {
++    // Falha rápido se o segredo não estiver configurado — senão o header
++    // "Bearer undefined" autenticaria qualquer requisição.
++    if (!process.env.CRON_SECRET) {
++      console.error('CRON_SECRET ausente — cron de aderência desativado')
++      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
++    }
+     const authHeader = request.headers.get('authorization')
+     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+@@ -48,9 +54,14 @@ export async function GET(request: NextRequest) {
+ 
+     const db = getAdminClient()
+ 
+-    // Janela: semana Seg-Dom que acabou (em America/Sao_Paulo)
+-    const weekEnd = getTodayDateSP()
+-    const weekStart = getDateOffsetSP(-6)
++    // Janela CANÔNICA da semana Seg–Dom que acabou (America/Sao_Paulo), ancorada
++    // no último domingo — independente de QUANDO o cron roda. Assim um retry num
++    // dia diferente cai na MESMA janela (mesmo reference_id) e não credita a
++    // semana duas vezes.
++    const todaySP = getTodayDateSP()
++    const dow = new Date(`${todaySP}T12:00:00Z`).getUTCDay() // 0=Dom .. 6=Sáb
++    const weekEnd = getDateOffsetSP(-dow)       // último domingo (fim da semana)
++    const weekStart = getDateOffsetSP(-dow - 6) // segunda dessa semana
+     const referenceId = `wkadh-${weekStart}`
+     const weekDates = datesBetween(weekStart, weekEnd)
+ 
+diff --git a/app/api/feed/[id]/reactions/route.ts b/app/api/feed/[id]/reactions/route.ts
+index ee16b6f..725839b 100644
+--- a/app/api/feed/[id]/reactions/route.ts
++++ b/app/api/feed/[id]/reactions/route.ts
+@@ -56,6 +56,15 @@ export async function POST(
+         .from('fitness_community_reactions')
+         .delete()
+         .eq('id', existing[0].id)
++
++      // Reverte o ponto da reação daquele post (se foi creditado). Sem isso, o
++      // usuário ficava com o ponto de uma reação que não existe mais. A RPC só
++      // age se houver transação — segura para reações não pontuadas (além do cap).
++      await supabaseAdmin.rpc('fitness_revert_points_by_reference', {
++        p_user_id: user.id,
++        p_reference_ids: [postId],
++        p_reasons: [REACTION_REASON],
++      })
+     } else {
+       // Add reaction (toggle on)
+       await supabaseAdmin
+diff --git a/app/api/meals/[id]/route.ts b/app/api/meals/[id]/route.ts
+index 29f631e..116b170 100644
+--- a/app/api/meals/[id]/route.ts
++++ b/app/api/meals/[id]/route.ts
+@@ -14,7 +14,6 @@ function getAdminClient() {
+ }
+ 
+ const ALL_MEALS_REASON = 'Todas refeicoes registradas'
+-const ALL_MEALS_POINTS = 10
+ 
+ // DELETE - Apaga uma refeição. Só permite se for do dia atual (BR).
+ // Se o número de refeições restantes do dia cair abaixo de 3, reverte
+@@ -57,13 +56,6 @@ export async function DELETE(
+       )
+     }
+ 
+-    // Conta refeições do dia ANTES da deleção pra decidir reversão de pts
+-    const { count: countBefore } = await supabaseAdmin
+-      .from('fitness_meals')
+-      .select('id', { count: 'exact', head: true })
+-      .eq('user_id', user.id)
+-      .eq('data', today)
+-
+     // Apaga a refeição. fitness_meal_items cascateia via FK.
+     const { error: deleteError } = await supabaseAdmin
+       .from('fitness_meals')
+@@ -76,38 +68,25 @@ export async function DELETE(
+       return NextResponse.json({ success: false, error: 'Erro ao apagar refeição' }, { status: 500 })
+     }
+ 
+-    // Reversão de pts: se ANTES tinha >=3 e DEPOIS ficou <3,
+-    // a regra "Todas refeicoes registradas" deixa de valer
+-    let pointsReverted = 0
+-    const before = countBefore ?? 0
+-    const after = before - 1
+-    if (before >= 3 && after < 3) {
+-      // Apaga a transação automática do dia
+-      const { data: tx } = await supabaseAdmin
+-        .from('fitness_point_transactions')
+-        .select('id, points')
+-        .eq('user_id', user.id)
+-        .eq('reason', ALL_MEALS_REASON)
+-        .eq('source', 'automatic')
+-        .gte('created_at', `${today}T00:00:00-03:00`)
+-        .lte('created_at', `${today}T23:59:59-03:00`)
+-        .limit(1)
+-
+-      if (tx && tx.length > 0) {
+-        await supabaseAdmin
+-          .from('fitness_point_transactions')
+-          .delete()
+-          .eq('id', tx[0].id)
+-
+-        pointsReverted = tx[0].points || ALL_MEALS_POINTS
++    // Conta refeições NÃO puladas restantes no dia (mesma condição do award).
++    const { count: afterCount } = await supabaseAdmin
++      .from('fitness_meals')
++      .select('id', { count: 'exact', head: true })
++      .eq('user_id', user.id)
++      .eq('data', today)
++      .neq('status', 'pulado')
+ 
+-        // Reverte do leaderboard
+-        await supabaseAdmin.rpc('fitness_award_points_to_user', {
+-          p_user_id: user.id,
+-          p_delta: -pointsReverted,
+-          p_allowed_ranking_categories: null,
+-        })
+-      }
++    // Se caiu abaixo de 3, a regra "Todas refeicoes registradas" deixa de valer.
++    // A RPC reverte de forma atômica e simétrica (só age se a transação existir).
++    let pointsReverted = 0
++    const after = afterCount ?? 0
++    if (after < 3) {
++      const { data: reverted } = await supabaseAdmin.rpc('fitness_revert_daily_award', {
++        p_user_id: user.id,
++        p_reason: ALL_MEALS_REASON,
++        p_reference_date: today,
++      })
++      pointsReverted = reverted || 0
+     }
+ 
+     return NextResponse.json({
+diff --git a/app/api/points/award-workout-complete/route.ts b/app/api/points/award-workout-complete/route.ts
+index 67be5a0..0fd2f1f 100644
+--- a/app/api/points/award-workout-complete/route.ts
++++ b/app/api/points/award-workout-complete/route.ts
+@@ -16,26 +16,22 @@ function getAdminClient() {
+   )
+ }
+ 
+-type Intensity = 'leve' | 'moderado' | 'intenso' | 'muito_intenso'
+-
+-interface CardioAwardInput {
+-  workoutExerciseId: string
+-  intensity: Intensity
+-}
+-
+ interface RequestBody {
+   workoutId: string
+-  prSetIds?: string[]
+-  cardioAwards?: CardioAwardInput[]
+-  // Streak lido pelo client antes do saveWorkout — necessário para detectar
+-  // transição <7 → ≥7 (e <30 → ≥30) já que o trigger SQL atualiza
+-  // streak_atual no momento do INSERT do treino.
+-  oldStreak?: number
+ }
+ 
+-// POST - Consolida em uma única round-trip o award de pontos pós-treino:
+-// workout (15) + cada PR (3) + cada cardio (3-10 por intensidade) +
+-// transição de streak 7 (15) e 30 (50). Tudo em paralelo no server.
++// POST - Consolida em uma round-trip o award de pontos pós-treino.
++//
++// TUDO é derivado DO BANCO a partir do workoutId (nunca do corpo da
++// requisição), depois de verificar a posse do treino:
++//   • workout_completed (15)  — pelo próprio workoutId
++//   • PR (3 cada)             — sets com is_pr=true (o trigger autoritativo do
++//                               banco decide is_pr); awardPointsServer ainda
++//                               reconfere histórico real + posse do set
++//   • cardio (3-10 cada)      — exercícios com cardio_intensity gravada
++//
++// Streak (7=15, 30=50) NÃO é creditado aqui: é decidido pelo trigger
++// fn_auto_award_streak quando streak_atual REAL do perfil cruza o limiar.
+ export async function POST(request: NextRequest) {
+   try {
+     const supabase = await createClient()
+@@ -48,12 +44,7 @@ export async function POST(request: NextRequest) {
+     }
+ 
+     const body = (await request.json()) as RequestBody
+-    const {
+-      workoutId,
+-      prSetIds = [],
+-      cardioAwards = [],
+-      oldStreak = 0,
+-    } = body
++    const workoutId = body?.workoutId
+ 
+     if (!workoutId || typeof workoutId !== 'string') {
+       return NextResponse.json(
+@@ -62,10 +53,10 @@ export async function POST(request: NextRequest) {
+       )
+     }
+ 
+-    const supabaseAdmin = getAdminClient()
++    const admin = getAdminClient()
+ 
+-    // Verifica posse do treino — caller mandou um id válido pertencente a ele.
+-    const { data: workout } = await supabaseAdmin
++    // Posse do treino — o crédito só acontece sobre um treino do próprio usuário.
++    const { data: workout } = await admin
+       .from('fitness_workouts')
+       .select('user_id')
+       .eq('id', workoutId)
+@@ -78,55 +69,63 @@ export async function POST(request: NextRequest) {
+       )
+     }
+ 
+-    // Roda todos os awards principais em paralelo. awardPointsServer
+-    // já trata dedup (por reference_id) e atualiza ranking/challenge/tier.
++    // Exercícios do treino. Lê cardio_intensity; se a coluna ainda não existe
++    // no banco (migration 20260730_4 não rodou), refaz sem ela — cardio não
++    // pontua até a migration rodar, mas o resto do treino funciona.
++    let weRows: Array<{ id: string; cardio_intensity: string | null }> = []
++    {
++      const res = await admin
++        .from('fitness_workout_exercises')
++        .select('id, cardio_intensity')
++        .eq('workout_id', workoutId)
++      if (res.error && (res.error.code === '42703' || res.error.code === 'PGRST204')) {
++        const retry = await admin
++          .from('fitness_workout_exercises')
++          .select('id')
++          .eq('workout_id', workoutId)
++        weRows = (retry.data || []).map((w: { id: string }) => ({ id: w.id, cardio_intensity: null }))
++      } else {
++        weRows = res.data || []
++      }
++    }
++    const weIds = weRows.map((w) => w.id)
++
++    // Sets de PR — is_pr é autoridade do trigger check_and_create_pr (banco).
++    let prSetIds: string[] = []
++    if (weIds.length > 0) {
++      const { data: prSets } = await admin
++        .from('fitness_exercise_sets')
++        .select('id')
++        .in('workout_exercise_id', weIds)
++        .eq('is_pr', true)
++      prSetIds = (prSets || []).map((s: { id: string }) => s.id)
++    }
++
++    // Roda todos os awards em paralelo. awardPointsServer trata dedup (por
++    // reference_id / índice único) e atualiza ranking/tier. pr_achieved ainda
++    // passa por prHasPriorHistory (histórico real + posse do set).
+     const awardPromises: Promise<unknown>[] = [
+       awardPointsServer(user.id, 'workout_completed', workoutId),
+     ]
+ 
+     for (const setId of prSetIds) {
+-      if (typeof setId === 'string' && setId) {
+-        awardPromises.push(awardPointsServer(user.id, 'pr_achieved', setId))
+-      }
++      awardPromises.push(awardPointsServer(user.id, 'pr_achieved', setId))
+     }
+ 
+-    for (const c of cardioAwards) {
+-      const action = c?.intensity ? CARDIO_INTENSITY_ACTION[c.intensity] : null
+-      if (action && c.workoutExerciseId) {
+-        awardPromises.push(
+-          awardPointsServer(user.id, action, c.workoutExerciseId)
+-        )
++    for (const we of weRows) {
++      const action = we.cardio_intensity
++        ? CARDIO_INTENSITY_ACTION[we.cardio_intensity as keyof typeof CARDIO_INTENSITY_ACTION]
++        : null
++      if (action) {
++        awardPromises.push(awardPointsServer(user.id, action, we.id))
+       }
+     }
+ 
+     await Promise.all(awardPromises)
+ 
+-    // Streak — lê estado pós-trigger e compara com oldStreak para detectar
+-    // transição. Sem oldStreak (default 0), só transitionará na primeira vez.
+-    const { data: profileAfter } = await supabaseAdmin
+-      .from('fitness_profiles')
+-      .select('streak_atual')
+-      .eq('id', user.id)
+-      .single()
+-
+-    const newStreak =
+-      (profileAfter as { streak_atual?: number } | null)?.streak_atual ?? 0
+-
+-    const streakAwards: Promise<unknown>[] = []
+-    if (oldStreak < 7 && newStreak >= 7) {
+-      streakAwards.push(awardPointsServer(user.id, 'streak_7'))
+-    }
+-    if (oldStreak < 30 && newStreak >= 30) {
+-      streakAwards.push(awardPointsServer(user.id, 'streak_30'))
+-    }
+-    if (streakAwards.length > 0) {
+-      await Promise.all(streakAwards)
+-    }
+-
+     return NextResponse.json({
+       success: true,
+-      newStreak,
+-      streakBonus: streakAwards.length > 0,
++      prAwards: prSetIds.length,
+     })
+   } catch (error) {
+     console.error('Erro em award-workout-complete:', error)
+diff --git a/app/api/points/award/route.ts b/app/api/points/award/route.ts
+index aae6c16..cf78c6b 100644
+--- a/app/api/points/award/route.ts
++++ b/app/api/points/award/route.ts
+@@ -3,7 +3,6 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { createClient } from '@/lib/supabase/server'
+ import { createClient as createAdminClient } from '@supabase/supabase-js'
+-import { awardPointsServer, POINT_VALUES, type PointAction } from '@/lib/services/points-server'
+ import { getStartOfTodaySP, getMonthStartSP } from '@/lib/utils/date'
+ 
+ function getAdminClient() {
+@@ -14,45 +13,26 @@ function getAdminClient() {
+   )
+ }
+ 
+-// POST - Award automatic points for an action
+-export async function POST(request: NextRequest) {
+-  try {
+-    const supabase = await createClient()
+-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+-    if (authError || !user) {
+-      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
+-    }
+-
+-    const body = await request.json()
+-    const { action, reference_id } = body as { action?: PointAction; reference_id?: string }
+-
+-    if (!action || !POINT_VALUES[action]) {
+-      return NextResponse.json(
+-        { success: false, error: 'Acao invalida' },
+-        { status: 400 }
+-      )
+-    }
+-
+-    const result = await awardPointsServer(user.id, action, reference_id || undefined)
+-
+-    if (!result.success) {
+-      return NextResponse.json({ success: false, error: result.error }, { status: 500 })
+-    }
+-
+-    if (result.duplicate) {
+-      return NextResponse.json({ success: true, message: result.message, duplicate: true })
+-    }
+-
+-    return NextResponse.json({
+-      success: true,
+-      transaction: result.transaction,
+-      points: result.points,
+-      message: result.message,
+-    })
+-  } catch (error) {
+-    console.error('Erro na API de pontos:', error)
+-    return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
+-  }
++// POST - DESATIVADO.
++// Este endpoint creditava pontos a partir da AÇÃO enviada no corpo, sem
++// reconferir que a ação aconteceu — qualquer paciente autenticado podia
++// creditar streak_30 (50 pts), workout_completed (15 pts) etc. à vontade
++// ("impressora de pontos"). Cada crédito agora vem do caminho que EXECUTA e
++// VERIFICA o fato no servidor:
++//   • água / refeição / sono → triggers no banco (20260429 + 20260730_2)
++//   • treino / PR / cardio / streak → /api/points/award-workout-complete
++//     (deriva tudo do banco) e trigger de streak (20260730_3)
++//   • atividade avulsa → /api/activities (com cap diário)
++//   • feed → rotas de feed
++// Não há mais caminho genérico de crédito disparável pelo cliente.
++export async function POST() {
++  return NextResponse.json(
++    {
++      success: false,
++      error: 'Endpoint desativado. Pontos são creditados automaticamente pela ação correspondente.',
++    },
++    { status: 410 }
++  )
+ }
+ 
+ // GET - Get user's point summary and recent transactions
+diff --git a/app/api/workouts/[id]/route.ts b/app/api/workouts/[id]/route.ts
+index abf055d..49278e2 100644
+--- a/app/api/workouts/[id]/route.ts
++++ b/app/api/workouts/[id]/route.ts
+@@ -74,82 +74,21 @@ export async function DELETE(
+     }
+ 
+     // ────────────────────────────────────────────────
+-    // Reversão de pontos — soma TUDO que foi creditado
++    // Reversão ATÔMICA e simétrica de TUDO que foi creditado por este treino:
++    // workout_completed (ref=workout.id), PRs (ref=set.id) e cardios
++    // (ref=workout_exercise.id). Cada id é único ao seu award, então uma única
++    // chamada com todos os reference_ids reverte o certo — apagando as
++    // transações e estornando o leaderboard com as categorias corretas.
+     // ────────────────────────────────────────────────
+-    let totalPointsReverted = 0
+-
+-    // 1) workout_completed (reference_id = workout.id)
+-    const { data: workoutTx } = await supabaseAdmin
+-      .from('fitness_point_transactions')
+-      .select('points')
+-      .eq('user_id', user.id)
+-      .eq('reference_id', id)
+-      .eq('reason', 'Treino completo')
+-
+-    for (const t of (workoutTx || [])) {
+-      totalPointsReverted += t.points || 0
+-    }
+-    if (workoutTx && workoutTx.length > 0) {
+-      await supabaseAdmin
+-        .from('fitness_point_transactions')
+-        .delete()
+-        .eq('user_id', user.id)
+-        .eq('reference_id', id)
+-        .eq('reason', 'Treino completo')
+-    }
+-
+-    // 2) PRs (reference_id = set.id)
+-    if (setIds.length > 0) {
+-      const { data: prTx } = await supabaseAdmin
+-        .from('fitness_point_transactions')
+-        .select('points')
+-        .eq('user_id', user.id)
+-        .eq('reason', 'Personal Record')
+-        .in('reference_id', setIds)
+-
+-      for (const t of (prTx || [])) {
+-        totalPointsReverted += t.points || 0
+-      }
+-      if (prTx && prTx.length > 0) {
+-        await supabaseAdmin
+-          .from('fitness_point_transactions')
+-          .delete()
+-          .eq('user_id', user.id)
+-          .eq('reason', 'Personal Record')
+-          .in('reference_id', setIds)
+-      }
+-    }
+-
+-    // 3) Cardios no treino (reference_id = workout_exercise.id; reason começa com 'Cardio')
+-    if (weIds.length > 0) {
+-      const { data: cardioTx } = await supabaseAdmin
+-        .from('fitness_point_transactions')
+-        .select('points')
+-        .eq('user_id', user.id)
+-        .like('reason', 'Cardio%')
+-        .in('reference_id', weIds)
+-
+-      for (const t of (cardioTx || [])) {
+-        totalPointsReverted += t.points || 0
+-      }
+-      if (cardioTx && cardioTx.length > 0) {
+-        await supabaseAdmin
+-          .from('fitness_point_transactions')
+-          .delete()
+-          .eq('user_id', user.id)
+-          .like('reason', 'Cardio%')
+-          .in('reference_id', weIds)
+-      }
+-    }
+-
+-    // Reverte do leaderboard
+-    if (totalPointsReverted > 0) {
+-      await supabaseAdmin.rpc('fitness_award_points_to_user', {
++    const reverseIds = [id, ...setIds, ...weIds]
++    const { data: totalPointsReverted } = await supabaseAdmin.rpc(
++      'fitness_revert_points_by_reference',
++      {
+         p_user_id: user.id,
+-        p_delta: -totalPointsReverted,
+-        p_allowed_ranking_categories: null,
+-      })
+-    }
++        p_reference_ids: reverseIds,
++        p_reasons: null,
++      }
++    )
+ 
+     // Apaga PRs (fitness_personal_records) deste treino
+     await supabaseAdmin
+@@ -172,7 +111,7 @@ export async function DELETE(
+ 
+     return NextResponse.json({
+       success: true,
+-      points_reverted: totalPointsReverted,
++      points_reverted: totalPointsReverted || 0,
+     })
+   } catch (error) {
+     console.error('Erro na API de workouts/[id]:', error)
+diff --git a/hooks/use-save-workout.ts b/hooks/use-save-workout.ts
+index 056a102..65c00b8 100644
+--- a/hooks/use-save-workout.ts
++++ b/hooks/use-save-workout.ts
+@@ -239,23 +239,46 @@ export function useSaveWorkout(): UseSaveWorkoutReturn {
+       if (data.cardioExercises && data.cardioExercises.length > 0) {
+         for (const cardio of data.cardioExercises) {
+           // Create workout exercise for cardio
+-          const { data: cardioExercise, error: cardioExerciseError } = await (supabase as AnyTable)
+-            .from('fitness_workout_exercises')
+-            .insert({
+-              workout_id: workoutRecordId,
+-              exercise_id: null,
+-              exercicio_nome: cardio.nome,
+-              ordem: exerciseOrder,
+-              status: 'concluido',
+-              notas: cardio.notas || `Cardio: ${cardio.duracao_minutos}min${cardio.distancia_km ? ` | ${cardio.distancia_km}km` : ''}${cardio.velocidade_media ? ` | ${cardio.velocidade_media}km/h` : ''}`
+-            })
+-            .select()
+-            .single()
++          const cardioRow = {
++            workout_id: workoutRecordId,
++            exercise_id: null,
++            exercicio_nome: cardio.nome,
++            ordem: exerciseOrder,
++            status: 'concluido',
++            notas: cardio.notas || `Cardio: ${cardio.duracao_minutos}min${cardio.distancia_km ? ` | ${cardio.distancia_km}km` : ''}${cardio.velocidade_media ? ` | ${cardio.velocidade_media}km/h` : ''}`
++          }
++
++          // Grava a intensidade na própria linha do cardio, para o servidor
++          // derivar os pontos do banco (não do cliente). Se a coluna ainda não
++          // existe (migration 20260730_4 não rodou), refaz sem ela.
++          let cardioExercise: { id?: string } | null = null
++          let cardioExerciseError: { code?: string } | null = null
++          {
++            const res = await (supabase as AnyTable)
++              .from('fitness_workout_exercises')
++              .insert({ ...cardioRow, cardio_intensity: cardio.intensidade || null })
++              .select()
++              .single()
++            cardioExercise = res.data
++            cardioExerciseError = res.error
++            if (cardioExerciseError && (cardioExerciseError.code === '42703' || cardioExerciseError.code === 'PGRST204')) {
++              const retry = await (supabase as AnyTable)
++                .from('fitness_workout_exercises')
++                .insert(cardioRow)
++                .select()
++                .single()
++              cardioExercise = retry.data
++              cardioExerciseError = retry.error
++            }
++          }
+ 
+           if (cardioExerciseError) {
+             console.error('Error creating cardio exercise:', cardioExerciseError)
+             throw cardioExerciseError
+           }
++          if (!cardioExercise?.id) {
++            throw new Error('Falha ao criar exercício de cardio (sem id)')
++          }
+ 
+           // Create a "set" for cardio with duration as time
+           const { error: cardioSetError } = await (supabase as AnyTable)
+diff --git a/lib/rankings/__tests__/resync.test.ts b/lib/rankings/__tests__/resync.test.ts
+new file mode 100644
+index 0000000..d34f36c
+--- /dev/null
++++ b/lib/rankings/__tests__/resync.test.ts
+@@ -0,0 +1,47 @@
++import { describe, it, expect } from 'vitest'
++import { applicableTotal, spDay, FEED_DAILY_CAP, FEED_REASONS } from '@/lib/rankings/resync'
++
++const tx = (id: string, points: number, category: string) => ({ id, points, category })
++
++describe('applicableTotal — reconstrução do total de um usuário por ranking', () => {
++  it('ranking global soma todas as categorias', () => {
++    const txs = [tx('a', 15, 'workout'), tx('b', 10, 'nutrition'), tx('c', 5, 'hydration')]
++    expect(applicableTotal(txs, { type: 'global', category: null }, new Set())).toBe(30)
++  })
++
++  it('ranking de categoria conta só as transações que mapeiam para ela', () => {
++    const txs = [tx('a', 15, 'workout'), tx('b', 10, 'nutrition'), tx('c', 3, 'sleep')]
++    // 'consistency' recebe sleep (mapeia p/ consistency), não workout/nutrition
++    expect(applicableTotal(txs, { type: 'category', category: 'consistency' }, new Set())).toBe(3)
++    expect(applicableTotal(txs, { type: 'category', category: 'workout' }, new Set())).toBe(15)
++    expect(applicableTotal(txs, { type: 'category', category: 'nutrition' }, new Set())).toBe(10)
++  })
++
++  it('ignora transações no conjunto removed (duplicatas/inválidas)', () => {
++    const txs = [tx('a', 15, 'workout'), tx('b', 10, 'workout')]
++    expect(applicableTotal(txs, { type: 'global', category: null }, new Set(['b']))).toBe(15)
++  })
++
++  it('nunca fica abaixo de zero (piso no total final)', () => {
++    const txs = [tx('a', -100, 'workout'), tx('b', 5, 'workout')]
++    expect(applicableTotal(txs, { type: 'global', category: null }, new Set())).toBe(0)
++  })
++})
++
++describe('spDay — dia em America/Sao_Paulo a partir de um timestamp', () => {
++  it('converte a virada do dia UTC para o dia correto em SP (BRT -03:00)', () => {
++    // 02:00 UTC = 23:00 do dia ANTERIOR em BRT
++    expect(spDay('2026-07-30T02:00:00Z')).toBe('2026-07-29')
++    // meio-dia UTC = 09:00 BRT, mesmo dia
++    expect(spDay('2026-07-30T12:00:00Z')).toBe('2026-07-30')
++  })
++})
++
++describe('constantes de cap do feed', () => {
++  it('cap diário de feed é 2 e cobre as 3 razões de feed', () => {
++    expect(FEED_DAILY_CAP).toBe(2)
++    expect(FEED_REASONS).toContain('Post no feed')
++    expect(FEED_REASONS).toContain('Reacao no feed')
++    expect(FEED_REASONS).toContain('Comentario no feed')
++  })
++})
+diff --git a/lib/services/__tests__/points-rules.test.ts b/lib/services/__tests__/points-rules.test.ts
+new file mode 100644
+index 0000000..6afeb88
+--- /dev/null
++++ b/lib/services/__tests__/points-rules.test.ts
+@@ -0,0 +1,56 @@
++import { describe, it, expect } from 'vitest'
++import { POINT_VALUES, TX_TO_RANKING_CATEGORIES } from '@/lib/services/points-server'
++
++describe('POINT_VALUES — trava de regressão dos valores de pontos', () => {
++  it('mantém os valores acordados (mudar aqui = mudar a regra do jogo e a justiça do desafio)', () => {
++    expect(POINT_VALUES.workout_completed.points).toBe(15)
++    expect(POINT_VALUES.all_meals_logged.points).toBe(10)
++    expect(POINT_VALUES.water_goal_met.points).toBe(5)
++    expect(POINT_VALUES.sleep_logged.points).toBe(3)
++    expect(POINT_VALUES.pr_achieved.points).toBe(3)
++    expect(POINT_VALUES.post_created.points).toBe(4)
++    expect(POINT_VALUES.comment_or_reaction.points).toBe(1)
++    expect(POINT_VALUES.form_completed.points).toBe(5)
++    expect(POINT_VALUES.streak_7.points).toBe(15)
++    expect(POINT_VALUES.streak_30.points).toBe(50)
++    expect(POINT_VALUES.weekly_adherence.points).toBe(10)
++    expect(POINT_VALUES.activity_leve.points).toBe(3)
++    expect(POINT_VALUES.activity_moderado.points).toBe(5)
++    expect(POINT_VALUES.activity_intenso.points).toBe(8)
++    expect(POINT_VALUES.activity_muito_intenso.points).toBe(10)
++    expect(POINT_VALUES.cardio_leve.points).toBe(3)
++    expect(POINT_VALUES.cardio_muito_intenso.points).toBe(10)
++  })
++
++  it('toda ação tem points > 0, category válida e reason não-vazio', () => {
++    const validCategories = new Set([
++      'workout', 'nutrition', 'hydration', 'sleep', 'wellness', 'attendance',
++      'social', 'bonus', 'bioimpedance', 'challenge', 'consistency', 'form_completion',
++    ])
++    for (const [action, cfg] of Object.entries(POINT_VALUES)) {
++      expect(cfg.points, action).toBeGreaterThan(0)
++      expect(validCategories.has(cfg.category), `${action} tem category inválida: ${cfg.category}`).toBe(true)
++      expect(cfg.reason.length, action).toBeGreaterThan(0)
++    }
++  })
++})
++
++describe('TX_TO_RANKING_CATEGORIES — precisa espelhar fitness_ranking_categories_for (SQL 20260730_5)', () => {
++  it('mapeia categoria da transação -> categorias de ranking', () => {
++    // Se este mapa mudar, atualize também a função SQL fitness_ranking_categories_for
++    // na migration 20260730_5_reversal_rpc.sql — senão crédito e estorno divergem.
++    expect(TX_TO_RANKING_CATEGORIES.nutrition).toEqual(['nutrition'])
++    expect(TX_TO_RANKING_CATEGORIES.workout).toEqual(['workout'])
++    expect(TX_TO_RANKING_CATEGORIES.consistency).toEqual(['consistency'])
++    expect(TX_TO_RANKING_CATEGORIES.sleep).toEqual(['consistency'])
++    expect(TX_TO_RANKING_CATEGORIES.hydration).toEqual(['consistency'])
++    expect(TX_TO_RANKING_CATEGORIES.wellness).toEqual(['consistency'])
++  })
++
++  it('categorias sem mapa (social/form/bio/bonus) ficam só no ranking global', () => {
++    expect(TX_TO_RANKING_CATEGORIES.social).toBeUndefined()
++    expect(TX_TO_RANKING_CATEGORIES.form_completion).toBeUndefined()
++    expect(TX_TO_RANKING_CATEGORIES.bioimpedance).toBeUndefined()
++    expect(TX_TO_RANKING_CATEGORIES.bonus).toBeUndefined()
++  })
++})
+diff --git a/lib/services/challenge-score.ts b/lib/services/challenge-score.ts
+index 6494559..556e2ba 100644
+--- a/lib/services/challenge-score.ts
++++ b/lib/services/challenge-score.ts
+@@ -81,6 +81,16 @@ export async function computeChallengeScores(
+     return scores
+   }
+ 
++  // Sem este aviso, a ausência da RPC (migration 20260723 não rodada no
++  // self-hosted) ficava invisível — o placar "funcionava" pelo fallback lento
++  // e ninguém sabia que a migration faltava.
++  if (error) {
++    console.warn(
++      '[challenge-score] RPC fitness_challenge_scores falhou — usando fallback por usuário. Rode a migration 20260723_challenge_scores_rpc.sql. Detalhe:',
++      (error as { message?: string })?.message || error
++    )
++  }
++
+   // Fallback: soma por usuário. supabase-js NÃO lança em erro de query — por
+   // isso tratamos `error` acima. Cobre o intervalo em que a RPC ainda não foi
+   // aplicada no banco self-hosted (deploy antes da migration).
+diff --git a/lib/services/points-server.ts b/lib/services/points-server.ts
+index ae4d352..bb221fe 100644
+--- a/lib/services/points-server.ts
++++ b/lib/services/points-server.ts
+@@ -10,7 +10,7 @@
+  * não incrementado aqui — ver nota abaixo.)
+  */
+ import { createClient as createAdminClient } from '@supabase/supabase-js'
+-import { getStartOfTodaySP } from '@/lib/utils/date'
++import { getTodayDateSP } from '@/lib/utils/date'
+ 
+ export type PointAction =
+   | 'workout_completed'
+@@ -133,6 +133,15 @@ async function prHasPriorHistory(
+     .single()
+   if (!we?.exercicio_nome) return false
+ 
++  // Posse: o set precisa pertencer a um treino DESTE usuário. Sem isso, um
++  // atacante poderia mandar o id de um set de outro paciente e pontuar.
++  const { data: w } = await supabaseAdmin
++    .from('fitness_workouts')
++    .select('user_id')
++    .eq('id', we.workout_id)
++    .single()
++  if (!w || w.user_id !== userId) return false
++
+   const { count } = await supabaseAdmin
+     .from('fitness_personal_records')
+     .select('id', { count: 'exact', head: true })
+@@ -192,36 +201,71 @@ export async function awardPointsServer(
+     // dia em America/Sao_Paulo. NÃO use new Date() + setHours no servidor
+     // (UTC) porque após 21h BRT a janela "hoje" já é o dia seguinte UTC,
+     // fazendo o dedup falhar e dar pontos novamente.
+-    const startOfDaySP = getStartOfTodaySP()
+-    const { data: todayExisting } = await supabaseAdmin
++    // Dedup por dia de referência (America/Sao_Paulo). O índice único parcial
++    // ux_points_daily (user_id, reason, source, reference_date) é a garantia
++    // real no banco; esta leitura só evita tentativas de insert desnecessárias.
++    // Fallback por created_at caso a coluna reference_date ainda não exista
++    // (migration 20260730_1 não rodou).
++    let todayExisting: Array<{ id: string }> | null = null
++    const dedupRead = await supabaseAdmin
+       .from('fitness_point_transactions')
+       .select('id')
+       .eq('user_id', userId)
+       .eq('reason', config.reason)
+       .eq('source', 'automatic')
+-      .gte('created_at', startOfDaySP)
++      .eq('reference_date', getTodayDateSP())
+       .limit(1)
++    if (dedupRead.error && (dedupRead.error.code === '42703' || dedupRead.error.code === 'PGRST204')) {
++      const fb = await supabaseAdmin
++        .from('fitness_point_transactions')
++        .select('id')
++        .eq('user_id', userId)
++        .eq('reason', config.reason)
++        .eq('source', 'automatic')
++        .gte('created_at', getStartOfTodaySP())
++        .limit(1)
++      todayExisting = fb.data
++    } else {
++      todayExisting = dedupRead.data
++    }
+ 
+     if (todayExisting && todayExisting.length > 0) {
+       return { success: true, duplicate: true, message: 'Pontos ja atribuidos hoje para esta acao' }
+     }
+   }
+ 
+-  // Insert transaction
+-  const { data: transaction, error: insertError } = await supabaseAdmin
++  // Insert transaction. reference_date = hoje (SP) — dia a que o crédito se
++  // refere; é a coluna de dedup dos índices únicos. Se a coluna ainda não
++  // existe (migration não rodou), refaz sem ela — o crédito não pode quebrar.
++  const baseRow = {
++    user_id: userId,
++    points: config.points,
++    reason: config.reason,
++    category: config.category,
++    source: 'automatic',
++    reference_id: referenceId || null,
++  }
++  let insertRes = await supabaseAdmin
+     .from('fitness_point_transactions')
+-    .insert({
+-      user_id: userId,
+-      points: config.points,
+-      reason: config.reason,
+-      category: config.category,
+-      source: 'automatic',
+-      reference_id: referenceId || null,
+-    })
++    .insert({ ...baseRow, reference_date: getTodayDateSP() })
+     .select()
+     .single()
++  if (insertRes.error && (insertRes.error.code === '42703' || insertRes.error.code === 'PGRST204')) {
++    insertRes = await supabaseAdmin
++      .from('fitness_point_transactions')
++      .insert(baseRow)
++      .select()
++      .single()
++  }
++  const transaction = insertRes.data
++  const insertError = insertRes.error
+ 
+   if (insertError) {
++    // 23505 = violação de índice único: uma requisição concorrente ganhou a
++    // corrida e já creditou. Tratamos como duplicata (idempotente), não erro.
++    if ((insertError as { code?: string }).code === '23505') {
++      return { success: true, duplicate: true, message: 'Pontos ja atribuidos para esta acao' }
++    }
+     console.error('Erro ao atribuir pontos:', insertError)
+     return { success: false, error: 'Erro ao atribuir pontos' }
+   }
+diff --git a/lib/services/points.ts b/lib/services/points.ts
+index 6a5f5c0..211f0e4 100644
+--- a/lib/services/points.ts
++++ b/lib/services/points.ts
+@@ -65,46 +65,18 @@ export async function awardPoints(
+   action: PointAction,
+   referenceId?: string
+ ): Promise<AwardPointsResult> {
+-  try {
+-    const response = await fetch('/api/points/award', {
+-      method: 'POST',
+-      headers: { 'Content-Type': 'application/json' },
+-      body: JSON.stringify({
+-        action,
+-        reference_id: referenceId || undefined,
+-      }),
+-    })
+-
+-    const data = await response.json()
+-
+-    if (!response.ok) {
+-      console.error(`Points award failed for action "${action}":`, data.error)
+-      return {
+-        success: false,
+-        error: data.error || 'Erro ao atribuir pontos',
+-      }
+-    }
+-
+-    if (data.duplicate) {
+-      return {
+-        success: true,
+-        duplicate: true,
+-        message: data.message,
+-      }
+-    }
+-
+-    return {
+-      success: true,
+-      points: data.points,
+-      message: data.message,
+-    }
+-  } catch (error) {
+-    console.error(`Points award error for action "${action}":`, error)
+-    return {
+-      success: false,
+-      error: 'Erro de rede ao atribuir pontos',
+-    }
+-  }
++  // DESATIVADO (no-op). O endpoint genérico POST /api/points/award foi
++  // desligado por permitir que o cliente creditasse qualquer ação sem
++  // verificação (farm de pontos). Cada crédito agora vem do caminho que
++  // executa e verifica o fato:
++  //   • água / refeição / sono → triggers no banco
++  //   • treino / PR / cardio / streak → /api/points/award-workout-complete
++  //   • atividade avulsa → /api/activities (com cap diário)
++  //   • formulário → /api/forms/responses (server-side)
++  // Mantido como no-op para não quebrar chamadas legadas nos hooks.
++  void action
++  void referenceId
++  return { success: true, duplicate: true, message: 'crédito automático pela ação' }
+ }
+ 
+ /**
+diff --git a/package.json b/package.json
+index a939c65..b7b7d4d 100644
+--- a/package.json
++++ b/package.json
+@@ -8,6 +8,9 @@
+     "build": "next build",
+     "start": "next start",
+     "lint": "next lint",
++    "typecheck": "tsc --noEmit",
++    "test": "vitest run",
++    "test:watch": "vitest",
+     "generate-icons": "node scripts/generate-icons.mjs"
+   },
+   "dependencies": {
+@@ -72,7 +75,8 @@
+     "postcss": "^8",
+     "sharp": "^0.34.5",
+     "tailwindcss": "^3.4.1",
+-    "typescript": "^5"
++    "typescript": "^5",
++    "vitest": "^2.1.9"
+   },
+   "engines": {
+     "node": ">=18.17.0"
+diff --git a/supabase/migrations/20260730_1_points_dedup_foundation.sql b/supabase/migrations/20260730_1_points_dedup_foundation.sql
+new file mode 100644
+index 0000000..e14661a
+--- /dev/null
++++ b/supabase/migrations/20260730_1_points_dedup_foundation.sql
+@@ -0,0 +1,95 @@
++-- ============================================================
++-- FUNDAÇÃO DE DEDUP DE PONTOS — reference_date + limpeza + índices únicos
++-- Data: 2026-07-30
++-- ------------------------------------------------------------
++-- Corrige a causa-raiz de "pontuações estranhas": todo o dedup do
++-- sistema era "ler-depois-inserir" na aplicação/trigger, SEM nenhuma
++-- constraint no banco. Sob concorrência (duplo toque, retry do PWA,
++-- requisições paralelas) o mesmo crédito entrava N vezes.
++--
++-- O que este arquivo faz, NESTA ORDEM (a ordem importa):
++--   1. Adiciona a coluna reference_date (o DIA a que o crédito se refere,
++--      no fuso de São Paulo). É a chave de dedup correta — antes o dedup
++--      comparava created_at (dia em que a linha entrou) com a data do fato,
++--      o que nunca batia para registros de outro dia.
++--   2. Backfill de reference_date para o extrato existente.
++--   3. LIMPEZA das duplicatas já gravadas (mantém a MAIS ANTIGA de cada
++--      chave — o crédito legítimo — e apaga as repetições).
++--   4. Cria os índices ÚNICOS parciais que passam a IMPEDIR duplicata no
++--      banco. Só é possível criar DEPOIS da limpeza (senão o CREATE falha).
++--
++-- ⚠️ Esta migration REMOVE transações duplicadas → muda total de pontos de
++--    quem foi creditado em dobro. Rode o resync do ranking DEPOIS dela para
++--    reconstruir os leaderboards a partir do extrato limpo. Ver runbook.
++--
++-- Idempotente: pode rodar novamente sem efeito colateral.
++-- ============================================================
++
++-- ─────────────────────────────────────────────────────────────
++-- 1) Coluna reference_date
++-- ─────────────────────────────────────────────────────────────
++ALTER TABLE fitness_point_transactions
++  ADD COLUMN IF NOT EXISTS reference_date DATE;
++
++-- ─────────────────────────────────────────────────────────────
++-- 2) Backfill: dia do fato = dia de criação no fuso de São Paulo.
++--    (Aproximação segura: para o extrato antigo, o dia de criação é o
++--     melhor proxy do dia a que o crédito se refere.)
++-- ─────────────────────────────────────────────────────────────
++UPDATE fitness_point_transactions
++   SET reference_date = (created_at AT TIME ZONE 'America/Sao_Paulo')::date
++ WHERE reference_date IS NULL;
++
++-- ─────────────────────────────────────────────────────────────
++-- 3) LIMPEZA de duplicatas já gravadas
++--    Mantém a linha de menor created_at (empate: menor id) por chave.
++-- ─────────────────────────────────────────────────────────────
++
++-- 3a) Créditos diários automáticos (sem reference_id): chave =
++--     (user_id, reason, source, reference_date)
++WITH ranked AS (
++  SELECT id,
++         ROW_NUMBER() OVER (
++           PARTITION BY user_id, reason, source, reference_date
++           ORDER BY created_at ASC, id ASC
++         ) AS rn
++  FROM fitness_point_transactions
++  WHERE reference_id IS NULL
++    AND source = 'automatic'
++)
++DELETE FROM fitness_point_transactions t
++USING ranked r
++WHERE t.id = r.id AND r.rn > 1;
++
++-- 3b) Créditos com reference_id (treino, PR, cardio, atividade, post…):
++--     chave = (user_id, reason, reference_id)
++WITH ranked AS (
++  SELECT id,
++         ROW_NUMBER() OVER (
++           PARTITION BY user_id, reason, reference_id
++           ORDER BY created_at ASC, id ASC
++         ) AS rn
++  FROM fitness_point_transactions
++  WHERE reference_id IS NOT NULL
++)
++DELETE FROM fitness_point_transactions t
++USING ranked r
++WHERE t.id = r.id AND r.rn > 1;
++
++-- ─────────────────────────────────────────────────────────────
++-- 4) Índices ÚNICOS parciais — a invariante que faltava
++-- ─────────────────────────────────────────────────────────────
++
++-- Um crédito diário por (user, razão, origem, dia de referência).
++CREATE UNIQUE INDEX IF NOT EXISTS ux_points_daily
++  ON fitness_point_transactions (user_id, reason, source, reference_date)
++  WHERE reference_id IS NULL;
++
++-- Um crédito por (user, razão, evento referenciado).
++CREATE UNIQUE INDEX IF NOT EXISTS ux_points_reference
++  ON fitness_point_transactions (user_id, reason, reference_id)
++  WHERE reference_id IS NOT NULL;
++
++-- Índice de apoio para as buscas de dedup por dia.
++CREATE INDEX IF NOT EXISTS idx_points_user_refdate
++  ON fitness_point_transactions (user_id, reason, reference_date);
+diff --git a/supabase/migrations/20260730_2_award_triggers_hardened.sql b/supabase/migrations/20260730_2_award_triggers_hardened.sql
+new file mode 100644
+index 0000000..9a7c0ed
+--- /dev/null
++++ b/supabase/migrations/20260730_2_award_triggers_hardened.sql
+@@ -0,0 +1,173 @@
++-- ============================================================
++-- TRIGGERS DE AWARD ENDURECIDOS — água / refeição / sono
++-- Data: 2026-07-30
++-- ------------------------------------------------------------
++-- Corrige as três falhas dos triggers de award automático:
++--
++-- 1. DEDUP PELA CHAVE CERTA. Antes o dedup comparava
++--    (created_at AT TIME ZONE SP)::date = NEW.data — ou seja, o dia em que
++--    a LINHA ENTROU contra o dia do FATO. Para qualquer NEW.data ≠ hoje isso
++--    nunca batia → o crédito repetia a cada inserção, para sempre. Agora o
++--    dedup é a coluna reference_date (= NEW.data) com ÍNDICE ÚNICO no banco
++--    (ver 20260730_1) + INSERT ... ON CONFLICT DO NOTHING. É impossível
++--    duplicar, mesmo sob corrida (duplo toque / retry do PWA).
++--
++-- 2. JANELA DE DATA PLAUSÍVEL. Só credita para hoje ou ontem (SP). Bloqueia
++--    o farm por data retroativa/futura (varrer o calendário inteiro inserindo
++--    logs de 365 datas). "Ontem" é permitido porque a tela de Sono grava com
++--    a data de ontem por design.
++--
++-- 3. SONO ESCALONADO restaurado (6/3/0 por hora de dormir). A migration
++--    20260514, ao corrigir um fuso, havia revertido sem querer a regra
++--    escalonada de 20260501 para 3 pts fixos. Aqui ela volta — com o dedup
++--    já correto.
++--
++-- Pré-requisito: 20260730_1_points_dedup_foundation.sql (coluna + índices).
++-- Idempotente.
++-- ============================================================
++
++-- ─────────────────────────────────────────────────────────────
++-- 1) ÁGUA — 5 pts ao bater a meta diária (1× por dia de referência)
++-- ─────────────────────────────────────────────────────────────
++CREATE OR REPLACE FUNCTION fn_auto_award_water_goal()
++RETURNS TRIGGER AS $$
++DECLARE
++  v_total    INTEGER;
++  v_goal     INTEGER;
++  v_today    DATE := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
++  v_inserted INTEGER;
++BEGIN
++  -- Janela plausível: hoje ou ontem (SP). Fora disso, registra mas não pontua.
++  IF NEW.data < v_today - 1 OR NEW.data > v_today THEN
++    RETURN NEW;
++  END IF;
++
++  SELECT COALESCE(SUM(quantidade_ml), 0) INTO v_total
++  FROM fitness_water_logs
++  WHERE user_id = NEW.user_id AND data = NEW.data;
++
++  SELECT COALESCE(meta_agua_ml, 2000) INTO v_goal
++  FROM fitness_profiles WHERE id = NEW.user_id;
++
++  IF v_total >= v_goal THEN
++    INSERT INTO fitness_point_transactions
++      (user_id, points, reason, category, source, reference_date)
++    VALUES
++      (NEW.user_id, 5, 'Meta de agua atingida', 'hydration', 'automatic', NEW.data)
++    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
++    DO NOTHING;
++
++    GET DIAGNOSTICS v_inserted = ROW_COUNT;
++    IF v_inserted = 1 THEN
++      PERFORM fitness_award_points_to_user(NEW.user_id, 5, ARRAY['consistency']);
++    END IF;
++  END IF;
++
++  RETURN NEW;
++END;
++$$ LANGUAGE plpgsql SECURITY DEFINER;
++
++DROP TRIGGER IF EXISTS trigger_auto_award_water_goal ON fitness_water_logs;
++CREATE TRIGGER trigger_auto_award_water_goal
++  AFTER INSERT ON fitness_water_logs
++  FOR EACH ROW EXECUTE FUNCTION fn_auto_award_water_goal();
++
++-- ─────────────────────────────────────────────────────────────
++-- 2) REFEIÇÕES — 10 pts ao atingir 3+ refeições no dia (1× por dia)
++-- ─────────────────────────────────────────────────────────────
++CREATE OR REPLACE FUNCTION fn_auto_award_meals_logged()
++RETURNS TRIGGER AS $$
++DECLARE
++  v_count    INTEGER;
++  v_today    DATE := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
++  v_inserted INTEGER;
++BEGIN
++  IF NEW.data < v_today - 1 OR NEW.data > v_today THEN
++    RETURN NEW;
++  END IF;
++
++  SELECT COUNT(*) INTO v_count
++  FROM fitness_meals
++  WHERE user_id = NEW.user_id AND data = NEW.data
++    AND COALESCE(status, '') <> 'pulado';
++
++  IF v_count >= 3 THEN
++    INSERT INTO fitness_point_transactions
++      (user_id, points, reason, category, source, reference_date)
++    VALUES
++      (NEW.user_id, 10, 'Todas refeicoes registradas', 'nutrition', 'automatic', NEW.data)
++    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
++    DO NOTHING;
++
++    GET DIAGNOSTICS v_inserted = ROW_COUNT;
++    IF v_inserted = 1 THEN
++      PERFORM fitness_award_points_to_user(NEW.user_id, 10, ARRAY['nutrition']);
++    END IF;
++  END IF;
++
++  RETURN NEW;
++END;
++$$ LANGUAGE plpgsql SECURITY DEFINER;
++
++DROP TRIGGER IF EXISTS trigger_auto_award_meals_logged ON fitness_meals;
++CREATE TRIGGER trigger_auto_award_meals_logged
++  AFTER INSERT ON fitness_meals
++  FOR EACH ROW EXECUTE FUNCTION fn_auto_award_meals_logged();
++
++-- ─────────────────────────────────────────────────────────────
++-- 3) SONO — escalonado por hora de dormir (6 / 3 / 0), 1× por dia
++--    18:00–21:59 → 6 pts | 22:00–23:59 → 3 pts | 00:00–17:59 → 0 pts
++-- ─────────────────────────────────────────────────────────────
++CREATE OR REPLACE FUNCTION fn_auto_award_sleep_logged()
++RETURNS TRIGGER AS $$
++DECLARE
++  v_hour     INTEGER;
++  v_pts      INTEGER := 0;
++  v_today    DATE := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
++  v_inserted INTEGER;
++BEGIN
++  -- Sem hora de dormir não dá pra avaliar a regra
++  IF NEW.hora_dormir IS NULL THEN
++    RETURN NEW;
++  END IF;
++
++  -- Janela plausível: hoje ou ontem (SP). A tela de Sono grava com data de
++  -- ontem, então "ontem" é o caminho normal.
++  IF NEW.data < v_today - 1 OR NEW.data > v_today THEN
++    RETURN NEW;
++  END IF;
++
++  v_hour := EXTRACT(HOUR FROM (NEW.hora_dormir AT TIME ZONE 'America/Sao_Paulo'));
++
++  IF v_hour >= 18 AND v_hour < 22 THEN
++    v_pts := 6;   -- dormiu cedo
++  ELSIF v_hour >= 22 AND v_hour <= 23 THEN
++    v_pts := 3;   -- faixa intermediária
++  ELSE
++    v_pts := 0;   -- madrugada / dia: registra mas não pontua
++  END IF;
++
++  IF v_pts = 0 THEN
++    RETURN NEW;
++  END IF;
++
++  INSERT INTO fitness_point_transactions
++    (user_id, points, reason, category, source, reference_date)
++  VALUES
++    (NEW.user_id, v_pts, 'Sono registrado', 'sleep', 'automatic', NEW.data)
++  ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
++  DO NOTHING;
++
++  GET DIAGNOSTICS v_inserted = ROW_COUNT;
++  IF v_inserted = 1 THEN
++    PERFORM fitness_award_points_to_user(NEW.user_id, v_pts, ARRAY['consistency']);
++  END IF;
++
++  RETURN NEW;
++END;
++$$ LANGUAGE plpgsql SECURITY DEFINER;
++
++DROP TRIGGER IF EXISTS trigger_auto_award_sleep_logged ON fitness_sleep_logs;
++CREATE TRIGGER trigger_auto_award_sleep_logged
++  AFTER INSERT ON fitness_sleep_logs
++  FOR EACH ROW EXECUTE FUNCTION fn_auto_award_sleep_logged();
+diff --git a/supabase/migrations/20260730_3_streak_award_trigger.sql b/supabase/migrations/20260730_3_streak_award_trigger.sql
+new file mode 100644
+index 0000000..496daee
+--- /dev/null
++++ b/supabase/migrations/20260730_3_streak_award_trigger.sql
+@@ -0,0 +1,64 @@
++-- ============================================================
++-- BÔNUS DE STREAK NO BANCO — fonte única, à prova de fraude
++-- Data: 2026-07-30
++-- ------------------------------------------------------------
++-- Antes, os bônus de streak (7 dias = 15 pts, 30 dias = 50 pts) eram
++-- creditados pela rota /api/points/award-workout-complete, que recebia
++-- `oldStreak` DO CLIENTE e o usava como único lado da transição. Bastava
++-- enviar oldStreak:0 para forçar o bônus todo dia sem ter streak nenhum.
++--
++-- Agora o bônus é decidido no banco, no momento em que streak_atual REAL do
++-- perfil cruza o limiar (7 ou 30). A transição por borda (OLD < N e NEW >= N)
++-- garante que o bônus saia UMA vez por sequência — e nunca se repete enquanto
++-- o streak permanece alto. Se a sequência quebra e recomeça, um novo cruzamento
++-- legítimo credita de novo. Cobre também quem completa o streak por atividade
++-- avulsa (não só por treino), coisa que a rota antiga não fazia.
++--
++-- Pré-requisito: 20260730_1 (coluna reference_date + índice único diário).
++-- Idempotente.
++-- ============================================================
++
++CREATE OR REPLACE FUNCTION fn_auto_award_streak()
++RETURNS TRIGGER AS $$
++DECLARE
++  v_today    DATE := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
++  v_inserted INTEGER;
++BEGIN
++  -- Bônus de 7 dias — só na borda de cruzamento
++  IF COALESCE(OLD.streak_atual, 0) < 7 AND COALESCE(NEW.streak_atual, 0) >= 7 THEN
++    INSERT INTO fitness_point_transactions
++      (user_id, points, reason, category, source, reference_date)
++    VALUES
++      (NEW.id, 15, 'Streak de 7 dias consecutivos', 'consistency', 'automatic', v_today)
++    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
++    DO NOTHING;
++    GET DIAGNOSTICS v_inserted = ROW_COUNT;
++    IF v_inserted = 1 THEN
++      PERFORM fitness_award_points_to_user(NEW.id, 15, ARRAY['consistency']);
++    END IF;
++  END IF;
++
++  -- Bônus de 30 dias — só na borda de cruzamento
++  IF COALESCE(OLD.streak_atual, 0) < 30 AND COALESCE(NEW.streak_atual, 0) >= 30 THEN
++    INSERT INTO fitness_point_transactions
++      (user_id, points, reason, category, source, reference_date)
++    VALUES
++      (NEW.id, 50, 'Streak de 30 dias consecutivos', 'consistency', 'automatic', v_today)
++    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
++    DO NOTHING;
++    GET DIAGNOSTICS v_inserted = ROW_COUNT;
++    IF v_inserted = 1 THEN
++      PERFORM fitness_award_points_to_user(NEW.id, 50, ARRAY['consistency']);
++    END IF;
++  END IF;
++
++  RETURN NEW;
++END;
++$$ LANGUAGE plpgsql SECURITY DEFINER;
++
++DROP TRIGGER IF EXISTS trigger_auto_award_streak ON fitness_profiles;
++CREATE TRIGGER trigger_auto_award_streak
++  AFTER UPDATE OF streak_atual ON fitness_profiles
++  FOR EACH ROW
++  WHEN (OLD.streak_atual IS DISTINCT FROM NEW.streak_atual)
++  EXECUTE FUNCTION fn_auto_award_streak();
+diff --git a/supabase/migrations/20260730_4_cardio_intensity_column.sql b/supabase/migrations/20260730_4_cardio_intensity_column.sql
+new file mode 100644
+index 0000000..9fbc5fa
+--- /dev/null
++++ b/supabase/migrations/20260730_4_cardio_intensity_column.sql
+@@ -0,0 +1,32 @@
++-- ============================================================
++-- PERSISTE A INTENSIDADE DO CARDIO NO TREINO
++-- Data: 2026-07-30
++-- ------------------------------------------------------------
++-- A intensidade de um cardio feito dentro do treino (esteira/bike) só existia
++-- na memória do cliente e era ENVIADA no corpo da requisição de award — o
++-- servidor não tinha como reconferir. Isso permitia reivindicar pontos de
++-- cardio "muito_intenso" (10 pts) para qualquer exercício, inclusive de outro
++-- treino/paciente.
++--
++-- Passa a gravar a intensidade na própria linha do exercício do treino, para
++-- que a rota de award derive os pontos DO BANCO, não do cliente.
++--
++-- Coluna nullable (só cardios têm) → sem quebra para exercícios de força.
++-- Idempotente.
++-- ============================================================
++
++ALTER TABLE fitness_workout_exercises
++  ADD COLUMN IF NOT EXISTS cardio_intensity TEXT;
++
++DO $$
++BEGIN
++  IF NOT EXISTS (
++    SELECT 1 FROM pg_constraint
++    WHERE conname = 'fitness_workout_exercises_cardio_intensity_check'
++  ) THEN
++    ALTER TABLE fitness_workout_exercises
++      ADD CONSTRAINT fitness_workout_exercises_cardio_intensity_check
++      CHECK (cardio_intensity IS NULL
++             OR cardio_intensity IN ('leve','moderado','intenso','muito_intenso'));
++  END IF;
++END $$;
+diff --git a/supabase/migrations/20260730_5_reversal_rpc.sql b/supabase/migrations/20260730_5_reversal_rpc.sql
+new file mode 100644
+index 0000000..f9a682e
+--- /dev/null
++++ b/supabase/migrations/20260730_5_reversal_rpc.sql
+@@ -0,0 +1,125 @@
++-- ============================================================
++-- REVERSÃO ATÔMICA E SIMÉTRICA DE PONTOS
++-- Data: 2026-07-30
++-- ------------------------------------------------------------
++-- As rotas de DELETE (atividade / refeição / treino) revertiam pontos com
++-- dois problemas:
++--   • apagavam a transação com o client do usuário (que não tem policy de
++--     DELETE em fitness_point_transactions) → apagava 0 linhas em silêncio;
++--   • aplicavam o estorno no leaderboard com categorias = NULL, enquanto o
++--     crédito original tinha categoria (ex.: 'workout') → ganhava no ranking
++--     de categoria e nunca perdia.
++--
++-- Estas duas funções SECURITY DEFINER fazem a reversão numa única operação,
++-- estornando o leaderboard com AS MESMAS categorias do crédito e apagando as
++-- transações. Retornam o total de pontos revertidos.
++--
++-- O mapa categoria-da-transação → categorias-de-ranking espelha
++-- TX_TO_RANKING_CATEGORIES em lib/services/points-server.ts. NULL = só
++-- rankings globais (igual ao crédito de social/form/bio/bônus).
++-- ============================================================
++
++-- Mapa auxiliar categoria → categorias de ranking (mesmo do points-server.ts).
++CREATE OR REPLACE FUNCTION fitness_ranking_categories_for(p_category TEXT)
++RETURNS TEXT[]
++LANGUAGE sql IMMUTABLE AS $$
++  SELECT CASE p_category
++    WHEN 'nutrition'   THEN ARRAY['nutrition']
++    WHEN 'workout'     THEN ARRAY['workout']
++    WHEN 'consistency' THEN ARRAY['consistency']
++    WHEN 'sleep'       THEN ARRAY['consistency']
++    WHEN 'hydration'   THEN ARRAY['consistency']
++    WHEN 'wellness'    THEN ARRAY['consistency']
++    ELSE NULL
++  END;
++$$;
++
++-- Reverte créditos identificados por reference_id (treino, PR, cardio, atividade…).
++CREATE OR REPLACE FUNCTION fitness_revert_points_by_reference(
++  p_user_id       UUID,
++  p_reference_ids UUID[],
++  p_reasons       TEXT[] DEFAULT NULL
++)
++RETURNS INTEGER
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = public
++AS $$
++DECLARE
++  r       RECORD;
++  v_total INTEGER := 0;
++BEGIN
++  IF p_reference_ids IS NULL OR array_length(p_reference_ids, 1) IS NULL THEN
++    RETURN 0;
++  END IF;
++
++  -- Estorna o leaderboard por categoria ANTES de apagar as transações.
++  FOR r IN
++    SELECT category, COALESCE(SUM(points), 0) AS pts
++    FROM fitness_point_transactions
++    WHERE user_id = p_user_id
++      AND reference_id = ANY(p_reference_ids)
++      AND (p_reasons IS NULL OR reason = ANY(p_reasons))
++    GROUP BY category
++  LOOP
++    IF r.pts <> 0 THEN
++      PERFORM fitness_award_points_to_user(
++        p_user_id, -r.pts, fitness_ranking_categories_for(r.category)
++      );
++      v_total := v_total + r.pts;
++    END IF;
++  END LOOP;
++
++  DELETE FROM fitness_point_transactions
++  WHERE user_id = p_user_id
++    AND reference_id = ANY(p_reference_ids)
++    AND (p_reasons IS NULL OR reason = ANY(p_reasons));
++
++  RETURN v_total;
++END;
++$$;
++
++-- Reverte um crédito diário automático sem reference_id (ex.: "Todas refeicoes
++-- registradas") pelo dia de referência.
++CREATE OR REPLACE FUNCTION fitness_revert_daily_award(
++  p_user_id        UUID,
++  p_reason         TEXT,
++  p_reference_date DATE
++)
++RETURNS INTEGER
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = public
++AS $$
++DECLARE
++  r       RECORD;
++  v_total INTEGER := 0;
++BEGIN
++  FOR r IN
++    SELECT category, COALESCE(SUM(points), 0) AS pts
++    FROM fitness_point_transactions
++    WHERE user_id = p_user_id
++      AND reason = p_reason
++      AND source = 'automatic'
++      AND reference_id IS NULL
++      AND reference_date = p_reference_date
++    GROUP BY category
++  LOOP
++    IF r.pts <> 0 THEN
++      PERFORM fitness_award_points_to_user(
++        p_user_id, -r.pts, fitness_ranking_categories_for(r.category)
++      );
++      v_total := v_total + r.pts;
++    END IF;
++  END LOOP;
++
++  DELETE FROM fitness_point_transactions
++  WHERE user_id = p_user_id
++    AND reason = p_reason
++    AND source = 'automatic'
++    AND reference_id IS NULL
++    AND reference_date = p_reference_date;
++
++  RETURN v_total;
++END;
++$$;
+diff --git a/supabase/migrations/20260730_6_privacy_authz.sql b/supabase/migrations/20260730_6_privacy_authz.sql
+new file mode 100644
+index 0000000..169883e
+--- /dev/null
++++ b/supabase/migrations/20260730_6_privacy_authz.sql
+@@ -0,0 +1,53 @@
++-- ============================================================
++-- PRIVACIDADE E AUTORIZAÇÃO DO RANKING/PONTOS
++-- Data: 2026-07-30
++-- ------------------------------------------------------------
++-- 1) O opt-out do ranking (fitness_profiles.ranking_visivel = FALSE) era
++--    cosmético: a policy de fitness_ranking_participants era USING (TRUE),
++--    então qualquer autenticado lia a pontuação de TODOS direto na tabela,
++--    inclusive de quem pediu para não aparecer. Passa a respeitar o opt-out.
++--    (As rotas do app leem via service_role e não são afetadas; isto fecha só
++--     o acesso direto do cliente autenticado.)
++--
++-- 2) A policy de INSERT de pontos por profissional exigia apenas
++--    awarded_by = auth.uid() + ser profissional ativo — sem vínculo com o
++--    paciente. Qualquer profissional podia lançar pontos para QUALQUER
++--    paciente. Passa a exigir vínculo ativo em fitness_client_assignments.
++-- ============================================================
++
++-- ─────────────────────────────────────────────────────────────
++-- 1) Ranking: respeitar opt-out
++-- ─────────────────────────────────────────────────────────────
++DROP POLICY IF EXISTS "Anyone authenticated can view participants" ON fitness_ranking_participants;
++
++CREATE POLICY "Participants visible per opt-in" ON fitness_ranking_participants
++  FOR SELECT USING (
++    user_id = auth.uid()
++    OR EXISTS (
++      SELECT 1 FROM fitness_profiles p
++      WHERE p.id = fitness_ranking_participants.user_id
++        AND COALESCE(p.ranking_visivel, TRUE) = TRUE
++    )
++    OR EXISTS (
++      SELECT 1 FROM fitness_profiles a
++      WHERE a.id = auth.uid() AND a.role IN ('super_admin', 'admin')
++    )
++  );
++
++-- ─────────────────────────────────────────────────────────────
++-- 2) Pontos por profissional: exigir vínculo com o paciente
++-- ─────────────────────────────────────────────────────────────
++DROP POLICY IF EXISTS "Professionals can insert points for assigned clients" ON fitness_point_transactions;
++
++CREATE POLICY "Professionals can insert points for assigned clients" ON fitness_point_transactions
++  FOR INSERT WITH CHECK (
++    awarded_by = auth.uid()
++    AND EXISTS (
++      SELECT 1
++      FROM fitness_client_assignments ca
++      JOIN fitness_professionals pr ON pr.id = ca.professional_id
++      WHERE pr.user_id = auth.uid()
++        AND ca.client_id = fitness_point_transactions.user_id
++        AND ca.is_active = TRUE
++    )
++  );
+diff --git a/vitest.config.ts b/vitest.config.ts
+new file mode 100644
+index 0000000..4d380c8
+--- /dev/null
++++ b/vitest.config.ts
+@@ -0,0 +1,15 @@
++import { defineConfig } from 'vitest/config'
++import { fileURLToPath } from 'node:url'
++
++export default defineConfig({
++  test: {
++    environment: 'node',
++    include: ['**/*.test.ts'],
++    exclude: ['node_modules/**', '.next/**'],
++  },
++  resolve: {
++    alias: {
++      '@': fileURLToPath(new URL('.', import.meta.url)),
++    },
++  },
++})
