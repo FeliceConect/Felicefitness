@@ -235,6 +235,10 @@ export function BioimpedanceSection({ patientId }: BioimpedanceSectionProps) {
       setFonte('inbody_ia')
       const conf = ai.confidence != null ? ` (confiança ${Math.round(ai.confidence * 100)}%)` : ''
       toast.success(`Dados extraídos pela IA${conf}. Revise antes de salvar.`)
+
+      // Alertas de conferência (ex.: lados D/E que não puderam ser confirmados)
+      const warnings: string[] = Array.isArray(json.warnings) ? json.warnings : []
+      warnings.forEach(w => toast.warning(w, { duration: 12000 }))
     } catch (err) {
       console.error('Erro OCR:', err)
       toast.error('Erro ao analisar imagem')

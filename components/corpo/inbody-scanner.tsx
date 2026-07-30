@@ -65,6 +65,8 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
   const [analysisResult, setAnalysisResult] = useState<InBodyData | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Alertas de conferência vindos da API (ex.: lados D/E não confirmados)
+  const [warnings, setWarnings] = useState<string[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -106,6 +108,7 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
 
       setAnalysisResult(result.data)
       setImageUrl(result.image_url)
+      setWarnings(Array.isArray(result.warnings) ? result.warnings : [])
       setStep('result')
     } catch (err) {
       console.error('InBody analysis error:', err)
@@ -136,6 +139,7 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
     setImageFile(null)
     setAnalysisResult(null)
     setError(null)
+    setWarnings([])
   }
 
   // Render capture step
@@ -336,6 +340,12 @@ export function InBodyScanner({ onAnalysisComplete, onCancel }: InBodyScannerPro
                 Confiança: {analysisResult.confidence}%
               </span>
             </div>
+            {warnings.map((w, i) => (
+              <div key={i} className="p-3 rounded-xl bg-yellow-500/20 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-white">{w}</span>
+              </div>
+            ))}
             <div className="flex items-center gap-2 text-xs text-foreground-secondary">
               <Pencil className="w-3 h-3" />
               <span>Toque em qualquer valor para editar</span>

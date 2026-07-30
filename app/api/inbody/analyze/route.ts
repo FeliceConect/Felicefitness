@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { compressImage } from '@/lib/images/compress'
 import { logApiUsage } from '@/lib/admin/api-usage'
+import { parseInbodySegmental } from '@/lib/bioimpedance/inbody-pdf'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -214,7 +215,8 @@ Regras:
 - Use ponto decimal (ex: 72.5, não 72,5)
 - Os campos "_percent" representam a porcentagem do valor ideal mostrada abaixo de cada segmento (ex: "110,4%")
 - "grau_obesidade" é o valor em % mostrado em "Grau de Obesidade" (ex: "116%")
-- DIREITA vs ESQUERDA: SEMPRE use o RÓTULO escrito no relatório ("Direita"/"D" ou "Esquerda"/"E"), NUNCA infira pela posição na coluna. ATENÇÃO: no InBody, "Direito" geralmente aparece à ESQUERDA da página e "Esquerdo" à DIREITA da página (perspectiva espelhada do paciente). Procure as letras "D" e "E" ou as palavras completas em cada barra/segmento antes de classificar. Se não houver rótulo claro, retorne null e NÃO chute.
+- LADOS (Direito vs Esquerdo) — REGRA CRÍTICA: no relatório InBody (layout BR-Português) a análise segmentar é desenhada sobre uma silhueta com os rótulos VERTICAIS nas laterais do quadro: "Esquerdo" à ESQUERDA da silhueta e "Direito" à DIREITA. Portanto, em cada par de valores (braços e pernas), o valor da COLUNA DA ESQUERDA é do lado ESQUERDO e o da COLUNA DA DIREITA é do lado DIREITO. O relatório NÃO é espelhado — não inverta os lados. Só inverta se conseguir ler claramente um rótulo escrito dizendo o contrário.
+- CONFERÊNCIA DOS LADOS: se a tabela "Impedância Z(Ω)" estiver ${isPdf ? 'presente' : 'visível'} (colunas BD, BE, TR, PD, PE = Braço Direito, Braço Esquerdo, Tronco, Perna Direita, Perna Esquerda), use-a para validar: impedância MENOR significa MAIS massa magra naquele segmento. Se BD < BE, o braço direito tem mais massa magra que o esquerdo.
 - "confidence" é sua confiança na leitura geral (0.0 a 1.0)
 - Se o conteúdo não for um relatório InBody, retorne: {"error": "não é um relatório InBody"}
 - Nunca invente valores — se não ${isPdf ? 'encontrar' : 'ver'}, null.`
@@ -261,9 +263,25 @@ Regras:
       }, { status: 422 })
     }
 
+    // Lados D/E dos segmentos: no texto extraído do PDF os rótulos
+    // "Esquerdo"/"Direito" não existem (são texto rotacionado na moldura do
+    // gráfico), então a IA adivinhava e trocava os lados. Aqui a atribuição vem
+    // da ordem de desenho do relatório, que é determinística, e sobrepõe a IA.
+    const warnings: string[] = []
+    if (isPdf && pdfText) {
+      const segmental = parseInbodySegmental(pdfText)
+      if (segmental) {
+        Object.assign(parsed, segmental.values)
+        warnings.push(...segmental.warnings)
+      } else {
+        warnings.push('Não foi possível confirmar os lados Direito/Esquerdo pelo layout deste PDF. Confira braços e pernas no relatório antes de salvar.')
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: parsed,
+      warnings,
       image_url: imageUrl,
       tokens_used: response.usage?.total_tokens || 0,
       usage: { used: used + 1, limit: MONTHLY_LIMIT },
