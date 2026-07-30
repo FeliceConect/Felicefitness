@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Preços da OpenAI (por 1M tokens) - atualizado em Dez 2024
+// Preços da OpenAI (por 1M tokens) - atualizado em Jul 2026
 const PRICING = {
+  'gpt-5.6-luna': { input: 0.20, output: 1.20 },
+  'gpt-5.6-terra': { input: 2.00, output: 12.00 },
   'gpt-4-turbo': { input: 10.00, output: 30.00 },
   'gpt-4-turbo-preview': { input: 10.00, output: 30.00 },
   'gpt-4': { input: 30.00, output: 60.00 },
@@ -34,7 +36,11 @@ export function calculateCost(
   // Normalizar nome do modelo
   let modelKey: ModelName = 'gpt-4-turbo'
 
-  if (model.includes('gpt-4o-mini')) {
+  if (model.includes('gpt-5.6-luna')) {
+    modelKey = 'gpt-5.6-luna'
+  } else if (model.includes('gpt-5.6-terra')) {
+    modelKey = 'gpt-5.6-terra'
+  } else if (model.includes('gpt-4o-mini')) {
     modelKey = 'gpt-4o-mini'
   } else if (model.includes('gpt-4o')) {
     modelKey = 'gpt-4o'

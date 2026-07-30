@@ -11,8 +11,15 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-// Limite mensal de análises IA por paciente
-const MONTHLY_LIMIT = 30
+// Limite mensal de análises IA por paciente. Com o gpt-5.6-luna (~US$0,0007
+// por análise) o teto é folga de segurança contra abuso/bug, não contenção de
+// custo — 300 análises custam ~US$0,20.
+const MONTHLY_LIMIT = 300
+
+// Modelo de visão para análise de refeições. Luna é o tier econômico da
+// família 5.6; reasoning_effort 'none' zera tokens de raciocínio (tarefa é
+// extração direta, não precisa de chain-of-thought).
+const MODEL = 'gpt-5.6-luna'
 
 // Cap de payload: base64 de ~6MB binários (o client comprime para ~300-600KB;
 // isso é apenas proteção contra abuso direto na API).
@@ -242,8 +249,9 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await callOpenAI({
-      model: 'gpt-4o',
-      max_tokens: 1500,
+      model: MODEL,
+      reasoning_effort: 'none',
+      max_completion_tokens: 1500,
       response_format: RESPONSE_FORMAT,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -256,7 +264,7 @@ export async function POST(request: NextRequest) {
     await logApiUsage({
       userId: user.id,
       feature: 'meal_analysis',
-      model: 'gpt-4o',
+      model: MODEL,
       tokensInput: response.usage?.prompt_tokens || 0,
       tokensOutput: response.usage?.completion_tokens || 0,
       endpoint: '/api/meals/analyze',
