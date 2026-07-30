@@ -3,7 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
 const STORAGE_KEY = 'feed_last_seen'
-const POLL_INTERVAL = 30000 // 30 seconds
+// 90s em vez de 30s: cada consulta passa pelo middleware e consulta o Supabase
+// self-hosted. Com várias abas abertas, 30s gerava carga constante que ajudou a
+// saturar a fila de conexões do servidor em 29-30/07/2026.
+const POLL_INTERVAL = 90000 // 90 seconds
 
 export interface UnreadDetails {
   new_posts: number
@@ -48,10 +51,33 @@ export function useUnreadFeed() {
   }, [])
 
   useEffect(() => {
-    fetchUnreadCount()
-    intervalRef.current = setInterval(fetchUnreadCount, POLL_INTERVAL)
-    return () => {
+    // Só consulta com a aba visível. Aba de fundo esquecida aberta ficava
+    // consultando indefinidamente sem ninguém para ver o resultado.
+    const start = () => {
+      if (intervalRef.current) return
+      intervalRef.current = setInterval(fetchUnreadCount, POLL_INTERVAL)
+    }
+    const stop = () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCount()
+        start()
+      } else {
+        stop()
+      }
+    }
+
+    if (document.visibilityState === 'visible') {
+      fetchUnreadCount()
+      start()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      stop()
     }
   }, [fetchUnreadCount])
 

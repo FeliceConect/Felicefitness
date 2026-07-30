@@ -13,36 +13,70 @@ export function Header() {
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
+  // As duas consultas em paralelo — eram sequenciais, dobrando o tempo e
+  // esticando a janela em que o header mantém conexões abertas ao Supabase.
   const fetchUnreadCounts = useCallback(async () => {
-    try {
-      const response = await fetch('/api/chat/conversations')
-      const data = await response.json()
-      if (data.success && data.conversations) {
-        const total = data.conversations.reduce(
-          (sum: number, conv: { unreadCount: number }) => sum + conv.unreadCount,
-          0
-        )
-        setUnreadMessages(total)
-      }
-    } catch {
-      // Silently fail
-    }
-
-    try {
-      const response = await fetch('/api/notifications/unread-count')
-      const data = await response.json()
-      if (data.success) {
-        setUnreadNotifications(data.count ?? 0)
-      }
-    } catch {
-      // Silently fail
-    }
+    await Promise.all([
+      (async () => {
+        try {
+          const response = await fetch('/api/chat/conversations')
+          const data = await response.json()
+          if (data.success && data.conversations) {
+            const total = data.conversations.reduce(
+              (sum: number, conv: { unreadCount: number }) => sum + conv.unreadCount,
+              0
+            )
+            setUnreadMessages(total)
+          }
+        } catch {
+          // Silently fail
+        }
+      })(),
+      (async () => {
+        try {
+          const response = await fetch('/api/notifications/unread-count')
+          const data = await response.json()
+          if (data.success) {
+            setUnreadNotifications(data.count ?? 0)
+          }
+        } catch {
+          // Silently fail
+        }
+      })(),
+    ])
   }, [])
 
+  // 90s em vez de 30s, e pausado com a aba em segundo plano. Cada ciclo passa
+  // pelo middleware e consulta o Supabase self-hosted; com várias abas abertas
+  // o polling de 30s ajudou a saturar o servidor em 29-30/07/2026.
   useEffect(() => {
-    fetchUnreadCounts()
-    const interval = setInterval(fetchUnreadCounts, 30000)
-    return () => clearInterval(interval)
+    let interval: ReturnType<typeof setInterval> | null = null
+    const start = () => {
+      if (interval) return
+      interval = setInterval(fetchUnreadCounts, 90000)
+    }
+    const stop = () => {
+      if (interval) clearInterval(interval)
+      interval = null
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCounts()
+        start()
+      } else {
+        stop()
+      }
+    }
+
+    if (document.visibilityState === 'visible') {
+      fetchUnreadCounts()
+      start()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      stop()
+    }
   }, [fetchUnreadCounts])
 
   // Esconder header em telas fullscreen (form wizard, treino imersivo)

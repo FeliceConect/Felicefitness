@@ -59,6 +59,10 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              // Sem prefetch: cada prefetch dispara o middleware, que consulta o
+              // Supabase. Com 5 abas na nav, toda página gerava 5 requisições
+              // extras — rajada que saturou o Supabase self-hosted em 29-30/07.
+              prefetch={false}
               onClick={isFeed ? markAsRead : undefined}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[64px]",
