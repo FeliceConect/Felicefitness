@@ -127,19 +127,33 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+/**
+ * Monta o texto do lançamento.
+ *
+ * Cada métrica traz os pontos que ela própria gerou, entre parênteses. Sem isso
+ * o texto ficava ambíguo: em "Melhora bioimpedância: -0.1kg gordura, -0.5kg
+ * músculo", os dois "-" significam a mesma coisa (a métrica caiu) mas têm sinais
+ * OPOSTOS na pontuação — perder gordura pontua, perder músculo penaliza. Dava a
+ * impressão de erro de cálculo quando o total era positivo apesar da perda de
+ * músculo. Com os pontos por métrica, a conta fica visível na própria linha.
+ */
 function buildReason(p: Omit<PointsBreakdown, 'reason'>): string {
   const parts: string[] = []
+  const pts = (n: number) => `${n > 0 ? '+' : ''}${n}`
   if (p.delta_gordura_kg != null && p.pts_gordura !== 0) {
+    // delta positivo = perdeu gordura
     const sign = p.delta_gordura_kg > 0 ? '-' : '+'
-    parts.push(`${sign}${Math.abs(p.delta_gordura_kg)}kg gordura`)
+    parts.push(`gordura ${sign}${Math.abs(p.delta_gordura_kg)}kg (${pts(p.pts_gordura)})`)
   }
   if (p.delta_muscular_kg != null && p.pts_muscular !== 0) {
+    // delta positivo = ganhou músculo
     const sign = p.delta_muscular_kg > 0 ? '+' : '-'
-    parts.push(`${sign}${Math.abs(p.delta_muscular_kg)}kg músculo`)
+    parts.push(`músculo ${sign}${Math.abs(p.delta_muscular_kg)}kg (${pts(p.pts_muscular)})`)
   }
   if (p.delta_visceral != null && p.pts_visceral !== 0) {
+    // delta positivo = perdeu nível de visceral
     const sign = p.delta_visceral > 0 ? '-' : '+'
-    parts.push(`${sign}${Math.abs(p.delta_visceral)} visceral`)
+    parts.push(`visceral ${sign}${Math.abs(p.delta_visceral)} (${pts(p.pts_visceral)})`)
   }
   const prefix = p.total >= 0 ? 'Melhora bioimpedância' : 'Piora bioimpedância'
   return parts.length > 0 ? `${prefix}: ${parts.join(', ')}` : prefix

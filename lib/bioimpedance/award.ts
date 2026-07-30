@@ -91,6 +91,18 @@ export async function awardBioimpedancePoints(
     recordId: string
     current: BioSnapshot
     currentDate: string
+    /**
+     * Timestamp a gravar em created_at da transação. Passe SEMPRE o created_at
+     * do registro de bioimpedância.
+     *
+     * Por que isso importa: o placar dos desafios soma as transações por
+     * created_at dentro da janela do desafio (challenge-score.ts). Um recálculo
+     * apaga e reinsere as transações — se deixássemos o default now(), pontos de
+     * uma medição de abril/maio ressurgiriam com data de hoje e entrariam
+     * indevidamente no desafio em curso. Preservar o timestamp da medição mantém
+     * o recálculo neutro para os desafios.
+     */
+    createdAt?: string | null
   }
 ): Promise<PointsBreakdown | null> {
   const previous = await getPreviousRecord(
@@ -112,6 +124,8 @@ export async function awardBioimpedancePoints(
       category: 'bioimpedance',
       source: 'automatic',
       reference_id: params.recordId,
+      // omitido quando não informado → o banco aplica o default now()
+      ...(params.createdAt ? { created_at: params.createdAt } : {}),
     })
 
   // Atualiza rankings
@@ -138,7 +152,7 @@ export async function recalculateChainFrom(
 ): Promise<number> {
   const { data: chain } = await supabaseAdmin
     .from('fitness_body_compositions')
-    .select('id, data, massa_gordura_kg, massa_muscular_esqueletica_kg, gordura_visceral')
+    .select('id, data, created_at, massa_gordura_kg, massa_muscular_esqueletica_kg, gordura_visceral')
     .eq('user_id', patientId)
     .gte('data', fromDate)
     .order('data', { ascending: true })
@@ -153,6 +167,9 @@ export async function recalculateChainFrom(
       patientId,
       recordId: row.id,
       currentDate: row.data,
+      // Preserva o instante da medição: sem isso o recálculo empurraria pontos
+      // antigos para dentro da janela do desafio em curso.
+      createdAt: row.created_at,
       current: {
         massa_gordura_kg: row.massa_gordura_kg,
         massa_muscular_esqueletica_kg: row.massa_muscular_esqueletica_kg,

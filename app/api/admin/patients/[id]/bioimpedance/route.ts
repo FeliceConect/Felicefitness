@@ -197,6 +197,9 @@ export async function POST(
       patientId,
       recordId: record.id,
       currentDate: record.data,
+      // Amarra a transação ao instante do registro, para que um recálculo futuro
+      // reproduza exatamente o mesmo created_at (ver awardBioimpedancePoints).
+      createdAt: record.created_at,
       current: {
         massa_gordura_kg: record.massa_gordura_kg,
         massa_muscular_esqueletica_kg: record.massa_muscular_esqueletica_kg,

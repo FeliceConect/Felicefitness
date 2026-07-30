@@ -20,6 +20,11 @@ import {
   Lock,
   Globe,
   Instagram,
+  Activity,
+  RefreshCw,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 
 interface Ranking {
@@ -33,6 +38,37 @@ interface Ranking {
   description: string | null
   point_rules: Record<string, unknown>
   created_at: string
+}
+
+// Conferência dos pontos de bioimpedância (GET /api/admin/rankings/bio-audit)
+interface BioAuditRecord {
+  id: string
+  data: string
+  fonte: string | null
+  esperado: number
+  concedido: number
+  diferenca: number
+  motivo: string
+  revisar: boolean
+}
+
+interface BioAuditPatient {
+  user_id: string
+  nome: string
+  role: string | null
+  ativo: boolean
+  medicoes: number
+  concedido: number
+  esperado: number
+  diferenca: number
+  divergentes: number
+  registros: BioAuditRecord[]
+}
+
+interface BioAudit {
+  pacientes: BioAuditPatient[]
+  totais: { concedido: number; esperado: number; diferenca: number; medicoes: number; divergentes: number }
+  orfas: Array<{ id: string; user_id: string; nome: string; points: number; reason: string }>
 }
 
 interface PointTransaction {
@@ -127,6 +163,14 @@ export default function AdminRankingsPage() {
   const [instagramFeedback, setInstagramFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Point transactions
+  // Conferência de pontos de bioimpedância
+  const [showBioAudit, setShowBioAudit] = useState(false)
+  const [bioAudit, setBioAudit] = useState<BioAudit | null>(null)
+  const [loadingBioAudit, setLoadingBioAudit] = useState(false)
+  const [bioAuditError, setBioAuditError] = useState<string | null>(null)
+  const [expandedPatient, setExpandedPatient] = useState<string | null>(null)
+  const [recalculatingBio, setRecalculatingBio] = useState(false)
+
   const [showTransactions, setShowTransactions] = useState(false)
   const [transactions, setTransactions] = useState<PointTransaction[]>([])
   const [loadingTransactions, setLoadingTransactions] = useState(false)
@@ -404,6 +448,61 @@ export default function AdminRankingsPage() {
     }
   }
 
+  // Conferência de bioimpedância — somente leitura
+  const fetchBioAudit = async (keepOpen = false) => {
+    if (!keepOpen) setShowBioAudit(true)
+    setLoadingBioAudit(true)
+    setBioAuditError(null)
+    try {
+      const res = await fetch('/api/admin/rankings/bio-audit')
+      const data = await res.json()
+      if (data.success) {
+        setBioAudit({ pacientes: data.pacientes || [], totais: data.totais, orfas: data.orfas || [] })
+      } else {
+        setBioAuditError(data.error || 'Erro ao carregar conferência')
+      }
+    } catch (error) {
+      console.error('Erro:', error)
+      setBioAuditError('Erro de rede ao carregar conferência')
+    } finally {
+      setLoadingBioAudit(false)
+    }
+  }
+
+  // Recalcula a cadeia de pontos de TODOS os pacientes sob a fórmula atual.
+  // Preserva o created_at de cada medição, então não desloca pontos antigos
+  // para dentro da janela de um desafio em curso.
+  const handleRecalcBio = async () => {
+    const pendentes = bioAudit?.totais.divergentes ?? 0
+    if (!confirm(
+      `Recalcular os pontos de bioimpedância de todos os pacientes?\n\n` +
+      `${pendentes} lançamento(s) divergente(s) serão corrigidos. ` +
+      `Diferença líquida: ${(bioAudit?.totais.diferenca ?? 0) > 0 ? '+' : ''}${bioAudit?.totais.diferenca ?? 0} pontos.\n\n` +
+      `O ranking geral é ajustado automaticamente.`
+    )) return
+
+    setRecalculatingBio(true)
+    try {
+      const res = await fetch('/api/admin/rankings/recalc-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'RECALC' }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        await fetchBioAudit(true)
+        fetchRankings()
+      } else {
+        setBioAuditError(data.error || 'Erro ao recalcular')
+      }
+    } catch (error) {
+      console.error('Erro:', error)
+      setBioAuditError('Erro de rede ao recalcular')
+    } finally {
+      setRecalculatingBio(false)
+    }
+  }
+
   // Transactions
   const fetchTransactions = async () => {
     setShowTransactions(true)
@@ -529,6 +628,13 @@ export default function AdminRankingsPage() {
           >
             <Zap className="w-4 h-4" />
             Bioimpedancia
+          </button>
+          <button
+            onClick={() => fetchBioAudit()}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
+          >
+            <Activity className="w-4 h-4" />
+            Pontos de Bio
           </button>
           <button
             onClick={openInstagramModal}
@@ -1501,6 +1607,164 @@ export default function AdminRankingsPage() {
       )}
 
       {/* Transactions Modal */}
+      {/* Conferência dos pontos de bioimpedância por paciente */}
+      {showBioAudit && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[88vh] border border-border flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-vinho" />
+                  Pontos de Bioimpedância
+                </h3>
+                <p className="text-xs text-foreground-secondary mt-0.5">
+                  Pontos lançados x o que a fórmula atual calcula. Clique num paciente para ver medição por medição.
+                </p>
+              </div>
+              <button onClick={() => setShowBioAudit(false)} className="p-2 hover:bg-background-elevated rounded-lg" aria-label="Fechar">
+                <X className="w-5 h-5 text-foreground-secondary" />
+              </button>
+            </div>
+
+            {bioAudit && !loadingBioAudit && (
+              <div className="p-4 border-b border-border flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-foreground-secondary">
+                    Lançado: <strong className="text-foreground">{bioAudit.totais.concedido} pts</strong>
+                  </span>
+                  <span className="text-foreground-secondary">
+                    Calculado: <strong className="text-foreground">{bioAudit.totais.esperado} pts</strong>
+                  </span>
+                  <span className={bioAudit.totais.diferenca === 0 ? 'text-green-600' : 'text-amber-600'}>
+                    Diferença: <strong>{bioAudit.totais.diferenca > 0 ? '+' : ''}{bioAudit.totais.diferenca} pts</strong>
+                  </span>
+                </div>
+                {bioAudit.totais.divergentes > 0 ? (
+                  <button
+                    onClick={handleRecalcBio}
+                    disabled={recalculatingBio}
+                    className="ml-auto flex items-center gap-2 px-4 py-2 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/80 disabled:opacity-50 transition-colors"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${recalculatingBio ? 'animate-spin' : ''}`} />
+                    {recalculatingBio ? 'Recalculando...' : `Recalcular (${bioAudit.totais.divergentes})`}
+                  </button>
+                ) : (
+                  <span className="ml-auto text-sm text-green-600 font-medium">✓ Tudo conferido</span>
+                )}
+              </div>
+            )}
+
+            {bioAuditError && (
+              <div className="mx-4 mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {bioAuditError}
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingBioAudit ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="h-14 bg-background-elevated rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : !bioAudit || bioAudit.pacientes.length === 0 ? (
+                <p className="text-center text-foreground-muted py-8">Nenhuma bioimpedância registrada</p>
+              ) : (
+                <div className="space-y-2">
+                  {bioAudit.pacientes.map(p => {
+                    const aberto = expandedPatient === p.user_id
+                    return (
+                      <div key={p.user_id} className="border border-border rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => setExpandedPatient(aberto ? null : p.user_id)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-background-elevated transition-colors text-left"
+                          aria-expanded={aberto}
+                        >
+                          {aberto
+                            ? <ChevronDown className="w-4 h-4 text-foreground-muted flex-shrink-0" />
+                            : <ChevronRight className="w-4 h-4 text-foreground-muted flex-shrink-0" />}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-foreground truncate">
+                              {p.nome}
+                              {!p.ativo && <span className="ml-2 text-[10px] uppercase text-foreground-muted">inativo</span>}
+                              {p.role && p.role !== 'client' && (
+                                <span className="ml-2 text-[10px] uppercase text-foreground-muted">{p.role}</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-foreground-muted">
+                              {p.medicoes} {p.medicoes === 1 ? 'medição' : 'medições'}
+                              {p.registros.some(r => r.revisar) && (
+                                <span className="ml-2 inline-flex items-center gap-1 text-amber-600">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  revisar
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <span className={`font-bold ${p.concedido < 0 ? 'text-red-500' : 'text-dourado'}`}>
+                              {p.concedido > 0 ? '+' : ''}{p.concedido}
+                            </span>
+                            {p.diferenca !== 0 && (
+                              <span className="block text-xs text-amber-600">
+                                calculado: {p.esperado > 0 ? '+' : ''}{p.esperado}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+
+                        {aberto && (
+                          <div className="border-t border-border bg-background-elevated/40 divide-y divide-border">
+                            {p.registros.length === 0 ? (
+                              <p className="text-xs text-foreground-muted p-3">
+                                Nenhuma medição pontuável (a primeira medição não pontua — não há anterior para comparar).
+                              </p>
+                            ) : p.registros.map(r => (
+                              <div key={r.id} className="p-3 flex items-start gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs text-foreground">
+                                    {new Date(`${r.data}T12:00:00`).toLocaleDateString('pt-BR')}
+                                    {r.fonte && <span className="ml-2 text-foreground-muted">{r.fonte}</span>}
+                                  </p>
+                                  <p className="text-xs text-foreground-secondary">{r.motivo}</p>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <span className={`text-sm font-semibold ${r.concedido < 0 ? 'text-red-500' : 'text-foreground'}`}>
+                                    {r.concedido > 0 ? '+' : ''}{r.concedido}
+                                  </span>
+                                  {r.diferenca !== 0 && (
+                                    <span className="block text-[11px] text-amber-600">
+                                      deveria ser {r.esperado > 0 ? '+' : ''}{r.esperado}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {bioAudit.orfas.length > 0 && (
+                    <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                      <p className="text-xs font-medium text-amber-800 mb-1">
+                        {bioAudit.orfas.length} transação(ões) sem medição de origem
+                      </p>
+                      {bioAudit.orfas.map(o => (
+                        <p key={o.id} className="text-xs text-amber-700">
+                          {o.nome}: {o.points > 0 ? '+' : ''}{o.points} — {o.reason}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showTransactions && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] border border-border flex flex-col">
@@ -1546,7 +1810,10 @@ export default function AdminRankingsPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-dourado font-bold">+{tx.points}</span>
+                        {/* bioimpedância pode ser negativa — não force o "+" */}
+                        <span className={`font-bold ${tx.points < 0 ? 'text-red-500' : 'text-dourado'}`}>
+                          {tx.points > 0 ? '+' : ''}{tx.points}
+                        </span>
                         <span className="block text-xs text-foreground-muted">{tx.source}</span>
                       </div>
                     </div>
