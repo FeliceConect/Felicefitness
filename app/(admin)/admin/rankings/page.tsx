@@ -101,6 +101,31 @@ interface ResyncPreview {
   mudancas: ResyncChange[]
 }
 
+// Auditoria do desafio (GET /api/admin/rankings/challenge-audit)
+interface AuditFlag { level: 'alto' | 'medio'; text: string }
+interface AuditParticipant {
+  user_id: string
+  nome: string
+  score: number
+  totalAll: number
+  byReason: Array<{ reason: string; count: number; points: number }>
+  maxDayPoints: number
+  daysOverCeiling: number
+  flags: AuditFlag[]
+}
+interface AuditChallengeInfo {
+  id: string
+  title: string
+  start_date: string
+  end_date: string
+  scoring_category: string | null
+}
+interface ChallengeAuditData {
+  challenge: AuditChallengeInfo
+  resumo: { participantes: number; com_bandeira: number }
+  participants: AuditParticipant[]
+}
+
 interface Client {
   id: string
   nome: string
@@ -196,6 +221,15 @@ export default function AdminRankingsPage() {
   const [applyingResync, setApplyingResync] = useState(false)
   const [resyncError, setResyncError] = useState<string | null>(null)
   const [resyncDone, setResyncDone] = useState<string | null>(null)
+
+  // Auditoria do desafio
+  const [showAudit, setShowAudit] = useState(false)
+  const [auditChallenges, setAuditChallenges] = useState<AuditChallengeInfo[]>([])
+  const [auditChallengeId, setAuditChallengeId] = useState<string>('')
+  const [auditData, setAuditData] = useState<ChallengeAuditData | null>(null)
+  const [loadingAudit, setLoadingAudit] = useState(false)
+  const [auditError, setAuditError] = useState<string | null>(null)
+  const [expandedAuditUser, setExpandedAuditUser] = useState<string | null>(null)
 
   const [showTransactions, setShowTransactions] = useState(false)
   const [transactions, setTransactions] = useState<PointTransaction[]>([])
@@ -591,6 +625,43 @@ export default function AdminRankingsPage() {
     }
   }
 
+  // Auditoria do desafio: abre o modal e carrega a lista de desafios pro seletor.
+  const openChallengeAudit = async () => {
+    setShowAudit(true)
+    setAuditData(null)
+    setAuditError(null)
+    setAuditChallengeId('')
+    setExpandedAuditUser(null)
+    try {
+      const res = await fetch('/api/admin/rankings/challenge-audit')
+      const data = await res.json()
+      if (data.success) setAuditChallenges(data.challenges || [])
+      else setAuditError(data.error || 'Erro ao listar desafios')
+    } catch {
+      setAuditError('Erro de rede ao listar desafios')
+    }
+  }
+
+  // Roda a auditoria de um desafio (só leitura).
+  const runChallengeAudit = async (challengeId: string) => {
+    setAuditChallengeId(challengeId)
+    setAuditData(null)
+    setExpandedAuditUser(null)
+    setAuditError(null)
+    if (!challengeId) return
+    setLoadingAudit(true)
+    try {
+      const res = await fetch(`/api/admin/rankings/challenge-audit?challengeId=${challengeId}`)
+      const data = await res.json()
+      if (data.success) setAuditData(data)
+      else setAuditError(data.error || 'Erro na auditoria')
+    } catch {
+      setAuditError('Erro de rede na auditoria')
+    } finally {
+      setLoadingAudit(false)
+    }
+  }
+
   // Transactions
   const fetchTransactions = async () => {
     setShowTransactions(true)
@@ -744,6 +815,13 @@ export default function AdminRankingsPage() {
           >
             <RefreshCw className="w-4 h-4" />
             Reconstruir ranking
+          </button>
+          <button
+            onClick={openChallengeAudit}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            Auditar desafio
           </button>
           <button
             onClick={openNew}
@@ -1792,6 +1870,137 @@ export default function AdminRankingsPage() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auditoria do desafio (só leitura) */}
+      {showAudit && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] border border-border flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Search className="w-5 h-5 text-vinho" />
+                  Auditoria do desafio
+                </h3>
+                <p className="text-xs text-foreground-secondary mt-0.5">
+                  Detalhamento dos pontos de cada participante no período + bandeiras de possível farm. Nada é gravado — é só para decidir a premiação.
+                </p>
+              </div>
+              <button onClick={() => setShowAudit(false)} className="p-2 hover:bg-background-elevated rounded-lg" aria-label="Fechar">
+                <X className="w-5 h-5 text-foreground-secondary" />
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-border">
+              <select
+                value={auditChallengeId}
+                onChange={(e) => runChallengeAudit(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground"
+              >
+                <option value="">Selecione um desafio…</option>
+                {auditChallenges.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} ({c.start_date} → {c.end_date})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {auditError && (
+              <div className="mx-4 mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {auditError}
+              </div>
+            )}
+
+            {auditData && !loadingAudit && (
+              <div className="px-4 py-3 border-b border-border text-sm text-foreground-secondary flex flex-wrap gap-x-4 gap-y-1">
+                <span>{auditData.resumo.participantes} participante(s)</span>
+                <span className={auditData.resumo.com_bandeira > 0 ? 'text-amber-600 font-medium' : 'text-green-600 font-medium'}>
+                  {auditData.resumo.com_bandeira} com bandeira
+                </span>
+                {auditData.challenge.scoring_category && (
+                  <span>categoria: <strong className="text-foreground">{auditData.challenge.scoring_category}</strong></span>
+                )}
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingAudit ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-14 bg-background-elevated rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : !auditData ? (
+                <p className="text-center text-foreground-muted py-8">Selecione um desafio acima para auditar.</p>
+              ) : auditData.participants.length === 0 ? (
+                <p className="text-center text-foreground-muted py-8">Este desafio não tem participantes.</p>
+              ) : (
+                <div className="space-y-2">
+                  {auditData.participants.map((p, idx) => {
+                    const aberto = expandedAuditUser === p.user_id
+                    return (
+                      <div key={p.user_id} className="border border-border rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => setExpandedAuditUser(aberto ? null : p.user_id)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-background-elevated text-left"
+                        >
+                          <span className="text-sm font-medium text-foreground-muted w-7 shrink-0">{idx + 1}º</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground truncate">{p.nome}</span>
+                              {p.flags.length > 0 && (
+                                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">
+                                  <AlertTriangle className="w-3 h-3" /> {p.flags.length}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-foreground-secondary">
+                              {p.score} pts no desafio · máx {p.maxDayPoints}/dia
+                              {p.totalAll !== p.score ? ` · ${p.totalAll} no total` : ''}
+                            </div>
+                          </div>
+                          {aberto ? (
+                            <ChevronDown className="w-4 h-4 text-foreground-muted shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-foreground-muted shrink-0" />
+                          )}
+                        </button>
+                        {aberto && (
+                          <div className="p-3 border-t border-border bg-background-elevated/40 space-y-3">
+                            {p.flags.length > 0 && (
+                              <div className="space-y-1">
+                                {p.flags.map((f, i) => (
+                                  <div key={i} className={`text-xs flex items-start gap-1.5 ${f.level === 'alto' ? 'text-red-600' : 'text-amber-600'}`}>
+                                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                    <span>{f.text}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-xs font-medium text-foreground-secondary mb-1">De onde vieram os pontos:</p>
+                              <div className="space-y-0.5">
+                                {p.byReason.map((r, i) => (
+                                  <div key={i} className="flex items-center justify-between text-xs">
+                                    <span className="text-foreground-secondary">
+                                      {r.reason} <span className="text-foreground-muted">×{r.count}</span>
+                                    </span>
+                                    <span className="text-foreground font-medium">{r.points} pts</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
