@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { auditParticipant, type AuditTx } from '@/lib/rankings/challenge-audit'
 
-const tx = (points: number, reason: string, category: string, created_at: string): AuditTx => ({
-  points, reason, category, reference_id: null, reference_date: null, created_at,
+const tx = (
+  points: number, reason: string, category: string, created_at: string,
+  source: string = 'automatic', awarded_by: string | null = null,
+): AuditTx => ({
+  points, reason, category, reference_id: null, reference_date: null, created_at, source, awarded_by,
 })
 
 const DAY1 = '2026-07-15T12:00:00Z' // 09:00 BRT, dia 2026-07-15
@@ -58,6 +61,19 @@ describe('auditParticipant', () => {
     expect(a.activityExcess).toBe(1)
     expect(a.days[0].activities).toBe(3)
     expect(a.flags.some(f => f.text.includes('atividade'))).toBe(true)
+  })
+
+  it('registra pontos manuais com quem lançou (automáticos não entram)', () => {
+    const txs = [
+      tx(15, 'Treino completo', 'workout', DAY1), // automático → não é manual
+      tx(5, 'Post no Instagram com #vivendofelice', 'social', DAY2, 'professional', 'admin-1'),
+      tx(25, 'Melhora bioimpedância', 'bioimpedance', DAY2, 'superadmin', 'super-1'),
+    ]
+    const a = auditParticipant('u6', 'Fá', txs, null)
+    expect(a.manualAwards).toHaveLength(2)
+    const insta = a.manualAwards.find(m => m.reason.includes('Instagram'))
+    expect(insta?.source).toBe('professional')
+    expect(insta?.awardedBy).toBe('admin-1')
   })
 
   it('scoring_category filtra o score, mas totalAll conta tudo', () => {

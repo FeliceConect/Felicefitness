@@ -111,6 +111,14 @@ interface AuditDay {
   suspicious: boolean
   items: AuditDayItem[]
 }
+interface AuditManualAward {
+  date: string
+  reason: string
+  points: number
+  source: string
+  awardedBy: string | null
+  awarderName?: string
+}
 interface AuditParticipant {
   user_id: string
   nome: string
@@ -123,6 +131,7 @@ interface AuditParticipant {
   streakCount: number
   byReason: AuditDayItem[]
   days: AuditDay[]
+  manualAwards: AuditManualAward[]
   flags: AuditFlag[]
 }
 interface AuditChallengeInfo {
@@ -2012,6 +2021,32 @@ export default function AdminRankingsPage() {
                                     <span>{f.text}</span>
                                   </div>
                                 ))}
+                              </div>
+                            )}
+
+                            {/* Pontos lançados à mão — QUEM deu (Instagram, bônus, bio manual…) */}
+                            {p.manualAwards.length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-foreground-secondary mb-1.5">
+                                  Pontos lançados à mão <span className="text-foreground-muted font-normal">(quem deu)</span>
+                                </p>
+                                <div className="space-y-1">
+                                  {p.manualAwards.map((m, i) => {
+                                    const [myy, mmm, mdd] = m.date.split('-')
+                                    return (
+                                      <div key={i} className="flex items-center justify-between gap-2 text-xs rounded-md border border-border bg-white px-2.5 py-1.5">
+                                        <div className="min-w-0">
+                                          <span className="text-foreground">{m.reason}</span>
+                                          <span className="text-foreground-muted"> · {mdd}/{mmm}/{myy}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                          <span className="text-foreground-secondary">por <strong className="text-foreground">{m.awarderName || '—'}</strong></span>
+                                          <span className="text-foreground font-medium">{m.points} pts</span>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
                               </div>
                             )}
 

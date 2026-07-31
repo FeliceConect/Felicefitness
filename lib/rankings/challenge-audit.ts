@@ -40,6 +40,19 @@ export interface AuditTx {
   reference_id: string | null
   reference_date: string | null
   created_at: string
+  source?: string | null       // 'automatic' | 'professional' | 'superadmin'
+  awarded_by?: string | null   // quem lançou (só em pontos manuais)
+}
+
+// Ponto lançado À MÃO por um admin/superadmin (Instagram, bônus, bio manual…).
+// É onde um humano controla a pontuação — o mais sensível numa auditoria.
+export interface ManualAward {
+  date: string
+  reason: string
+  points: number
+  source: string
+  awardedBy: string | null
+  awarderName?: string // preenchido pela rota (resolve o id -> nome)
 }
 
 export interface AuditFlag {
@@ -73,6 +86,7 @@ export interface ParticipantAudit {
   streakCount: number
   byReason: DayItem[]   // totais do período por origem
   days: AuditDay[]      // dia a dia, ordenado por pontos desc
+  manualAwards: ManualAward[] // pontos lançados à mão, com quem lançou
   flags: AuditFlag[]
 }
 
@@ -99,11 +113,23 @@ export function auditParticipant(
   let streakCount = 0
   const reasonMap = new Map<string, { count: number; points: number }>()
   const dayMap = new Map<string, DayAccum>()
+  const manualAwards: ManualAward[] = []
 
   for (const t of txs) {
     const p = t.points || 0
     totalAll += p
     if (!allowed || allowed.includes(t.category)) score += p
+
+    // Pontos lançados à mão (source != automatic): registra quem deu.
+    if (t.source && t.source !== 'automatic') {
+      manualAwards.push({
+        date: spDay(t.created_at),
+        reason: t.reason,
+        points: p,
+        source: t.source,
+        awardedBy: t.awarded_by ?? null,
+      })
+    }
 
     const rm = reasonMap.get(t.reason) || { count: 0, points: 0 }
     rm.count += 1
@@ -164,8 +190,11 @@ export function auditParticipant(
     .map(([reason, v]) => ({ reason, count: v.count, points: v.points }))
     .sort((a, b) => b.points - a.points)
 
+  // Mais recentes primeiro
+  manualAwards.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+
   return {
     user_id, nome, score, totalAll, maxDayPoints, daysOverCeiling,
-    activityCount, activityExcess, streakCount, byReason, days, flags,
+    activityCount, activityExcess, streakCount, byReason, days, manualAwards, flags,
   }
 }

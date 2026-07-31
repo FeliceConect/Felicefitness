@@ -34,7 +34,14 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+    // super_admin e admin podem lançar; a SECRETÁRIA (admin + admin_type
+    // 'secretary') NÃO pode. Antes o check era só role in (super_admin, admin),
+    // o que deixava a secretária lançar os 5 pts de Instagram.
+    const canAward =
+      profile?.role === 'super_admin' ||
+      (profile?.role === 'admin' && profile.admin_type !== 'secretary')
+
+    if (!canAward) {
       return NextResponse.json({ success: false, error: 'Acesso restrito' }, { status: 403 })
     }
 

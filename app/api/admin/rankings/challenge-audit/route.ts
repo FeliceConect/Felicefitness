@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     // Transações no período (janela por created_at, igual ao placar)
     const { data: txRows } = await admin
       .from('fitness_point_transactions')
-      .select('user_id, points, reason, category, reference_id, reference_date, created_at')
+      .select('user_id, points, reason, category, reference_id, reference_date, created_at, source, awarded_by')
       .in('user_id', userIds)
       .gte('created_at', startISO(challenge.start_date))
       .lte('created_at', endISO(challenge.end_date))
@@ -113,6 +113,35 @@ export async function GET(request: NextRequest) {
         challenge.scoring_category ?? null,
       ))
       .sort((a, b) => b.score - a.score)
+
+    // Resolve QUEM lançou os pontos manuais (id -> nome + papel), para a
+    // auditoria mostrar "dado por Fulana (secretária)".
+    const awarderIds = Array.from(new Set(
+      participants.flatMap((p) => p.manualAwards.map((m) => m.awardedBy).filter(Boolean))
+    )) as string[]
+    const awarderMap = new Map<string, string>()
+    if (awarderIds.length > 0) {
+      const { data: awarders } = await admin
+        .from('fitness_profiles')
+        .select('id, nome, display_name, role, admin_type')
+        .in('id', awarderIds)
+      for (const a of (awarders || []) as any[]) {
+        const base = a.display_name || a.nome || 'Desconhecido'
+        const tag = a.role === 'super_admin'
+          ? ' (super admin)'
+          : a.role === 'admin'
+            ? (a.admin_type === 'secretary' ? ' (secretária)' : ' (admin)')
+            : a.role ? ` (${a.role})` : ''
+        awarderMap.set(a.id, base + tag)
+      }
+    }
+    for (const p of participants) {
+      for (const m of p.manualAwards) {
+        m.awarderName = m.awardedBy
+          ? (awarderMap.get(m.awardedBy) || 'Desconhecido')
+          : 'Sem registro de quem lançou'
+      }
+    }
 
     const flagged = participants.filter((p) => p.flags.length > 0).length
 
