@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { awardPointsServer } from '@/lib/services/points-server'
 import { getTodayDateSP, getDateOffsetSP } from '@/lib/utils/date'
 import { mealTypeToPT, mealTypeToEN } from '@/lib/nutrition/meal-type'
 
@@ -170,20 +169,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Award 10 pts quando 3+ refeições registradas no dia (dedup diário no
-    // awardPointsServer). Refeições puladas não contam.
-    if (!skipped) {
-      const { count: mealsToday } = await admin
-        .from('fitness_meals')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('data', date)
-        .neq('status', 'pulado')
-
-      if ((mealsToday ?? 0) >= 3) {
-        await awardPointsServer(user.id, 'all_meals_logged')
-      }
-    }
+    // Os 10 pts de "Todas refeicoes registradas" são creditados pelo TRIGGER
+    // no banco (fn_auto_award_meals_logged), com reference_date = data da
+    // refeição. NÃO creditar aqui de novo: o award manual usava reference_date =
+    // hoje, o que duplicava (data≠hoje) e ainda ocupava o slot de hoje,
+    // fazendo o crédito legítimo de hoje ser perdido no ON CONFLICT.
 
     return NextResponse.json({
       success: true,

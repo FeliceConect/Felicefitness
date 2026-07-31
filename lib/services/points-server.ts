@@ -10,7 +10,7 @@
  * não incrementado aqui — ver nota abaixo.)
  */
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getTodayDateSP } from '@/lib/utils/date'
+import { getTodayDateSP, getStartOfTodaySP } from '@/lib/utils/date'
 
 export type PointAction =
   | 'workout_completed'

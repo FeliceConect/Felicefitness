@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import type { ActivityInsert } from '@/lib/activity/types'
 import { awardPointsServer, ACTIVITY_INTENSITY_ACTION } from '@/lib/services/points-server'
-import { getTodayDateSP } from '@/lib/utils/date'
+import { getTodayDateSP, getStartOfTodaySP } from '@/lib/utils/date'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any
@@ -155,13 +155,28 @@ export async function POST(request: NextRequest) {
       // Conta quantas atividades avulsas já pontuaram HOJE (SP). A contagem é
       // por reference_date=hoje (dia do crédito), então backdatar a atividade
       // não escapa do teto. A atividade em si é salva de qualquer forma.
-      const { count: awardedToday } = await (supabase as AnySupabase)
+      const capQuery = await (supabase as AnySupabase)
         .from('fitness_point_transactions')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('category', 'workout')
         .eq('reference_date', getTodayDateSP())
         .in('reason', ACTIVITY_REASONS)
+
+      // Fallback por created_at se a coluna reference_date ainda não existir
+      // (migration 20260730_1 não rodou) — senão o count erraria e o cap
+      // falharia ABERTO (voltaria o farm de atividades).
+      let awardedToday = capQuery.count
+      if (capQuery.error && (capQuery.error.code === '42703' || capQuery.error.code === 'PGRST204')) {
+        const fb = await (supabase as AnySupabase)
+          .from('fitness_point_transactions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('category', 'workout')
+          .gte('created_at', getStartOfTodaySP())
+          .in('reason', ACTIVITY_REASONS)
+        awardedToday = fb.count
+      }
 
       if ((awardedToday ?? 0) < ACTIVITY_DAILY_CAP) {
         const result = await awardPointsServer(user.id, intensityAction, activity.id)

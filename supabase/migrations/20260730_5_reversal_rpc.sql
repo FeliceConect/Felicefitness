@@ -1,25 +1,26 @@
 -- ============================================================
 -- REVERSÃO ATÔMICA E SIMÉTRICA DE PONTOS
--- Data: 2026-07-30
+-- Data: 2026-07-30 (revisado após revisão adversarial)
 -- ------------------------------------------------------------
--- As rotas de DELETE (atividade / refeição / treino) revertiam pontos com
--- dois problemas:
---   • apagavam a transação com o client do usuário (que não tem policy de
---     DELETE em fitness_point_transactions) → apagava 0 linhas em silêncio;
---   • aplicavam o estorno no leaderboard com categorias = NULL, enquanto o
---     crédito original tinha categoria (ex.: 'workout') → ganhava no ranking
---     de categoria e nunca perdia.
+-- As rotas de DELETE (atividade / refeição / treino) revertiam pontos com dois
+-- problemas: apagavam a transação com o client do usuário (sem policy de DELETE
+-- → apagava 0 linhas em silêncio) e estornavam o leaderboard com categorias
+-- erradas (ganhava na categoria e nunca perdia).
 --
--- Estas duas funções SECURITY DEFINER fazem a reversão numa única operação,
--- estornando o leaderboard com AS MESMAS categorias do crédito e apagando as
--- transações. Retornam o total de pontos revertidos.
+-- Estas funções fazem a reversão numa única operação, com dois cuidados extras
+-- vindos da revisão:
+--   • CONCORRÊNCIA: o estorno deriva do DELETE ... RETURNING — só reverte o que
+--     ESTA chamada realmente apagou. Duplo-clique / retry apagam conjuntos
+--     disjuntos (a 2ª chamada apaga 0 e estorna 0), sem estorno em dobro.
+--   • ACESSO: são SECURITY DEFINER e aceitam p_user_id arbitrário; por isso o
+--     EXECUTE é REVOGADO de PUBLIC/anon/authenticated e concedido só a
+--     service_role. Sem isso, um paciente chamaria a RPC pela REST API para
+--     apagar/estornar pontos de OUTRO paciente (IDOR).
 --
--- O mapa categoria-da-transação → categorias-de-ranking espelha
--- TX_TO_RANKING_CATEGORIES em lib/services/points-server.ts. NULL = só
--- rankings globais (igual ao crédito de social/form/bio/bônus).
+-- O mapa categoria→categorias-de-ranking espelha TX_TO_RANKING_CATEGORIES em
+-- lib/services/points-server.ts. NULL = só rankings globais.
 -- ============================================================
 
--- Mapa auxiliar categoria → categorias de ranking (mesmo do points-server.ts).
 CREATE OR REPLACE FUNCTION fitness_ranking_categories_for(p_category TEXT)
 RETURNS TEXT[]
 LANGUAGE sql IMMUTABLE AS $$
@@ -53,14 +54,18 @@ BEGIN
     RETURN 0;
   END IF;
 
-  -- Estorna o leaderboard por categoria ANTES de apagar as transações.
+  -- Apaga e captura o que foi REALMENTE apagado nesta transação; agrupa por
+  -- categoria para estornar o leaderboard com as categorias corretas.
   FOR r IN
+    WITH deleted AS (
+      DELETE FROM fitness_point_transactions
+      WHERE user_id = p_user_id
+        AND reference_id = ANY(p_reference_ids)
+        AND (p_reasons IS NULL OR reason = ANY(p_reasons))
+      RETURNING category, points
+    )
     SELECT category, COALESCE(SUM(points), 0) AS pts
-    FROM fitness_point_transactions
-    WHERE user_id = p_user_id
-      AND reference_id = ANY(p_reference_ids)
-      AND (p_reasons IS NULL OR reason = ANY(p_reasons))
-    GROUP BY category
+    FROM deleted GROUP BY category
   LOOP
     IF r.pts <> 0 THEN
       PERFORM fitness_award_points_to_user(
@@ -69,11 +74,6 @@ BEGIN
       v_total := v_total + r.pts;
     END IF;
   END LOOP;
-
-  DELETE FROM fitness_point_transactions
-  WHERE user_id = p_user_id
-    AND reference_id = ANY(p_reference_ids)
-    AND (p_reasons IS NULL OR reason = ANY(p_reasons));
 
   RETURN v_total;
 END;
@@ -96,14 +96,17 @@ DECLARE
   v_total INTEGER := 0;
 BEGIN
   FOR r IN
+    WITH deleted AS (
+      DELETE FROM fitness_point_transactions
+      WHERE user_id = p_user_id
+        AND reason = p_reason
+        AND source = 'automatic'
+        AND reference_id IS NULL
+        AND reference_date = p_reference_date
+      RETURNING category, points
+    )
     SELECT category, COALESCE(SUM(points), 0) AS pts
-    FROM fitness_point_transactions
-    WHERE user_id = p_user_id
-      AND reason = p_reason
-      AND source = 'automatic'
-      AND reference_id IS NULL
-      AND reference_date = p_reference_date
-    GROUP BY category
+    FROM deleted GROUP BY category
   LOOP
     IF r.pts <> 0 THEN
       PERFORM fitness_award_points_to_user(
@@ -113,13 +116,23 @@ BEGIN
     END IF;
   END LOOP;
 
-  DELETE FROM fitness_point_transactions
-  WHERE user_id = p_user_id
-    AND reason = p_reason
-    AND source = 'automatic'
-    AND reference_id IS NULL
-    AND reference_date = p_reference_date;
-
   RETURN v_total;
 END;
 $$;
+
+-- ─────────────────────────────────────────────────────────────
+-- ACESSO: só o backend (service_role) chama estas funções. Fecha o IDOR de
+-- reverter/creditar pontos de terceiros pela REST API. As funções SECURITY
+-- DEFINER e os triggers continuam podendo chamá-las internamente (rodam como
+-- dono). Inclui fitness_award_points_to_user (falha pré-existente: authenticated
+-- podia se auto-creditar pontos ilimitados no leaderboard).
+-- ─────────────────────────────────────────────────────────────
+REVOKE ALL ON FUNCTION fitness_revert_points_by_reference(UUID, UUID[], TEXT[]) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION fitness_revert_daily_award(UUID, TEXT, DATE) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION fitness_ranking_categories_for(TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION fitness_award_points_to_user(UUID, INTEGER, TEXT[]) FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION fitness_revert_points_by_reference(UUID, UUID[], TEXT[]) TO service_role;
+GRANT EXECUTE ON FUNCTION fitness_revert_daily_award(UUID, TEXT, DATE) TO service_role;
+GRANT EXECUTE ON FUNCTION fitness_ranking_categories_for(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION fitness_award_points_to_user(UUID, INTEGER, TEXT[]) TO service_role;

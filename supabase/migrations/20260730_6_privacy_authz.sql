@@ -29,8 +29,10 @@ CREATE POLICY "Participants visible per opt-in" ON fitness_ranking_participants
         AND COALESCE(p.ranking_visivel, TRUE) = TRUE
     )
     OR EXISTS (
+      -- Só super_admin (Leonardo/Marinella) fura o opt-out. A secretária (admin)
+      -- não vê dado derivado de saúde, coerente com o modelo de papéis.
       SELECT 1 FROM fitness_profiles a
-      WHERE a.id = auth.uid() AND a.role IN ('super_admin', 'admin')
+      WHERE a.id = auth.uid() AND a.role = 'super_admin'
     )
   );
 

@@ -68,13 +68,15 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Erro ao apagar refeição' }, { status: 500 })
     }
 
-    // Conta refeições NÃO puladas restantes no dia (mesma condição do award).
+    // Conta refeições NÃO puladas restantes no dia (mesma condição do trigger de
+    // award: COALESCE(status,'') <> 'pulado' — conta status NULL como válida,
+    // porque /api/meals grava refeição sem status).
     const { count: afterCount } = await supabaseAdmin
       .from('fitness_meals')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('data', today)
-      .neq('status', 'pulado')
+      .or('status.is.null,status.neq.pulado')
 
     // Se caiu abaixo de 3, a regra "Todas refeicoes registradas" deixa de valer.
     // A RPC reverte de forma atômica e simétrica (só age se a transação existir).

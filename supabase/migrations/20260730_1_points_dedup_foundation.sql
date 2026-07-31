@@ -80,10 +80,13 @@ WHERE t.id = r.id AND r.rn > 1;
 -- 4) Índices ÚNICOS parciais — a invariante que faltava
 -- ─────────────────────────────────────────────────────────────
 
--- Um crédito diário por (user, razão, origem, dia de referência).
+-- Um crédito diário AUTOMÁTICO por (user, razão, dia de referência).
+-- Restrito a source='automatic' — bônus de profissional/superadmin (também sem
+-- reference_id) podem legitimamente repetir no mesmo dia e NÃO entram na trava.
+-- O predicado casa exatamente com a limpeza 3a e com o ON CONFLICT dos triggers.
 CREATE UNIQUE INDEX IF NOT EXISTS ux_points_daily
   ON fitness_point_transactions (user_id, reason, source, reference_date)
-  WHERE reference_id IS NULL;
+  WHERE reference_id IS NULL AND source = 'automatic';
 
 -- Um crédito por (user, razão, evento referenciado).
 CREATE UNIQUE INDEX IF NOT EXISTS ux_points_reference

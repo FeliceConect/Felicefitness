@@ -22,10 +22,17 @@ CREATE TABLE bkp_ranking_parts_20260730 AS SELECT * FROM fitness_ranking_partici
    auditoria (seção 5) e limpe o excedente antes de repetir.
 2. `20260730_2_award_triggers_hardened.sql` — triggers de água/refeição/sono com
    dedup por `reference_date`, janela de data plausível e sono escalonado (6/3/0).
-3. `20260730_3_streak_award_trigger.sql` — bônus de streak (7/30) no banco.
+3. `20260730_3_streak_award_trigger.sql` — **remove** o trigger de streak (era
+   inseguro: `streak_atual` é gravável pelo cliente). O bônus de streak passou a
+   ser creditado no servidor, na rota award-workout-complete, a partir de
+   `get_user_streak()` (streak real, não forjável).
 4. `20260730_4_cardio_intensity_column.sql` — coluna `cardio_intensity`.
-5. `20260730_5_reversal_rpc.sql` — RPCs de reversão atômica.
-6. `20260730_6_privacy_authz.sql` — opt-out do ranking + vínculo no insert de profissional.
+5. `20260730_5_reversal_rpc.sql` — RPCs de reversão atômica + **REVOKE/GRANT**:
+   revoga EXECUTE de `fitness_revert_*` e de `fitness_award_points_to_user` de
+   anon/authenticated (fecha IDOR de mexer nos pontos de terceiros / auto-crédito)
+   e concede só a `service_role`.
+6. `20260730_6_privacy_authz.sql` — opt-out do ranking (só super_admin fura) +
+   vínculo obrigatório no insert de pontos por profissional.
 7. `20260723_challenge_scores_rpc.sql` — se ainda estiver pendente (placar do desafio).
 
 ## 3. Reconstruir os leaderboards a partir do extrato limpo

@@ -123,9 +123,25 @@ export async function POST(request: NextRequest) {
 
     await Promise.all(awardPromises)
 
+    // Bônus de streak (7=15, 30=50) — a partir do streak REAL recalculado no
+    // servidor por get_user_streak (SECURITY DEFINER; conta dias consecutivos
+    // dos treinos reais). NÃO lemos fitness_profiles.streak_atual porque o
+    // cliente pode gravá-la (use-profile) e forjaria o bônus. Exact-match: o
+    // streak cresce +1/dia, então bate exatamente 7/30 uma única vez no
+    // cruzamento; o índice único diário impede duplo no mesmo dia.
+    const { data: streakData } = await admin.rpc('get_user_streak', { p_user_id: user.id })
+    const realStreak = Number(streakData) || 0
+    const streakAwards: Promise<unknown>[] = []
+    if (realStreak === 7) streakAwards.push(awardPointsServer(user.id, 'streak_7'))
+    if (realStreak === 30) streakAwards.push(awardPointsServer(user.id, 'streak_30'))
+    if (streakAwards.length > 0) {
+      await Promise.all(streakAwards)
+    }
+
     return NextResponse.json({
       success: true,
       prAwards: prSetIds.length,
+      streak: realStreak,
     })
   } catch (error) {
     console.error('Erro em award-workout-complete:', error)

@@ -26,6 +26,17 @@
 -- Idempotente.
 -- ============================================================
 
+-- Guarda de ordem: o ON CONFLICT abaixo depende do índice único ux_points_daily
+-- (criado em 20260730_1). Sem ele, os triggers seriam criados mas o INSERT de
+-- água/refeição/sono falharia em runtime (42P10), quebrando o REGISTRO, não só a
+-- pontuação. Falha alto e claro se a ordem for invertida.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'ux_points_daily') THEN
+    RAISE EXCEPTION 'Índice ux_points_daily não existe — rode 20260730_1_points_dedup_foundation.sql ANTES desta migration.';
+  END IF;
+END $$;
+
 -- ─────────────────────────────────────────────────────────────
 -- 1) ÁGUA — 5 pts ao bater a meta diária (1× por dia de referência)
 -- ─────────────────────────────────────────────────────────────
@@ -54,7 +65,7 @@ BEGIN
       (user_id, points, reason, category, source, reference_date)
     VALUES
       (NEW.user_id, 5, 'Meta de agua atingida', 'hydration', 'automatic', NEW.data)
-    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
+    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL AND source = 'automatic'
     DO NOTHING;
 
     GET DIAGNOSTICS v_inserted = ROW_COUNT;
@@ -96,7 +107,7 @@ BEGIN
       (user_id, points, reason, category, source, reference_date)
     VALUES
       (NEW.user_id, 10, 'Todas refeicoes registradas', 'nutrition', 'automatic', NEW.data)
-    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
+    ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL AND source = 'automatic'
     DO NOTHING;
 
     GET DIAGNOSTICS v_inserted = ROW_COUNT;
@@ -155,7 +166,7 @@ BEGIN
     (user_id, points, reason, category, source, reference_date)
   VALUES
     (NEW.user_id, v_pts, 'Sono registrado', 'sleep', 'automatic', NEW.data)
-  ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL
+  ON CONFLICT (user_id, reason, source, reference_date) WHERE reference_id IS NULL AND source = 'automatic'
   DO NOTHING;
 
   GET DIAGNOSTICS v_inserted = ROW_COUNT;
