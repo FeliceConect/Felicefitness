@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trophy, Ruler, Target, X, Check, ImageIcon, HistoryIcon, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Edit, Trophy, Ruler, Target, X, Check, ImageIcon, HistoryIcon, ClipboardList, Scale } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -342,7 +342,13 @@ export default function PerfilPage() {
         {/* Quick Actions — apenas leitura.
             Medições antropométricas e fotos são feitas pela equipe no portal. */}
         <div className="px-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/corpo">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                <Scale className="h-5 w-5" />
+                <span>Composição Corporal</span>
+              </Button>
+            </Link>
             <Link href="/fotos">
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
                 <ImageIcon className="h-5 w-5" />
