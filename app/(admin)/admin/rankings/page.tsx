@@ -83,6 +83,24 @@ interface PointTransaction {
   user_name?: string
 }
 
+// Reconstrução do ranking (GET/POST /api/admin/rankings/resync)
+interface ResyncChange {
+  ranking_id: string
+  user_id: string
+  nome: string
+  before: number
+  after: number
+}
+
+interface ResyncPreview {
+  remocoes: {
+    pr_fantasma: { transacoes: number; pontos: number }
+    feed_excedente: { transacoes: number; pontos: number }
+  }
+  participantes_alterados: number
+  mudancas: ResyncChange[]
+}
+
 interface Client {
   id: string
   nome: string
@@ -170,6 +188,14 @@ export default function AdminRankingsPage() {
   const [bioAuditError, setBioAuditError] = useState<string | null>(null)
   const [expandedPatient, setExpandedPatient] = useState<string | null>(null)
   const [recalculatingBio, setRecalculatingBio] = useState(false)
+
+  // Reconstrução do ranking (resync)
+  const [showResync, setShowResync] = useState(false)
+  const [resyncPreview, setResyncPreview] = useState<ResyncPreview | null>(null)
+  const [loadingResync, setLoadingResync] = useState(false)
+  const [applyingResync, setApplyingResync] = useState(false)
+  const [resyncError, setResyncError] = useState<string | null>(null)
+  const [resyncDone, setResyncDone] = useState<string | null>(null)
 
   const [showTransactions, setShowTransactions] = useState(false)
   const [transactions, setTransactions] = useState<PointTransaction[]>([])
@@ -503,6 +529,68 @@ export default function AdminRankingsPage() {
     }
   }
 
+  // Reconstrução do ranking: abre o modal e já carrega o PREVIEW (GET, não grava).
+  const openResync = async () => {
+    setShowResync(true)
+    setResyncPreview(null)
+    setResyncError(null)
+    setResyncDone(null)
+    setLoadingResync(true)
+    try {
+      const res = await fetch('/api/admin/rankings/resync')
+      const data = await res.json()
+      if (data.success) {
+        setResyncPreview({
+          remocoes: data.remocoes,
+          participantes_alterados: data.participantes_alterados,
+          mudancas: data.mudancas || [],
+        })
+      } else {
+        setResyncError(data.error || 'Erro ao pré-visualizar')
+      }
+    } catch {
+      setResyncError('Erro de rede ao pré-visualizar')
+    } finally {
+      setLoadingResync(false)
+    }
+  }
+
+  // Aplica a reconstrução (POST { confirm: 'RESYNC' }). Reconstrói total_points
+  // a partir do extrato limpo e ajusta o leaderboard.
+  const handleApplyResync = async () => {
+    if (!confirm(
+      `Reconstruir os totais do ranking a partir do extrato de pontos?\n\n` +
+      `${resyncPreview?.participantes_alterados ?? 0} participante(s) terão o total ajustado. ` +
+      `Remove PR fantasma e excesso de feed e recalcula os pontos.\n\n` +
+      `Rode antes o "Recalcular" da bioimpedância se houver divergências.`
+    )) return
+
+    setApplyingResync(true)
+    setResyncError(null)
+    try {
+      const res = await fetch('/api/admin/rankings/resync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'RESYNC' }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setResyncDone(
+          `Pronto: ${data.participantes_atualizados} participante(s) atualizados. ` +
+          `Removidas ${data.removidas?.pr_fantasma ?? 0} de PR fantasma e ${data.removidas?.feed_excedente ?? 0} de feed.`
+        )
+        setResyncPreview(null)
+        fetchRankings()
+      } else {
+        setResyncError(data.error || 'Erro ao aplicar')
+      }
+    } catch {
+      setResyncError('Erro de rede ao aplicar')
+    } finally {
+      setApplyingResync(false)
+    }
+  }
+
   // Transactions
   const fetchTransactions = async () => {
     setShowTransactions(true)
@@ -649,6 +737,13 @@ export default function AdminRankingsPage() {
           >
             <TrendingUp className="w-4 h-4" />
             Transacoes
+          </button>
+          <button
+            onClick={openResync}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reconstruir ranking
           </button>
           <button
             onClick={openNew}
@@ -1601,6 +1696,104 @@ export default function AdminRankingsPage() {
                   {validatingInstagram ? 'Validando...' : 'Validar +5 pts'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reconstrução do ranking (resync) — preview + aplicar */}
+      {showResync && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[88vh] border border-border flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-vinho" />
+                  Reconstruir ranking
+                </h3>
+                <p className="text-xs text-foreground-secondary mt-0.5">
+                  Recalcula os totais a partir do extrato de pontos (remove PR fantasma e excesso de feed). Confira o antes → depois antes de aplicar.
+                </p>
+              </div>
+              <button onClick={() => setShowResync(false)} className="p-2 hover:bg-background-elevated rounded-lg" aria-label="Fechar">
+                <X className="w-5 h-5 text-foreground-secondary" />
+              </button>
+            </div>
+
+            {resyncError && (
+              <div className="mx-4 mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {resyncError}
+              </div>
+            )}
+
+            {resyncDone && (
+              <div className="mx-4 mt-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700">
+                {resyncDone}
+              </div>
+            )}
+
+            {resyncPreview && !loadingResync && (
+              <div className="p-4 border-b border-border flex items-center gap-4 flex-wrap text-sm">
+                <span className="text-foreground-secondary">
+                  PR fantasma: <strong className="text-foreground">{resyncPreview.remocoes.pr_fantasma.transacoes}</strong> (−{resyncPreview.remocoes.pr_fantasma.pontos} pts)
+                </span>
+                <span className="text-foreground-secondary">
+                  Excesso de feed: <strong className="text-foreground">{resyncPreview.remocoes.feed_excedente.transacoes}</strong> (−{resyncPreview.remocoes.feed_excedente.pontos} pts)
+                </span>
+                <span className="text-foreground-secondary">
+                  Participantes alterados: <strong className="text-foreground">{resyncPreview.participantes_alterados}</strong>
+                </span>
+                <button
+                  onClick={handleApplyResync}
+                  disabled={applyingResync}
+                  className="ml-auto flex items-center gap-2 px-4 py-2 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/80 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${applyingResync ? 'animate-spin' : ''}`} />
+                  {applyingResync ? 'Aplicando...' : 'Aplicar reconstrução'}
+                </button>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingResync ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="h-12 bg-background-elevated rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : resyncDone ? (
+                <p className="text-center text-foreground-muted py-8">Reconstrução aplicada. Você pode fechar esta janela.</p>
+              ) : !resyncPreview ? null : resyncPreview.mudancas.length === 0 ? (
+                <p className="text-center text-green-600 py-8 font-medium">✓ Nada a corrigir — os totais já batem com o extrato.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-foreground-secondary border-b border-border">
+                        <th className="py-2 pr-3 font-medium">Paciente</th>
+                        <th className="py-2 px-3 font-medium text-right">Antes</th>
+                        <th className="py-2 px-3 font-medium text-right">Depois</th>
+                        <th className="py-2 pl-3 font-medium text-right">Δ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resyncPreview.mudancas.map((m, i) => {
+                        const delta = m.after - m.before
+                        return (
+                          <tr key={`${m.ranking_id}-${m.user_id}-${i}`} className="border-b border-border/60">
+                            <td className="py-2 pr-3 text-foreground">{m.nome}</td>
+                            <td className="py-2 px-3 text-right text-foreground-secondary">{m.before}</td>
+                            <td className="py-2 px-3 text-right text-foreground">{m.after}</td>
+                            <td className={`py-2 pl-3 text-right font-medium ${delta < 0 ? 'text-red-600' : delta > 0 ? 'text-green-600' : 'text-foreground-muted'}`}>
+                              {delta > 0 ? '+' : ''}{delta}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
