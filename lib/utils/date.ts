@@ -189,3 +189,31 @@ export function getStartOfTodaySP(): string {
   // Brasil aboliu DST — sempre -03:00. Construa string ISO com offset SP.
   return new Date(`${todayDateSP}T00:00:00-03:00`).toISOString()
 }
+
+/**
+ * Idade em anos completos numa data de referência.
+ *
+ * Compara as strings YYYY-MM-DD diretamente, sem construir Date — assim não há
+ * risco de o fuso empurrar o aniversário um dia para trás ou para frente.
+ * Retorna null quando a data de nascimento é inválida ou futura.
+ */
+export function calcularIdade(
+  dataNascimento: string | null | undefined,
+  dataReferencia: string = getTodayDateSP()
+): number | null {
+  if (!dataNascimento) return null
+
+  const nascimento = dataNascimento.slice(0, 10)
+  const referencia = dataReferencia.slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nascimento)) return null
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(referencia)) return null
+
+  const [anoN, mesN, diaN] = nascimento.split('-').map(Number)
+  const [anoR, mesR, diaR] = referencia.split('-').map(Number)
+
+  let idade = anoR - anoN
+  if (mesR < mesN || (mesR === mesN && diaR < diaN)) idade -= 1
+
+  if (idade < 0 || idade > 130) return null
+  return idade
+}
