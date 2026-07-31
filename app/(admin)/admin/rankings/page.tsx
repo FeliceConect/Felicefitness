@@ -103,14 +103,26 @@ interface ResyncPreview {
 
 // Auditoria do desafio (GET /api/admin/rankings/challenge-audit)
 interface AuditFlag { level: 'alto' | 'medio'; text: string }
+interface AuditDayItem { reason: string; count: number; points: number }
+interface AuditDay {
+  date: string
+  points: number
+  activities: number
+  suspicious: boolean
+  items: AuditDayItem[]
+}
 interface AuditParticipant {
   user_id: string
   nome: string
   score: number
   totalAll: number
-  byReason: Array<{ reason: string; count: number; points: number }>
   maxDayPoints: number
   daysOverCeiling: number
+  activityCount: number
+  activityExcess: number
+  streakCount: number
+  byReason: AuditDayItem[]
+  days: AuditDay[]
   flags: AuditFlag[]
 }
 interface AuditChallengeInfo {
@@ -230,6 +242,7 @@ export default function AdminRankingsPage() {
   const [loadingAudit, setLoadingAudit] = useState(false)
   const [auditError, setAuditError] = useState<string | null>(null)
   const [expandedAuditUser, setExpandedAuditUser] = useState<string | null>(null)
+  const [expandedAuditDay, setExpandedAuditDay] = useState<string | null>(null)
 
   const [showTransactions, setShowTransactions] = useState(false)
   const [transactions, setTransactions] = useState<PointTransaction[]>([])
@@ -632,6 +645,7 @@ export default function AdminRankingsPage() {
     setAuditError(null)
     setAuditChallengeId('')
     setExpandedAuditUser(null)
+    setExpandedAuditDay(null)
     try {
       const res = await fetch('/api/admin/rankings/challenge-audit')
       const data = await res.json()
@@ -647,6 +661,7 @@ export default function AdminRankingsPage() {
     setAuditChallengeId(challengeId)
     setAuditData(null)
     setExpandedAuditUser(null)
+    setExpandedAuditDay(null)
     setAuditError(null)
     if (!challengeId) return
     setLoadingAudit(true)
@@ -1947,21 +1962,25 @@ export default function AdminRankingsPage() {
                     return (
                       <div key={p.user_id} className="border border-border rounded-lg overflow-hidden">
                         <button
-                          onClick={() => setExpandedAuditUser(aberto ? null : p.user_id)}
+                          onClick={() => { setExpandedAuditUser(aberto ? null : p.user_id); setExpandedAuditDay(null) }}
                           className="w-full flex items-center gap-3 p-3 hover:bg-background-elevated text-left"
                         >
                           <span className="text-sm font-medium text-foreground-muted w-7 shrink-0">{idx + 1}º</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-foreground truncate">{p.nome}</span>
-                              {p.flags.length > 0 && (
-                                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">
-                                  <AlertTriangle className="w-3 h-3" /> {p.flags.length}
+                              {p.flags.some(f => f.level === 'alto') ? (
+                                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 shrink-0">
+                                  <AlertTriangle className="w-3 h-3" /> suspeito
                                 </span>
-                              )}
+                              ) : p.flags.length > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">
+                                  <AlertTriangle className="w-3 h-3" /> conferir
+                                </span>
+                              ) : null}
                             </div>
                             <div className="text-xs text-foreground-secondary">
-                              {p.score} pts no desafio · máx {p.maxDayPoints}/dia
+                              <strong className="text-foreground">{p.score} pts</strong> no desafio · máx {p.maxDayPoints}/dia
                               {p.totalAll !== p.score ? ` · ${p.totalAll} no total` : ''}
                             </div>
                           </div>
@@ -1973,6 +1992,18 @@ export default function AdminRankingsPage() {
                         </button>
                         {aberto && (
                           <div className="p-3 border-t border-border bg-background-elevated/40 space-y-3">
+                            {/* Chips de resumo */}
+                            <div className="flex flex-wrap gap-1.5 text-xs">
+                              <span className="px-2 py-1 rounded-md bg-white border border-border text-foreground-secondary">Máx <strong className="text-foreground">{p.maxDayPoints}</strong> pts/dia</span>
+                              <span className={`px-2 py-1 rounded-md border ${p.activityExcess > 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-border text-foreground-secondary'}`}>
+                                {p.activityCount} atividade(s){p.activityExcess > 0 ? ` · ${p.activityExcess} além do cap` : ''}
+                              </span>
+                              {p.streakCount > 0 && (
+                                <span className="px-2 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-700">{p.streakCount} bônus de streak</span>
+                              )}
+                            </div>
+
+                            {/* Bandeiras */}
                             {p.flags.length > 0 && (
                               <div className="space-y-1">
                                 {p.flags.map((f, i) => (
@@ -1983,17 +2014,54 @@ export default function AdminRankingsPage() {
                                 ))}
                               </div>
                             )}
+
+                            {/* Dia a dia — a unidade de verificação. Clique num dia para ver o que aconteceu. */}
                             <div>
-                              <p className="text-xs font-medium text-foreground-secondary mb-1">De onde vieram os pontos:</p>
-                              <div className="space-y-0.5">
-                                {p.byReason.map((r, i) => (
-                                  <div key={i} className="flex items-center justify-between text-xs">
-                                    <span className="text-foreground-secondary">
-                                      {r.reason} <span className="text-foreground-muted">×{r.count}</span>
-                                    </span>
-                                    <span className="text-foreground font-medium">{r.points} pts</span>
-                                  </div>
-                                ))}
+                              <p className="text-xs font-medium text-foreground-secondary mb-1.5">
+                                Dia a dia <span className="text-foreground-muted font-normal">(clique num dia para ver o que rendeu os pontos)</span>
+                              </p>
+                              <div className="space-y-1">
+                                {p.days.map((day) => {
+                                  const dayKey = `${p.user_id}|${day.date}`
+                                  const dayOpen = expandedAuditDay === dayKey
+                                  const [yy, mm, dd] = day.date.split('-')
+                                  return (
+                                    <div key={dayKey} className={`rounded-lg border ${day.suspicious ? 'border-red-200 bg-red-50/40' : 'border-border bg-white'}`}>
+                                      <button
+                                        onClick={() => setExpandedAuditDay(dayOpen ? null : dayKey)}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-left"
+                                      >
+                                        {day.suspicious ? (
+                                          <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                        ) : (
+                                          <span className="w-3.5 shrink-0" />
+                                        )}
+                                        <span className="text-sm text-foreground">{dd}/{mm}/{yy}</span>
+                                        {day.activities > 2 && (
+                                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">{day.activities} atividades</span>
+                                        )}
+                                        <span className="ml-auto text-sm font-semibold text-foreground">{day.points} pts</span>
+                                        {dayOpen ? (
+                                          <ChevronDown className="w-3.5 h-3.5 text-foreground-muted shrink-0" />
+                                        ) : (
+                                          <ChevronRight className="w-3.5 h-3.5 text-foreground-muted shrink-0" />
+                                        )}
+                                      </button>
+                                      {dayOpen && (
+                                        <div className="px-3 pb-2 pt-1 border-t border-border/60 space-y-0.5">
+                                          {day.items.map((it, i) => (
+                                            <div key={i} className="flex items-center justify-between text-xs">
+                                              <span className="text-foreground-secondary">
+                                                {it.reason} <span className="text-foreground-muted">×{it.count}</span>
+                                              </span>
+                                              <span className="text-foreground font-medium">{it.points} pts</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
                               </div>
                             </div>
                           </div>
