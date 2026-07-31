@@ -19,11 +19,21 @@ import type { UsgAssessmentWithSites } from '@/lib/usg/types'
 interface TabUltrassomProps {
   patientId: string
   canEdit: boolean
+  /**
+   * De onde a aba está sendo aberta. O wizard e o resultado vivem no portal,
+   * então sem isto quem entra pelo painel admin não tem como voltar.
+   */
+  origem?: 'portal' | 'admin'
 }
 
 const COR_DOURADO = '#c29863'
 
-export function TabUltrassom({ patientId, canEdit }: TabUltrassomProps) {
+export function TabUltrassom({
+  patientId,
+  canEdit,
+  origem = 'portal',
+}: TabUltrassomProps) {
+  const sufixoOrigem = origem === 'admin' ? '?origem=admin' : ''
   const [avaliacoes, setAvaliacoes] = useState<UsgAssessmentWithSites[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(false)
@@ -85,7 +95,7 @@ export function TabUltrassom({ patientId, canEdit }: TabUltrassomProps) {
         </div>
         {canEdit && (
           <Link
-            href={`/portal/clients/${patientId}/ultrassom/nova`}
+            href={`/portal/clients/${patientId}/ultrassom/nova${sufixoOrigem}`}
             className="h-12 px-4 rounded-xl btn-gradient text-white font-medium inline-flex items-center gap-2 shrink-0"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
@@ -117,7 +127,7 @@ export function TabUltrassom({ patientId, canEdit }: TabUltrassomProps) {
           {/* Resumo da última */}
           {ultima && (
             <Link
-              href={`/portal/clients/${patientId}/ultrassom/${ultima.id}`}
+              href={`/portal/clients/${patientId}/ultrassom/${ultima.id}${sufixoOrigem}`}
               className="block rounded-xl border border-dourado/40 bg-dourado/5 p-4 hover:border-dourado transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
@@ -194,7 +204,7 @@ export function TabUltrassom({ patientId, canEdit }: TabUltrassomProps) {
             {avaliacoes.map((avaliacao) => (
               <Link
                 key={avaliacao.id}
-                href={`/portal/clients/${patientId}/ultrassom/${avaliacao.id}`}
+                href={`/portal/clients/${patientId}/ultrassom/${avaliacao.id}${sufixoOrigem}`}
                 className="flex items-center gap-3 p-3 border-t border-border hover:bg-background-elevated min-h-[56px]"
               >
                 <Waves className="w-4 h-4 text-dourado shrink-0" aria-hidden="true" />

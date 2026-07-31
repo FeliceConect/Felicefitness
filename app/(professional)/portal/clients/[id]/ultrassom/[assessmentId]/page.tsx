@@ -20,6 +20,10 @@ export default function ResultadoUltrassomPage() {
   const assessmentId =
     typeof params.assessmentId === 'string' ? params.assessmentId : ''
   const ehNova = searchParams.get('nova') === '1'
+  const rotaDeVolta =
+    searchParams.get('origem') === 'admin'
+      ? `/admin/pacientes/${patientId}`
+      : `/portal/clients/${patientId}`
 
   const [avaliacao, setAvaliacao] = useState<UsgAssessmentWithSites | null>(null)
   const [historico, setHistorico] = useState<UsgAssessmentWithSites[]>([])
@@ -80,7 +84,7 @@ export default function ResultadoUltrassomPage() {
     <div className="p-4 max-w-3xl mx-auto">
       <div className="flex items-start gap-3 mb-4">
         <Link
-          href={`/portal/clients/${patientId}`}
+          href={rotaDeVolta}
           aria-label="Voltar para o paciente"
           className="p-2 -ml-2 rounded-lg text-foreground-secondary hover:bg-background-elevated"
         >
@@ -112,7 +116,7 @@ export default function ResultadoUltrassomPage() {
         avaliacao={avaliacao}
         historico={historico}
         onAtualizada={(atualizada) => setAvaliacao(atualizada)}
-        onRemovida={() => router.push(`/portal/clients/${patientId}`)}
+        onRemovida={() => router.push(rotaDeVolta)}
       />
     </div>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { ArrowLeft, Loader2 } from 'lucide-react'
@@ -82,7 +82,14 @@ function estadoInicial(): WizardState {
  */
 export function CollectionWizard({ patientId }: CollectionWizardProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const prefereMenosMovimento = useReducedMotion()
+
+  // Quem abriu a coleta pelo painel do superadmin precisa voltar para lá.
+  const origem = searchParams.get('origem') === 'admin' ? 'admin' : 'portal'
+  const rotaDeVolta =
+    origem === 'admin' ? `/admin/pacientes/${patientId}` : `/portal/clients/${patientId}`
+  const sufixoOrigem = origem === 'admin' ? '&origem=admin' : ''
   const wakeLock = useScreenWakeLock()
 
   const [estado, setEstado] = useState<WizardState>(estadoInicial)
@@ -279,7 +286,7 @@ export function CollectionWizard({ patientId }: CollectionWizardProps) {
       clearDraft()
       toast.success('Avaliação registrada')
       router.replace(
-        `/portal/clients/${patientId}/ultrassom/${dados.assessment.id}?nova=1`
+        `/portal/clients/${patientId}/ultrassom/${dados.assessment.id}?nova=1${sufixoOrigem}`
       )
     } catch {
       toast.error('Falha de conexão. Os dados continuam salvos no aparelho.')
@@ -297,7 +304,7 @@ export function CollectionWizard({ patientId }: CollectionWizardProps) {
     ) {
       return
     }
-    router.push(`/portal/clients/${patientId}`)
+    router.push(rotaDeVolta)
   }
 
   const totalSitios = sitios.length

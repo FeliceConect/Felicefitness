@@ -35,6 +35,7 @@ import { ProgressPhotosGrid } from '@/components/admin/patient/progress-photos-g
 import { BioimpedanceSection } from '@/components/admin/patient/bioimpedance-section'
 import { PhotosCompare } from '@/components/admin/patient/photos-compare'
 import { TabAntropometria } from '@/components/portal/client-detail/tab-antropometria'
+import { TabUltrassom } from '@/components/portal/client-detail/tab-ultrassom'
 
 // === Types ===
 
@@ -963,6 +964,16 @@ export default function PatientDetailPage() {
           <div className="px-6 py-6">
             <TabAntropometria patientId={patientId} canEdit={true} />
           </div>
+        </div>
+      )}
+
+      {/* Avaliação por ultrassom — procedimento clínico da nutricionista, então
+          fica restrito ao superadmin nesta tela (a rota também só libera
+          nutricionista e superadmin). O componente já traz o próprio cabeçalho
+          e o botão de nova coleta. */}
+      {role === 'super_admin' && (
+        <div className="bg-white rounded-xl border border-border px-6 py-6">
+          <TabUltrassom patientId={patientId} canEdit={true} origem="admin" />
         </div>
       )}
 
