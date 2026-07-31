@@ -19,6 +19,9 @@
 -- 1) Ranking: respeitar opt-out
 -- ─────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Anyone authenticated can view participants" ON fitness_ranking_participants;
+-- Também dropa a própria policy nova, para a migration ser idempotente (re-rodar
+-- não falha com 42710 "policy already exists").
+DROP POLICY IF EXISTS "Participants visible per opt-in" ON fitness_ranking_participants;
 
 CREATE POLICY "Participants visible per opt-in" ON fitness_ranking_participants
   FOR SELECT USING (
