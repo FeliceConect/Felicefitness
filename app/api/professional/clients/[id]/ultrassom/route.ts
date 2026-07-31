@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireClinicalAccess } from '@/lib/auth/require-clinical-access'
+import { calcularIdade } from '@/lib/utils/date'
 import { computeUsgAssessment } from '@/lib/usg/engine'
 import {
   buildAssessmentRow,
@@ -28,12 +29,19 @@ export async function GET(
 
     const limite = Number(request.nextUrl.searchParams.get('limit') ?? 30)
 
-    const { data, error } = await acesso.supabaseAdmin
-      .from('fitness_usg_assessments')
-      .select(SELECT_COMPLETO)
-      .eq('user_id', params.id)
-      .order('data', { ascending: false })
-      .limit(Number.isFinite(limite) && limite > 0 ? Math.min(limite, 100) : 30)
+    const [{ data, error }, { data: perfil }] = await Promise.all([
+      acesso.supabaseAdmin
+        .from('fitness_usg_assessments')
+        .select(SELECT_COMPLETO)
+        .eq('user_id', params.id)
+        .order('data', { ascending: false })
+        .limit(Number.isFinite(limite) && limite > 0 ? Math.min(limite, 100) : 30),
+      acesso.supabaseAdmin
+        .from('fitness_profiles')
+        .select('nome, sexo, data_nascimento, altura_cm, peso_atual')
+        .eq('id', params.id)
+        .maybeSingle(),
+    ])
 
     if (error) {
       console.error('Erro ao buscar avaliações de ultrassom:', error)
@@ -43,7 +51,22 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ success: true, assessments: data ?? [] })
+    // O wizard de coleta usa isto para pré-preencher o setup. Vem por aqui, e
+    // não pela rota compartilhada de detalhe do cliente, para não ampliar o que
+    // as outras especialidades enxergam.
+    return NextResponse.json({
+      success: true,
+      assessments: data ?? [],
+      paciente: perfil
+        ? {
+            nome: perfil.nome ?? null,
+            sexo: perfil.sexo ?? null,
+            idade: calcularIdade(perfil.data_nascimento ?? null),
+            altura_cm: perfil.altura_cm ?? null,
+            peso_kg: perfil.peso_atual ?? null,
+          }
+        : null,
+    })
   } catch (error) {
     console.error('Erro na API de ultrassom:', error)
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })

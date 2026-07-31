@@ -134,6 +134,14 @@ describe('helpers de coleta', () => {
     expect(collectionOrder('jp7', false)).toEqual(USG_PROTOCOLS.jp7.fatSites)
   })
 
+  it('protocolo sem sítios de gordura sempre coleta os musculares', () => {
+    // Sem isto, o protocolo muscular abriria a coleta com zero pontos.
+    expect(collectionOrder('muscular_basico', false)).toEqual(
+      USG_PROTOCOLS.muscular_basico.muscleSites
+    )
+    expect(collectionOrder('muscular_basico', false).length).toBeGreaterThan(0)
+  })
+
   it('validadores rejeitam códigos desconhecidos', () => {
     expect(isValidSiteCode('triceps')).toBe(true)
     expect(isValidSiteCode('joelho')).toBe(false)

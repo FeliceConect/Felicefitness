@@ -33,7 +33,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'Prega diagonal entre a linha axilar anterior e o mamilo. Nos homens, no ponto médio; nas mulheres, no primeiro terço a partir da axila.',
     instrucaoCurta: 'Diagonal, entre a axila e o mamilo.',
     faixaPlausivelMm: [1, 40],
-    mapa: { x: 40, y: 27, vista: 'frente' },
+    mapa: { x: 41, y: 27, vista: 'frente' },
   },
   axilar_media: {
     code: 'axilar_media',
@@ -44,7 +44,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'Sobre a linha axilar média, na altura do processo xifoide do esterno. Transdutor na vertical.',
     instrucaoCurta: 'Linha da axila, na altura da ponta do esterno.',
     faixaPlausivelMm: [1, 45],
-    mapa: { x: 35, y: 31, vista: 'frente' },
+    mapa: { x: 36, y: 32, vista: 'frente' },
   },
   triceps: {
     code: 'triceps',
@@ -55,7 +55,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'Face posterior do braço, no ponto médio entre o acrômio e o olécrano, com o braço relaxado ao longo do corpo.',
     instrucaoCurta: 'Meio do braço, por trás, braço relaxado.',
     faixaPlausivelMm: [1.5, 50],
-    mapa: { x: 72, y: 33, vista: 'costas' },
+    mapa: { x: 68.5, y: 33, vista: 'costas' },
   },
   subescapular: {
     code: 'subescapular',
@@ -99,7 +99,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'Face anterior da coxa, no ponto médio entre a prega inguinal e a borda superior da patela, com a perna estendida e relaxada.',
     instrucaoCurta: 'Meio da coxa, na frente, perna relaxada.',
     faixaPlausivelMm: [1.5, 60],
-    mapa: { x: 42, y: 62, vista: 'frente' },
+    mapa: { x: 43, y: 60, vista: 'frente' },
   },
   panturrilha_medial: {
     code: 'panturrilha_medial',
@@ -110,7 +110,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'Face medial da panturrilha, no ponto de maior perímetro, com o joelho flexionado a 90°.',
     instrucaoCurta: 'Parte interna da panturrilha, na maior circunferência.',
     faixaPlausivelMm: [1, 40],
-    mapa: { x: 45, y: 84, vista: 'frente' },
+    mapa: { x: 43, y: 84, vista: 'frente' },
   },
 
   // ------------------------------- músculo --------------------------------
@@ -123,7 +123,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'A 50% da distância entre a espinha ilíaca ântero-superior e a borda superior da patela. Paciente em decúbito dorsal, após 10 minutos de repouso.',
     instrucaoCurta: 'Meio da coxa, na frente. Deitado, relaxado.',
     faixaPlausivelMm: [8, 45],
-    mapa: { x: 42, y: 60, vista: 'frente' },
+    mapa: { x: 43, y: 66, vista: 'frente' },
   },
   vasto_lateral: {
     code: 'vasto_lateral',
@@ -134,7 +134,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'A 2/3 da distância entre a espinha ilíaca ântero-superior e a face lateral da patela.',
     instrucaoCurta: 'Lateral da coxa, a dois terços do quadril.',
     faixaPlausivelMm: [8, 45],
-    mapa: { x: 36, y: 62, vista: 'frente' },
+    mapa: { x: 40.5, y: 63, vista: 'frente' },
   },
   biceps_braquial: {
     code: 'biceps_braquial',
@@ -145,7 +145,7 @@ export const USG_SITES: Readonly<Record<UsgSiteCode, UsgSite>> = {
       'Face anterior do braço, a 60% da distância entre o acrômio e a fossa cubital, braço estendido e relaxado.',
     instrucaoCurta: 'Frente do braço, mais perto do cotovelo.',
     faixaPlausivelMm: [10, 60],
-    mapa: { x: 30, y: 32, vista: 'frente' },
+    mapa: { x: 31.5, y: 32, vista: 'frente' },
   },
 } as const
 
@@ -271,13 +271,19 @@ export function suggestedProtocol(sexo: UsgSexo): UsgProtocolCode {
   return sexo === 'feminino' ? 'jp3_mulheres' : 'jp7'
 }
 
-/** Sítios do protocolo na ordem de coleta, incluindo músculo quando pedido. */
+/**
+ * Sítios do protocolo na ordem de coleta, incluindo músculo quando pedido.
+ *
+ * Num protocolo sem sítios de gordura (o de espessura muscular), os sítios
+ * musculares entram sempre — senão a coleta ficaria sem nenhum ponto.
+ */
 export function collectionOrder(
   code: UsgProtocolCode,
   incluirMusculo: boolean
 ): readonly UsgSiteCode[] {
   const protocol = getProtocol(code)
-  return incluirMusculo
+  const musculoObrigatorio = protocol.fatSites.length === 0
+  return incluirMusculo || musculoObrigatorio
     ? [...protocol.fatSites, ...protocol.muscleSites]
     : protocol.fatSites
 }

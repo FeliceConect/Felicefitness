@@ -14,6 +14,11 @@ const config: Config = {
         cafe: "#322b29",
         vinho: "#663739",
         dourado: "#c29863",
+        // Dourado escurecido para TEXTO pequeno: o #c29863 tem só 2,6:1 sobre
+        // branco e reprova em contraste. Este tem 5,3:1 sobre branco e 4,8:1
+        // sobre o fundo warm, passando em AA. Use o dourado normal em
+        // preenchimentos, ícones grandes e bordas; este em texto.
+        "dourado-texto": "#8a6432",
         nude: "#ae9b89",
         fendi: "#cac2b9",
         seda: "#ddd5c7",

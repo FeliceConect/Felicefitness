@@ -10,7 +10,8 @@ import {
   MuscleFatAnalysis,
   BodyCompositionCard,
   AdditionalMetricsCard,
-  EvolutionChart
+  EvolutionChart,
+  UltrasoundSummaryCard
 } from '@/components/corpo'
 import { useBodyComposition } from '@/hooks/use-body-composition'
 import { useBodyEvolution } from '@/hooks/use-body-evolution'
@@ -54,6 +55,11 @@ export default function BodyPage() {
                 Adicionar primeira medição
               </motion.button>
             </Link>
+          </div>
+
+          {/* O paciente pode ter avaliação por ultrassom mesmo sem bioimpedância */}
+          <div className="mt-3">
+            <UltrasoundSummaryCard />
           </div>
         </div>
       </div>
@@ -189,6 +195,8 @@ export default function BodyPage() {
 
       {/* Navigation Links */}
       <div className="px-4 space-y-3">
+        <UltrasoundSummaryCard />
+
         {/* History */}
         <Link href="/corpo/historico">
           <motion.div

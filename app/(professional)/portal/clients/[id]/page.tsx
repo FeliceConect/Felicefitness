@@ -29,6 +29,7 @@ import {
   TabProntuario,
   TabBioimpedancia,
   TabAntropometria,
+  TabUltrassom,
   TabPlanoAlimentar,
   TabFormularios,
 } from '@/components/portal/client-detail'
@@ -129,12 +130,12 @@ interface Bioimpedance {
   metabolismo_basal: number | null
 }
 
-type TabKey = 'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'prontuario' | 'bioimpedancia' | 'antropometria' | 'plano-alimentar' | 'exames' | 'formularios'
+type TabKey = 'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'prontuario' | 'bioimpedancia' | 'antropometria' | 'ultrassom' | 'plano-alimentar' | 'exames' | 'formularios'
 
 export default function ClientDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { professional, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isMedicoIntegrativo } = useProfessional()
+  const { professional, isNutritionist, isTrainer, isCoach, isPhysiotherapist, isMedicoIntegrativo, isSuperAdmin } = useProfessional()
   const [client, setClient] = useState<ClientDetails | null>(null)
   const [weekStats, setWeekStats] = useState<WeekStats | null>(null)
   const [recentMeals, setRecentMeals] = useState<Meal[]>([])
@@ -240,6 +241,7 @@ export default function ClientDetailPage() {
     { key: 'prontuario', label: 'Prontuário', show: true },
     { key: 'bioimpedancia', label: 'Bioimpedância', show: !isCoach && !isPhysiotherapist },
     { key: 'antropometria', label: 'Antropometria', show: !isCoach && !isPhysiotherapist },
+    { key: 'ultrassom', label: 'Ultrassom', show: isNutritionist || isSuperAdmin },
     { key: 'plano-alimentar', label: 'Plano Alimentar', show: isNutritionist },
     { key: 'exames', label: 'Exames', show: isMedicoIntegrativo },
     { key: 'formularios', label: 'Formulários', show: true },
@@ -845,6 +847,10 @@ export default function ClientDetailPage() {
 
       {activeTab === 'antropometria' && (
         <TabAntropometria patientId={params.id as string} canEdit={canEditAntropometria} />
+      )}
+
+      {activeTab === 'ultrassom' && (
+        <TabUltrassom patientId={params.id as string} canEdit={isNutritionist || isSuperAdmin} />
       )}
 
       {activeTab === 'plano-alimentar' && (

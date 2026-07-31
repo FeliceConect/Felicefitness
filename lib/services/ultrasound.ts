@@ -8,19 +8,10 @@
  */
 
 import { getSupabase, getCurrentUserId, ServiceError } from './base'
-import type {
-  UsgAssessmentWithSites,
-  UsgSiteCode,
-  UsgTecido,
-} from '@/lib/usg/types'
+import type { UsgAssessmentWithSites } from '@/lib/usg/types'
 
 const SELECT_COMPLETO =
   'id, user_id, data, horario_coleta, momento_avaliacao, avaliador_id, protocolo, sexo, idade, peso_kg, altura_cm, equipamento, transdutor_mhz, soma_gordura_mm, soma_equivalente_mm, soma_muscular_mm, densidade_corporal, percentual_gordura, massa_gorda_kg, massa_magra_kg, equation_version, equacao_densidade, formula_percentual, conversao_id, conversao_fator, conversao_offset, agregacao_repeticoes, estimativa_confiavel, calculo_avisos, interpretacao, created_at, updated_at, medidas:fitness_usg_measurements(id, assessment_id, site, tecido, lado, repeticoes_mm, valor_mm, cv_percent, fora_de_tolerancia, observacao)'
-
-export interface UsgSitePoint {
-  data: string
-  valor_mm: number
-}
 
 /** Histórico do paciente, da avaliação mais recente para a mais antiga. */
 export async function getUsgAssessments(
@@ -65,23 +56,4 @@ export async function getUsgAssessment(
     throw new ServiceError('Erro ao buscar a avaliação', error.code, error.message)
   }
   return (data as UsgAssessmentWithSites | null) ?? null
-}
-
-/**
- * Evolução da espessura de um sítio ao longo do tempo, do mais antigo para o
- * mais recente — é a métrica que não depende de nenhuma conversão.
- */
-export async function getUsgSiteHistory(
-  site: UsgSiteCode,
-  tecido: UsgTecido = 'gordura'
-): Promise<UsgSitePoint[]> {
-  const assessments = await getUsgAssessments(50)
-
-  return assessments
-    .map((a) => {
-      const medida = a.medidas?.find((m) => m.site === site && m.tecido === tecido)
-      return medida ? { data: a.data, valor_mm: Number(medida.valor_mm) } : null
-    })
-    .filter((p): p is UsgSitePoint => p !== null)
-    .reverse()
 }

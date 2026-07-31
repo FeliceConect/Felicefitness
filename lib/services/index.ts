@@ -18,12 +18,7 @@ export {
   requestReschedule,
 } from './appointments'
 
-export {
-  getUsgAssessments,
-  getUsgAssessment,
-  getUsgSiteHistory,
-} from './ultrasound'
-export type { UsgSitePoint } from './ultrasound'
+export { getUsgAssessments, getUsgAssessment } from './ultrasound'
 
 export { ServiceError, getCurrentUserId } from './base'
 
