@@ -34,6 +34,7 @@ const ACTIVITY_REASONS = new Set([
 ])
 
 export interface AuditTx {
+  id?: string
   points: number
   reason: string
   category: string
@@ -47,12 +48,14 @@ export interface AuditTx {
 // Ponto lançado À MÃO por um admin/superadmin (Instagram, bônus, bio manual…).
 // É onde um humano controla a pontuação — o mais sensível numa auditoria.
 export interface ManualAward {
+  id: string | null    // id da transação (para poder remover)
   date: string
   reason: string
   points: number
   source: string
   awardedBy: string | null
-  awarderName?: string // preenchido pela rota (resolve o id -> nome)
+  awarderName?: string      // preenchido pela rota (resolve o id -> nome)
+  awarderIsSecretary?: boolean // preenchido pela rota
 }
 
 export interface AuditFlag {
@@ -123,6 +126,7 @@ export function auditParticipant(
     // Pontos lançados à mão (source != automatic): registra quem deu.
     if (t.source && t.source !== 'automatic') {
       manualAwards.push({
+        id: t.id ?? null,
         date: spDay(t.created_at),
         reason: t.reason,
         points: p,

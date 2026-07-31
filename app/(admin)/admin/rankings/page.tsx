@@ -140,10 +140,11 @@ interface AuditChallengeInfo {
   start_date: string
   end_date: string
   scoring_category: string | null
+  is_active?: boolean
 }
 interface ChallengeAuditData {
   challenge: AuditChallengeInfo
-  resumo: { participantes: number; com_bandeira: number }
+  resumo?: { participantes: number; com_bandeira: number }
   participants: AuditParticipant[]
 }
 
@@ -1929,7 +1930,7 @@ export default function AdminRankingsPage() {
                 <option value="">Selecione um desafio…</option>
                 {auditChallenges.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.title} ({c.start_date} → {c.end_date})
+                    {c.title} ({c.start_date} → {c.end_date}){c.is_active === false ? ' — inativo' : ''}
                   </option>
                 ))}
               </select>
@@ -1943,9 +1944,9 @@ export default function AdminRankingsPage() {
 
             {auditData && !loadingAudit && (
               <div className="px-4 py-3 border-b border-border text-sm text-foreground-secondary flex flex-wrap gap-x-4 gap-y-1">
-                <span>{auditData.resumo.participantes} participante(s)</span>
-                <span className={auditData.resumo.com_bandeira > 0 ? 'text-amber-600 font-medium' : 'text-green-600 font-medium'}>
-                  {auditData.resumo.com_bandeira} com bandeira
+                <span>{auditData.resumo?.participantes ?? 0} participante(s)</span>
+                <span className={(auditData.resumo?.com_bandeira ?? 0) > 0 ? 'text-amber-600 font-medium' : 'text-green-600 font-medium'}>
+                  {auditData.resumo?.com_bandeira ?? 0} com bandeira
                 </span>
                 {auditData.challenge.scoring_category && (
                   <span>categoria: <strong className="text-foreground">{auditData.challenge.scoring_category}</strong></span>

@@ -76,7 +76,14 @@ export async function GET(request: NextRequest) {
       .eq('challenge_id', challengeId)
     const userIds = Array.from(new Set((parts || []).map((p: any) => p.user_id))) as string[]
     if (userIds.length === 0) {
-      return NextResponse.json({ success: true, challenge, participants: [] })
+      // Inclui `resumo` mesmo vazio — a tela lê resumo.participantes e quebrava
+      // (desafios sem participantes, ex.: os desativados).
+      return NextResponse.json({
+        success: true,
+        challenge,
+        resumo: { participantes: 0, com_bandeira: 0 },
+        participants: [],
+      })
     }
 
     // Nomes
@@ -92,7 +99,7 @@ export async function GET(request: NextRequest) {
     // Transações no período (janela por created_at, igual ao placar)
     const { data: txRows } = await admin
       .from('fitness_point_transactions')
-      .select('user_id, points, reason, category, reference_id, reference_date, created_at, source, awarded_by')
+      .select('id, user_id, points, reason, category, reference_id, reference_date, created_at, source, awarded_by')
       .in('user_id', userIds)
       .gte('created_at', startISO(challenge.start_date))
       .lte('created_at', endISO(challenge.end_date))
@@ -120,6 +127,7 @@ export async function GET(request: NextRequest) {
       participants.flatMap((p) => p.manualAwards.map((m) => m.awardedBy).filter(Boolean))
     )) as string[]
     const awarderMap = new Map<string, string>()
+    const secretaryIds = new Set<string>()
     if (awarderIds.length > 0) {
       const { data: awarders } = await admin
         .from('fitness_profiles')
@@ -127,10 +135,12 @@ export async function GET(request: NextRequest) {
         .in('id', awarderIds)
       for (const a of (awarders || []) as any[]) {
         const base = a.display_name || a.nome || 'Desconhecido'
+        const isSecretary = a.role === 'admin' && a.admin_type === 'secretary'
+        if (isSecretary) secretaryIds.add(a.id)
         const tag = a.role === 'super_admin'
           ? ' (super admin)'
           : a.role === 'admin'
-            ? (a.admin_type === 'secretary' ? ' (secretária)' : ' (admin)')
+            ? (isSecretary ? ' (secretária)' : ' (admin)')
             : a.role ? ` (${a.role})` : ''
         awarderMap.set(a.id, base + tag)
       }
@@ -140,6 +150,7 @@ export async function GET(request: NextRequest) {
         m.awarderName = m.awardedBy
           ? (awarderMap.get(m.awardedBy) || 'Desconhecido')
           : 'Sem registro de quem lançou'
+        m.awarderIsSecretary = m.awardedBy ? secretaryIds.has(m.awardedBy) : false
       }
     }
 
