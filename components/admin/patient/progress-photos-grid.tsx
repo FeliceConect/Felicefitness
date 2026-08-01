@@ -15,6 +15,7 @@ interface ProgressPhoto {
 
 interface ProgressPhotosGridProps {
   patientId: string
+  defaultOpen?: boolean
 }
 
 const MOMENTOS = ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6'] as const
@@ -28,8 +29,8 @@ const POSICOES = [
 type MomentoKey = typeof MOMENTOS[number]
 type PosicaoKey = typeof POSICOES[number]['key']
 
-export function ProgressPhotosGrid({ patientId }: ProgressPhotosGridProps) {
-  const [open, setOpen] = useState(false)
+export function ProgressPhotosGrid({ patientId, defaultOpen = false }: ProgressPhotosGridProps) {
+  const [open, setOpen] = useState(defaultOpen)
   const [loading, setLoading] = useState(true)
   const [photos, setPhotos] = useState<ProgressPhoto[]>([])
   const [uploadingCell, setUploadingCell] = useState<string | null>(null)

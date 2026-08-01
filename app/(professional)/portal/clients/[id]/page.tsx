@@ -34,6 +34,7 @@ import {
   TabFormularios,
 } from '@/components/portal/client-detail'
 import { TabExames } from '@/components/portal/client-detail/tab-exames'
+import { ProgressPhotosGrid } from '@/components/admin/patient/progress-photos-grid'
 
 interface ClientDetails {
   id: string
@@ -130,7 +131,7 @@ interface Bioimpedance {
   metabolismo_basal: number | null
 }
 
-type TabKey = 'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'prontuario' | 'bioimpedancia' | 'antropometria' | 'ultrassom' | 'plano-alimentar' | 'exames' | 'formularios'
+type TabKey = 'overview' | 'meals' | 'workouts' | 'hydration' | 'sleep' | 'prontuario' | 'bioimpedancia' | 'antropometria' | 'ultrassom' | 'fotos' | 'plano-alimentar' | 'exames' | 'formularios'
 
 export default function ClientDetailPage() {
   const params = useParams()
@@ -242,6 +243,7 @@ export default function ClientDetailPage() {
     { key: 'bioimpedancia', label: 'Bioimpedância', show: !isCoach && !isPhysiotherapist },
     { key: 'antropometria', label: 'Antropometria', show: !isCoach && !isPhysiotherapist },
     { key: 'ultrassom', label: 'Ultrassom', show: isNutritionist || isSuperAdmin },
+    { key: 'fotos', label: 'Fotos', show: isNutritionist || isTrainer || isSuperAdmin },
     { key: 'plano-alimentar', label: 'Plano Alimentar', show: isNutritionist },
     { key: 'exames', label: 'Exames', show: isMedicoIntegrativo },
     { key: 'formularios', label: 'Formulários', show: true },
@@ -851,6 +853,10 @@ export default function ClientDetailPage() {
 
       {activeTab === 'ultrassom' && (
         <TabUltrassom patientId={params.id as string} canEdit={isNutritionist || isSuperAdmin} />
+      )}
+
+      {activeTab === 'fotos' && (
+        <ProgressPhotosGrid patientId={params.id as string} defaultOpen />
       )}
 
       {activeTab === 'plano-alimentar' && (
