@@ -304,6 +304,7 @@ export default function ClientDetailPage() {
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-dourado/10 flex items-center justify-center overflow-hidden">
               {client.foto ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={client.foto} alt={client.nome || ''} className="w-full h-full object-cover" />
               ) : (
                 <User className="w-10 h-10 text-dourado" />
@@ -615,6 +616,7 @@ export default function ClientDetailPage() {
                 <div key={meal.id} className="p-4 bg-background-elevated rounded-lg flex gap-4">
                   {meal.foto && (
                     <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={meal.foto} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}

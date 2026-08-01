@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { Camera, Upload, Loader2, X, Check, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { Camera, Upload, Loader2, X, Check, ChevronDown, ChevronUp, RefreshCw, ImageOff } from 'lucide-react'
 import { resizeImage, blobToFile } from '@/lib/photos/processing'
+import { progressPhotoSrc } from '@/lib/photos/proxy-url'
 
 interface ProgressPhoto {
   id: string
@@ -35,6 +36,8 @@ export function ProgressPhotosGrid({ patientId, defaultOpen = false }: ProgressP
   const [photos, setPhotos] = useState<ProgressPhoto[]>([])
   const [uploadingCell, setUploadingCell] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [failedPhotos, setFailedPhotos] = useState<Record<string, boolean>>({})
+  const [loadError, setLoadError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pendingCell = useRef<{ momento: MomentoKey; posicao: PosicaoKey; replacePhotoId?: string } | null>(null)
 
@@ -43,9 +46,18 @@ export function ProgressPhotosGrid({ patientId, defaultOpen = false }: ProgressP
     try {
       const res = await fetch(`/api/admin/patients/${patientId}/progress-photos`)
       const json = await res.json()
-      if (json.success) setPhotos(json.photos || [])
+      if (json.success) {
+        setPhotos(json.photos || [])
+        setFailedPhotos({})
+        setLoadError(false)
+      } else {
+        // Sem isso, falha de permissão vira grade vazia — indistinguível de
+        // "paciente nunca tirou foto", que é a leitura errada e perigosa.
+        setLoadError(true)
+      }
     } catch (err) {
       console.error('Erro ao carregar fotos:', err)
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -58,6 +70,8 @@ export function ProgressPhotosGrid({ patientId, defaultOpen = false }: ProgressP
   const findPhoto = (momento: MomentoKey, posicao: PosicaoKey): ProgressPhoto | undefined => {
     return photos.find(p => p.momento_avaliacao === momento && p.posicao === posicao)
   }
+
+  const photoSrc = (photo: ProgressPhoto) => progressPhotoSrc(patientId, photo.id)
 
   const handleSelectFile = (momento: MomentoKey, posicao: PosicaoKey, replacePhotoId?: string) => {
     pendingCell.current = { momento, posicao, replacePhotoId }
@@ -191,6 +205,18 @@ export function ProgressPhotosGrid({ patientId, defaultOpen = false }: ProgressP
               <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" />
               Carregando fotos...
             </div>
+          ) : loadError ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-foreground-secondary mb-3">
+                Não conseguimos carregar as fotos deste paciente.
+              </p>
+              <button
+                onClick={fetchPhotos}
+                className="px-4 py-2 text-sm rounded-lg bg-dourado text-white hover:bg-dourado/90"
+              >
+                Tentar de novo
+              </button>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -220,13 +246,27 @@ export function ProgressPhotosGrid({ patientId, defaultOpen = false }: ProgressP
                             <div className="aspect-[3/4] w-full max-w-[120px] mx-auto relative rounded-lg overflow-hidden bg-background-elevated border border-border group">
                               {photo ? (
                                 <>
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  {failedPhotos[photo.id] ? (
+                                    <button
+                                      onClick={() => setFailedPhotos(prev => ({ ...prev, [photo.id]: false }))}
+                                      className="w-full h-full flex flex-col items-center justify-center gap-1 text-foreground-muted hover:text-dourado px-1"
+                                      title="Não foi possível carregar. Tentar de novo."
+                                    >
+                                      <ImageOff className="w-4 h-4" />
+                                      <span className="text-[10px] text-center leading-tight">Falhou<br />Tentar de novo</span>
+                                    </button>
+                                  ) : (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
                                   <img
-                                    src={photo.foto_url}
+                                    src={photoSrc(photo)}
                                     alt={`${momento} ${p.label}`}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover cursor-pointer"
-                                    onClick={() => setPreviewUrl(photo.foto_url)}
+                                    onClick={() => setPreviewUrl(photoSrc(photo))}
+                                    onError={() => setFailedPhotos(prev => ({ ...prev, [photo.id]: true }))}
                                   />
+                                  )}
                                   {uploading && (
                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                                       <Loader2 className="w-5 h-5 animate-spin text-white" />

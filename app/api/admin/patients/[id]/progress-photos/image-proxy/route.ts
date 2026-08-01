@@ -1,109 +1,97 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { requirePhotoAccess } from '@/lib/auth/patient-photos'
 
-function getAdminClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
+export const maxDuration = 20
 
 /**
- * Proxy de imagens do bucket `progress-photos` — serve a imagem via mesmo
- * origem do app, evitando que o <canvas> fique "tainted" durante exportação
- * (html-to-image / toPng) quando o bucket não tem headers CORS permissivos.
+ * Proxy de imagens do bucket `progress-photos` — único caminho de leitura das
+ * fotos de evolução. São fotos de corpo em roupa íntima (dado sensível, LGPD),
+ * então a imagem só sai daqui depois de checar sessão, papel e vínculo do
+ * profissional com o paciente.
  *
- * Query: ?url=<URL absoluta da imagem no storage>
- * Só aceita URLs do bucket `progress-photos` do nosso Supabase.
+ * Efeito colateral útil: como serve do mesmo origin, o <canvas> não fica
+ * "tainted" na exportação (html-to-image / toPng) da comparação.
+ *
+ * Query: ?photo_id=<uuid da linha em fitness_progress_photos>
+ *
+ * O parâmetro é o id da foto, e não a URL: assim o caminho do objeto é
+ * derivado no servidor (nada de path vindo do cliente), o user_id do paciente
+ * não viaja na query string, e a URL não termina em .webp — o que a faria cair
+ * na regra de cache de imagens do service worker.
  */
+
+const BUCKET = 'progress-photos'
+const ALLOWED_CONTENT_TYPES = ['image/webp', 'image/jpeg', 'image/png']
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: patientId } = await params
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
+    const auth = await requirePhotoAccess(patientId)
+    if ('error' in auth) return auth.error
+    const { supabaseAdmin } = auth
+
+    const photoId = new URL(request.url).searchParams.get('photo_id')
+    if (!photoId) {
+      return NextResponse.json({ success: false, error: 'photo_id obrigatório' }, { status: 400 })
     }
 
-    const supabaseAdmin = getAdminClient()
-    const { data: profile } = await supabaseAdmin
-      .from('fitness_profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    if (!profile || !['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'physiotherapist', 'medico_integrativo'].includes(profile.role)) {
-      return NextResponse.json({ success: false, error: 'Acesso negado' }, { status: 403 })
-    }
-
-    // Check assignment para roles clínicos
-    const clinicalRoles = ['nutritionist', 'trainer', 'coach', 'physiotherapist', 'medico_integrativo']
-    if (clinicalRoles.includes(profile.role)) {
-      const { data: professional } = await supabaseAdmin
-        .from('fitness_professionals')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle()
-      if (!professional) {
-        return NextResponse.json({ success: false, error: 'Profissional inativo' }, { status: 403 })
-      }
-      const { data: assignment } = await supabaseAdmin
-        .from('fitness_client_assignments')
-        .select('id')
-        .eq('professional_id', professional.id)
-        .eq('client_id', patientId)
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle()
-      if (!assignment) {
-        return NextResponse.json({ success: false, error: 'Paciente não vinculado' }, { status: 403 })
-      }
-    }
-
-    const { searchParams } = new URL(request.url)
-    const imageUrl = searchParams.get('url')
-    if (!imageUrl) {
-      return NextResponse.json({ success: false, error: 'url obrigatório' }, { status: 400 })
-    }
-
-    // Whitelist: só aceita URLs que apontam para o nosso bucket progress-photos
-    const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const allowedPrefix = `${supabaseBase.replace(/\/$/, '')}/storage/v1/object/public/progress-photos/`
-    if (!imageUrl.startsWith(allowedPrefix)) {
-      return NextResponse.json({ success: false, error: 'URL não permitida' }, { status: 400 })
-    }
-
-    // Verifica que a foto realmente pertence ao paciente (via DB)
     const { data: photo } = await supabaseAdmin
       .from('fitness_progress_photos')
-      .select('id')
-      .eq('user_id', patientId)
-      .eq('foto_url', imageUrl)
-      .limit(1)
+      .select('foto_url, user_id')
+      .eq('id', photoId)
       .maybeSingle()
-    if (!photo) {
+
+    // Confere a posse aqui: sem isso, trocar o :id da rota leria a foto de
+    // outro paciente com a autorização deste.
+    if (!photo || photo.user_id !== patientId) {
       return NextResponse.json({ success: false, error: 'Foto não encontrada' }, { status: 404 })
     }
 
-    // Baixa a imagem server-side e repassa
-    const upstream = await fetch(imageUrl)
-    if (!upstream.ok || !upstream.body) {
-      return NextResponse.json({ success: false, error: 'Upstream falhou' }, { status: 502 })
+    // `foto_url` é gravada pelo cliente em alguns fluxos, então o caminho
+    // derivado dela é tratado como não confiável: tem que cair dentro da pasta
+    // do próprio paciente, sem subir de diretório.
+    const marker = `/${BUCKET}/`
+    const markerAt = photo.foto_url.indexOf(marker)
+    const objectPath = markerAt === -1
+      ? null
+      : decodeURIComponent(photo.foto_url.slice(markerAt + marker.length).split('?')[0])
+
+    if (!objectPath || objectPath.includes('..') || !objectPath.startsWith(`${patientId}/`)) {
+      return NextResponse.json({ success: false, error: 'Caminho inválido' }, { status: 400 })
     }
-    const contentType = upstream.headers.get('content-type') || 'image/webp'
-    const buffer = await upstream.arrayBuffer()
-    return new NextResponse(buffer, {
+
+    const { data: blob, error: downloadError } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .download(objectPath)
+
+    if (downloadError || !blob) {
+      // Objeto sumiu do storage mas a linha ficou: é 404, não falha de infra —
+      // 502 aqui polui o alerta de erro da plataforma.
+      console.warn('[image-proxy] objeto ausente', { patientId, photoId, message: downloadError?.message })
+      return NextResponse.json({ success: false, error: 'Imagem não encontrada' }, { status: 404 })
+    }
+
+    // Serve só tipo de imagem conhecido. O conteúdo vem do storage e é servido
+    // no origin do app: devolver text/html daqui seria XSS na sessão de quem
+    // enxerga o prontuário.
+    if (!ALLOWED_CONTENT_TYPES.includes(blob.type)) {
+      console.warn('[image-proxy] tipo recusado', { patientId, photoId, type: blob.type })
+      return NextResponse.json({ success: false, error: 'Tipo de arquivo inválido' }, { status: 415 })
+    }
+
+    return new NextResponse(blob.stream(), {
       status: 200,
       headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'private, max-age=300',
+        'Content-Type': blob.type,
+        // O nome do objeto carrega timestamp, então o conteúdo é imutável.
+        // `private` mantém fora de cache compartilhado; a hora de validade
+        // evita reabrir 28 invocações a cada troca de aba.
+        'Cache-Control': 'private, max-age=3600, immutable',
+        'Content-Disposition': 'inline',
+        'X-Content-Type-Options': 'nosniff',
       },
     })
   } catch (error) {

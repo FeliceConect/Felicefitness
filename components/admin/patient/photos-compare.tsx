@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { GitCompare, Download, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { progressPhotoSrc } from '@/lib/photos/proxy-url'
 
 interface PhotoRecord {
   id: string
@@ -39,10 +40,9 @@ export function PhotosCompare({ patientId, patientName }: PhotosCompareProps) {
 
   // Baixa uma imagem via proxy e converte para data URL (base64).
   // Necessário para exportar via html-to-image sem CORS/tainted canvas.
-  const fetchAsDataUrl = async (url: string): Promise<string | null> => {
+  const fetchAsDataUrl = async (photoId: string): Promise<string | null> => {
     try {
-      const proxyUrl = `/api/admin/patients/${patientId}/progress-photos/image-proxy?url=${encodeURIComponent(url)}`
-      const res = await fetch(proxyUrl)
+      const res = await fetch(progressPhotoSrc(patientId, photoId))
       if (!res.ok) return null
       const blob = await res.blob()
       return await new Promise<string>((resolve, reject) => {
@@ -100,8 +100,8 @@ export function PhotosCompare({ patientId, patientName }: PhotosCompareProps) {
     const load = async () => {
       setLoadingImages(true)
       const [a, b] = await Promise.all([
-        photoA?.foto_url ? fetchAsDataUrl(photoA.foto_url) : Promise.resolve(null),
-        photoB?.foto_url ? fetchAsDataUrl(photoB.foto_url) : Promise.resolve(null),
+        photoA?.id ? fetchAsDataUrl(photoA.id) : Promise.resolve(null),
+        photoB?.id ? fetchAsDataUrl(photoB.id) : Promise.resolve(null),
       ])
       if (!cancelled) {
         setDataUrlA(a)

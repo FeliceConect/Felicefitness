@@ -1,66 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { compressImageFile } from '@/lib/images/compress'
-
-function getAdminClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
+import { requirePhotoAccess } from '@/lib/auth/patient-photos'
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
-
-async function requirePermission(patientId?: string) {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return { error: NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 }) }
-  }
-  const supabaseAdmin = getAdminClient()
-  const { data: profile } = await supabaseAdmin
-    .from('fitness_profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-  if (!profile || !['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'physiotherapist', 'medico_integrativo'].includes(profile.role)) {
-    return { error: NextResponse.json({ success: false, error: 'Acesso negado' }, { status: 403 }) }
-  }
-
-  const clinicalRoles = ['nutritionist', 'trainer', 'coach', 'physiotherapist', 'medico_integrativo']
-  if (patientId && clinicalRoles.includes(profile.role)) {
-    const { data: professional } = await supabaseAdmin
-      .from('fitness_professionals')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (!professional) {
-      return { error: NextResponse.json({ success: false, error: 'Profissional inativo' }, { status: 403 }) }
-    }
-
-    const { data: assignment } = await supabaseAdmin
-      .from('fitness_client_assignments')
-      .select('id')
-      .eq('professional_id', professional.id)
-      .eq('client_id', patientId)
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle()
-
-    if (!assignment) {
-      return { error: NextResponse.json({ success: false, error: 'Paciente não vinculado' }, { status: 403 }) }
-    }
-  }
-
-  return { user, supabaseAdmin }
-}
 
 // PUT - Substitui a imagem de uma foto existente (mesma célula M/posicao)
 export async function PUT(
@@ -69,7 +14,7 @@ export async function PUT(
 ) {
   try {
     const { id: patientId, photoId } = await params
-    const auth = await requirePermission(patientId)
+    const auth = await requirePhotoAccess(patientId)
     if ('error' in auth) return auth.error
     const { supabaseAdmin } = auth
 

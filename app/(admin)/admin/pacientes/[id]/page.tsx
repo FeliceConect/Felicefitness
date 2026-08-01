@@ -32,6 +32,7 @@ import { FichaVivaSection } from '@/components/admin/patient/ficha-viva-section'
 import { NewConsultationModal } from '@/components/admin/patient/new-consultation-modal'
 import { SuperadminConsultationsSection } from '@/components/admin/patient/superadmin-consultations-section'
 import { ProgressPhotosGrid } from '@/components/admin/patient/progress-photos-grid'
+import { progressPhotoSrc } from '@/lib/photos/proxy-url'
 import { BioimpedanceSection } from '@/components/admin/patient/bioimpedance-section'
 import { PhotosCompare } from '@/components/admin/patient/photos-compare'
 import { TabAntropometria } from '@/components/portal/client-detail/tab-antropometria'
@@ -935,8 +936,10 @@ export default function PatientDetailPage() {
                 <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden bg-background-elevated">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={photo.foto_url}
+                    src={progressPhotoSrc(patientId, photo.id)}
                     alt={`Progresso ${photo.data}`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-0 inset-x-0 bg-black/60 px-1 py-0.5">
