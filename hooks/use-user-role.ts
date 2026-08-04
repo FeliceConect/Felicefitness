@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { UserRole } from '@/lib/admin/types'
 import { isAdmin, isProfessional, hasPermission } from '@/lib/admin/types'
 
-export type AdminType = 'secretary' | 'support' | null
+export type AdminType = 'secretary' | 'support' | 'manager' | null
 
 interface UseUserRoleReturn {
   role: UserRole

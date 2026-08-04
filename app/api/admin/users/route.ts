@@ -201,10 +201,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password, nome, role, admin_type } = body
 
-    // Secretária só pode criar usuários com role 'client'
-    if (profile.role === 'admin' && profile.admin_type === 'secretary' && role && role !== 'client') {
+    // Secretária e gestor só podem criar usuários com role 'client'
+    if (
+      profile.role === 'admin' &&
+      ['secretary', 'manager'].includes(profile.admin_type ?? '') &&
+      role && role !== 'client'
+    ) {
       return NextResponse.json(
-        { success: false, error: 'Secretaria só pode cadastrar pacientes' },
+        { success: false, error: 'Este perfil só pode cadastrar pacientes' },
         { status: 403 }
       )
     }
@@ -227,7 +231,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar admin_type (somente para role 'admin')
-    const validAdminTypes = ['secretary', 'support', null]
+    const validAdminTypes = ['secretary', 'support', 'manager', null]
     const adminType = userRole === 'admin' ? (admin_type || null) : null
     if (adminType && !validAdminTypes.includes(adminType)) {
       return NextResponse.json(
@@ -365,8 +369,9 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Secretária não pode alterar roles
-    if (profile.role === 'admin' && profile.admin_type === 'secretary') {
+    // Secretária e gestor não podem alterar roles (trocar role concede
+    // portais/poderes — decisão de super_admin ou admin geral)
+    if (profile.role === 'admin' && ['secretary', 'manager'].includes(profile.admin_type ?? '')) {
       return NextResponse.json(
         { success: false, error: 'Secretaria não pode alterar papéis' },
         { status: 403 }
@@ -413,6 +418,13 @@ export async function PATCH(request: NextRequest) {
     )
 
     // Se mudar para admin, salvar admin_type; se sair de admin, limpar
+    const validAdminTypes = ['secretary', 'support', 'manager']
+    if (newRole === 'admin' && admin_type && !validAdminTypes.includes(admin_type)) {
+      return NextResponse.json(
+        { success: false, error: 'Tipo de admin inválido' },
+        { status: 400 }
+      )
+    }
     const updateData: Record<string, unknown> = { role: newRole }
     if (newRole === 'admin') {
       updateData.admin_type = admin_type || null
@@ -503,10 +515,10 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Secretária não pode deletar/inativar/reativar usuários
-    if (profile.role === 'admin' && profile.admin_type === 'secretary') {
+    // Secretária e gestor não podem deletar/inativar/reativar usuários
+    if (profile.role === 'admin' && ['secretary', 'manager'].includes(profile.admin_type ?? '')) {
       return NextResponse.json(
-        { success: false, error: 'Secretaria não pode remover ou inativar usuários' },
+        { success: false, error: 'Este perfil não pode remover ou inativar usuários' },
         { status: 403 }
       )
     }

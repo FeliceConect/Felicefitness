@@ -41,6 +41,7 @@ interface User {
 const adminTypeLabels: Record<string, string> = {
   secretary: 'Secretaria',
   support: 'Suporte',
+  manager: 'Gestor',
 }
 
 interface Pagination {
@@ -52,8 +53,10 @@ interface Pagination {
 
 export default function UsersPage() {
   const { role: currentRole, adminType: currentAdminType } = useUserRole()
-  // Secretária: só pode criar clientes, não pode deletar/inativar, não pode alterar roles
-  const isSecretary = currentRole === 'admin' && currentAdminType === 'secretary'
+  // Secretária e gestor: só podem criar clientes, não podem deletar/inativar
+  // nem alterar roles (o servidor também bloqueia)
+  const isRestrictedAdmin =
+    currentRole === 'admin' && (currentAdminType === 'secretary' || currentAdminType === 'manager')
   const [users, setUsers] = useState<User[]>([])
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
@@ -139,7 +142,7 @@ export default function UsersPage() {
     }
 
     // Secretaria só pode criar usuários cliente
-    const payload = isSecretary
+    const payload = isRestrictedAdmin
       ? { ...newUser, role: 'client' as UserRole, admin_type: '' }
       : newUser
 
@@ -172,7 +175,7 @@ export default function UsersPage() {
     }
   }
 
-  const handleRoleChange = async (newRole: string) => {
+  const handleRoleChange = async (newRole: string, adminType?: string) => {
     if (!selectedUser) return
 
     setUpdatingRole(true)
@@ -182,7 +185,8 @@ export default function UsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: selectedUser.id,
-          role: newRole
+          role: newRole,
+          admin_type: newRole === 'admin' ? (adminType || null) : null
         })
       })
 
@@ -191,7 +195,9 @@ export default function UsersPage() {
       if (data.success) {
         // Atualizar lista localmente
         setUsers(prev => prev.map(u =>
-          u.id === selectedUser.id ? { ...u, role: newRole as UserRole } : u
+          u.id === selectedUser.id
+            ? { ...u, role: newRole as UserRole, admin_type: newRole === 'admin' ? (adminType || null) : null }
+            : u
         ))
         setShowRoleModal(false)
         setSelectedUser(null)
@@ -524,7 +530,7 @@ export default function UsersPage() {
                         {formatDate(user.created_at)}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {!isSecretary && (
+                        {!isRestrictedAdmin && (
                           <button
                             onClick={() => {
                               setSelectedUser(user)
@@ -558,7 +564,7 @@ export default function UsersPage() {
                         <p className="text-sm text-foreground-secondary">{user.email}</p>
                       </div>
                     </div>
-                    {!isSecretary && (
+                    {!isRestrictedAdmin && (
                       <button
                         onClick={() => {
                           setSelectedUser(user)
@@ -670,39 +676,47 @@ export default function UsersPage() {
               <p className="text-sm text-foreground-secondary mb-3">Alterar papel:</p>
 
               <div className="space-y-2 mb-6">
-                {[
+                {([
                   { value: 'client', label: 'Cliente', icon: Activity, desc: 'Usuário padrão do app' },
                   { value: 'trainer', label: 'Personal Trainer', icon: Activity, desc: 'Acesso aos clientes atribuídos' },
                   { value: 'nutritionist', label: 'Nutricionista', icon: Activity, desc: 'Acesso aos clientes atribuídos' },
                   { value: 'coach', label: 'Coach Alta Performance', icon: Activity, desc: 'Prontuário privado, acompanhamento' },
                   { value: 'physiotherapist', label: 'Fisioterapeuta', icon: Activity, desc: 'Reabilitação e fisioterapia' },
                   { value: 'admin', label: 'Administrador', icon: Shield, desc: 'Acesso total ao painel admin' },
+                  { value: 'admin', adminType: 'manager', label: 'Admin — Gestor', icon: Shield, desc: 'Rankings, agenda e usuários — sem dados clínicos' },
+                  { value: 'admin', adminType: 'secretary', label: 'Admin — Secretaria', icon: Shield, desc: 'Agenda e cadastro — sem dados clínicos' },
+                  { value: 'admin', adminType: 'support', label: 'Admin — Suporte', icon: Shield, desc: 'Agenda e pacientes (antropometria, bioimpedância)' },
                   { value: 'super_admin', label: 'Super Admin', icon: Shield, desc: 'Pode criar outros admins' },
-                ].map((role) => (
+                ] as Array<{ value: string; adminType?: string; label: string; icon: React.ElementType; desc: string }>).map((role) => {
+                  const isCurrent =
+                    selectedUser.role === role.value &&
+                    (selectedUser.admin_type || null) === (role.adminType || null)
+                  return (
                   <button
-                    key={role.value}
-                    onClick={() => handleRoleChange(role.value)}
-                    disabled={updatingRole || selectedUser.role === role.value}
+                    key={`${role.value}-${role.adminType || 'geral'}`}
+                    onClick={() => handleRoleChange(role.value, role.adminType)}
+                    disabled={updatingRole || isCurrent}
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                      selectedUser.role === role.value
+                      isCurrent
                         ? 'border-dourado bg-dourado/10'
                         : 'border-border hover:border-dourado/30 hover:bg-background-elevated'
                     } ${updatingRole ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <role.icon className={`w-5 h-5 ${
-                      selectedUser.role === role.value ? 'text-dourado' : 'text-foreground-secondary'
+                      isCurrent ? 'text-dourado' : 'text-foreground-secondary'
                     }`} />
                     <div className="text-left flex-1">
                       <p className={`font-medium ${
-                        selectedUser.role === role.value ? 'text-dourado' : 'text-foreground'
+                        isCurrent ? 'text-dourado' : 'text-foreground'
                       }`}>{role.label}</p>
                       <p className="text-xs text-foreground-muted">{role.desc}</p>
                     </div>
-                    {selectedUser.role === role.value && (
+                    {isCurrent && (
                       <span className="text-xs text-dourado font-medium">Atual</span>
                     )}
                   </button>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Ações de Inativar/Excluir */}
@@ -1048,7 +1062,7 @@ export default function UsersPage() {
               </div>
 
               {/* Role */}
-              {isSecretary ? (
+              {isRestrictedAdmin ? (
                 <div>
                   <label className="block text-sm font-medium text-foreground-muted mb-1">
                     Papel
@@ -1082,7 +1096,7 @@ export default function UsersPage() {
               )}
 
               {/* Admin Type (only when role is admin) */}
-              {!isSecretary && newUser.role === 'admin' && (
+              {!isRestrictedAdmin && newUser.role === 'admin' && (
                 <div>
                   <label className="block text-sm font-medium text-foreground-muted mb-1">
                     Tipo de Admin
@@ -1095,13 +1109,16 @@ export default function UsersPage() {
                     <option value="">Selecione o tipo</option>
                     <option value="secretary">Secretaria</option>
                     <option value="support">Suporte (Tec. Enfermagem / Esteticista)</option>
+                    <option value="manager">Gestor (Rankings + Agenda + Usuários)</option>
                   </select>
                   <p className="text-xs text-foreground-muted mt-1">
                     {newUser.admin_type === 'secretary'
                       ? 'Cadastro, agenda, comunicacao — sem acesso a dados clinicos'
                       : newUser.admin_type === 'support'
                         ? 'Tudo da secretaria + antropometria, bioimpedancia e fotos'
-                        : 'Selecione o tipo de acesso deste administrador'}
+                        : newUser.admin_type === 'manager'
+                          ? 'Rankings (pontos Instagram), agenda e cadastro — sem dados clinicos de paciente'
+                          : 'Selecione o tipo de acesso deste administrador'}
                   </p>
                 </div>
               )}

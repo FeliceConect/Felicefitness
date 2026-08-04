@@ -89,14 +89,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Secretária só pode redefinir senha de pacientes
+    // Secretária e gestor só podem redefinir senha de pacientes. Sem isso, o
+    // gestor poderia resetar a senha de um profissional e entrar no portal
+    // dele — escalação para dados clínicos.
     if (
       profile.role === 'admin' &&
-      profile.admin_type === 'secretary' &&
+      ['secretary', 'manager'].includes(profile.admin_type ?? '') &&
       targetProfile.role !== 'client'
     ) {
       return NextResponse.json(
-        { success: false, error: 'Secretaria só pode redefinir senha de pacientes' },
+        { success: false, error: 'Este perfil só pode redefinir senha de pacientes' },
         { status: 403 }
       )
     }

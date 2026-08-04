@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { isManagerAdmin } from '@/lib/auth/admin-gate'
 
 function getAdminClient() {
   return createAdminClient(
@@ -32,11 +33,14 @@ async function requirePermission() {
   const supabaseAdmin = getAdminClient()
   const { data: profile } = await supabaseAdmin
     .from('fitness_profiles')
-    .select('role')
+    .select('role, admin_type')
     .eq('id', user.id)
     .single()
   if (!profile || !['super_admin', 'admin', 'nutritionist', 'trainer', 'coach', 'physiotherapist', 'medico_integrativo'].includes(profile.role)) {
     return { error: NextResponse.json({ success: false, error: 'Acesso negado' }, { status: 403 }) }
+  }
+  if (isManagerAdmin(profile)) {
+    return { error: NextResponse.json({ success: false, error: 'Gestor não acessa antropometria' }, { status: 403 }) }
   }
   return { user, supabaseAdmin }
 }

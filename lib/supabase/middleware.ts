@@ -154,7 +154,7 @@ export async function updateSession(request: NextRequest) {
   let isAdminUser = false
   let isSuperAdmin = false
   let isMedicoIntegrativo = false // acessa app E portal, como super_admin
-  let isRestrictedAdmin = false // admin_type secretary/support — sem acesso ao app
+  let isRestrictedAdmin = false // admin_type secretary/support/manager — sem acesso ao app
   let role: string | null = null
   let adminType: string | null = null
   let onboardingCompleted = true
@@ -236,7 +236,7 @@ export async function updateSession(request: NextRequest) {
       isAdminUser = true
     } else if (role === 'admin') {
       isAdminUser = true
-      if (adminType === 'secretary' || adminType === 'support') {
+      if (adminType === 'secretary' || adminType === 'support' || adminType === 'manager') {
         isRestrictedAdmin = true
       }
     }
@@ -265,7 +265,9 @@ export async function updateSession(request: NextRequest) {
   // Landing page apropriada para cada tipo de usuário
   const getLanding = (): string => {
     if (isRestrictedAdmin) {
-      return adminType === 'secretary' ? '/admin/agenda' : '/admin/pacientes'
+      if (adminType === 'secretary') return '/admin/agenda'
+      if (adminType === 'manager') return '/admin/rankings'
+      return '/admin/pacientes'
     }
     if (isProfessional && !isSuperAdmin) return '/portal'
     return '/dashboard'

@@ -34,6 +34,9 @@ const SUPPORT_LANDING = '/admin/pacientes'
 // Rotas permitidas para admin_type='secretary' (agenda + usuários + atribuições)
 const SECRETARY_ALLOWED_PREFIXES = ['/admin/agenda', '/admin/users', '/admin/assignments']
 const SECRETARY_LANDING = '/admin/agenda'
+// Rotas permitidas para admin_type='manager' (gestor: agenda + usuários + rankings)
+const MANAGER_ALLOWED_PREFIXES = ['/admin/agenda', '/admin/users', '/admin/rankings']
+const MANAGER_LANDING = '/admin/rankings'
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
@@ -44,8 +47,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const isSupport = role === 'admin' && adminType === 'support'
   const isSecretary = role === 'admin' && adminType === 'secretary'
-  // Support e secretary não devem voltar para o app (não são pacientes)
-  const canGoToApp = !(role === 'admin' && (adminType === 'support' || adminType === 'secretary'))
+  const isManager = role === 'admin' && adminType === 'manager'
+  // Support, secretary e manager não devem voltar para o app (não são pacientes)
+  const canGoToApp = !(role === 'admin' && (adminType === 'support' || adminType === 'secretary' || adminType === 'manager'))
 
   // Redirecionar se não for admin
   useEffect(() => {
@@ -71,6 +75,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       router.replace(SECRETARY_LANDING)
     }
   }, [loading, isSecretary, pathname, router])
+
+  // Guard: manager (gestor) só pode acessar /admin/agenda, /admin/users e /admin/rankings
+  useEffect(() => {
+    if (loading || !isManager || !pathname) return
+    const isAllowed = MANAGER_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
+    if (!isAllowed) {
+      router.replace(MANAGER_LANDING)
+    }
+  }, [loading, isManager, pathname, router])
 
   // Loading state
   if (loading) {
@@ -99,16 +112,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     : email?.split('@')[0] || 'Admin'
 
   // Menu completo — cada item lista os contextos que podem vê-lo
-  // Contextos: 'super' (super_admin + admin legado), 'secretary', 'support'
-  type MenuContext = 'super' | 'secretary' | 'support'
+  // Contextos: 'super' (super_admin + admin legado), 'secretary', 'support', 'manager'
+  type MenuContext = 'super' | 'secretary' | 'support' | 'manager'
   const allMenuItems: Array<{ href: string; icon: React.ElementType; label: string; contexts: MenuContext[] }> = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', contexts: ['super'] },
-    { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda', contexts: ['super', 'secretary', 'support'] },
+    { href: '/admin/agenda', icon: CalendarDays, label: 'Agenda', contexts: ['super', 'secretary', 'support', 'manager'] },
     { href: '/admin/pacientes', icon: UserSearch, label: 'Pacientes', contexts: ['super', 'support'] },
-    { href: '/admin/users', icon: Users, label: 'Usuários', contexts: ['super', 'secretary'] },
+    { href: '/admin/users', icon: Users, label: 'Usuários', contexts: ['super', 'secretary', 'manager'] },
     { href: '/admin/professionals', icon: UserCog, label: 'Profissionais', contexts: ['super'] },
     { href: '/admin/assignments', icon: Link2, label: 'Atribuições', contexts: ['super', 'secretary'] },
-    { href: '/admin/rankings', icon: Trophy, label: 'Rankings', contexts: ['super'] },
+    { href: '/admin/rankings', icon: Trophy, label: 'Rankings', contexts: ['super', 'manager'] },
     { href: '/admin/formularios', icon: ClipboardList, label: 'Formulários', contexts: ['super'] },
     { href: '/admin/prontuario', icon: FileText, label: 'Prontuário', contexts: ['super'] },
     { href: '/admin/costs', icon: DollarSign, label: 'Custos API', contexts: ['super'] },
@@ -121,7 +134,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       ? 'super'
       : adminType === 'secretary'
         ? 'secretary'
-        : 'support'
+        : adminType === 'manager'
+          ? 'manager'
+          : 'support'
 
   const menuItems = allMenuItems.filter(item => item.contexts.includes(userContext))
 

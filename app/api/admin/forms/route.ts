@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { isManagerAdmin } from '@/lib/auth/admin-gate'
 
 function getAdminClient() {
   return createAdminClient(
@@ -26,12 +27,15 @@ export async function GET(request: NextRequest) {
     // Check admin role
     const { data: profile } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
     if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json({ success: false, error: 'Acesso negado' }, { status: 403 })
+    }
+    if (isManagerAdmin(profile)) {
+      return NextResponse.json({ success: false, error: 'Gestor não acessa formulários de paciente' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { logApiUsage } from '@/lib/admin/api-usage'
 import OpenAI from 'openai'
+import { isManagerAdmin } from '@/lib/auth/admin-gate'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -104,11 +105,13 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin: any = getAdminClient()
     const { data: profile } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
-    const isAllowed = profile && ['super_admin', 'admin', 'nutritionist'].includes(profile.role)
+    // Gestor (manager) não importa plano alimentar — cai na checagem de
+    // nutricionista e é negado.
+    const isAllowed = profile && ['super_admin', 'admin', 'nutritionist'].includes(profile.role) && !isManagerAdmin(profile)
     if (!isAllowed) {
       // Pode ser um nutricionista cujo papel está em fitness_professionals
       const { data: professional } = await supabaseAdmin

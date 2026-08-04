@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { isManagerAdmin } from '@/lib/auth/admin-gate'
 
 function getAdminClient() {
   return createAdminClient(
@@ -41,14 +42,16 @@ export async function GET(request: NextRequest) {
 
     const admin = getAdminClient()
 
-    // Valida participante (ou super_admin/admin)
+    // Valida participante (ou super_admin/admin). Gestor (manager) não tem
+    // chat — só entra se for participante da conversa (não é).
     const { data: profile } = await admin
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .maybeSingle()
 
-    const isAdminRole = profile?.role === 'super_admin' || profile?.role === 'admin'
+    const isAdminRole = profile?.role === 'super_admin' ||
+      (profile?.role === 'admin' && !isManagerAdmin(profile))
 
     let isParticipant = isAdminRole
 

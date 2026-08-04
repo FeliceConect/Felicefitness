@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getTodayDateSP } from '@/lib/utils/date'
+import { isManagerAdmin } from '@/lib/auth/admin-gate'
 
 function getAdminClient() {
   return createAdminClient(
@@ -29,11 +30,14 @@ export async function GET(
     // profissional ativo com vínculo ao paciente.
     const { data: profile } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
-    const isAdminRole = !!profile?.role && ['super_admin', 'admin'].includes(profile.role)
+    // Gestor (manager) não é tratado como admin aqui: cai na checagem de
+    // profissional vinculado e, sem vínculo, é negado — antropometria é
+    // dado clínico.
+    const isAdminRole = !!profile?.role && ['super_admin', 'admin'].includes(profile.role) && !isManagerAdmin(profile)
 
     if (!isAdminRole) {
       const { data: professional } = await supabaseAdmin
@@ -108,11 +112,14 @@ export async function POST(
     // profissional ativo com vínculo ao paciente.
     const { data: profile } = await supabaseAdmin
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
-    const isAdminRole = !!profile?.role && ['super_admin', 'admin'].includes(profile.role)
+    // Gestor (manager) não é tratado como admin aqui: cai na checagem de
+    // profissional vinculado e, sem vínculo, é negado — antropometria é
+    // dado clínico.
+    const isAdminRole = !!profile?.role && ['super_admin', 'admin'].includes(profile.role) && !isManagerAdmin(profile)
 
     if (!isAdminRole) {
       const { data: professional } = await supabaseAdmin

@@ -17,7 +17,7 @@ const CLINICAL_ROLES = ['nutritionist', 'trainer', 'coach', 'physiotherapist', '
  * os esconde, mas a regra precisa valer no servidor (CLAUDE.md: "admin →
  * Secretária. NÃO vê dados clínicos").
  */
-const BLOCKED_ADMIN_TYPES = ['secretary', 'support']
+const BLOCKED_ADMIN_TYPES = ['secretary', 'support', 'manager']
 
 const ALLOWED_ROLES = ['super_admin', 'admin', ...CLINICAL_ROLES]
 

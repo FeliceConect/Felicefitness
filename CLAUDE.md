@@ -67,6 +67,10 @@ O planejamento completo está em `docs/felice-wellness-plan-v2.md`. **LEIA ESTE 
 ```
 super_admin  → Leonardo/Marinella — acesso total, chat com pacientes, moderar, pontuar bioimpedância
 admin        → Secretária — agenda, mensagens em massa, cadastro. NÃO vê dados clínicos
+             → admin_type diferencia: 'secretary' (agenda+usuários+atribuições),
+               'support' (agenda+pacientes/antropometria), 'manager' (Gestor/Kauê:
+               rankings [pontos Instagram]+agenda+usuários; travado no SERVIDOR de
+               prontuário, bioimpedância, fotos, formulários, notas e dashboard)
 nutritionist → Nutricionista — portal próprio, pacientes linkados, planos alimentares
 trainer      → Personal Trainer — portal próprio, pacientes linkados, programas de treino
 coach        → Coach Alta Performance (Psicóloga) — portal próprio, notas privadas (só coach + superadmin)

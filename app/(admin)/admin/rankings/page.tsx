@@ -27,6 +27,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { getTodayDateSP } from '@/lib/utils/date'
+import { useUserRole } from '@/hooks/use-user-role'
 
 interface Ranking {
   id: string
@@ -208,6 +209,13 @@ const CATEGORIES = [
 ]
 
 export default function AdminRankingsPage() {
+  // Gestor (admin_type 'manager') só valida #vivendofelice e consulta o
+  // extrato; as demais ferramentas são de super_admin (e admin legado sem
+  // tipo) — o servidor também bloqueia, aqui é só para não mostrar botão
+  // que devolve erro.
+  const { role: viewerRole, adminType: viewerAdminType } = useUserRole()
+  const canManageAll = viewerRole === 'super_admin' || (viewerRole === 'admin' && !viewerAdminType)
+
   const [rankings, setRankings] = useState<Ranking[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -809,20 +817,24 @@ export default function AdminRankingsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={openBioModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/80 transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            Bioimpedancia
-          </button>
-          <button
-            onClick={() => fetchBioAudit()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
-          >
-            <Activity className="w-4 h-4" />
-            Pontos de Bio
-          </button>
+          {canManageAll && (
+            <>
+              <button
+                onClick={openBioModal}
+                className="flex items-center gap-2 px-4 py-2.5 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/80 transition-colors"
+              >
+                <Zap className="w-4 h-4" />
+                Bioimpedancia
+              </button>
+              <button
+                onClick={() => fetchBioAudit()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
+              >
+                <Activity className="w-4 h-4" />
+                Pontos de Bio
+              </button>
+            </>
+          )}
           <button
             onClick={openInstagramModal}
             className="flex items-center gap-2 px-4 py-2.5 bg-cafe text-white rounded-lg text-sm font-medium hover:bg-cafe/80 transition-colors"
@@ -837,27 +849,31 @@ export default function AdminRankingsPage() {
             <TrendingUp className="w-4 h-4" />
             Transacoes
           </button>
-          <button
-            onClick={openResync}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Reconstruir ranking
-          </button>
-          <button
-            onClick={openChallengeAudit}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
-          >
-            <Search className="w-4 h-4" />
-            Auditar desafio
-          </button>
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2.5 bg-dourado text-foreground rounded-lg text-sm font-medium hover:bg-dourado/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Ranking
-          </button>
+          {canManageAll && (
+            <>
+              <button
+                onClick={openResync}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reconstruir ranking
+              </button>
+              <button
+                onClick={openChallengeAudit}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-vinho/30 text-vinho rounded-lg text-sm font-medium hover:bg-vinho/5 transition-colors"
+              >
+                <Search className="w-4 h-4" />
+                Auditar desafio
+              </button>
+              <button
+                onClick={openNew}
+                className="flex items-center gap-2 px-4 py-2.5 bg-dourado text-foreground rounded-lg text-sm font-medium hover:bg-dourado/90 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Novo Ranking
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -872,9 +888,11 @@ export default function AdminRankingsPage() {
         <div className="text-center py-12 bg-white rounded-xl border border-border">
           <Trophy className="w-12 h-12 text-foreground-muted mx-auto mb-3" />
           <p className="text-foreground-secondary">Nenhum ranking criado</p>
-          <button onClick={openNew} className="mt-3 text-dourado text-sm font-medium hover:text-dourado/80">
-            Criar primeiro ranking
-          </button>
+          {canManageAll && (
+            <button onClick={openNew} className="mt-3 text-dourado text-sm font-medium hover:text-dourado/80">
+              Criar primeiro ranking
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -899,22 +917,24 @@ export default function AdminRankingsPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => openEdit(ranking)}
-                    className="p-1.5 rounded-lg hover:bg-background-elevated text-foreground-secondary"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => toggleActive(ranking)}
-                    className={`p-1.5 rounded-lg hover:bg-background-elevated ${
-                      ranking.is_active ? 'text-green-400' : 'text-foreground-muted'
-                    }`}
-                  >
-                    {ranking.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
-                  </button>
-                </div>
+                {canManageAll && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => openEdit(ranking)}
+                      className="p-1.5 rounded-lg hover:bg-background-elevated text-foreground-secondary"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => toggleActive(ranking)}
+                      className={`p-1.5 rounded-lg hover:bg-background-elevated ${
+                        ranking.is_active ? 'text-green-400' : 'text-foreground-muted'
+                      }`}
+                    >
+                      {ranking.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {ranking.description && (
@@ -945,22 +965,26 @@ export default function AdminRankingsPage() {
           <Swords className="w-5 h-5 text-vinho" />
           Desafios
         </h2>
-        <button
-          onClick={openNewChallenge}
-          className="flex items-center gap-2 px-4 py-2 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/90 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Desafio
-        </button>
+        {canManageAll && (
+          <button
+            onClick={openNewChallenge}
+            className="flex items-center gap-2 px-4 py-2 bg-vinho text-white rounded-lg text-sm font-medium hover:bg-vinho/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Desafio
+          </button>
+        )}
       </div>
 
       {challenges.length === 0 ? (
         <div className="text-center py-8 bg-white rounded-xl border border-border">
           <Swords className="w-10 h-10 text-foreground-muted mx-auto mb-2" />
           <p className="text-foreground-secondary text-sm">Nenhum desafio criado</p>
-          <button onClick={openNewChallenge} className="mt-2 text-vinho text-sm font-medium hover:text-vinho/80">
-            Criar primeiro desafio
-          </button>
+          {canManageAll && (
+            <button onClick={openNewChallenge} className="mt-2 text-vinho text-sm font-medium hover:text-vinho/80">
+              Criar primeiro desafio
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -993,12 +1017,14 @@ export default function AdminRankingsPage() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleChallengeActive(ch) }}
-                    className={`p-1.5 rounded-lg hover:bg-background-elevated ${ch.is_active ? 'text-green-400' : 'text-foreground-muted'}`}
-                  >
-                    {ch.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
-                  </button>
+                  {canManageAll && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleChallengeActive(ch) }}
+                      className={`p-1.5 rounded-lg hover:bg-background-elevated ${ch.is_active ? 'text-green-400' : 'text-foreground-muted'}`}
+                    >
+                      {ch.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
+                    </button>
+                  )}
                 </div>
                 {ch.description && (
                   <p className="text-foreground-secondary text-sm mb-2 line-clamp-2">{ch.description}</p>
@@ -1117,16 +1143,18 @@ export default function AdminRankingsPage() {
 
             {/* Footer */}
             <div className="p-4 border-t border-border flex gap-2">
-              <button
-                onClick={() => { toggleChallengeActive(selectedChallenge); setSelectedChallenge(null) }}
-                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  selectedChallenge.is_active
-                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                    : 'bg-green-50 text-green-600 hover:bg-green-100'
-                }`}
-              >
-                {selectedChallenge.is_active ? 'Desativar' : 'Ativar'}
-              </button>
+              {canManageAll && (
+                <button
+                  onClick={() => { toggleChallengeActive(selectedChallenge); setSelectedChallenge(null) }}
+                  className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    selectedChallenge.is_active
+                      ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                      : 'bg-green-50 text-green-600 hover:bg-green-100'
+                  }`}
+                >
+                  {selectedChallenge.is_active ? 'Desativar' : 'Ativar'}
+                </button>
+              )}
               <button
                 onClick={() => setSelectedChallenge(null)}
                 className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground-secondary text-sm font-medium hover:bg-background-elevated transition-colors"

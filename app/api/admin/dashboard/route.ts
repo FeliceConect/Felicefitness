@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getTodayDateSP, getDateOffsetSP, getMonthStartSP } from '@/lib/utils/date'
+import { isManagerAdmin } from '@/lib/auth/admin-gate'
 
 export async function GET() {
   try {
@@ -19,13 +20,19 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabase as any)
       .from('fitness_profiles')
-      .select('role')
+      .select('role, admin_type')
       .eq('id', user.id)
       .single()
 
     if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json(
         { success: false, error: 'Acesso negado' },
+        { status: 403 }
+      )
+    }
+    if (isManagerAdmin(profile)) {
+      return NextResponse.json(
+        { success: false, error: 'Gestor não acessa o dashboard clínico' },
         { status: 403 }
       )
     }
