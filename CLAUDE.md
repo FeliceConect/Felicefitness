@@ -158,6 +158,7 @@ app/
 - Cardio no treino: 3/5/8/10pts por intensidade (leve/moderado/intenso/muito_intenso)
 - Atividade avulsa: 3/5/8/10pts por intensidade — **cap de 2 atividades pontuáveis/dia**
 - Post no feed: **4pts** (máx 2 posts pontuáveis/dia)
+- Post no Instagram #vivendofelice: **5pts** (manual, painel admin → Rankings; superadmin e admin não-secretária; 1×/dia por paciente; retroativo até 90 dias, entra no dia do post)
 - Reação/comentário: 1pt (1× por post, máx 2/dia cada; toggle-off da reação estorna o ponto)
 - Formulário preenchido: 5pts
 - Streak 7 dias: 15pts bônus (trigger no banco, na transição real do streak)

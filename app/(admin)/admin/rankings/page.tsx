@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react'
+import { getTodayDateSP } from '@/lib/utils/date'
 
 interface Ranking {
   id: string
@@ -224,6 +225,7 @@ export default function AdminRankingsPage() {
   // Instagram #vivendofelice modal
   const [showInstagramModal, setShowInstagramModal] = useState(false)
   const [instagramClient, setInstagramClient] = useState('')
+  const [instagramDate, setInstagramDate] = useState(getTodayDateSP())
   const [validatingInstagram, setValidatingInstagram] = useState(false)
   const [instagramFeedback, setInstagramFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -492,6 +494,7 @@ export default function AdminRankingsPage() {
   const openInstagramModal = async () => {
     setShowInstagramModal(true)
     setInstagramFeedback(null)
+    setInstagramDate(getTodayDateSP())
     // Carrega TODOS os clientes (mesma fonte da modal de bioimpedância).
     // Importante usar /api/admin/users?role=client em vez de
     // /api/professional/clients (que só traz pacientes atribuídos a um pro).
@@ -507,14 +510,14 @@ export default function AdminRankingsPage() {
   }
 
   const validateInstagramPost = async () => {
-    if (!instagramClient) return
+    if (!instagramClient || !instagramDate) return
     setValidatingInstagram(true)
     setInstagramFeedback(null)
     try {
       const res = await fetch('/api/admin/rankings/instagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: instagramClient }),
+        body: JSON.stringify({ clientId: instagramClient, date: instagramDate }),
       })
       const data = await res.json()
       if (data.success) {
@@ -1751,7 +1754,7 @@ export default function AdminRankingsPage() {
             </div>
             <div className="p-4 space-y-4">
               <p className="text-xs text-foreground-muted">
-                Atribui 5 pts ao paciente após validar o post no Instagram com a hashtag <span className="text-vinho font-semibold">#vivendofelice</span>. Limite de 1 validação por paciente por dia.
+                Atribui 5 pts ao paciente após validar o post no Instagram com a hashtag <span className="text-vinho font-semibold">#vivendofelice</span>. Limite de 1 validação por paciente por dia. Para post de dias anteriores, escolha a data do post — o lançamento retroativo conta no dia certo do desafio (até 90 dias).
               </p>
 
               <div>
@@ -1766,6 +1769,17 @@ export default function AdminRankingsPage() {
                     <option key={c.id} value={c.id}>{c.nome || c.email}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground-muted mb-1">Data do post *</label>
+                <input
+                  type="date"
+                  value={instagramDate}
+                  max={getTodayDateSP()}
+                  onChange={e => setInstagramDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background-elevated text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-dourado/50"
+                />
               </div>
 
               {instagramFeedback && (
@@ -1793,7 +1807,7 @@ export default function AdminRankingsPage() {
                 </button>
                 <button
                   onClick={validateInstagramPost}
-                  disabled={!instagramClient || validatingInstagram}
+                  disabled={!instagramClient || !instagramDate || validatingInstagram}
                   className="flex-1 px-4 py-2.5 rounded-lg bg-dourado text-foreground text-sm font-medium disabled:opacity-50"
                 >
                   {validatingInstagram ? 'Validando...' : 'Validar +5 pts'}
