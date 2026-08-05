@@ -98,6 +98,11 @@ export async function GET(request: NextRequest) {
     // Gerar signed URLs para mensagens com anexo (bucket privado chat-attachments)
     const ordered = (messages || []).reverse() // Do mais antigo para o mais novo
     const messagesWithUrls = await Promise.all(ordered.map(async (msg: Record<string, unknown>) => {
+      // Lápide: conteúdo e anexo já foram purgados. Zera o metadata na resposta
+      // porque, se a remoção do arquivo tiver falhado, ele ainda guarda o
+      // storage_path — e a policy do bucket libera o path para qualquer
+      // participante da conversa, não só para quem enviou.
+      if (msg.deleted_at) return { ...msg, metadata: null }
       const metadata = msg.metadata as Record<string, unknown> | null
       const storagePath = metadata && typeof metadata.storage_path === 'string' ? metadata.storage_path : null
       const isExpired = metadata && metadata.expired === true
@@ -264,6 +269,104 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Apagar uma mensagem enviada por engano
+// Só o remetente pode apagar a própria mensagem. O conteúdo é purgado do banco
+// e o anexo removido do bucket; sobra uma lápide ("Mensagem apagada") para os
+// dois lados, para a conversa não ficar com buraco.
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const messageId = searchParams.get('messageId')
+
+    if (!messageId) {
+      return NextResponse.json(
+        { success: false, error: 'messageId é obrigatório' },
+        { status: 400 }
+      )
+    }
+
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // A RPC valida o remetente, purga o conteúdo, acerta o contador de não
+    // lidas e devolve o storage_path do anexo (se houver) — tudo numa transação.
+    const { data: result, error: rpcError } = await supabaseAdmin.rpc('delete_chat_message', {
+      p_message_id: messageId,
+      p_user_id: user.id,
+    })
+
+    if (rpcError) throw rpcError
+
+    const outcome = (result || {}) as {
+      success?: boolean
+      error?: string
+      storage_path?: string | null
+    }
+
+    if (!outcome.success) {
+      if (outcome.error === 'not_found') {
+        return NextResponse.json(
+          { success: false, error: 'Mensagem não encontrada' },
+          { status: 404 }
+        )
+      }
+      return NextResponse.json(
+        { success: false, error: 'Você só pode apagar mensagens que você enviou' },
+        { status: 403 }
+      )
+    }
+
+    // Remove o arquivo do bucket privado. Se falhar, devolve a mensagem para a
+    // fila do cron de limpeza (metadata com expires_at no passado) em vez de
+    // deixar o arquivo órfão para sempre.
+    if (outcome.storage_path) {
+      const { error: removeError } = await supabaseAdmin.storage
+        .from('chat-attachments')
+        .remove([outcome.storage_path])
+
+      if (removeError) {
+        console.error('Erro ao remover anexo da mensagem apagada:', removeError)
+        await supabaseAdmin
+          .from('fitness_messages')
+          .update({
+            metadata: {
+              storage_path: outcome.storage_path,
+              expires_at: new Date(0).toISOString(),
+            },
+          })
+          .eq('id', messageId)
+      }
+    }
+
+    return NextResponse.json({ success: true })
+
+  } catch (error) {
+    console.error('Erro ao apagar mensagem:', error)
     return NextResponse.json(
       { success: false, error: 'Erro interno do servidor' },
       { status: 500 }

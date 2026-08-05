@@ -20,9 +20,12 @@ import {
   Paperclip,
   FileText,
   Download,
+  Trash2,
+  Ban,
 } from 'lucide-react'
 import { compressImageClient } from '@/lib/images/compress-client'
 import { MessageText } from '@/components/chat/message-text'
+import { DeleteMessageDialog } from '@/components/chat/delete-message-dialog'
 import { toast } from 'sonner'
 
 // ---------------------------------------------------------------------------
@@ -76,6 +79,7 @@ interface Message {
   metadata: MessageMetadata | null
   is_read: boolean
   created_at: string
+  deleted_at?: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -223,6 +227,10 @@ export default function ChatPage() {
   const [hasMore, setHasMore] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+
+  // Apagar mensagem enviada por engano
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null)
+  const [deletingMessage, setDeletingMessage] = useState(false)
 
   // Attachment state
   const [pendingFile, setPendingFile] = useState<File | null>(null)
@@ -532,12 +540,49 @@ export default function ChatPage() {
   }
 
   // -------------------------------------------------------------------------
+  // Delete message
+  // -------------------------------------------------------------------------
+  const handleConfirmDelete = async () => {
+    if (!messageToDelete || deletingMessage) return
+    const target = messageToDelete
+    setDeletingMessage(true)
+
+    try {
+      const res = await fetch(`/api/chat/messages?messageId=${target.id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json().catch(() => ({ success: false }))
+
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'Não foi possível apagar a mensagem.')
+        return
+      }
+
+      // Vira lápide na hora; o próximo polling confirma com o dado do servidor
+      setMessages(prev => prev.map(m => (
+        m.id === target.id
+          ? { ...m, content: '', metadata: null, message_type: 'deleted', deleted_at: new Date().toISOString() }
+          : m
+      )))
+      setMessageToDelete(null)
+      toast.success('Mensagem apagada.')
+      fetchConversations()
+    } catch (err) {
+      console.error('Erro ao apagar mensagem:', err)
+      toast.error('Erro de conexão. Tente de novo.')
+    } finally {
+      setDeletingMessage(false)
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Back to list
   // -------------------------------------------------------------------------
   const handleBack = () => {
     setView('list')
     setActiveConversation(null)
     setMessages([])
+    setMessageToDelete(null)
     fetchConversations()
   }
 
@@ -812,15 +857,30 @@ export default function ChatPage() {
                     {msgs.map((msg) => {
                       const isMine = msg.sender_id === currentUserId
                       const isOptimistic = msg.id.startsWith('temp-')
-                      const hasAtt = messageHasAttachment(msg)
-                      const showContent = msg.content && !(hasAtt && msg.content.startsWith('📎 '))
-                      const expiresInDays = isMine && msg.metadata?.expires_at ? daysUntil(msg.metadata.expires_at) : null
+                      const isDeleted = !!msg.deleted_at
+                      const hasAtt = !isDeleted && messageHasAttachment(msg)
+                      const showContent = !isDeleted && msg.content && !(hasAtt && msg.content.startsWith('📎 '))
+                      const expiresInDays = isMine && !isDeleted && msg.metadata?.expires_at
+                        ? daysUntil(msg.metadata.expires_at)
+                        : null
+                      const canDelete = isMine && !isDeleted && !isOptimistic
 
                       return (
                         <div
                           key={msg.id}
-                          className={`flex ${isMine ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                          className={`group flex items-center gap-1 ${isMine ? 'justify-end' : 'justify-start'} animate-fade-in`}
                         >
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => setMessageToDelete(msg)}
+                              className="p-2 rounded-full text-foreground-muted hover:text-error hover:bg-error/10 opacity-60 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity flex-shrink-0"
+                              aria-label="Apagar mensagem"
+                              title="Apagar mensagem"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                           <div
                             className={`max-w-[80%] px-4 py-2.5 rounded-2xl shadow-sm ${
                               isMine
@@ -828,16 +888,25 @@ export default function ChatPage() {
                                 : 'bg-white border border-border text-foreground rounded-bl-md'
                             } ${isOptimistic ? 'opacity-70' : ''}`}
                           >
-                            {hasAtt && (
-                              <div className={showContent ? 'mb-2' : ''}>
-                                {renderAttachment(msg, isMine)}
-                              </div>
-                            )}
-                            {showContent && (
-                              <MessageText
-                                content={msg.content}
-                                className="whitespace-pre-wrap break-words text-[15px] leading-relaxed"
-                              />
+                            {isDeleted ? (
+                              <p className="flex items-center gap-1.5 text-[15px] italic opacity-70">
+                                <Ban className="w-3.5 h-3.5 flex-shrink-0" />
+                                Mensagem apagada
+                              </p>
+                            ) : (
+                              <>
+                                {hasAtt && (
+                                  <div className={showContent ? 'mb-2' : ''}>
+                                    {renderAttachment(msg, isMine)}
+                                  </div>
+                                )}
+                                {showContent && (
+                                  <MessageText
+                                    content={msg.content}
+                                    className="whitespace-pre-wrap break-words text-[15px] leading-relaxed"
+                                  />
+                                )}
+                              </>
                             )}
                             <div className={`flex items-center justify-end gap-1 mt-1 ${
                               isMine ? 'text-white/60' : 'text-foreground-muted'
@@ -848,7 +917,7 @@ export default function ChatPage() {
                               <span className="text-[11px]">
                                 {formatMessageTime(msg.created_at)}
                               </span>
-                              {isMine && !isOptimistic && (
+                              {isMine && !isOptimistic && !isDeleted && (
                                 msg.is_read ? (
                                   <CheckCheck className="w-3.5 h-3.5" />
                                 ) : (
@@ -948,6 +1017,14 @@ export default function ChatPage() {
             </button>
           </div>
         </div>
+
+        <DeleteMessageDialog
+          open={!!messageToDelete}
+          deleting={deletingMessage}
+          hasAttachment={!!messageToDelete && messageHasAttachment(messageToDelete)}
+          onCancel={() => setMessageToDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
       </div>
     )
   }

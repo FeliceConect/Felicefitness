@@ -1854,6 +1854,8 @@ export interface Database {
           is_read: boolean
           read_at: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
         }
         Insert: {
           id?: string
@@ -1866,6 +1868,8 @@ export interface Database {
           is_read?: boolean
           read_at?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
         }
         Update: {
           id?: string
@@ -1877,6 +1881,8 @@ export interface Database {
           metadata?: Json | null
           is_read?: boolean
           read_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
         }
       }
       fitness_meal_plans: {

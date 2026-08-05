@@ -2,6 +2,44 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
+// Colunas da última mensagem exibida na lista de conversas
+const LAST_MESSAGE_COLUMNS = 'conversation_id, content, sender_type, sender_id, created_at, deleted_at'
+
+interface LastMessageRow {
+  conversation_id: string
+  content: string
+  sender_type: string
+  sender_id: string
+  created_at: string
+  deleted_at: string | null
+}
+
+interface LastMessagePreview {
+  content: string
+  sender_type: string
+  sender_id: string
+  created_at: string
+}
+
+// Mensagem apagada teve o conteúdo purgado no banco — a prévia mostra a lápide.
+function toPreview(msg: LastMessageRow): LastMessagePreview {
+  return {
+    content: msg.deleted_at ? 'Mensagem apagada' : msg.content,
+    sender_type: msg.sender_type,
+    sender_id: msg.sender_id,
+    created_at: msg.created_at,
+  }
+}
+
+function buildLastMessageMap(rows: LastMessageRow[] | null): Map<string, LastMessagePreview> {
+  const map = new Map<string, LastMessagePreview>()
+  // rows vem ordenado por created_at desc — o primeiro de cada conversa é o mais recente
+  ;(rows || []).forEach(msg => {
+    if (!map.has(msg.conversation_id)) map.set(msg.conversation_id, toPreview(msg))
+  })
+  return map
+}
+
 // GET - Buscar conversas do usuário
 export async function GET() {
   try {
@@ -89,13 +127,11 @@ export async function GET() {
       const allIds = [...asProfessional.map(c => c.id), ...asClient.map(c => c.id)]
       const { data: lastMessages } = await supabaseAdmin
         .from('fitness_messages')
-        .select('conversation_id, content, sender_type, sender_id, created_at')
+        .select(LAST_MESSAGE_COLUMNS)
         .in('conversation_id', allIds)
         .order('created_at', { ascending: false })
-      const lastMessageMap = new Map<string, { content: string; sender_type: string; sender_id: string; created_at: string }>()
-      ;(lastMessages || []).forEach(msg => {
-        if (!lastMessageMap.has(msg.conversation_id)) lastMessageMap.set(msg.conversation_id, msg)
-      })
+        .returns<LastMessageRow[]>()
+      const lastMessageMap = buildLastMessageMap(lastMessages)
 
       // Conversas onde sou Líder: o outro é client_id (paciente ou membro da equipe que me procurou)
       // Esconde participantes inativos
@@ -191,16 +227,12 @@ export async function GET() {
       const conversationIds = data?.map(c => c.id) || []
       const { data: lastMessages } = await supabaseAdmin
         .from('fitness_messages')
-        .select('conversation_id, content, sender_type, sender_id, created_at')
+        .select(LAST_MESSAGE_COLUMNS)
         .in('conversation_id', conversationIds)
         .order('created_at', { ascending: false })
+        .returns<LastMessageRow[]>()
 
-      const lastMessageMap = new Map<string, { content: string; sender_type: string; sender_id: string; created_at: string }>()
-      lastMessages?.forEach(msg => {
-        if (!lastMessageMap.has(msg.conversation_id)) {
-          lastMessageMap.set(msg.conversation_id, msg)
-        }
-      })
+      const lastMessageMap = buildLastMessageMap(lastMessages)
 
       conversations = (data || [])
         .filter(conv => clientMap.get(conv.client_id)?.is_active !== false)
@@ -256,16 +288,12 @@ export async function GET() {
       const conversationIds = data?.map(c => c.id) || []
       const { data: lastMessages } = await supabaseAdmin
         .from('fitness_messages')
-        .select('conversation_id, content, sender_type, sender_id, created_at')
+        .select(LAST_MESSAGE_COLUMNS)
         .in('conversation_id', conversationIds)
         .order('created_at', { ascending: false })
+        .returns<LastMessageRow[]>()
 
-      const lastMessageMap = new Map<string, { content: string; sender_type: string; sender_id: string; created_at: string }>()
-      lastMessages?.forEach(msg => {
-        if (!lastMessageMap.has(msg.conversation_id)) {
-          lastMessageMap.set(msg.conversation_id, msg)
-        }
-      })
+      const lastMessageMap = buildLastMessageMap(lastMessages)
 
       conversations = (data || [])
         .filter(conv => {
