@@ -324,11 +324,29 @@ export async function DELETE(request: NextRequest) {
     // as categorias corretas) via RPC no banco. O client do usuário não tem
     // policy de DELETE em fitness_point_transactions — por isso admin.
     const admin = getAdminClient()
-    const { data: reverted } = await admin.rpc('fitness_revert_points_by_reference', {
+    const { data: reverted, error: revertError } = await admin.rpc('fitness_revert_points_by_reference', {
       p_user_id: user.id,
       p_reference_ids: [activityId],
       p_reasons: ACTIVITY_REASONS,
     })
+
+    // supabase-js não lança em erro de query: sem este check, a atividade era
+    // apagada e os pontos ficavam no ranking, com a rota devolvendo sucesso.
+    if (revertError) {
+      console.error('Falha ao estornar pontos da atividade — nada foi apagado:', {
+        activityId,
+        userId: user.id,
+        error: revertError,
+      })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Não foi possível acertar os pontos desta atividade. Nada foi apagado — tente de novo.',
+        },
+        { status: 500 }
+      )
+    }
+
     const pointsReverted = reverted || 0
 
     const { error } = await (supabase as AnySupabase)

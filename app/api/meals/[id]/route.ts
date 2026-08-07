@@ -56,6 +56,51 @@ export async function DELETE(
       )
     }
 
+    // Conta quantas refeições NÃO puladas SOBRARIAM no dia (mesma condição do
+    // trigger de award: COALESCE(status,'') <> 'pulado' — conta status NULL como
+    // válida, porque /api/meals grava refeição sem status). Contamos ANTES de
+    // apagar, excluindo esta, para poder estornar primeiro: se o estorno falhar,
+    // a refeição continua no lugar e nada fica inconsistente.
+    const { count: afterCount } = await supabaseAdmin
+      .from('fitness_meals')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('data', today)
+      .neq('id', id)
+      .or('status.is.null,status.neq.pulado')
+
+    // Se cair abaixo de 3, a regra "Todas refeicoes registradas" deixa de valer.
+    // A RPC reverte de forma atômica e simétrica (só age se a transação existir).
+    let pointsReverted = 0
+    const after = afterCount ?? 0
+    if (after < 3) {
+      const { data: reverted, error: revertError } = await supabaseAdmin.rpc('fitness_revert_daily_award', {
+        p_user_id: user.id,
+        p_reason: ALL_MEALS_REASON,
+        p_reference_date: today,
+      })
+
+      // supabase-js não lança em erro de query: sem este check, a refeição era
+      // apagada e o ponto do dia continuava no ranking, com sucesso na resposta.
+      if (revertError) {
+        console.error('Falha ao estornar o ponto do dia — refeição NÃO foi apagada:', {
+          mealId: id,
+          userId: user.id,
+          data: today,
+          error: revertError,
+        })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Não foi possível acertar os pontos do dia. Nada foi apagado — tente de novo.',
+          },
+          { status: 500 }
+        )
+      }
+
+      pointsReverted = reverted || 0
+    }
+
     // Apaga a refeição. fitness_meal_items cascateia via FK.
     const { error: deleteError } = await supabaseAdmin
       .from('fitness_meals')
@@ -64,31 +109,12 @@ export async function DELETE(
       .eq('user_id', user.id)
 
     if (deleteError) {
-      console.error('Erro ao apagar refeição:', deleteError)
-      return NextResponse.json({ success: false, error: 'Erro ao apagar refeição' }, { status: 500 })
-    }
-
-    // Conta refeições NÃO puladas restantes no dia (mesma condição do trigger de
-    // award: COALESCE(status,'') <> 'pulado' — conta status NULL como válida,
-    // porque /api/meals grava refeição sem status).
-    const { count: afterCount } = await supabaseAdmin
-      .from('fitness_meals')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('data', today)
-      .or('status.is.null,status.neq.pulado')
-
-    // Se caiu abaixo de 3, a regra "Todas refeicoes registradas" deixa de valer.
-    // A RPC reverte de forma atômica e simétrica (só age se a transação existir).
-    let pointsReverted = 0
-    const after = afterCount ?? 0
-    if (after < 3) {
-      const { data: reverted } = await supabaseAdmin.rpc('fitness_revert_daily_award', {
-        p_user_id: user.id,
-        p_reason: ALL_MEALS_REASON,
-        p_reference_date: today,
+      console.error('Erro ao apagar refeição (ponto do dia já estornado):', {
+        mealId: id,
+        pointsReverted,
+        error: deleteError,
       })
-      pointsReverted = reverted || 0
+      return NextResponse.json({ success: false, error: 'Erro ao apagar refeição' }, { status: 500 })
     }
 
     return NextResponse.json({

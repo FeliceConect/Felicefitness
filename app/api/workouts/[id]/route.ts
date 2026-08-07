@@ -81,7 +81,7 @@ export async function DELETE(
     // transações e estornando o leaderboard com as categorias corretas.
     // ────────────────────────────────────────────────
     const reverseIds = [id, ...setIds, ...weIds]
-    const { data: totalPointsReverted } = await supabaseAdmin.rpc(
+    const { data: totalPointsReverted, error: revertError } = await supabaseAdmin.rpc(
       'fitness_revert_points_by_reference',
       {
         p_user_id: user.id,
@@ -89,6 +89,25 @@ export async function DELETE(
         p_reasons: null,
       }
     )
+
+    // O supabase-js NÃO lança em erro de query — sem este check a falha do
+    // estorno passava batido e o treino era apagado mesmo assim, deixando os
+    // pontos no ranking. Foi assim que o bug do bigint (20260807) ficou 8 dias
+    // invisível. Se o estorno falha, nada é apagado.
+    if (revertError) {
+      console.error('Falha ao estornar pontos do treino — nada foi apagado:', {
+        workoutId: id,
+        userId: user.id,
+        error: revertError,
+      })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Não foi possível acertar os pontos deste treino. Nada foi apagado — tente de novo.',
+        },
+        { status: 500 }
+      )
+    }
 
     // Apaga PRs (fitness_personal_records) deste treino
     await supabaseAdmin

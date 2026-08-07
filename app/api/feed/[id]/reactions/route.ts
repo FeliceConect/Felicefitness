@@ -51,20 +51,39 @@ export async function POST(
 
     let added = false
     if (existing && existing.length > 0) {
+      // Reverte o ponto da reação daquele post (se foi creditado) ANTES de tirar
+      // a reação. Sem isso, o usuário ficava com o ponto de uma reação que não
+      // existe mais. A RPC só age se houver transação — segura para reações não
+      // pontuadas (além do cap).
+      const { error: revertError } = await supabaseAdmin.rpc('fitness_revert_points_by_reference', {
+        p_user_id: user.id,
+        p_reference_ids: [postId],
+        p_reasons: [REACTION_REASON],
+      })
+
+      // supabase-js não lança em erro de query: sem este check, a reação saía e
+      // o ponto ficava no ranking. Este é o caminho mais usado dos quatro — foi
+      // onde o bug do bigint (20260807) deixou mais pontos órfãos.
+      if (revertError) {
+        console.error('Falha ao estornar o ponto da reação — reação mantida:', {
+          postId,
+          userId: user.id,
+          error: revertError,
+        })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Não foi possível acertar os pontos. A reação foi mantida — tente de novo.',
+          },
+          { status: 500 }
+        )
+      }
+
       // Remove reaction (toggle off)
       await supabaseAdmin
         .from('fitness_community_reactions')
         .delete()
         .eq('id', existing[0].id)
-
-      // Reverte o ponto da reação daquele post (se foi creditado). Sem isso, o
-      // usuário ficava com o ponto de uma reação que não existe mais. A RPC só
-      // age se houver transação — segura para reações não pontuadas (além do cap).
-      await supabaseAdmin.rpc('fitness_revert_points_by_reference', {
-        p_user_id: user.id,
-        p_reference_ids: [postId],
-        p_reasons: [REACTION_REASON],
-      })
     } else {
       // Add reaction (toggle on)
       await supabaseAdmin
