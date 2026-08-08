@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePhotoAccess } from '@/lib/auth/patient-photos'
+import { serveProgressPhoto } from '@/lib/photos/serve'
 
 export const maxDuration = 20
 
@@ -19,9 +20,6 @@ export const maxDuration = 20
  * não viaja na query string, e a URL não termina em .webp — o que a faria cair
  * na regra de cache de imagens do service worker.
  */
-
-const BUCKET = 'progress-photos'
-const ALLOWED_CONTENT_TYPES = ['image/webp', 'image/jpeg', 'image/png']
 
 export async function GET(
   request: NextRequest,
@@ -50,49 +48,12 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Foto não encontrada' }, { status: 404 })
     }
 
-    // `foto_url` é gravada pelo cliente em alguns fluxos, então o caminho
-    // derivado dela é tratado como não confiável: tem que cair dentro da pasta
-    // do próprio paciente, sem subir de diretório.
-    const marker = `/${BUCKET}/`
-    const markerAt = photo.foto_url.indexOf(marker)
-    const objectPath = markerAt === -1
-      ? null
-      : decodeURIComponent(photo.foto_url.slice(markerAt + marker.length).split('?')[0])
-
-    if (!objectPath || objectPath.includes('..') || !objectPath.startsWith(`${patientId}/`)) {
-      return NextResponse.json({ success: false, error: 'Caminho inválido' }, { status: 400 })
-    }
-
-    const { data: blob, error: downloadError } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .download(objectPath)
-
-    if (downloadError || !blob) {
-      // Objeto sumiu do storage mas a linha ficou: é 404, não falha de infra —
-      // 502 aqui polui o alerta de erro da plataforma.
-      console.warn('[image-proxy] objeto ausente', { patientId, photoId, message: downloadError?.message })
-      return NextResponse.json({ success: false, error: 'Imagem não encontrada' }, { status: 404 })
-    }
-
-    // Serve só tipo de imagem conhecido. O conteúdo vem do storage e é servido
-    // no origin do app: devolver text/html daqui seria XSS na sessão de quem
-    // enxerga o prontuário.
-    if (!ALLOWED_CONTENT_TYPES.includes(blob.type)) {
-      console.warn('[image-proxy] tipo recusado', { patientId, photoId, type: blob.type })
-      return NextResponse.json({ success: false, error: 'Tipo de arquivo inválido' }, { status: 415 })
-    }
-
-    return new NextResponse(blob.stream(), {
-      status: 200,
-      headers: {
-        'Content-Type': blob.type,
-        // O nome do objeto carrega timestamp, então o conteúdo é imutável.
-        // `private` mantém fora de cache compartilhado; a hora de validade
-        // evita reabrir 28 invocações a cada troca de aba.
-        'Cache-Control': 'private, max-age=3600, immutable',
-        'Content-Disposition': 'inline',
-        'X-Content-Type-Options': 'nosniff',
-      },
+    return await serveProgressPhoto(supabaseAdmin, photo.foto_url, patientId, {
+      route: 'image-proxy',
+      actorId: auth.user.id,
+      role: auth.role,
+      patientId,
+      photoId,
     })
   } catch (error) {
     console.error('Erro image proxy:', error)

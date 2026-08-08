@@ -23,12 +23,11 @@ const pwaConfig = withPWA({
   buildExcludes: [/app-build-manifest\.json$/],
   runtimeCaching: [
     {
-      // Fotos de evolução do paciente: nunca no cache do service worker.
-      // A URL do proxy termina em .webp (o parâmetro codificado preserva a
-      // extensão), então cairia na regra de imagens abaixo — e o
-      // StaleWhileRevalidate deixaria foto de corpo guardada 24h no aparelho,
-      // podendo servi-la para a sessão seguinte antes de revalidar.
-      urlPattern: /\/api\/admin\/patients\/[^/]+\/progress-photos\/image-proxy/i,
+      // Fotos de evolução: nunca no cache do service worker. Foto de corpo
+      // guardada 24h pelo StaleWhileRevalidate ficaria legível no aparelho e
+      // poderia ser servida para a sessão seguinte antes de revalidar.
+      // Cobre a rota do profissional e a do próprio paciente.
+      urlPattern: /\/api\/(admin\/patients\/[^/]+\/progress-photos\/image-proxy|me\/progress-photos)/i,
       handler: 'NetworkOnly',
       options: {},
     },

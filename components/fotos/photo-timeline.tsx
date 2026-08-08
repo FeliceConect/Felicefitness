@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { type ProgressPhoto, PHOTO_TYPE_LABELS } from '@/lib/photos/types'
+import { myProgressPhotoSrc } from '@/lib/photos/proxy-url'
 import { cn } from '@/lib/utils'
 
 interface PhotoTimelineProps {
@@ -99,13 +100,14 @@ export function PhotoTimeline({
         className="bg-white border border-border rounded-2xl overflow-hidden"
       >
         <div className="aspect-[3/4] max-w-[350px] mx-auto relative">
-          {/* Foto placeholder */}
-          <div className="absolute inset-0 bg-gradient-to-br from-dourado/10 to-vinho/10 flex items-center justify-center">
-            <span className="text-[80px] opacity-30">
-              {selectedPhoto.tipo === 'frente' ? '🧍' :
-               selectedPhoto.tipo === 'lado_esquerdo' ? '👈' :
-               selectedPhoto.tipo === 'lado_direito' ? '👉' : '🔙'}
-            </span>
+          <div className="absolute inset-0 bg-gradient-to-br from-dourado/10 to-vinho/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={myProgressPhotoSrc(selectedPhoto.id)}
+              alt={`${PHOTO_TYPE_LABELS[selectedPhoto.tipo]} — ${format(parseISO(selectedPhoto.data), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`}
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
           </div>
 
           {/* Overlay com dados */}

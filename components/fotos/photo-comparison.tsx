@@ -5,7 +5,8 @@ import { ArrowRight, Calendar, TrendingDown, TrendingUp, Minus } from 'lucide-re
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { PhotoComparisonSlider } from './photo-comparison-slider'
-import { type ProgressPhoto, type ComparisonMode, COMPARISON_MODE_LABELS } from '@/lib/photos/types'
+import { type ProgressPhoto, type ComparisonMode, COMPARISON_MODE_LABELS, PHOTO_TYPE_LABELS } from '@/lib/photos/types'
+import { myProgressPhotoSrc } from '@/lib/photos/proxy-url'
 import { cn } from '@/lib/utils'
 
 interface PhotoComparisonProps {
@@ -41,15 +42,17 @@ export function PhotoComparison({
     ? after.percentual_gordura - before.percentual_gordura
     : null
 
-  // Renderizar foto placeholder
-  const renderPhotoPlaceholder = (photo: ProgressPhoto, label: string) => (
+  const renderPhoto = (photo: ProgressPhoto, label: string) => (
     <div className="flex flex-col">
       <div className="aspect-[3/4] bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-xl flex items-center justify-center relative overflow-hidden">
-        <span className="text-6xl opacity-30">
-          {photo.tipo === 'frente' ? '🧍' :
-           photo.tipo === 'lado_esquerdo' ? '👈' :
-           photo.tipo === 'lado_direito' ? '👉' : '🔙'}
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={myProgressPhotoSrc(photo.id)}
+          alt={`${label} — ${PHOTO_TYPE_LABELS[photo.tipo]}`}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
         {/* Overlay com dados */}
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
@@ -96,8 +99,8 @@ export function PhotoComparison({
       <div className="bg-white border border-border rounded-2xl p-4">
         {mode === 'side-by-side' && (
           <div className="grid grid-cols-2 gap-4">
-            {renderPhotoPlaceholder(before, 'Antes')}
-            {renderPhotoPlaceholder(after, 'Depois')}
+            {renderPhoto(before, 'Antes')}
+            {renderPhoto(after, 'Depois')}
           </div>
         )}
 

@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { type ProgressPhoto } from '@/lib/photos/types'
+import { myProgressPhotoSrc } from '@/lib/photos/proxy-url'
 import { cn } from '@/lib/utils'
 
 interface PhotoComparisonSliderProps {
@@ -61,8 +62,7 @@ export function PhotoComparisonSlider({
     setIsDragging(false)
   }
 
-  // Placeholder visual para fotos
-  const renderPhotoPlaceholder = (photo: ProgressPhoto, isAfter: boolean) => (
+  const renderPhoto = (photo: ProgressPhoto, isAfter: boolean) => (
     <div
       className={cn(
         'absolute inset-0 flex items-center justify-center',
@@ -71,11 +71,13 @@ export function PhotoComparisonSlider({
           : 'bg-gradient-to-br from-dourado/10 to-vinho/10'
       )}
     >
-      <span className="text-6xl opacity-30">
-        {photo.tipo === 'frente' ? '🧍' :
-         photo.tipo === 'lado_esquerdo' ? '👈' :
-         photo.tipo === 'lado_direito' ? '👉' : '🔙'}
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={myProgressPhotoSrc(photo.id)}
+        alt={isAfter ? 'Depois' : 'Antes'}
+        decoding="async"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
       {/* Label */}
       <div className={cn(
@@ -118,14 +120,14 @@ export function PhotoComparisonSlider({
       onTouchEnd={handleTouchEnd}
     >
       {/* Foto depois (fundo) */}
-      {renderPhotoPlaceholder(afterPhoto, true)}
+      {renderPhoto(afterPhoto, true)}
 
       {/* Foto antes (sobreposta com clip) */}
       <div
         className="absolute inset-0 overflow-hidden"
         style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
       >
-        {renderPhotoPlaceholder(beforePhoto, false)}
+        {renderPhoto(beforePhoto, false)}
       </div>
 
       {/* Linha divisória */}

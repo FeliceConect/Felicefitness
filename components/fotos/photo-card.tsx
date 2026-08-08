@@ -1,11 +1,13 @@
 "use client"
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Heart, Calendar } from 'lucide-react'
+import { Heart, Calendar, ImageOff } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
 import { type ProgressPhoto, PHOTO_TYPE_LABELS } from '@/lib/photos/types'
+import { myProgressPhotoSrc } from '@/lib/photos/proxy-url'
 import { cn } from '@/lib/utils'
 
 interface PhotoCardProps {
@@ -29,6 +31,8 @@ export function PhotoCard({
   size = 'md',
   className
 }: PhotoCardProps) {
+  const [failed, setFailed] = useState(false)
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -48,14 +52,22 @@ export function PhotoCard({
       >
         {/* Imagem */}
         <div className="absolute inset-0 bg-gradient-to-br from-dourado/10 to-vinho/10">
-          {/* Placeholder visual já que usamos mock */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-4xl opacity-30">
-              {photo.tipo === 'frente' ? '🧍' :
-               photo.tipo === 'lado_esquerdo' ? '👈' :
-               photo.tipo === 'lado_direito' ? '👉' : '🔙'}
-            </span>
-          </div>
+          {failed ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-foreground-muted">
+              <ImageOff className="w-5 h-5" />
+              <span className="text-[10px]">Não carregou</span>
+            </div>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={myProgressPhotoSrc(photo.id)}
+              alt={`Foto ${PHOTO_TYPE_LABELS[photo.tipo]} de ${format(parseISO(photo.data), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`}
+              loading="lazy"
+              decoding="async"
+              onError={() => setFailed(true)}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
         </div>
 
         {/* Favorito */}

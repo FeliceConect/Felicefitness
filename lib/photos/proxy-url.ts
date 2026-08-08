@@ -9,3 +9,11 @@
 export function progressPhotoSrc(patientId: string, photoId: string): string {
   return `/api/admin/patients/${patientId}/progress-photos/image-proxy?photo_id=${encodeURIComponent(photoId)}`
 }
+
+/**
+ * Mesma foto, vista pelo próprio paciente. A rota acima nega `client` de
+ * propósito, então o titular tem um caminho separado.
+ */
+export function myProgressPhotoSrc(photoId: string): string {
+  return `/api/me/progress-photos/${encodeURIComponent(photoId)}`
+}

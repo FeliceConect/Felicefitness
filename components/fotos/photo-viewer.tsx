@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, Trash2, Share2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
+import { X, Heart, Trash2, Share2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, ImageOff } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { type ProgressPhoto, PHOTO_TYPE_LABELS } from '@/lib/photos/types'
+import { myProgressPhotoSrc } from '@/lib/photos/proxy-url'
 import { cn } from '@/lib/utils'
 
 interface PhotoViewerProps {
@@ -43,6 +44,7 @@ export function PhotoViewer({
   const [currentPhoto, setCurrentPhoto] = useState<ProgressPhoto | null>(getInitialPhoto)
   const [zoom, setZoom] = useState(1)
   const [showControls, setShowControls] = useState(true)
+  const [failed, setFailed] = useState(false)
 
   // Se não há foto, não renderiza
   if (!currentPhoto) {
@@ -58,6 +60,7 @@ export function PhotoViewer({
     if (photos && hasPrev) {
       setCurrentPhoto(photos[currentIndex - 1])
       setZoom(1)
+      setFailed(false)
     }
   }
 
@@ -65,6 +68,7 @@ export function PhotoViewer({
     if (photos && hasNext) {
       setCurrentPhoto(photos[currentIndex + 1])
       setZoom(1)
+      setFailed(false)
     }
   }
 
@@ -147,14 +151,20 @@ export function PhotoViewer({
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           className="absolute inset-0 flex items-center justify-center"
         >
-          {/* Placeholder visual */}
-          <div className="w-full max-w-md aspect-[3/4] bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-xl flex items-center justify-center">
-            <span className="text-[100px] opacity-30">
-              {currentPhoto.tipo === 'frente' ? '🧍' :
-               currentPhoto.tipo === 'lado_esquerdo' ? '👈' :
-               currentPhoto.tipo === 'lado_direito' ? '👉' : '🔙'}
-            </span>
-          </div>
+          {failed ? (
+            <div className="w-full max-w-md aspect-[3/4] bg-gradient-to-br from-dourado/10 to-vinho/10 rounded-xl flex flex-col items-center justify-center gap-2 text-white/70">
+              <ImageOff className="w-8 h-8" />
+              <span className="text-sm">Não foi possível carregar a foto</span>
+            </div>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={myProgressPhotoSrc(currentPhoto.id)}
+              alt={`Foto ${PHOTO_TYPE_LABELS[currentPhoto.tipo]}`}
+              onError={() => setFailed(true)}
+              className="max-h-full max-w-full object-contain rounded-xl"
+            />
+          )}
         </motion.div>
 
         {/* Botões de navegação */}
