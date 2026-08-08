@@ -24,8 +24,9 @@ Autorização única em `lib/auth/patient-photos.ts`. Montagem da URL em
 1. Fotos M0–M6, enviadas pela equipe (`fitness_progress_photos`) — cobertas
    pelo proxy.
 2. Fotos avulsas do paciente (`hooks/use-photos.ts`), enviadas direto pelo
-   cliente. A galeria do paciente nunca exibiu a imagem (`photo-card.tsx`
-   renderiza emoji placeholder), então o paciente não vê as próprias fotos.
+   cliente. Desde 2026-08-08 o paciente vê as próprias fotos por
+   `GET /api/me/progress-photos/[photoId]` (monte a URL com
+   `myProgressPhotoSrc`) — antes a galeria dele só mostrava emoji placeholder.
 3. **Foto/PDF do InBody** (`app/api/inbody/analyze/route.ts`), com a URL
    pública gravada em `fitness_body_compositions.foto_url` e renderizada crua
    em `components/admin/patient/bioimpedance-section.tsx` (`<img>` e
@@ -41,9 +42,8 @@ InBody já nasce quebrado, e o proxy não cobre esse caso (ele valida contra
 1. Resolver o InBody. Preferível: bucket próprio (`inbody-scans`), migrando os
    objetos e as URLs gravadas. Alternativa: rota de leitura própria validando
    contra `fitness_body_compositions`, aceitando `application/pdf`.
-2. Decidir o fluxo de foto do paciente (item 2 acima): ou dar a ele um caminho
-   de leitura das próprias fotos, ou remover a coleta. Coletar dado sensível
-   que o titular não consegue ver é o pior dos dois mundos na LGPD.
+2. ~~Decidir o fluxo de foto do paciente~~ — resolvido: o titular já lê as
+   próprias fotos pela rota `/api/me/progress-photos/[photoId]`.
 3. Só então, com o deploy do código já no ar:
    ```sql
    update storage.buckets set public = false where id = 'progress-photos';
@@ -68,10 +68,22 @@ fechado e o código antigo (que lia a URL pública), nenhuma foto carrega.
   todos os downloads como o mesmo ator.
 - **Sem política de retenção.** As fotos ficam para sempre, inclusive de quem
   saiu do programa.
-- **Exclusão de conta não apaga as fotos.** `app/(app)/configuracoes/conta`
-  deleta de `progress_photos` — tabela que não existe (o nome correto é
-  `fitness_progress_photos`). O supabase-js não lança nesse caso, então a tela
-  diz "conta excluída" sem ter apagado nenhuma foto, e o objeto fica órfão no
-  storage.
+- **Exclusão de conta: falta a etapa da equipe.** A tela não mente mais — em
+  2026-08-08 `POST /api/account/delete` passou a registrar a solicitação em
+  `fitness_lgpd_requests` (type `deletion`) e cortar o acesso na hora
+  (`is_active = false` + ban), como manda a política publicada em
+  `/privacidade` ("removidos em até 30 dias, exceto quando a retenção for
+  exigida por lei"). Antes disso a tela chamava 10 tabelas das quais 8 não
+  existiam, e o `fitness_profiles` não tem policy de DELETE — ou seja, não
+  apagava absolutamente nada e ainda assim dizia "conta excluída com sucesso".
+
+  **Falta construir a conclusão do pedido pela equipe**: apagar os objetos do
+  storage (`progress-photos/<user_id>/` e a foto de perfil) e as linhas do
+  banco. Isso depende de uma decisão que é do Leonardo, não de engenharia:
+  apagar o perfil cascateia em 22 tabelas e leva junto prontuário,
+  bioimpedância e avaliações — que têm retenção obrigatória (CFM, 20 anos).
+  Enquanto essa decisão não existir, o pedido fica `pending` e ninguém
+  conclui. Atenção também a `fitness_professional_notes.patient_id`, que é
+  `NO ACTION` e bloqueia a exclusão do perfil se houver nota.
 - **Miniaturas.** A grade exibe células de 120px carregando o WebP de 1080px
   (~200 KB × 28). Gerar `thumb_url` no upload cortaria ~90% do tráfego.

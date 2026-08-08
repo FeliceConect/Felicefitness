@@ -160,14 +160,16 @@ export async function calculateDataSize(userId: string): Promise<{
 }> {
   const supabase = createClient()
 
+  // Nomes com o prefixo `fitness_`, que é o real. Sem ele o supabase-js não
+  // lança — só devolve count nulo — e a tela mostrava 0 em tudo.
   const [workouts, meals, water, body, photos, prs, scores] = await Promise.all([
-    supabase.from('workouts').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase.from('nutrition_logs').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase.from('water_logs').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase.from('body_measurements').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase.from('progress_photos').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase.from('personal_records').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase.from('daily_scores').select('id', { count: 'exact' }).eq('user_id', userId)
+    supabase.from('fitness_workouts').select('id', { count: 'exact' }).eq('user_id', userId),
+    supabase.from('fitness_meals').select('id', { count: 'exact' }).eq('user_id', userId),
+    supabase.from('fitness_water_logs').select('id', { count: 'exact' }).eq('user_id', userId),
+    supabase.from('fitness_body_compositions').select('id', { count: 'exact' }).eq('user_id', userId),
+    supabase.from('fitness_progress_photos').select('id', { count: 'exact' }).eq('user_id', userId),
+    supabase.from('fitness_personal_records').select('id', { count: 'exact' }).eq('user_id', userId),
+    supabase.from('fitness_point_transactions').select('id', { count: 'exact' }).eq('user_id', userId)
   ])
 
   // Estimativa: ~500 bytes por registro de texto, 1MB por foto

@@ -97,31 +97,20 @@ export default function ContaPage() {
   const handleDeleteAccount = async () => {
     setDeleting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
+      const res = await fetch('/api/account/delete', { method: 'POST' })
+      const json = await res.json()
 
-      // Delete all user data first
-      await Promise.all([
-        supabase.from('fitness_workouts').delete().eq('user_id', user.id),
-        supabase.from('nutrition_logs').delete().eq('user_id', user.id),
-        supabase.from('water_logs').delete().eq('user_id', user.id),
-        supabase.from('body_measurements').delete().eq('user_id', user.id),
-        supabase.from('progress_photos').delete().eq('user_id', user.id),
-        supabase.from('personal_records').delete().eq('user_id', user.id),
-        supabase.from('daily_scores').delete().eq('user_id', user.id),
-        supabase.from('user_achievements').delete().eq('user_id', user.id),
-        supabase.from('user_settings').delete().eq('user_id', user.id),
-        supabase.from('fitness_profiles').delete().eq('id', user.id)
-      ])
+      if (!json.success) {
+        toast.error(json.error || 'Não foi possível registrar o pedido')
+        return
+      }
 
-      // Sign out
       await supabase.auth.signOut()
-
-      toast.success('Conta excluída com sucesso')
+      toast.success('Pedido registrado. Seu acesso foi encerrado.')
       router.push('/login')
     } catch (err) {
       console.error('Error deleting account:', err)
-      toast.error('Erro ao excluir conta')
+      toast.error('Erro ao solicitar exclusão')
     } finally {
       setDeleting(false)
     }
@@ -239,8 +228,9 @@ export default function ContaPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Esta ação é irreversível. Todos os seus dados serão permanentemente
-              excluídos e sua conta será desativada.
+              Seu acesso é encerrado na hora e seus dados são removidos em até 30
+              dias, exceto o que a lei obriga a clínica a guardar (como o
+              prontuário). Esta ação é irreversível.
             </p>
             <Button
               variant="destructive"
@@ -260,9 +250,10 @@ export default function ContaPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir sua conta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação é irreversível. Todos os seus dados, incluindo treinos,
-              refeições, fotos e conquistas serão permanentemente excluídos.
-              Você não poderá recuperar sua conta.
+              Seu acesso será encerrado imediatamente e você não poderá
+              recuperar a conta. Treinos, refeições, fotos e conquistas serão
+              removidos em até 30 dias. Registros que a clínica é obrigada a
+              guardar por lei, como o prontuário, são mantidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
