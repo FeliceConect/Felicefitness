@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { Workout, WorkoutExercise, ExerciseSet, CompletedSet, CompletedCardio, PersonalRecord, WorkoutSummary } from '@/lib/workout/types'
+import { buildPendingSets } from '@/lib/workout/pending-sets'
 
 type ExecutionStatus = 'not_started' | 'in_progress' | 'resting' | 'completed'
 export type ExerciseProgress = 'pending' | 'in_progress' | 'completed'
@@ -41,6 +42,15 @@ interface UseWorkoutExecutionReturn {
   completeSet: (data: { reps: number; weight: number }) => void
   /** Completa todas as séries de uma rodada de circuito de uma vez. */
   completeCircuitRound: (entries: Array<{ exerciseId: string; reps: number; weight: number }>) => void
+  /**
+   * Preenche de uma vez todas as séries que faltam no treino inteiro, usando
+   * o resolvedor para decidir reps/carga de cada uma. Devolve as séries
+   * criadas — o chamador PRECISA usar esse retorno (e não `state`) para
+   * finalizar, porque o setState só reflete no próximo render.
+   */
+  completeAllRemaining: (
+    resolve: (exercise: WorkoutExercise, set: ExerciseSet, setNumber: number) => { reps: number; weight: number }
+  ) => CompletedSet[]
   editCompletedSet: (exerciseId: string, setNumber: number, data: { reps: number; weight: number }) => void
   skipSet: () => void
   skipExercise: () => void
@@ -49,7 +59,11 @@ interface UseWorkoutExecutionReturn {
   skipRest: () => void
   addRestTime: (seconds: number) => void
   addCardio: (cardio: CompletedCardio) => void
-  finishWorkout: () => WorkoutSummary | null
+  /**
+   * @param extraSets séries recém-criadas que ainda não entraram no state
+   *   (ver `completeAllRemaining`). Entram no somatório do resumo.
+   */
+  finishWorkout: (extraSets?: CompletedSet[]) => WorkoutSummary | null
   clearSavedWorkout: () => void
   hasSavedWorkout: () => boolean
   getSavedWorkoutId: () => string | null
@@ -231,9 +245,13 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     }
   }, [])
 
-  // Salvar estado no localStorage
+  // Salvar estado no localStorage.
+  // Treino concluído nunca é persistido: ninguém restaura um 'completed'
+  // (ver restore, hasSavedWorkout e getSavedWorkoutId, que já o rejeitam) e,
+  // sem esta guarda, o re-render disparado por completeAllRemaining
+  // regravaria a chave logo depois de finishWorkout tê-la limpado.
   useEffect(() => {
-    if (state.status !== 'not_started' && state.workout) {
+    if (state.status !== 'not_started' && state.status !== 'completed' && state.workout) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     }
   }, [state])
@@ -629,6 +647,37 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     })
   }, [state.workout, state.completedSets, checkForPR])
 
+  /**
+   * Registra de uma vez todas as séries pendentes do treino inteiro, com os
+   * valores que o resolvedor devolver (tipicamente a carga da última sessão
+   * ou a prescrita). Séries já registradas NÃO são tocadas — quem anotou uma
+   * carga diferente durante o treino mantém o que anotou.
+   *
+   * Devolve as séries criadas. O chamador precisa repassá-las a
+   * `finishWorkout(extraSets)`: `state` só é atualizado no próximo render, e
+   * finalizar direto perderia tudo que foi preenchido aqui.
+   */
+  const completeAllRemaining = useCallback((
+    resolve: (exercise: WorkoutExercise, set: ExerciseSet, setNumber: number) => { reps: number; weight: number }
+  ): CompletedSet[] => {
+    if (!state.workout) return []
+
+    const added = buildPendingSets(state.workout.exercicios, state.completedSets, resolve)
+
+    if (added.length === 0) return []
+
+    setState(prev => ({
+      ...prev,
+      completedSets: [...prev.completedSets, ...added],
+      status: 'completed',
+      isResting: false,
+      restTimeRemaining: 0,
+      restEndTime: null,
+    }))
+
+    return added
+  }, [state.workout, state.completedSets])
+
   const skipSet = useCallback(() => {
     if (!currentExercise) return
 
@@ -753,8 +802,14 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     })
   }, [])
 
-  const finishWorkout = useCallback((): WorkoutSummary | null => {
+  const finishWorkout = useCallback((extraSets: CompletedSet[] = []): WorkoutSummary | null => {
     if (!state.workout) return null
+
+    // Séries de `completeAllRemaining` ainda não estão em `state` (setState é
+    // assíncrono), então entram por aqui para o resumo não sair subcontado.
+    const allSets = extraSets.length > 0
+      ? [...state.completedSets, ...extraSets]
+      : state.completedSets
 
     // Calcular calorias do cardio
     const cardioCalories = state.completedCardio.reduce((acc, c) => acc + (c.calorias || 0), 0)
@@ -766,11 +821,11 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     const summary: WorkoutSummary = {
       workout: state.workout,
       duracao: Math.round(state.elapsedTime / 60),
-      exerciciosCompletos: new Set(state.completedSets.map(s => s.exerciseId)).size,
+      exerciciosCompletos: new Set(allSets.map(s => s.exerciseId)).size,
       exerciciosTotal: state.workout.exercicios.length,
-      seriesCompletas: state.completedSets.length,
+      seriesCompletas: allSets.length,
       seriesTotal: totalSets,
-      volumeTotal: state.completedSets.reduce((acc, s) => acc + s.weight * s.reps, 0),
+      volumeTotal: allSets.reduce((acc, s) => acc + s.weight * s.reps, 0),
       caloriasEstimadas: strengthCalories + cardioCalories,
       novosRecordes: state.newPRs,
       cardioExercises: state.completedCardio.length > 0 ? state.completedCardio : undefined
@@ -787,6 +842,7 @@ export function useWorkoutExecution(userWeightKg: number = 75): UseWorkoutExecut
     startWorkout,
     completeSet,
     completeCircuitRound,
+    completeAllRemaining,
     editCompletedSet,
     skipSet,
     skipExercise,

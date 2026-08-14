@@ -15,6 +15,7 @@ import { useSettings } from '@/hooks/use-settings'
 import { useProfile } from '@/hooks/use-profile'
 import { useExerciseHistory } from '@/hooks/use-exercise-history'
 import { formatLastSet } from '@/lib/workout/format-last-set'
+import { resolvePendingSetValues } from '@/lib/workout/pending-sets'
 import { cn } from '@/lib/utils'
 
 // Lazy load modals — only needed when user triggers them
@@ -25,7 +26,7 @@ const PRCelebration = dynamic(() => import('@/components/treino/pr-celebration')
 const ExerciseVideoModal = dynamic(() => import('@/components/treino/exercise-video-modal').then(m => ({ default: m.ExerciseVideoModal })), { ssr: false })
 const IsometricTimerModal = dynamic(() => import('@/components/treino/isometric-timer-modal').then(m => ({ default: m.IsometricTimerModal })), { ssr: false })
 const CircuitRoundInputModal = dynamic(() => import('@/components/treino/circuit-round-input-modal').then(m => ({ default: m.CircuitRoundInputModal })), { ssr: false })
-import type { CompletedCardio, PrescribedCardio } from '@/lib/workout/types'
+import type { CompletedCardio, CompletedSet, PrescribedCardio, WorkoutExercise, ExerciseSet } from '@/lib/workout/types'
 import { cardioEquipmentIcon, cardioIntensityLabel } from '@/lib/workout/cardio'
 
 function formatTime(seconds: number): string {
@@ -81,6 +82,7 @@ export default function WorkoutExecutionPage() {
     startWorkout,
     completeSet,
     completeCircuitRound,
+    completeAllRemaining,
     editCompletedSet,
     skipSet,
     skipExercise,
@@ -277,8 +279,11 @@ export default function WorkoutExecutionPage() {
   }
 
   // Handle finish workout
-  const handleFinishWorkout = () => {
-    const summary = finishWorkout()
+  // `extraSets` vem de "Finalizar e executar todos": são séries recém-criadas
+  // que ainda não estão em `state` (setState assíncrono). Sem repassá-las aqui,
+  // o resumo e o save gravariam só o que já estava registrado.
+  const handleFinishWorkout = (extraSets: CompletedSet[] = []) => {
+    const summary = finishWorkout(extraSets)
     if (summary && workout) {
       // Save summary data for the resume page
       // IMPORTANT: Always use today's date (when workout was actually done)
@@ -305,7 +310,7 @@ export default function WorkoutExecutionPage() {
           reps: pr.reps
         })),
         // Completed sets for saving to database
-        completedSets: state.completedSets,
+        completedSets: extraSets.length > 0 ? [...state.completedSets, ...extraSets] : state.completedSets,
         // Cardio exercises
         cardioExercises: summary.cardioExercises || [],
         // Exercícios planejados do treino — usado no save para registrar como
@@ -329,6 +334,36 @@ export default function WorkoutExecutionPage() {
     } else {
       handleFinishWorkout()
     }
+  }
+
+  // ─── "Finalizar e executar todos" ──────────────────────────────────
+  // Com que valores uma série pendente é preenchida. Mesma precedência que a
+  // tela de execução já exibe: carga da última sessão e, na falta dela, a
+  // prescrita no treino. Usado tanto na prévia do diálogo quanto no
+  // preenchimento real — para os dois nunca divergirem.
+  const resolvePendingSet = (exercise: WorkoutExercise, set: ExerciseSet) =>
+    resolvePendingSetValues(set, getLastWeight(exercise.nome))
+
+  // Prévia do que será gravado para um exercício pendente (primeira série
+  // que falta). Null quando o exercício não tem pendência.
+  const previewPending = (exerciseId: string) => {
+    const ex = workout?.exercicios.find(x => x.id === exerciseId)
+    if (!ex) return null
+    const idx = ex.series.findIndex(
+      (_, i) => !state.completedSets.some(cs => cs.exerciseId === ex.id && cs.setNumber === i + 1)
+    )
+    if (idx === -1) return null
+    const set = ex.series[idx]
+    return { ...resolvePendingSet(ex, set), isTime: set.set_type === 'time' }
+  }
+
+  const pendingExercises = exercisesStatus.filter(e => e.status !== 'completed')
+  const pendingSetsCount = pendingExercises.reduce((acc, e) => acc + (e.totalSets - e.completedSets), 0)
+
+  const handleFinishCompletingAll = () => {
+    const added = completeAllRemaining(resolvePendingSet)
+    setShowFinishConfirm(false)
+    handleFinishWorkout(added)
   }
 
   // Handle exit
@@ -429,7 +464,7 @@ export default function WorkoutExecutionPage() {
           <p className="text-foreground-secondary mb-8">
             {completedSetsCount} séries em {formatTime(state.elapsedTime)}
           </p>
-          <Button variant="gradient" size="lg" onClick={handleFinishWorkout}>
+          <Button variant="gradient" size="lg" onClick={() => handleFinishWorkout()}>
             Ver Resumo
           </Button>
         </motion.div>
@@ -1151,18 +1186,31 @@ export default function WorkoutExecutionPage() {
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white rounded-2xl p-6 max-w-sm w-full"
             >
-              <h3 className="text-xl font-bold text-foreground mb-2">Finalizar sem fazer tudo?</h3>
+              <h3 className="text-xl font-bold text-foreground mb-2">Finalizar sem anotar tudo?</h3>
               <p className="text-foreground-secondary mb-3">
-                Você ainda não fez {exercisesStatus.filter(e => e.status !== 'completed').length} exercício(s). Eles ficarão registrados como{' '}
-                <span className="font-medium text-red-500">não realizados</span> para o seu profissional ver.
+                Faltam <span className="font-medium text-foreground">{pendingSetsCount} série(s)</span> em{' '}
+                {pendingExercises.length} exercício(s). Você pode registrá-las de uma vez com as cargas
+                abaixo, ou finalizar deixando-as como{' '}
+                <span className="font-medium text-red-500">não realizadas</span>.
               </p>
               <div className="max-h-40 overflow-y-auto mb-5 space-y-1">
-                {exercisesStatus.filter(e => e.status !== 'completed').map(e => (
-                  <div key={e.exerciseId} className="flex items-center justify-between text-sm bg-background-elevated rounded-lg px-3 py-1.5">
-                    <span className="text-foreground">{e.name}</span>
-                    <span className="text-foreground-muted text-xs">{e.completedSets}/{e.totalSets} séries</span>
-                  </div>
-                ))}
+                {pendingExercises.map(e => {
+                  const preview = previewPending(e.exerciseId)
+                  return (
+                    <div key={e.exerciseId} className="flex items-center justify-between gap-2 text-sm bg-background-elevated rounded-lg px-3 py-1.5">
+                      <span className="text-foreground truncate">{e.name}</span>
+                      <span className="text-foreground-muted text-xs whitespace-nowrap">
+                        {e.completedSets}/{e.totalSets} séries
+                        {preview && (
+                          <span className="text-accent ml-1.5">
+                            {preview.isTime ? `${preview.reps}s` : `${preview.reps}×`}
+                            {preview.weight > 0 ? ` ${preview.weight}kg` : ''}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
               <div className="space-y-3">
                 <Button
@@ -1174,7 +1222,14 @@ export default function WorkoutExecutionPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full border-accent/50 text-accent hover:bg-accent/10 hover:text-accent"
+                  onClick={handleFinishCompletingAll}
+                >
+                  Finalizar e executar todos
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-foreground-secondary"
                   onClick={() => { setShowFinishConfirm(false); handleFinishWorkout() }}
                 >
                   Finalizar mesmo assim
